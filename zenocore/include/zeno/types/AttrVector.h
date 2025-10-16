@@ -26,10 +26,7 @@ struct AttrVectorIndex {
     size_t attrDim = 1;
 };
 
-// AttrVector = BaseVector + attrs
-template <class ValT>
-struct AttrVector {
-    using AttrVectorVariant = std::variant
+using AttrVectorVariant = std::variant
         < std::vector<vec3f>
         , std::vector<float>
         , std::vector<vec3i>
@@ -40,6 +37,9 @@ struct AttrVector {
         , std::vector<vec4i>
         >;
 
+// AttrVector = BaseVector + attrs
+template <class ValT>
+struct AttrVector {
     using value_type = ValT;
     using BaseVector = std::vector<ValT>;
     using size_type = typename BaseVector::size_type;

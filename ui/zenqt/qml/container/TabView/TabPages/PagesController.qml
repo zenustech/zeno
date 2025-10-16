@@ -18,7 +18,7 @@ Item {
     */
     property var infoList: [
         {
-            url: "qrc:/qml/Graph.qml",
+            url: "qrc:/zenographview.qml",
             title: "main",
             intro: "主图"
         },
@@ -57,7 +57,7 @@ Item {
     }
 
     function addPage2(index, owner, graphM) {
-        const comp = Qt.createComponent("qrc:/qml/Graph.qml")
+        const comp = Qt.createComponent("qrc:/zenographview.qml")
         var args = {z: 0, visible: true, graphModel: graphM}
         const obj = comp.createObject(pagesNest, args)
 
@@ -80,7 +80,7 @@ Item {
             return
         }
         var args = {z: -1, visible: false}
-        if (comp.url == "qrc:/qml/Graph.qml")
+        if (comp.url == "qrc:/zenographview.qml")
         {
             console.log("add nodesmodel")
             args["graphModel"] = nodesModel

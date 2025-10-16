@@ -81,9 +81,9 @@ static void primPossionFilter(PrimitiveObject *prim, float minRadius) {
     TOCK(possion);
 }
 
-ZENO_API std::shared_ptr<PrimitiveObject> primScatter(
+ZENO_API std::unique_ptr<PrimitiveObject> primScatter(
     PrimitiveObject *prim, std::string type, std::string denAttr, float density, float minRadius, bool interpAttrs, int seed) {
-    auto retprim = std::make_shared<PrimitiveObject>();
+    auto retprim = std::make_unique<PrimitiveObject>();
 
     if (seed == -1) seed = std::random_device{}();
     bool hasDenAttr = !denAttr.empty();
@@ -210,15 +210,15 @@ namespace {
 
 struct PrimScatter : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto type = get_input2<std::string>("type");
-        auto denAttr = get_input2<std::string>("denAttr");
-        auto density = get_input2<float>("density");
-        auto minRadius = get_input2<float>("minRadius");
-        auto interpAttrs = get_input2<bool>("interpAttrs");
-        auto seed = get_input2<int>("seed");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto denAttr = ZImpl(get_input2<std::string>("denAttr"));
+        auto density = ZImpl(get_input2<float>("density"));
+        auto minRadius = ZImpl(get_input2<float>("minRadius"));
+        auto interpAttrs = ZImpl(get_input2<bool>("interpAttrs"));
+        auto seed = ZImpl(get_input2<int>("seed"));
         auto retprim = primScatter(prim.get(), type, denAttr, density, minRadius, interpAttrs, seed);
-        set_output("parsPrim", retprim);
+        ZImpl(set_output("parsPrim", std::move(retprim)));
     }
 };
 

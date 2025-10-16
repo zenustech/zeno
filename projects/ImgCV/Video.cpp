@@ -1,3 +1,4 @@
+#if 0
 #include <opencv2/core/utility.hpp>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -38,8 +39,7 @@ struct ReadImageFromVideo : INode {
                 cv::Vec3f rgb = frameimage.at<cv::Vec3b>(i, j);
                 image->verts[(h - i - 1) * w + j] = {rgb[2] / 255, rgb[1] / 255, rgb[0] / 255};
             }
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -57,3 +57,4 @@ ZENDEFNODE(ReadImageFromVideo, {
 
 }
 }
+#endif

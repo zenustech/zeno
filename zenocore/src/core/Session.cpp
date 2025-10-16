@@ -1,15 +1,15 @@
-#include <zeno/core/Session.h>
+﻿#include <zeno/core/Session.h>
 #include <zeno/core/IObject.h>
 #include <zeno/core/INodeClass.h>
 #include <zeno/core/Assets.h>
-#include <zeno/core/ObjectManager.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalError.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/UserData.h>
 #include <zeno/core/Graph.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
+#include <zeno/core/SolverImpl.h>
 #include <zeno/core/CoreParam.h>
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
@@ -24,18 +24,27 @@
 #include <zeno/core/GlobalVariable.h>
 #include <zeno/core/FunctionManager.h>
 #include <regex>
-
+#include <Windows.h>
+#include <zeno/extra/CalcContext.h>
+#include <zeno/core/ObjectRecorder.h>
 #include <reflect/core.hpp>
 #include <reflect/type.hpp>
 #include <reflect/metadata.hpp>
 #include <reflect/registry.hpp>
-#include <reflect/container/object_proxy>
 #include <reflect/container/any>
 #include <reflect/container/arraylist>
-#include <reflect/core.hpp>
+#ifdef ZENO_WITH_PYTHON
+#include <Python.h>
+#endif
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #include <zeno/core/reflectdef.h>
 #include "zeno_types/reflect/reflection.generated.hpp"
-#include "zeno_nodes/reflect/reflection.generated.hpp"
+//#include "zeno_nodes/reflect/reflection.generated.hpp"
+
+//#include <Python.h>
+//#include <pybind11/pybind11.h>
 
 
 using namespace zeno::reflect;
@@ -50,34 +59,161 @@ namespace zeno {
     };
     static std::map<size_t, _ObjUIInfo> s_objsUIInfo;
 
+#ifdef ZENO_WITH_PYTHON
+    PyMODINIT_FUNC PyInit_zen(void);
+
+    void initPythonEnv(const char* progName)
+    {
+        wchar_t* program = Py_DecodeLocale(progName, NULL);
+        if (program == NULL) {
+            fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
+            exit(1);
+        }
+
+        //if (PyImport_AppendInittab("zen", PyInit_zen) == -1) {
+        //    fprintf(stderr, "Error: could not extend in-built modules table\n");
+        //    exit(1);
+        //}
+
+        Py_SetProgramName(program);
+
+        Py_Initialize();
+
+        //std::string tempCode;
+        //tempCode = "import zen";
+        //if (PyRun_SimpleString(tempCode.c_str()) < 0) {
+        //    zeno::log_warn("Failed to initialize Python module");
+        //    return;
+        //}
+
+        PyMem_RawFree(program);
+    }
+
+    DWORD funcForPythonEnv(LPVOID lpThreadParameter);
+
+    struct PythonEnvWrapper
+    {
+        HANDLE m_thdPython;
+        HANDLE m_hEventForPy;
+        HANDLE m_hEventPyReady;
+        DWORD m_threadID;
+        std::string script;
+        std::function<void()> m_pyzenFunc;
+        bool m_bInitPyZen = false;
+
+        PythonEnvWrapper() {
+            initPyThread();
+        }
+
+        void initPyzenFunc(std::function<void()> pyzenFunc) {
+            m_pyzenFunc = pyzenFunc;
+            SetEvent(m_hEventForPy);
+        }
+
+        void asyncRunPython(const std::string& code) {
+            script = code;
+            SetEvent(m_hEventForPy);
+        }
+
+        void initPyThread() {
+            m_hEventForPy = CreateEvent(NULL, TRUE, FALSE, NULL);
+            m_hEventPyReady = CreateEvent(NULL, TRUE, FALSE, NULL);
+            m_thdPython = CreateThread(NULL, 0, funcForPythonEnv, this, 0, &m_threadID);
+        }
+    };
+
+    DWORD funcForPythonEnv(LPVOID lpThreadParameter) {
+        PythonEnvWrapper* wrapper = static_cast<PythonEnvWrapper*>(lpThreadParameter);
+        while (true) {
+            WaitForSingleObject(wrapper->m_hEventForPy, INFINITE);
+            if (!wrapper->m_bInitPyZen) {
+                wrapper->m_pyzenFunc();
+                char filename[MAX_PATH];
+                DWORD size = GetModuleFileNameA(NULL, filename, MAX_PATH);
+                initPythonEnv(filename);
+                wrapper->m_bInitPyZen = true;
+            }
+            else {
+                //runPython(wrapper->script);
+                std::string stdOutErr =
+                    "import sys\n\
+\
+class CatchOutErr:\n\
+    def __init__(self):\n\
+        self.value = ''\n\
+    def write(self, txt):\n\
+        self.value += txt\n\
+    def flush(self):\n\
+        pass\n\
+catchOutErr = CatchOutErr()\n\
+sys.stdout = catchOutErr\n\
+sys.stderr = catchOutErr\n\
+"; //this is python code to redirect stdouts/stderr
+
+                //Py_Initialize();
+
+                PyObject* pModule = PyImport_AddModule("__main__"); //create main module
+                int ret = PyRun_SimpleString(stdOutErr.c_str()); //invoke code to redirect
+
+                bool bFailed = false;
+                if (PyRun_SimpleString(wrapper->script.c_str()) < 0) {
+                    bFailed = true;
+                }
+                if (1) { //output log and error
+                    PyObject* catcher = PyObject_GetAttrString(pModule, "catchOutErr"); //get our catchOutErr created above
+                    PyObject* output = PyObject_GetAttrString(catcher, "value"); //get the stdout and stderr from our catchOutErr object
+                    if (output != Py_None)
+                    {
+                        std::string str = _PyUnicode_AsString(output);
+                        for (const auto& line : split_str(str, '\n'))
+                        {
+                            if (!line.empty())
+                            {
+                                zeno::log_info(line);
+                            }
+                        }
+                    }
+                }
+                //return !bFailed; //how to run?
+                int j;
+                j = 0;
+                SetEvent(wrapper->m_hEventPyReady);
+            }
+            ResetEvent(wrapper->m_hEventForPy);
+        }
+        return 0;
+    }
+#endif
+
+
 ZENO_API Session::Session()
     : globalState(std::make_unique<GlobalState>())
     , globalComm(std::make_unique<GlobalComm>())
     , globalError(std::make_unique<GlobalError>())
     , eventCallbacks(std::make_unique<EventCallbacks>())
     , m_userData(std::make_unique<UserData>())
-    , mainGraph(std::make_shared<Graph>("main"))
-    , assets(std::make_shared<AssetsMgr>())
-    , objsMan(std::make_unique<ObjectManager>())
+    //, mainGraph(std::make_shared<Graph>("main"))
+    , assets(std::make_unique<AssetsMgr>())
+#ifdef ZENO_WITH_PYTHON
+    , m_pyWrapper(std::make_unique<PythonEnvWrapper>())
+#endif
     , globalVariableManager(std::make_unique<GlobalVariableManager>())
     , funcManager(std::make_unique<FunctionManager>())
+    , m_recorder(std::make_unique<ObjectRecorder>())
+    , m_mainThreadId(0)
 {
-    std::vector<zeno::reflect::Any> wtf;
-    wtf.push_back(3);
-    wtf.push_back(std::make_shared<PrimitiveObject>());
-    wtf.push_back("abc");
-
-    Any anyList = wtf;
-    if (anyList.type().hash_code() == zeno::types::gParamType_AnyList) {
-        std::vector<zeno::reflect::Any> lst = any_cast<std::vector<zeno::reflect::Any>>(anyList);
-        for (auto& elem : lst) {
-            int j;
-            j = 0;
-        }
-    }
+    m_mainThreadId = GetCurrentThreadId();
 }
 
-ZENO_API Session::~Session() = default;
+ZENO_API Session::~Session() {
+    int j;
+    j = 0;
+}
+
+void Session::destroy() {
+    assets.reset();
+    mainGraph.reset();
+}
 
 
 static CustomUI descToCustomui(const Descriptor& desc) {
@@ -85,63 +221,87 @@ static CustomUI descToCustomui(const Descriptor& desc) {
     CustomUI ui;
 
     ui.nickname = desc.displayName;
-    ui.iconResPath = desc.iconResPath;
+    ui.uistyle.iconResPath = desc.iconResPath;
     ui.doc = desc.doc;
     if (!desc.categories.empty())
         ui.category = desc.categories[0];   //很多cate都只有一个
 
-    ParamGroup default;
+    ParamGroup default_group;
     for (const SocketDescriptor& param_desc : desc.inputs) {
-        ParamType type = param_desc.type;
-        if (isPrimitiveType(type)) {
-            //如果是数值类型，就添加到组里
-            ParamPrimitive param;
-            param.name = param_desc.name;
-            param.type = type;
-            param.defl = zeno::str2any(param_desc.defl, param.type);
-            convertToEditVar(param.defl, param.type);
-            if (param_desc.socketType != zeno::NoSocket)
-                param.socketType = param_desc.socketType;
-            if (param_desc.control != NullControl)
-                param.control = param_desc.control;
-            if (!param_desc.comboxitems.empty()) {
-                //compatible with old case of combobox items.
-                param.type = zeno::types::gParamType_String;
-                param.control = Combobox;
-                std::vector<std::string> items = split_str(param_desc.comboxitems, ';');
-                if (!items.empty()) {
-                    items.erase(items.begin());
-                    param.ctrlProps = items;
-                }
-            }
-            if (param.type != Param_Null && param.control == NullControl)
-                param.control = getDefaultControl(param.type);
-            param.tooltip = param_desc.doc;
-            param.sockProp = Socket_Normal;
-            param.wildCardGroup = param_desc.wildCard;
-            param.bSocketVisible = false;
-            default.params.emplace_back(std::move(param));
-        }
-        else
-        {
-            //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
-            ParamObject param;
-            param.name = param_desc.name;
-            param.type = type;
-            if (param_desc.socketType != zeno::NoSocket)
-                param.socketType = param_desc.socketType;
-            param.bInput = true;
-            param.wildCardGroup = param_desc.wildCard;
-
-            //dict和list允许多连接口，且不限定对象类型（但只能是对象，暂不接收primitive，否则就违反了对象和primitive分开连的设计了）
-            if (type == gParamType_Dict || type == gParamType_List) {
-                param.sockProp = Socket_MultiInput;
+        if (param_desc._desc.type == Desc_Prim) {
+            //有可能没赋初值，要检查一下
+            if (!param_desc._desc.primparam.defl.has_value()) {
+                ParamPrimitive newparam = param_desc._desc.primparam;
+                newparam.defl = initAnyDeflValue(newparam.type);
+                default_group.params.push_back(newparam);
             }
             else {
-                param.sockProp = Socket_Normal;
+                //字符串的defl都是以const char*作为内部储存的类型，这里转一下string，以免上层逻辑处理疏漏
+                ParamPrimitive newparam = param_desc._desc.primparam;
+                if (newparam.defl.type() == zeno::reflect::type_info<const char*>()) {
+                    std::string str = zeno::reflect::any_cast<const char*>(newparam.defl);
+                    newparam.defl = str;
+                }
+                convertToEditVar(newparam.defl, newparam.type);
+                default_group.params.push_back(newparam);
             }
+        }
+        else if (param_desc._desc.type == Desc_Obj) {
+            ui.inputObjs.push_back(param_desc._desc.objparam);
+        }
+        else {
+            ParamType type = param_desc.type;
+            if (isPrimitiveType(type)) {
+                //如果是数值类型，就添加到组里
+                ParamPrimitive param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.defl = zeno::str2any(param_desc.defl, param.type);
+                convertToEditVar(param.defl, param.type);
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
+                if (param_desc.control != NullControl)
+                    param.control = param_desc.control;
+                if (!param_desc.comboxitems.empty()) {
+                    //compatible with old case of combobox items.
+                    param.type = zeno::types::gParamType_String;
+                    param.control = Combobox;
+                    std::vector<std::string> items = split_str(param_desc.comboxitems, ' ', false);
+                    if (!items.empty()) {
+                        items.erase(items.begin());
+                        param.ctrlProps = items;
+                    }
+                }
+                if (param.type != Param_Null && param.control == NullControl)
+                    param.control = getDefaultControl(param.type);
+                param.tooltip = param_desc.doc;
+                param.sockProp = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
+                param.bSocketVisible = false;
+                default_group.params.push_back(param);
+            }
+            else
+            {
+                //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+                ParamObject param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.socketType = Socket_Clone;        //在此版本里，不再区分owing, readonly clone，全都是clone.
+                //if (param_desc.socketType != zeno::NoSocket)
+                //    param.socketType = param_desc.socketType;
+                param.bInput = true;
+                param.wildCardGroup = param_desc.wildCard;
 
-            ui.inputObjs.emplace_back(std::move(param));
+                //dict和list允许多连接口，且不限定对象类型（但只能是对象，暂不接收primitive，否则就违反了对象和primitive分开连的设计了）
+                if (type == gParamType_Dict || type == gParamType_List) {
+                    param.sockProp = Socket_MultiInput;
+                }
+                else {
+                    param.sockProp = Socket_Normal;
+                }
+
+                ui.inputObjs.push_back(param);
+            }
         }
     }
     for (const ParamDescriptor& param_desc : desc.params) {
@@ -156,7 +316,7 @@ static CustomUI descToCustomui(const Descriptor& desc) {
             //compatible with old case of combobox items.
             param.type = zeno::types::gParamType_String;
             param.control = Combobox;
-            std::vector<std::string> items = split_str(param_desc.comboxitems, ' ');
+            std::vector<std::string> items = split_str(param_desc.comboxitems, ' ', false);
             if (!items.empty()) {
                 items.erase(items.begin());
                 param.ctrlProps = items;
@@ -171,50 +331,58 @@ static CustomUI descToCustomui(const Descriptor& desc) {
         }
         param.tooltip = param_desc.doc;
         param.bSocketVisible = false;
-        default.params.emplace_back(std::move(param));
+        default_group.params.push_back(param);
     }
     for (const SocketDescriptor& param_desc : desc.outputs) {
-        ParamType type = param_desc.type;
-        if (isPrimitiveType(type)) {
-            //如果是数值类型，就添加到组里
-            ParamPrimitive param;
-            param.name = param_desc.name;
-            param.type = type;
-            param.defl = zeno::str2any(param_desc.defl, param.type);
-            //输出的数据端口没必要将vec转为vecedit
-            if (param_desc.socketType != zeno::NoSocket)
-                param.socketType = param_desc.socketType;
-            param.control = NullControl;
-            param.tooltip = param_desc.doc;
-            param.sockProp = Socket_Normal;
-            param.wildCardGroup = param_desc.wildCard;
-            param.bSocketVisible = false;
-            ui.outputPrims.emplace_back(std::move(param));
+        if (param_desc._desc.type == Desc_Prim) {
+            ui.outputPrims.push_back(param_desc._desc.primparam);
         }
-        else
-        {
-            //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
-            ParamObject param;
-            param.name = param_desc.name;
-            param.type = type;
-            if (param_desc.socketType != zeno::NoSocket)
-                param.socketType = param_desc.socketType;
-            if (param.socketType != zeno::Socket_WildCard)  //输出可能是wildCard
-                param.socketType = Socket_Output;
-            param.bInput = false;
-            param.sockProp = Socket_Normal;
-            param.wildCardGroup = param_desc.wildCard;
-            ui.outputObjs.emplace_back(std::move(param));
+        else if (param_desc._desc.type == Desc_Obj) {
+            ui.outputObjs.push_back(param_desc._desc.objparam);
+        }
+        else {
+            ParamType type = param_desc.type;
+            if (isPrimitiveType(type)) {
+                //如果是数值类型，就添加到组里
+                ParamPrimitive param;
+                param.name = param_desc.name;
+                param.type = type;
+                param.defl = zeno::str2any(param_desc.defl, param.type);
+                //输出的数据端口没必要将vec转为vecedit
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
+                param.control = NullControl;
+                param.tooltip = param_desc.doc;
+                param.sockProp = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
+                param.bSocketVisible = false;
+                ui.outputPrims.push_back(param);
+            }
+            else
+            {
+                //其他一律认为是对象（Zeno目前的类型管理非常混乱，有些类型值是空字符串，但绝大多数是对象类型
+                ParamObject param;
+                param.name = param_desc.name;
+                param.type = type;
+                if (param_desc.socketType != zeno::NoSocket)
+                    param.socketType = param_desc.socketType;
+                if (!param.bWildcard)  //输出可能是wildCard
+                    param.socketType = Socket_Output;
+                param.bInput = false;
+                param.sockProp = Socket_Normal;
+                param.wildCardGroup = param_desc.wildCard;
+                ui.outputObjs.push_back(param);
+            }
         }
     }
     ParamTab tab;
-    tab.groups.emplace_back(std::move(default));
+    tab.groups.emplace_back(std::move(default_group));
     ui.inputPrims.emplace_back(std::move(tab));
     return ui;
 }
 
-ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string const &clsname, Descriptor const &desc) {
-    if (clsname == "CreateCube") {
+ZENO_API void Session::defNodeClass(INode* (*ctor)(), std::string const &clsname, Descriptor const &desc) {
+    if (clsname == "Line") {
         int j;
         j = 0;
     }
@@ -229,25 +397,50 @@ ZENO_API void Session::defNodeClass(std::shared_ptr<INode>(*ctor)(), std::string
     if (!clsname.empty() && clsname.front() == '^')
         return;
 
-    std::string cate = cls->m_customui.category;
-    if (m_cates.find(cate) == m_cates.end())
-        m_cates.insert(std::make_pair(cate, std::vector<std::string>()));
-    m_cates[cate].push_back(clsname);
+    NodeInfo info;
+    info.module_path = m_current_loading_module;
+    info.name = clsname;
+    info.status = ZModule_Loaded;
+    info.cate = cls->m_customui.category;
 
+    m_cates.push_back(std::move(info));
     nodeClasses.emplace(clsname, std::move(cls));
 }
 
-ZENO_API void Session::defNodeClass2(std::shared_ptr<INode>(*ctor)(), std::string const& nodecls, CustomUI const& customui) {
+ZENO_API void Session::defNodeClass2(INode* (*ctor)(), std::string const& nodecls, CustomUI const& customui) {
     if (nodeClasses.find(nodecls) != nodeClasses.end()) {
         log_error("node class redefined: `{}`\n", nodecls);
     }
     CustomUI ui = customui;
     initControlsByType(ui);
     auto cls = std::make_unique<ImplNodeClass>(ctor, ui, nodecls);
+
+    NodeInfo info;
+    info.module_path = m_current_loading_module;
+    info.name = nodecls;
+    info.status = ZModule_Loaded;
+    info.cate = cls->m_customui.category;
+
+    m_cates.push_back(std::move(info));
     nodeClasses.emplace(nodecls, std::move(cls));
 }
 
-ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>()> ctor, zeno::reflect::TypeBase* pTypeBase)
+ZENO_API void Session::defNodeClass3(INode* (*ctor)(), const char* pName, Descriptor const& desc) {
+    //auto cls = std::make_unique<ImplNodeClass>(ctor, desc, pName);
+    //nodeClasses.emplace(pName, std::move(cls));
+}
+
+zeno::CustomUI Session::getOfficalUIDesc(const std::string& clsname, bool& bExist) {
+    if (nodeClasses.find(clsname) == nodeClasses.end()) {
+        bExist = false;
+        return zeno::CustomUI();
+    }
+    bExist = true;
+    return nodeClasses[clsname]->m_customui;
+}
+
+#if 0
+ZENO_API void Session::defNodeReflectClass(std::function<INode*()> ctor, zeno::reflect::TypeBase* pTypeBase)
 {
     assert(pTypeBase);
     const zeno::reflect::ReflectedTypeInfo& info = pTypeBase->get_info();
@@ -270,6 +463,37 @@ ZENO_API void Session::defNodeReflectClass(std::function<std::shared_ptr<INode>(
 
     nodeClasses.emplace(nodecls, std::move(cls));
 }
+#endif
+
+void Session::beginLoadModule(const std::string& module_name) {
+    m_current_loading_module = module_name;
+}
+
+void Session::uninstallModule(const std::string& module_path) {
+    for (NodeInfo& info : m_cates) {
+        if (info.module_path == module_path) {
+            info.status = ZModule_UnLoaded;
+            const std::string uninstall_nodecls = info.name;
+            nodeClasses.erase(uninstall_nodecls);
+            //所有节点要disable掉，只留一个空壳
+            if (mainGraph)
+                mainGraph->update_load_info(uninstall_nodecls, true);
+        }
+    }
+}
+
+void Session::endLoadModule() {
+    //有可能加载模块前有旧节点，这时候要enable已有的节点
+    for (NodeInfo& info : m_cates) {
+        if (info.module_path == m_current_loading_module) {
+            info.status = ZModule_Loaded;
+            if (mainGraph)
+                mainGraph->update_load_info(info.name, false);
+        }
+    }
+    m_current_loading_module = "";
+}
+
 
 ZENO_API INodeClass::INodeClass(CustomUI const &customui, std::string const& classname)
     : m_customui(customui)
@@ -284,11 +508,28 @@ ZENO_API std::shared_ptr<Graph> Session::createGraph(const std::string& name) {
     return graph;
 }
 
+ZENO_API NodeImpl* Session::getNodeByUuidPath(std::string const& uuid_path) {
+    return mainGraph->getNodeByUuidPath(uuid_path);
+}
+
+ZENO_API NodeImpl* Session::getNodeByPath(std::string const& uuid_path)
+{
+    return mainGraph->getNodeByPath(uuid_path);
+}
+
 ZENO_API void Session::resetMainGraph() {
     mainGraph.reset();
     mainGraph = std::make_shared<Graph>("main");
     globalVariableManager.reset();
     globalVariableManager = std::make_unique<GlobalVariableManager>();
+}
+
+void Session::clearMainGraph() {
+    mainGraph.reset();
+}
+
+ZENO_API void Session::clearAssets() {
+    assets->clear();
 }
 
 ZENO_API void Session::setApiLevelEnable(bool bEnable)
@@ -312,7 +553,9 @@ ZENO_API void Session::endApiCall()
                 m_callbackRunTrigger();
             }
             else {
-                run();
+                //这里后续是给非ui框架使用，比如命令行，而ui会走RunTrigger.
+                zeno::render_reload_info infos;
+                run("", infos);
             }
         }
     }
@@ -333,6 +576,34 @@ ZENO_API void Session::registerNodeCallback(F_NodeStatus func)
     m_funcNodeStatus = func;
 }
 
+void Session::registerIOCallback(F_IOProgress func) {
+    m_funcIOCallback = func;
+}
+
+ZENO_API std::shared_ptr<Graph> Session::getGraphByPath(const std::string& path) {
+    //对于assets
+    //可能的形式包括： /ABC/subnet1/subnet2   ABC   /ABC
+    std::vector<std::string> items = split_str(path, '/', false);
+    if (items.empty()) {
+        return nullptr;
+    }
+
+    std::string graph_name = items[0];
+    if (graph_name == "main" && mainGraph) {
+        return mainGraph->getGraphByPath(path);
+    }
+    else if (auto spGraph = assets->getAssetGraph(graph_name, true)) {
+        return spGraph->getGraphByPath(path);
+    }
+    return nullptr;
+}
+
+void Session::reportIOProgress(const std::string& info, int inc) {
+    if (m_funcIOCallback) {
+        m_funcIOCallback(info, inc);
+    }
+}
+
 void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus status)
 {
     if (m_funcNodeStatus) {
@@ -340,17 +611,15 @@ void Session::reportNodeStatus(const ObjPath& path, bool bDirty, NodeRunStatus s
     }
 }
 
-ZENO_API int Session::registerObjId(const std::string& objprefix)
-{
-    int objid = objsMan->registerObjId(objprefix);
-    return objid;
-}
-
 ZENO_API void Session::switchToFrame(int frameid)
 {
     CORE_API_BATCH
-    mainGraph->markDirtyWhenFrameChanged();
-    globalState->updateFrameId(frameid);
+    if (mainGraph) {
+        mainGraph->markDirtyWhenFrameChanged();
+    }
+    if (globalState) {
+        globalState->updateFrameId(frameid);
+    }
 }
 
 ZENO_API void Session::updateFrameRange(int start, int end)
@@ -363,11 +632,46 @@ ZENO_API void Session::interrupt() {
     m_bInterrupted = true;
 }
 
-ZENO_API bool Session::is_interrupted() const {
-    return m_bInterrupted;
+bool Session::is_async_executing() const {
+    return m_bAsyncExecute;
 }
 
-ZENO_API bool Session::run() {
+void Session::set_async_executing(bool bOn) {
+    m_bAsyncExecute = bOn;
+}
+
+ZENO_API unsigned long Session::mainThreadId() const {
+    return m_mainThreadId;
+}
+
+ZENO_API void Session::setMainThreadId(unsigned long threadId) {
+    m_mainThreadId = threadId;
+}
+
+ZENO_API void Session::set_solver(const std::string& solver) {
+    m_solver = solver;
+}
+
+ZENO_API std::string Session::get_solver() {
+    return m_solver;
+}
+
+std::wstring Session::get_project_path() const {
+    return m_proj_path;
+}
+
+void Session::init_project_path(const std::wstring& path) {
+    m_proj_path = path;
+}
+
+void Session::terminate_solve() {
+    SolverImpl* pSolverNode = static_cast<SolverImpl*>(getNodeByUuidPath(m_solver));
+    if (pSolverNode) {
+        pSolverNode->terminate_solve();
+    }
+}
+
+ZENO_API bool Session::run(const std::string& currgraph, render_reload_info& infos) {
     if (m_bDisableRunning)
         return false;
 
@@ -379,26 +683,36 @@ ZENO_API bool Session::run() {
     m_bInterrupted = false;
     globalState->set_working(true);
 
-    objsMan->beforeRun();
     zeno::scope_exit sp([&]() { 
-        objsMan->afterRun();
         m_bReentrance = false;
+        m_bInterrupted = false;
+        globalState->clearState();
     });
 
     globalError->clearState();
+    float total_time = mainGraph->statistic_cpu_used();
+    globalState->init_total_runtime(total_time);
 
-    //本次运行清除m_objects中上一次运行时被标记移除的obj，不能立刻清除因为视窗export_loading_objs时，需要在m_objects中查找被删除的obj
-    objsMan->clearLastUnregisterObjs();
-    //对之前删除节点时记录的obj，对应的所有其他关联节点，都标脏
-    objsMan->remove_attach_node_by_removing_objs();
-
-    zeno::GraphException::catched([&] {
-        mainGraph->runGraph();
-        }, *globalError);
-    if (globalError->failed()) {
-        zeno::log_error("");
+    bool bFailed = false;
+    try
+    {
+        mainGraph->runGraph(infos);
     }
-
+    catch (ErrorException const& e) {
+        infos.error.set_node_info(e.get_node_info());
+        infos.error.set_error(e.getError());
+    }
+    catch (std::exception const& e) {
+        std::string err = e.what();
+        std::string wtf = e.what();
+        bFailed = true;
+    }
+    catch (...) {
+        bFailed = true;
+    }
+    if (!infos.error.failed() && !bFailed) {
+        mainGraph->mark_clean();
+    }
     return true;
 }
 
@@ -410,25 +724,20 @@ ZENO_API bool Session::is_auto_run() const {
     return m_bAutoRun;
 }
 
-ZENO_API void Session::set_Rerun()
-{
-    mainGraph->markDirtyAll();
-    objsMan->clear();
+bool Session::is_frame_node(const std::string& node_cls) {
+    static std::set<std::string> frame_node_cls = {
+        "GetFrameNum",
+        "CameraNode",
+        "FlipSolver",
+        "NewFBXSceneInfo"
+    };
+    return frame_node_cls.find(node_cls) != frame_node_cls.end();
 }
 
-static bool isBasedINode(const size_t hash) {
-    static size_t inodecode = zeno::reflect::type_info<class zeno::INode>().hash_code();
-    if (hash == inodecode)
-        return true;
-
-    auto& registry = zeno::reflect::ReflectionRegistry::get();
-    auto typeHdl = registry->get(hash);
-    const ArrayList<TypeHandle>& baseclasses = typeHdl->get_base_classes();
-    for (auto& _typeHdl : baseclasses) {
-        if (isBasedINode(_typeHdl.type_hash()))
-            return true;
-    }
-    return false;
+ZENO_API void Session::markDirtyAndCleanResult()
+{
+    if (mainGraph)
+        mainGraph->markDirtyAndCleanup();
 }
 
 ZENO_API void Session::registerObjUIInfo(size_t hashcode, std::string_view color, std::string_view nametip) {
@@ -448,19 +757,45 @@ ZENO_API bool Session::getObjUIInfo(size_t hashcode, std::string_view& color, st
 }
 
 ZENO_API void Session::initEnv(const zenoio::ZSG_PARSE_RESULT ioresult) {
-    resetMainGraph();
-    mainGraph->init(ioresult.mainGraph);
-    //referManager->init(mainGraph);
 
     bool bDisableRun = m_bDisableRunning;
     m_bDisableRunning = true;
     scope_exit sp([&]() {m_bDisableRunning = bDisableRun; });
+
+    resetMainGraph();
+    mainGraph->init(ioresult.mainGraph);
+    mainGraph->initRef(ioresult.mainGraph);
+    m_proj_path = ioresult.path;
+    //referManager->init(mainGraph);
+
     switchToFrame(ioresult.timeline.currFrame);
     //init $F globalVariable
     //zeno::getSession().globalVariableManager->overrideVariable(zeno::GVariable("$F", zeno::reflect::make_any<float>(ioresult.timeline.currFrame)));
 }
 
-ZENO_API zeno::NodeCates Session::dumpCoreCates() {
+void Session::initPyzen(std::function<void()> pyzenFunc) {
+#ifdef ZENO_WITH_PYTHON
+    if (m_pyWrapper)
+        m_pyWrapper->initPyzenFunc(pyzenFunc);
+#endif
+}
+
+void Session::asyncRunPython(const std::string& code) {
+#ifdef ZENO_WITH_PYTHON
+    if (m_pyWrapper)
+        m_pyWrapper->asyncRunPython(code);
+#endif
+}
+
+void* Session::hEventOfPyFinish() {
+#ifdef ZENO_WITH_PYTHON
+    if (m_pyWrapper)
+        return m_pyWrapper->m_hEventPyReady;
+#endif
+    return nullptr;
+}
+
+ZENO_API zeno::NodeRegistry Session::dumpCoreCates() {
     return m_cates;
 }
 
@@ -545,5 +880,13 @@ ZENO_API Session &getSession() {
 #endif
     return *ptr;
 }
+
+//namespace py = pybind11;
+//
+//PYBIND11_MODULE(ze, z) {
+//    py::class_<Session>(z, "Session")
+//        .def("run", &Session::run)
+//        .def("interrupt", &Session::interrupt);
+//}
 
 }

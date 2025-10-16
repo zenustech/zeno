@@ -12,9 +12,14 @@ namespace zenoio {
 
     using namespace zenoio::iotags;
 
-    ZsgReader::ZsgReader() : m_bDiskReading(true), m_ioVer(zeno::VER_3) {}
+    ZsgReader::ZsgReader()
+        : m_bDiskReading(true)
+        , m_ioVer(zeno::VER_3)
+        , m_num_of_nodes(0)
+    {
+    }
 
-    ZENO_API ZSG_PARSE_RESULT ZsgReader::openFile(const std::string& fn)
+    ZENO_API ZSG_PARSE_RESULT ZsgReader::openFile(const std::wstring& fn)
     {
         ZSG_PARSE_RESULT result;
         result.code = PARSE_ERROR;
@@ -67,6 +72,10 @@ namespace zenoio {
         result.iover = m_ioVer;
         result.code = PARSE_NOERROR;
         return result;
+    }
+
+    int ZsgReader::numOfNodes() const {
+        return m_num_of_nodes;
     }
 
     bool ZsgReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) {
@@ -128,7 +137,7 @@ namespace zenoio {
             {
                 zeno::ParamObject param;
                 param.name = inSock;
-                //¹éÎª¶ÔÏó°É
+                //å½’ä¸ºå¯¹è±¡å§
                 ret.customUi.inputObjs.push_back(param);
             }
             else if (inputObj.IsObject())
@@ -177,8 +186,8 @@ namespace zenoio {
 
     zeno::NodeDescs ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
     {
-        zeno::NodeDescs _descs;     //²»ĞèÒªÏµÍ³ÄÚÖÃ½ÚµãµÄdesc£¬Ö»Òª¶ÁÎÄ¼şµÄ¾Í¿ÉÒÔ
-        zeno::LinksData lnks;       //Ã»ÓÃµÄ
+        zeno::NodeDescs _descs;     //ä¸éœ€è¦ç³»ç»Ÿå†…ç½®èŠ‚ç‚¹çš„descï¼Œåªè¦è¯»æ–‡ä»¶çš„å°±å¯ä»¥
+        zeno::LinksData lnks;       //æ²¡ç”¨çš„
         for (const auto& node : jsonDescs.GetObject())
         {
             const std::string& nodeCls = node.name.GetString();
@@ -190,7 +199,7 @@ namespace zenoio {
             {
                 if (objValue["inputs"].IsArray())
                 {
-                    //ÏµÍ³½Úµãµ¼³öµÄÃèÊö£¬ĞÎÈç£º
+                    //ç³»ç»ŸèŠ‚ç‚¹å¯¼å‡ºçš„æè¿°ï¼Œå½¢å¦‚ï¼š
                     /*
                     "inputs": [
                         [
@@ -224,7 +233,7 @@ namespace zenoio {
                                 zeno::ParamPrimitive param;
                                 param.name = socketName;
                                 param.type = zeno::convertToType(socketDefl);
-                                param.defl = socketDefl;    //²»×ªÁË£¬Ì«Âé·³ÁË¡£..·´ÕıÆÕÍ¨½ÚµãµÄdescÒ²Ö»ÊÇ²Î¿¼
+                                param.defl = socketDefl;    //ä¸è½¬äº†ï¼Œå¤ªéº»çƒ¦äº†ã€‚..åæ­£æ™®é€šèŠ‚ç‚¹çš„descä¹Ÿåªæ˜¯å‚è€ƒ
 
                                 desc.inputs.push_back(param);
                             }
@@ -265,7 +274,7 @@ namespace zenoio {
                                 zeno::ParamPrimitive param;
                                 param.name = socketName;
                                 param.type = zeno::convertToType(socketDefl);
-                                param.defl = socketDefl;    //²»×ªÁË£¬Ì«Âé·³ÁË¡£..·´ÕıÆÕÍ¨½ÚµãµÄdescÒ²Ö»ÊÇ²Î¿¼
+                                param.defl = socketDefl;    //ä¸è½¬äº†ï¼Œå¤ªéº»çƒ¦äº†ã€‚..åæ­£æ™®é€šèŠ‚ç‚¹çš„descä¹Ÿåªæ˜¯å‚è€ƒ
                                 desc.inputs.push_back(param);
                             }
                         }
@@ -318,7 +327,7 @@ namespace zenoio {
                     {
                         std::string socketName = output.name.GetString();
                         zeno::NodeData node;
-                        _parseSocket("", false, nodeCls, socketName, false, output.value, node, lnks);
+                        _parseSocket("", false, nodeCls, socketName, nodeCls, output.value, node, lnks);
                     }
                 }
             }

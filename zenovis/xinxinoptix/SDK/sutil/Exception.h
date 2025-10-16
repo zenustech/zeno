@@ -39,6 +39,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include "zeno/utils/log.h"
 
 //------------------------------------------------------------------------------
 //
@@ -161,6 +162,8 @@ inline void optixCheck( OptixResult res, const char* call, const char* file, uns
     {
         std::stringstream ss;
         ss << "Optix call '" << call << "' failed: " << file << ':' << line << ")\n";
+        std::string error_name = optixGetErrorName( res );
+        zeno::log_error("{}: {}", error_name, ss.str());
         throw Exception( res, ss.str().c_str() );
     }
 }

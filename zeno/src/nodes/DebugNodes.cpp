@@ -1,61 +1,17 @@
 #include <zeno/zeno.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/utils/logger.h>
 #include <cstdio>
 #include <thread>
 
 
-namespace {
-
-struct GCTest : zeno::IObjectClone<GCTest, zeno::NumericObject> {
-    GCTest() {
-        printf("%d GCTest()\n", this->get<int>());
-    }
-
-    GCTest(GCTest const &) {
-        printf("%d GCTest(GCTest const &)\n", this->get<int>());
-    }
-
-    GCTest &operator=(GCTest const &) {
-        printf("%d GCTest &operator=(GCTest const &)\n", this->get<int>());
-        return *this;
-    }
-
-    GCTest(GCTest &&) {
-        printf("%d GCTest(GCTest &&)\n", this->get<int>());
-    }
-
-    GCTest &operator=(GCTest &&) {
-        printf("%d GCTest &operator=(GCTest &&)\n", this->get<int>());
-        return *this;
-    }
-
-    ~GCTest() {
-        printf("%d ~GCTest()\n", this->get<int>());
-    }
-};
-
-
-struct MakeGCTest : zeno::INode {
-    virtual void apply() override {
-        auto obj = std::make_shared<GCTest>();
-        obj->set<int>(get_param<int>("value"));
-        set_output("value", std::move(obj));
-    }
-};
-
-ZENDEFNODE(MakeGCTest, {
-    {},
-    {{gParamType_Int,"value"}},
-    {{gParamType_Int, "value", "42"}},
-    {"debug"},
-});
-
+namespace zeno {
 
 struct PrintMessage : zeno::INode {
     virtual void apply() override {
-        auto message = get_param<std::string>("message");
+        auto message = ZImpl(get_param<std::string>("message"));
         printf("%s\n", message.c_str());
     }
 };
@@ -70,7 +26,7 @@ ZENDEFNODE(PrintMessage, {
 
 struct PrintMessageStdErr : zeno::INode {
     virtual void apply() override {
-        auto message = get_param<std::string>("message");
+        auto message = ZImpl(get_param<std::string>("message"));
         fprintf(stderr, "%s\n", message.c_str());
     }
 };
@@ -102,7 +58,7 @@ ZENDEFNODE(InfiniteLoop, {
 
 struct TriggerExitProcess : zeno::INode {
     virtual void apply() override {
-        int status = get_param<int>("status");
+        int status = ZImpl(get_param<int>("status"));
         exit(status);
     }
 };
@@ -161,7 +117,7 @@ ZENDEFNODE(TriggerAbortSignal, {
 
 struct SpdlogInfoMessage : zeno::INode {
     virtual void apply() override {
-        zeno::log_info("{}", get_param<std::string>("message"));
+        zeno::log_info("{}", ZImpl(get_param<std::string>("message")));
     }
 };
 
@@ -175,7 +131,7 @@ ZENDEFNODE(SpdlogInfoMessage, {
 
 struct SpdlogErrorMessage : zeno::INode {
     virtual void apply() override {
-        zeno::log_error("{}", get_param<std::string>("message"));
+        zeno::log_error("{}", ZImpl(get_param<std::string>("message")));
     }
 };
 
@@ -189,7 +145,7 @@ ZENDEFNODE(SpdlogErrorMessage, {
 
 struct TriggerException : zeno::INode {
     virtual void apply() override {
-        throw zeno::Exception(get_param<std::string>("message"));
+        throw zeno::Exception(ZImpl(get_param<std::string>("message")));
     }
 };
 
@@ -202,9 +158,9 @@ ZENDEFNODE(TriggerException, {
 
 struct TriggerViewportFault : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         prim->tris.resize(1);
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -218,14 +174,20 @@ ZENDEFNODE(TriggerViewportFault, {
 
 struct MockRunning : zeno::INode {
     virtual void apply() override {
-        int secs = get_input<zeno::NumericObject>("wait seconds")->get<int>();
+        int secs = ZImpl(get_input<zeno::NumericObject>("wait seconds"))->get<int>();
+        if (get_input2_bool("cause exception")) {
+            throw makeError<UnimplError>(": MockRunning");
+        }
         std::this_thread::sleep_for(std::chrono::seconds(secs));
+        auto geom = zeno::create_GeometryObject(zeno::Topo_IndiceMesh, true, { zeno::vec3f(0,0,0) }, {});
+        set_output("DST", std::move(geom));
     }
 };
 
 ZENDEFNODE(MockRunning, {
     {{gParamType_List, "SRC"},
-     {gParamType_Int, "wait seconds", "1", zeno::NoSocket, zeno::SpinBox}
+     {gParamType_Int, "wait seconds", "1", zeno::NoSocket, zeno::Lineedit},
+     {gParamType_Bool, "cause exception", "0"}
     },
     {{gParamType_IObject, "DST"}},
     {},
@@ -257,72 +219,49 @@ ZENDEFNODE(Group, {
     {"layout"},
     });
 
-#if 0
 struct CustomNode : zeno::INode {
     virtual void apply() override {
 
     }
 };
 
-ZENDEFINE(CustomNode, {
-    {
-        {"obj_intput1", Param_Null, zeno::Socket_ReadOnly},
+ZENO_CUSTOMUI_NODE(CustomNode,
+    zeno::ObjectParams{
+         zeno::ParamObject("Input", gParamType_Geometry)
     },
-    {
-        {
+    zeno::CustomUIParams{
+        zeno::ParamTab {
+            "Tab1",
             {
-                "Default",
-                {
-                    {
-                        "Group1",
-                        {
-                            {"param1", Param_Null, zeno::Socket_ReadOnly},
-                            {"param2", gParamType_Primitive, zeno::Socket_ReadOnly},
-                            {"param3", zeno::types::gParamType_Int,  zeno::NoSocket, 2, zeno::Lineedit, {}}
-                        }
-                    },
-                    {
-                        "Group2",
-                        {
-                            {"param4", zeno::types::gParamType_String, zeno::Socket_ReadOnly, "", zeno::Multiline, {}},
-                            {"param5", gParamType_Primitive, zeno::Socket_ReadOnly},
-                            {"param6", Param_Null, zeno::NoSocket}
-                        }
+                zeno::ParamGroup {
+                    "Group1",
+                    zeno::PrimitiveParams {
+                        zeno::ParamPrimitive("Int Val", gParamType_Int, 2),
+                        zeno::ParamPrimitive("String Val", gParamType_String, "abc")
+                    }
+                },
+                zeno::ParamGroup {
+                    "Group2",
+                    zeno::PrimitiveParams {
+                        zeno::ParamPrimitive("Float Val", gParamType_Float, 3.2f),
+                        zeno::ParamPrimitive("Items", gParamType_String, "Item 1", zeno::Combobox, std::vector<std::string>{"Item1", "Item2", "Item3"})
                     }
                 }
-            },
-            {
-                "Default2",
-                {
-                    {
-                        "Group3",
-                        {
-                            {"param7", Param_Null, zeno::Socket_ReadOnly},
-                            {"param8", gParamType_Primitive, zeno::Socket_ReadOnly},
-                            {"param9", Param_Null, zeno::NoSocket}
-                        }
-                    },
-                    {
-                        "Group4",
-                        {
-                            {"param10", Param_Null, zeno::Socket_ReadOnly},
-                            {"param11", gParamType_Primitive, zeno::Socket_ReadOnly},
-                            {"param12", Param_Null, zeno::NoSocket}
-                        }
-                    }
-                }
-            },
+            }
         }
     },
-    {
-        {"prim_output1", Param_Null, zeno::Socket_ReadOnly},
+    /*output prims:*/
+    zeno::PrimitiveParams{
+        zeno::ParamPrimitive("output prim", gParamType_Int, 3),
     },
-    {
-        {"obj_output1", Param_Null, zeno::Socket_ReadOnly},
+    /*output objects:*/
+    zeno::ObjectParams{
+        zeno::ParamObject("obj_output", gParamType_Geometry)
     },
-    "debug",
-    "CUI",
-});
-#endif
+    zeno::NodeUIStyle{ "", "" },
+    "debug",     //category
+    "",     //nickname
+    ""      //doc
+);
 
 }

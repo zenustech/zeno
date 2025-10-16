@@ -144,12 +144,12 @@ struct NumericOperator : zeno::INode {
 #undef _PER_OP1
 
     virtual void apply() override {
-        auto op = get_param<std::string>("op_type");
+        auto op = ZImpl(get_param<std::string>("op_type"));
         zeno::reflect::Any ret;
-        auto lhs = get_input<zeno::NumericObject>("lhs");
-        auto rhs = has_input("rhs") ?
-            get_input<zeno::NumericObject>("rhs")
-            : std::make_shared<zeno::NumericObject>(0);
+        auto lhs = ZImpl(get_input<zeno::NumericObject>("lhs"));
+        auto rhs = ZImpl(has_input("rhs")) ?
+            ZImpl(get_input<zeno::NumericObject>("rhs"))
+            : std::make_unique<zeno::NumericObject>(0);
         
         // todo: no ternary ops..
         std::visit([op, &ret](auto const &lhs, auto const &rhs) {
@@ -213,13 +213,13 @@ _PER_OP(distance)
 
         }, lhs->value, rhs->value);
 
-        set_primitive_output("ret", ret);
+        ZImpl(set_primitive_output("ret", ret));
     }
 };
 
 ZENO_DEFNODE(NumericOperator)({
-    {{gParamType_Float, "lhs", "", zeno::Socket_WildCard}, {gParamType_Float, "rhs", "", zeno::Socket_WildCard}},
-    {{gParamType_Float, "ret", "", zeno::Socket_WildCard}},
+    {{gParamType_Float, "lhs", ""}, {gParamType_Float, "rhs", ""}},
+    {{gParamType_Float, "ret", ""}},
     {{"enum"
 #define _PER_FN(x) " " #x
     _PER_FN(add)

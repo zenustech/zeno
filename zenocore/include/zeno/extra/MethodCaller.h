@@ -4,7 +4,7 @@
 #include <memory>
 #include <zeno/core/Graph.h>
 #include <zeno/core/IObject.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/types/FunctionObject.h>
 #include <zeno/types/DictObject.h>
@@ -12,7 +12,7 @@
 #include <zeno/utils/safe_at.h>
 
 namespace zeno {
-
+#if 0
 struct MethodCaller {
     std::function<std::map<std::string, zany>(std::map<std::string, zany> const &)> func;
     std::map<std::string, zany> params;
@@ -72,5 +72,5 @@ struct MethodCaller {
         return *this;
     }
 };
-
+#endif
 }

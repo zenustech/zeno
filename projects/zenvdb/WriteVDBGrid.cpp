@@ -13,9 +13,9 @@ namespace zeno {
 
 struct WriteVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_param<std::string>("path");
+    auto path = zsString2Std(get_param_string("path"));
     path = create_directories_when_write_file(path);
-    auto data = get_input<VDBGrid>("data");
+    auto data = safe_dynamic_cast<VDBGrid>(get_input("data"));
     data->output(path);
   }
 };
@@ -33,13 +33,13 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
 
 struct ExportVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zeno::StringObject>()->get();
+    auto path = zsString2Std(get_input2_string("path"));
     auto folderPath = fs::path(path).parent_path();
 
     if (!fs::exists(folderPath)) {
         fs::create_directories(folderPath);
     }
-    auto data = get_input("data")->as<VDBGrid>();
+    auto data = safe_dynamic_cast<VDBGrid>(get_input("data"));
     data->output(path);
   }
 };

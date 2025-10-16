@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" fill="none">
+<path    stroke="rgba(105, 114, 123, 1)" stroke-width="2"    d="M10.03 2L9.99675 8.76826">
+</path>
+<path    stroke="rgba(105, 114, 123, 1)" stroke-width="2"    d="M3.88 16.54L11.0003 9.00112">
+</path>
+<path    stroke="rgba(105, 114, 123, 1)" stroke-width="2"    d="M16.08 16.09L9.00495 8.99821">
+</path>
+<circle cx="10" cy="10" r="3"   fill="#69727B" >
+</circle>
+<circle cx="5" cy="7" r="2"   fill="#FF8D1A" >
+</circle>
+<circle cx="10" cy="16" r="2"   fill="#FF8D1A" >
+</circle>
+<circle cx="15" cy="7" r="2"   fill="#FF8D1A" >
+</circle>
+</svg>

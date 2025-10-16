@@ -10,7 +10,7 @@ namespace zeno {
 struct ShaderCihouUnrealEngine : INode {
     virtual void apply() override {
         EmissionPass em;
-        auto mtl = get_input<MaterialObject>("mtl");
+        auto mtl = ZImpl(get_input<MaterialObject>("mtl"));
 
         std::string code = R"(
 /* BEGIN CIHOU SON OF A MICROSOFT */
@@ -34,7 +34,7 @@ return mat;
 /* END CIHOU SON OF A MICROSOFT */
 )";
 
-        set_output2("code", std::move(code));
+        ZImpl(set_output2("code", std::move(code)));
     }
 };
 

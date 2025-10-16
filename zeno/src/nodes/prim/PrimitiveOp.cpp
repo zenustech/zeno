@@ -25,11 +25,11 @@ struct UnaryOperator {
 
 struct PrimitiveUnaryOp : INode {
   virtual void apply() override {
-    auto primA = get_input<PrimitiveObject>("primA");
-    auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = get_param<std::string>(("attrA"));
-    auto attrOut = get_param<std::string>(("attrOut"));
-    auto op = get_param<std::string>(("op"));
+    auto primA = ZImpl(get_input<PrimitiveObject>("primA"));
+    auto primOut = ZImpl(get_input<PrimitiveObject>("primOut"));
+    auto attrA = ZImpl(get_param<std::string>("attrA"));
+    auto attrOut = ZImpl(get_param<std::string>("attrOut"));
+    auto op = ZImpl(get_param<std::string>("op"));
     primOut->attr_visit(attrOut, [&] (auto &arrOut) { primA->attr_visit(attrA, [&] (auto &arrA) {
         if constexpr (is_vec_castable_v<decltype(arrOut[0]), decltype(arrA[0])>) {
             if (0) {
@@ -56,7 +56,7 @@ struct PrimitiveUnaryOp : INode {
         }
     }); });
 
-    set_output("primOut", get_input("primOut"));
+    ZImpl(set_output("primOut", ZImpl(clone_input("primOut"))));
   }
 };
 
@@ -94,13 +94,13 @@ struct BinaryOperator {
 
 struct PrimitiveBinaryOp : INode {
   virtual void apply() override {
-    auto primA = get_input<PrimitiveObject>("primA");
-    auto primB = get_input<PrimitiveObject>("primB");
-    auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = get_param<std::string>(("attrA"));
-    auto attrB = get_param<std::string>(("attrB"));
-    auto attrOut = get_param<std::string>(("attrOut"));
-    auto op = get_param<std::string>(("op"));
+    auto primA = ZImpl(get_input<PrimitiveObject>("primA"));
+    auto primB = ZImpl(get_input<PrimitiveObject>("primB"));
+    auto primOut = ZImpl(get_input<PrimitiveObject>("primOut"));
+    auto attrA = ZImpl(get_param<std::string>("attrA"));
+    auto attrB = ZImpl(get_param<std::string>("attrB"));
+    auto attrOut = ZImpl(get_param<std::string>("attrOut"));
+    auto op = ZImpl(get_param<std::string>("op"));
     primOut->attr_visit(attrOut, [&](auto &arrOut) {
         using TarrOut = std::remove_cv_t<std::remove_reference_t<decltype(arrOut[0])>>;
         ;
@@ -142,7 +142,7 @@ struct PrimitiveBinaryOp : INode {
         });
     });
 
-    set_output("primOut", get_input("primOut"));
+    ZImpl(set_output("primOut", ZImpl(clone_input("primOut"))));
   }
 };
 
@@ -165,19 +165,19 @@ ZENDEFNODE(PrimitiveBinaryOp,
 
 struct PrimitiveMix : INode {
   virtual void apply() override {
-    auto primA = get_input<PrimitiveObject>("primA");
-    auto primB = get_input<PrimitiveObject>("primB");
+    auto primA = ZImpl(get_input<PrimitiveObject>("primA"));
+    auto primB = ZImpl(get_input<PrimitiveObject>("primB"));
 
-    std::shared_ptr<zeno::PrimitiveObject> primOut;
-    if (has_input("primOut")) {
-            primOut = get_input<PrimitiveObject>("primOut");
+    std::unique_ptr<zeno::PrimitiveObject> primOut;
+    if (ZImpl(has_input("primOut"))) {
+            primOut = ZImpl(get_input<PrimitiveObject>("primOut"));
     } else {
-            primOut = std::make_shared<zeno::PrimitiveObject>(*primA);
+            primOut = std::make_unique<zeno::PrimitiveObject>(*primA);
     }
-    auto attrA = get_param<std::string>(("attrA"));
-    auto attrB = get_param<std::string>(("attrB"));
-    auto attrOut = get_param<std::string>(("attrOut"));
-    auto coef = get_input<NumericObject>("coef")->get<float>();
+    auto attrA = ZImpl(get_param<std::string>("attrA"));
+    auto attrB = ZImpl(get_param<std::string>("attrB"));
+    auto attrOut = ZImpl(get_param<std::string>("attrOut"));
+    auto coef = ZImpl(get_input<NumericObject>("coef"))->get<float>();
     primOut->attr_visit(attrOut, [&](auto &arrOut) {
         using TarrOut = std::remove_cv_t<std::remove_reference_t<decltype(arrOut)>>;
         primA->attr_visit(attrA, [&](auto &arrA) {
@@ -194,7 +194,7 @@ struct PrimitiveMix : INode {
                 });
         });
     });
-    set_output("primOut", primOut);
+    ZImpl(set_output("primOut", std::move(primOut)));
   }
 };
 ZENDEFNODE(PrimitiveMix,
@@ -233,12 +233,12 @@ struct HalfBinaryOperator {
 
 struct PrimitiveHalfBinaryOp : INode {
   virtual void apply() override {
-    auto primA = get_input<PrimitiveObject>("primA");
-    auto primOut = get_input<PrimitiveObject>("primOut");
-    auto attrA = get_param<std::string>(("attrA"));
-    auto attrOut = get_param<std::string>(("attrOut"));
-    auto op = get_param<std::string>(("op"));
-    auto const &valB = get_input<NumericObject>("valueB")->value;
+    auto primA = ZImpl(get_input<PrimitiveObject>("primA"));
+    auto primOut = ZImpl(get_input<PrimitiveObject>("primOut"));
+    auto attrA = ZImpl(get_param<std::string>("attrA"));
+    auto attrOut = ZImpl(get_param<std::string>("attrOut"));
+    auto op = ZImpl(get_param<std::string>("op"));
+    auto const &valB = ZImpl(get_input<NumericObject>("valueB"))->value;
     primOut->attr_visit(attrOut, [&](auto &arrOut) {
         using TarrOut = std::remove_cv_t<std::remove_reference_t<decltype(arrOut[0])>>;
         primA->attr_visit(attrA, [&](auto &arrA) {
@@ -281,13 +281,13 @@ struct PrimitiveHalfBinaryOp : INode {
         });
     });
 
-    set_output("primOut", get_input("primOut"));
+    ZImpl(set_output("primOut", ZImpl(clone_input("primOut"))));
   }
 };
 
 ZENDEFNODE(PrimitiveHalfBinaryOp,
     { /* inputs: */ {
-        {gParamType_Float, "valueB", "", zeno::Socket_WildCard},
+        {gParamType_Float, "valueB", ""},
         {gParamType_Primitive, "primA", "", zeno::Socket_ReadOnly},
         {gParamType_Primitive, "primOut", "", zeno::Socket_ReadOnly},
     }, /* outputs: */ {

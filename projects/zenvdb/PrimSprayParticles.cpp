@@ -61,9 +61,9 @@ T baryCentricInterpolation(T &v1, T &v2, T &v3, zeno::vec3f &p,
 
 struct PrimSprayParticles : zeno::INode {
   virtual void apply() override {
-    auto dx = get_input2<float>("Dx");
-    auto prim = get_input("TrianglePrim")->as<PrimitiveObject>();
-    auto result = zeno::IObject::make<PrimitiveObject>();
+    auto dx = get_input2_float("Dx");
+    auto prim = safe_dynamic_cast<PrimitiveObject>(get_input("TrianglePrim"));
+    auto result = std::make_unique<PrimitiveObject>();
     tbb::concurrent_vector<zeno::vec3f> data(0);
     size_t n = prim->tris.size();
     log_debug("PrimSprayParticles got num tris: {}", n);
@@ -119,7 +119,7 @@ struct PrimSprayParticles : zeno::INode {
     for (int index = 0; index < data.size(); index++) {
       result->verts[index] = data[index];
     }
-    set_output("particlesPrim", result);
+    set_output("particlesPrim", std::move(result));
   }
 };
 

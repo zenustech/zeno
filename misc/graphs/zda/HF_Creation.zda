@@ -1,0 +1,408 @@
+{
+    "name": "HF_Creation",
+    "version": "1.0",
+    "graph": {
+        "type": 0,
+        "nodes": {
+            "AttributeWrangle1": {
+                "name": "AttributeWrangle1",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "Make2DGridPrimitive1",
+                                "out-socket": "prim",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@height = 0.0;\r\n@mask = 0.0;\r\n@weight = 1.0;\r\n@clr = vec3(1,1,1);\r\nsetud(\"nx\", ref(\"../Terrain Resolution\"));\r\nsetud(\"nz\", ref(\"../Terrain Resolution\"));\r\nsetud(\"scale\", ref(\"../Terrain Scale\"));\r\nsetud(\"pos\", ref(\"../Terrain Position\"));",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    205.0,
+                    455.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HeightField": {
+                "name": "HeightField",
+                "class": "SubOutput",
+                "object_inputs": {
+                    "port": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {},
+                "uipos": [
+                    243.0,
+                    658.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Make2DGridPrimitive1": {
+                "name": "Make2DGridPrimitive1",
+                "class": "Make2DGridPrimitive",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "nx": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Terrain Resolution\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "ny": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "sizeX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "sizeY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "ref(\"../Terrain Scale\")",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "origin": {
+                        "links": [
+                            {
+                                "out-node": "Terrain Position",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "XZ",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "none",
+                        "visible": false
+                    },
+                    "Layout": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Column-major",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "none",
+                        "visible": false
+                    },
+                    "isCentered": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "none",
+                        "visible": false
+                    },
+                    "hasFaces": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "none",
+                        "visible": false
+                    },
+                    "hasUV": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "none",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "prim": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    199.0,
+                    120.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Terrain Position": {
+                "name": "Terrain Position",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -498.0,
+                    -43.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Terrain Resolution": {
+                "name": "Terrain Resolution",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -510.0,
+                    177.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Terrain Scale": {
+                "name": "Terrain Scale",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -499.0,
+                    425.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "Parameters": {
+        "object_inputs": {},
+        "primitive_inputs": {
+            "Terrain Position": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Terrain Resolution": {
+                "links": null,
+                "type": "int",
+                "default-value": 1000,
+                "control": {
+                    "name": "Integer"
+                },
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Terrain Scale": {
+                "links": null,
+                "type": "float",
+                "default-value": 1000.0,
+                "control": {
+                    "name": "Float"
+                },
+                "socket-type": "primitive",
+                "visible": false
+            }
+        },
+        "primitive_outputs": {},
+        "object_outputs": {
+            "HeightField": {
+                "type": "geometry",
+                "socket-type": "output"
+            }
+        }
+    },
+    "subnet-customUi": {
+        "nickname": "",
+        "iconResPath": "",
+        "category": "",
+        "doc": "",
+        "tabs": {
+            "Tab1": {
+                "Group1": {
+                    "Terrain Position": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Terrain Resolution": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 1000,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Terrain Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1000.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            }
+        }
+    }
+}

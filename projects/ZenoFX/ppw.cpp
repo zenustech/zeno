@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -278,3 +279,4 @@ ZENDEFNODE(ParticleParticleWrangle, {
 
 }
 }
+#endif

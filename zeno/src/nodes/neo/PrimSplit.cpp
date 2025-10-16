@@ -6,7 +6,7 @@ namespace zeno {
 
 struct PrimSplit : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
 
     auto polyred = parallel_reduce_sum(prim->polys.begin(), prim->polys.end(), [] (auto const &pol) { return pol[1]; });
     auto n = prim->points.size() + prim->lines.size() * 2 + prim->tris.size() * 3 + prim->quads.size() * 4 + polyred;
@@ -73,7 +73,7 @@ struct PrimSplit : INode {
         }
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 

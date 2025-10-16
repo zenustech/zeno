@@ -2,17 +2,17 @@
 #define __GRAPHSTREEMODEL_H__
 
 #include <QObject>
-#include <QAbstractItemModel>
+#include <QStandardItemModel>
 #include <QString>
 #include <QQuickItem>
-#include "graphmodel.h"
+#include "GraphModel.h"
 
 
-//ÎªÊ²Ã´²»base StandardModel£¬ÊÇÒòÎªStandardItemÓĞµãÈßÓà£¬¸É´à×Ô¼ºÊµÏÖÒ»¸ö¼òÒ×µÄÍ¼treemodel.
-class GraphsTreeModel : public QAbstractItemModel
+//ä¸ºä»€ä¹ˆä¸base StandardModelï¼Œæ˜¯å› ä¸ºStandardItemæœ‰ç‚¹å†—ä½™ï¼Œå¹²è„†è‡ªå·±å®ç°ä¸€ä¸ªç®€æ˜“çš„å›¾treemodel.
+class GraphsTreeModel : public QStandardItemModel
 {
     Q_OBJECT
-    typedef QAbstractItemModel _base;
+    typedef QStandardItemModel _base;
     QML_ELEMENT
 
 public:
@@ -20,25 +20,13 @@ public:
     ~GraphsTreeModel();
     void init(GraphModel* mainModel);
 
-    //QAbstractItemModel
-    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-    QModelIndex parent(const QModelIndex& child) const override;
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex& parent = QModelIndex()) const override;
-    bool hasChildren(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
-    QModelIndexList match(const QModelIndex& start, int role,
-        const QVariant& value, int hits = 1,
-        Qt::MatchFlags flags =
-        Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    //ÊÊÅäTreeView.qml
+    //é€‚é…TreeView.qml
     //! Return the depth for the given index
     Q_INVOKABLE int depth(const QModelIndex& index) const;
 
-    // ·µ»Øµ±Ç°Ë÷Òı½ÚµãËùÔÚµÄÍ¼Ä£ĞÍ
+    // è¿”å›å½“å‰ç´¢å¼•èŠ‚ç‚¹æ‰€åœ¨çš„å›¾æ¨¡å‹
     Q_INVOKABLE GraphModel* graph(const QModelIndex& index) const;
 
     Q_INVOKABLE QString name(const QModelIndex& index) const;
@@ -81,7 +69,7 @@ public slots:
     void onNameUpdated(const QModelIndex& nodeIdx, const QString& oldName);
 
 private:
-    QModelIndex innerIndex(const QModelIndex& treeIdx) const;
+    QStandardItem* initNodeItem(const QModelIndex& nodeidx) const;
 
     GraphModel* m_main;
     bool m_dirty;

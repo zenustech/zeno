@@ -7,10 +7,23 @@
 
 namespace zeno {
 
+enum _ParamDescType {
+    NoDesc,
+    Desc_Prim,
+    Desc_Obj
+};
+
+struct _ParamDesc {
+    ParamObject objparam;
+    ParamPrimitive primparam;
+    _ParamDescType type = NoDesc;
+};
+
 struct ParamDescriptor {
   std::string name, defl, doc, comboxitems;
   size_t type;
   ParamControl control;
+  _ParamDesc _desc;
 
   ZENO_API ParamDescriptor(size_t type,
 	  std::string const &name, std::string const &defl, std::string const &doc = "", ParamControl const& controlType = NullControl);
@@ -24,19 +37,21 @@ struct ParamDescriptor {
 
 struct SocketDescriptor {
   std::string name, defl, doc, wildCard, comboxitems;
-  size_t type;
-  ParamControl control;
-  SocketType socketType;
+  size_t type = Param_Null;
+  ParamControl control = NullControl;
+  SocketType socketType = NoSocket;
+  _ParamDesc _desc;
 
   ZENO_API SocketDescriptor(
       size_t type,
       std::string const &name,
       std::string const &defl = {},
       SocketType connProp = NoSocket,
-      ParamControl ctrl = NullControl,
-      std::string const&wildCard = {},
-      std::string const &doc = {},
-      std::string const& cboxitems = "");
+      ParamControl ctrl = NullControl);
+
+  ZENO_API SocketDescriptor(const ParamObject& param);
+
+  ZENO_API SocketDescriptor(const ParamPrimitive& param);
 
   //兼容以前 `enum [items]`这种写法
   ZENO_API SocketDescriptor(
@@ -45,10 +60,6 @@ struct SocketDescriptor {
       std::string const& defl = {}
   );
   ZENO_API ~SocketDescriptor();
-
-  //[[deprecated("use {\"sockType\", \"sockName\"} instead of \"sockName\"")]]
-  //SocketDescriptor(const char *name)
-  //    : SocketDescriptor({}, name) {}	
 };
 
 struct Descriptor {

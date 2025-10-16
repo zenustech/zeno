@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -96,8 +96,11 @@
     <addaction name="actionGL_Viewport"/>
     <addaction name="actionNode_Parameters"/>
     <addaction name="actionObject_data"/>
+    <addaction name="actionObject_data_QML"/>
     <addaction name="actionLog"/>
+    <addaction name="actionPythonExecutor"/>
     <addaction name="actionOptixView"/>
+    <addaction name="actionNode_Editor_QML"/>
     <addaction name="actionImage"/>
     <addaction name="actionCommandArgs"/>
     <addaction name="actionOpenPath"/>
@@ -123,11 +126,18 @@
     <addaction name="actionEnglish_Chinese"/>
     <addaction name="actionPreferences"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionCombine_video"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuOption"/>
+   <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
@@ -144,6 +154,9 @@ border-top: 1px solid black;</string>
    <property name="shortcut">
     <string notr="true">Ctrl+Z</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
+   </property>
   </action>
   <action name="actionRedo">
    <property name="text">
@@ -151,6 +164,9 @@ border-top: 1px solid black;</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Y</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::WidgetShortcut</enum>
    </property>
   </action>
   <action name="actionDefault_layout">
@@ -370,6 +386,11 @@ border-top: 1px solid black;</string>
     <string>Log</string>
    </property>
   </action>
+  <action name="actionPythonExecutor">
+   <property name="text">
+    <string>Python Executor</string>
+   </property>
+  </action>
   <action name="actionOptixView">
    <property name="text">
     <string>Optix View</string>
@@ -508,7 +529,23 @@ border-top: 1px solid black;</string>
     <string>Preferences</string>
    </property>
   </action>
+  <action name="actionCombine_video">
+   <property name="text">
+    <string>Compose video</string>
+   </property>
+  </action>
+  <action name="actionNode_Editor_QML">
+   <property name="text">
+    <string>Node Editor(QML)</string>
+   </property>
+  </action>
+  <action name="actionObject_data_QML">
+   <property name="text">
+    <string>Geometry Data</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
 </ui>
+

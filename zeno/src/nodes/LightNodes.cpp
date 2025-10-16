@@ -1,5 +1,4 @@
 #include <zeno/zeno.h>
-#include <zeno/extra/TempNode.h>
 #include <zeno/utils/eulerangle.h>
 
 #include <zeno/types/UserData.h>
@@ -22,19 +21,20 @@
 
 namespace zeno {
 
+#if 0
 struct LightNode : INode {
     virtual void apply() override {
-        auto isL = true; //get_input2<int>("islight");
-        auto invertdir = get_input2<int>("invertdir");
+        auto isL = true; //ZImpl(get_input2<int>("islight");
+        auto invertdir = ZImpl(get_input2<int>("invertdir"));
         
-        auto scale = get_input2<zeno::vec3f>("scale");
-        auto rotate = get_input2<zeno::vec3f>("rotate");
-        auto position = get_input2<zeno::vec3f>("position");
-        auto quaternion = get_input2<zeno::vec4f>("quaternion");
+        auto scale = ZImpl(get_input2<zeno::vec3f>("scale"));
+        auto rotate = ZImpl(get_input2<zeno::vec3f>("rotate"));
+        auto position = ZImpl(get_input2<zeno::vec3f>("position"));
+        auto quaternion = ZImpl(get_input2<zeno::vec4f>("quaternion"));
 
-        auto color = get_input2<zeno::vec3f>("color");
-        auto exposure = get_input2<float>("exposure");
-        auto intensity = get_input2<float>("intensity");
+        auto color = ZImpl(get_input2<zeno::vec3f>("color"));
+        auto exposure = ZImpl(get_input2<float>("exposure"));
+        auto intensity = ZImpl(get_input2<float>("intensity"));
 
         auto scaler = powf(2.0f, exposure);
 
@@ -53,40 +53,40 @@ struct LightNode : INode {
             }
         }
 
-        auto mask = get_input2<int>("mask");
-        auto spread = get_input2<zeno::vec2f>("spread");
-        auto visible = get_input2<int>("visible");
-        auto doubleside = get_input2<int>("doubleside");
+        auto mask = ZImpl(get_input2<int>("mask"));
+        auto spread = ZImpl(get_input2<zeno::vec2f>("spread"));
+        auto visible = ZImpl(get_input2<int>("visible"));
+        auto doubleside = ZImpl(get_input2<int>("doubleside"));
         
         if (doubleside) { invertdir = false; }
 
-        std::string type = get_input2<std::string>(lightTypeKey);
+        std::string type = ZImpl(get_input2<std::string>(lightTypeKey));
         auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
         auto typeOrder = magic_enum::enum_integer(typeEnum);
 
-        std::string shapeString = get_input2<std::string>(lightShapeKey);
+        std::string shapeString = ZImpl(get_input2<std::string>(lightShapeKey));
         auto shapeEnum = magic_enum::enum_cast<LightShape>(shapeString).value_or(LightShape::Plane);
         auto shapeOrder = magic_enum::enum_integer(shapeEnum);
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         auto &VERTS = prim->verts;
         auto &LINES = prim->lines;
         auto &TRIS = prim->tris;
 
-        if (has_input("prim")) {
-            auto mesh = get_input<PrimitiveObject>("prim");
+        if (ZImpl(has_input("prim"))) {
+            auto mesh = ZImpl(get_input<PrimitiveObject>("prim"));
 
             if (mesh->tris->size() > 0) {
-                prim = mesh;
+                prim = std::move(mesh);
                 shapeEnum = LightShape::TriangleMesh;
                 shapeOrder = magic_enum::enum_integer(shapeEnum);
             }
         } else {
 
-            auto order = get_input2<std::string>("EulerRotationOrder");
+            auto order = ZImpl(get_input2<std::string>("EulerRotationOrder"));
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure");
+            auto measure = ZImpl(get_input2<std::string>("EulerAngleMeasure"));
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
@@ -337,50 +337,50 @@ struct LightNode : INode {
             } 
         }
 
-        auto& ud = prim->userData();
+        auto ud = prim->userData();
 
-        ud.set2("isRealTimeObject", std::move(isL));
+        ud->set_bool("isRealTimeObject", std::move(isL));
 
-        ud.set2("isL", std::move(isL));
-        ud.set2("ivD", std::move(invertdir));
-        ud.set2("pos", std::move(position));
-        ud.set2("scale", std::move(scale));
-        ud.set2("rotate", std::move(rotate));
-        ud.set2("quaternion", std::move(quaternion));
-        ud.set2("color", std::move(color));
-        ud.set2("intensity", std::move(intensity));
+        ud->set_bool("isL", isL);
+        ud->set_int("ivD", invertdir);
+        ud->set_vec3f("pos", toAbiVec3f(position));
+        ud->set_vec3f("scale", toAbiVec3f(scale));
+        ud->set_vec3f("rotate", toAbiVec3f(rotate));
+        ud->set_vec4f("quaternion", toAbiVec4f(quaternion));
+        ud->set_vec3f("color", toAbiVec3f(color));
+        ud->set_float("intensity", intensity);
 
-        auto fluxFixed = get_input2<float>("fluxFixed");
-        ud.set2("fluxFixed", std::move(fluxFixed));
-        auto maxDistance = get_input2<float>("maxDistance");
-        ud.set2("maxDistance", std::move(maxDistance));
-        auto falloffExponent = get_input2<float>("falloffExponent");
-        ud.set2("falloffExponent", std::move(falloffExponent));
+        float fluxFixed = ZImpl(get_input2<float>("fluxFixed"));
+        ud->set_float("fluxFixed", fluxFixed);
+        auto maxDistance = ZImpl(get_input2<float>("maxDistance"));
+        ud->set_float("maxDistance", std::move(maxDistance));
+        auto falloffExponent = ZImpl(get_input2<float>("falloffExponent"));
+        ud->set_float("falloffExponent", std::move(falloffExponent));
 
-        if (has_input2<std::string>("profile")) {
-            auto profile = get_input2<std::string>("profile");
-            ud.set2("lightProfile", std::move(profile));
+        if (ZImpl(has_input2<std::string>("profile"))) {
+            auto profile = ZImpl(get_input2<std::string>("profile"));
+            ud->set_string("lightProfile", stdString2zs(profile));
         }
-        if (has_input2<std::string>("texturePath")) {
-            auto texture = get_input2<std::string>("texturePath");
-            ud.set2("lightTexture", std::move(texture));
+        if (ZImpl(has_input2<std::string>("texturePath"))) {
+            auto texture = ZImpl(get_input2<std::string>("texturePath"));
+            ud->set_string("lightTexture", stdString2zs(texture));
 
-            auto gamma = get_input2<float>("textureGamma");
-            ud.set2("lightGamma", std::move(gamma));
+            auto gamma = ZImpl(get_input2<float>("textureGamma"));
+            ud->set_float("lightGamma", gamma);
         }
 
-        ud.set2("type", std::move(typeOrder));
-        ud.set2("shape", std::move(shapeOrder));
+        ud->set_int("type", typeOrder);
+        ud->set_int("shape", shapeOrder);
 
-        ud.set2("mask", std::move(mask));
-        ud.set2("spread", std::move(spread));
-        ud.set2("visible", std::move(visible));
-        ud.set2("doubleside", std::move(doubleside));
+        ud->set_int("mask", mask);
+        ud->set_vec2f("spread", toAbiVec2f(spread));
+        ud->set_int("visible", visible);
+        ud->set_int("doubleside", doubleside);
 
-        auto visibleIntensity = get_input2<float>("visibleIntensity");
-        ud.set2("visibleIntensity", std::move(visibleIntensity));
+        auto visibleIntensity = ZImpl(get_input2<float>("visibleIntensity"));
+        ud->set_float("visibleIntensity", std::move(visibleIntensity));
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 
     const static inline std::string lightShapeKey = "shape";
@@ -458,5 +458,6 @@ ZENO_DEFNODE(LightNode)({
     },
     {"shader"},
 });
+#endif
 
 } // namespace

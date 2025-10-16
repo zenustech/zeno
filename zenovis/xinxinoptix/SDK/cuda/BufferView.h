@@ -48,5 +48,3 @@ struct BufferView
     { return *reinterpret_cast<T*>( data + idx*(byte_stride ? byte_stride : sizeof( T ) ) ); }
 };
 
-typedef BufferView<unsigned int> GenericBufferView;
-

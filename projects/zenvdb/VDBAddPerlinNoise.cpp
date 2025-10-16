@@ -12,6 +12,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
+#include <zeno/utils/interfaceutil.h>
 
 namespace {
 using namespace zeno;
@@ -28,15 +29,15 @@ struct fuck_openvdb_vec<openvdb::Vec3f> {
 
 struct VDBPerlinNoise : INode {
   virtual void apply() override {
-    auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
-        auto scale = get_input2<float>("scale");
-        auto scale3d = get_input2<zeno::vec3f>("scale3d");
-        auto detail = get_input2<float>("detail");
-        auto roughness = get_input2<float>("roughness");
-        auto disortion = get_input2<float>("disortion");
-        auto offset = get_input2<zeno::vec3f>("offset");
-        auto average = get_input2<float>("average");
-        auto strength = get_input2<float>("strength");
+    auto inoutSDF = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("inoutSDF"));
+    auto scale = get_input2_float("scale");
+    auto scale3d = toVec3f(get_input2_vec3f("scale3d"));
+    auto detail = get_input2_float("detail");
+    auto roughness = get_input2_float("roughness");
+    auto disortion = get_input2_float("disortion");
+    auto offset = toVec3f(get_input2_vec3f("offset"));
+    auto average = get_input2_float("average");
+    auto strength = get_input2_float("strength");
 
     auto grid = inoutSDF->m_grid;
     float dx = grid->voxelSize()[0];
@@ -73,7 +74,7 @@ struct VDBPerlinNoise : INode {
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
 
-    set_output("inoutSDF", get_input("inoutSDF"));
+    set_output("inoutSDF", std::move(inoutSDF));
   }
 };
 

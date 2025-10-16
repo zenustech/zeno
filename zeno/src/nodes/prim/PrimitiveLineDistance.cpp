@@ -122,11 +122,11 @@ ZENO_API void primLineDistance(PrimitiveObject *prim, std::string resAttr, int s
 
 struct PrimitiveLineDistance : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
         primLineDistance(prim.get(),
-                         get_input2<std::string>("resAttr"),
-                         get_input2<int>("start"));
-        set_output("prim", std::move(prim));
+                         ZImpl(get_input2<std::string>("resAttr")),
+                         ZImpl(get_input2<int>("start")));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

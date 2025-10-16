@@ -116,7 +116,7 @@
 					},
 					"tabs": [
 						"Parameter",
-						"Data",
+						"Geometry Data",
 						"Logger"
 					]
 				}
@@ -164,7 +164,7 @@
 						"tabs": [
 							"Logger",
 							"Parameter",
-							"Data"
+							"Node Editor(QML)"
 						]
 					}
 				}

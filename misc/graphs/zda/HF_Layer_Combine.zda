@@ -1,0 +1,3304 @@
+{
+    "name": "HF_Layer_Combine",
+    "version": "1.0",
+    "graph": {
+        "type": 0,
+        "nodes": {
+            "A Layer Offset": {
+                "name": "A Layer Offset",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "A Layer Scale": {
+                "name": "A Layer Scale",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle1": {
+                "name": "AttributeWrangle1",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float scaleA = ref(\"../A Layer Scale\");\nfloat offsetA = ref(\"../A Layer Offset\");\n@_temp_mask_a = @_temp_mask_a * scaleA + offsetA;\n",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    488.0,
+                    516.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle12": {
+                "name": "AttributeWrangle12",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchBetween1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float scaleC = ref(\"../C Layer Scale\");\nfloat offsetC = ref(\"../C Layer Offset\");\n@_temp_mask_c = @_temp_mask_c * scaleC + offsetC;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    547.0,
+                    2195.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle13": {
+                "name": "AttributeWrangle13",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle12",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = max(@_temp_mask_c, ref(\"../Clamp Min\"));",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    809.0,
+                    2318.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle14": {
+                "name": "AttributeWrangle14",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "if_use_clamp_min",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = min(@_temp_mask_c, ref(\"../Clamp Max\"));",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    799.0,
+                    2582.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle15": {
+                "name": "AttributeWrangle15",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "if_use_clamp_max",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = @_mask * @_temp_mask_c + (1 - @_mask) * @_temp_mask_a;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    818.0,
+                    2871.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle2": {
+                "name": "AttributeWrangle2",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float scaleB = ref(\"../B Layer Scale\");\nfloat offsetB = ref(\"../B Layer Offset\");\n@_temp_mask_b = @_temp_mask_b * scaleB + offsetB;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    493.0,
+                    862.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle3": {
+                "name": "AttributeWrangle3",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute3",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float maskStrength = ref(\"../Mask Strength\");\n@_mask = @_mask * maskStrength;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    487.0,
+                    1202.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle4": {
+                "name": "AttributeWrangle4",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle3",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_mask = 1 - @_mask;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    744.0,
+                    1364.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "B Layer Offset": {
+                "name": "B Layer Offset",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "B Layer Scale": {
+                "name": "B Layer Scale",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Blend": {
+                "name": "Blend",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "C Layer Offset": {
+                "name": "C Layer Offset",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "C Layer Scale": {
+                "name": "C Layer Scale",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Clamp Max": {
+                "name": "Clamp Max",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Clamp Min": {
+                "name": "Clamp Min",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Combine Type": {
+                "name": "Combine Type",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyAttribute1": {
+                "name": "CopyAttribute1",
+                "class": "CopyAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "高度场地形_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Source Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Input A Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Target Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_temp_mask_a",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    450.0,
+                    321.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyAttribute2": {
+                "name": "CopyAttribute2",
+                "class": "CopyAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Source Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Input B Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Target Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_temp_mask_b",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    447.0,
+                    693.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyAttribute3": {
+                "name": "CopyAttribute3",
+                "class": "CopyAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Source Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Mask Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Target Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_mask",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    444.0,
+                    1046.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyAttribute4": {
+                "name": "CopyAttribute4",
+                "class": "CopyAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf5",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Source Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_temp_mask_c",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Target Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Output C Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    624.0,
+                    3504.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CreateAttribute1": {
+                "name": "CreateAttribute1",
+                "class": "CreateAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "if_use_mask",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Output C Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Float",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Vector2",
+                                "Vector3",
+                                "Vector4",
+                                "Integer",
+                                "Float",
+                                "String",
+                                "Boolean"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Integer Value": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Float Value": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "String Value": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Boolean Value": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Vector2 Value": {
+                        "links": null,
+                        "type": "vec2f",
+                        "default-value": [
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 2"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Vector3 Value": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Vector4 Value": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    467.0,
+                    3195.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "DeleteAttribute1": {
+                "name": "DeleteAttribute1",
+                "class": "DeleteAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute4",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_mask _temp_mask_a _temp_mask_b _temp_mask_c",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    615.0,
+                    3675.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HF_Visual_Mask1": {
+                "name": "HF_Visual_Mask1",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "DeleteAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "mask",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    966.0,
+                    3827.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HasAttribute1": {
+                "name": "HasAttribute1",
+                "class": "HasAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "if_use_mask",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Output C Layer\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "hasAttr": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    141.0,
+                    3231.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Input A Layer": {
+                "name": "Input A Layer",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Input B Layer": {
+                "name": "Input B Layer",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Invert Mask": {
+                "name": "Invert Mask",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Mask Layer": {
+                "name": "Mask Layer",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Mask Strength": {
+                "name": "Mask Strength",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Output C Layer": {
+                "name": "Output C Layer",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SwitchBetween1": {
+                "name": "SwitchBetween1",
+                "class": "SwitchBetween",
+                "object_inputs": {
+                    "b1": {
+                        "links": [
+                            {
+                                "out-node": "aw1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b2": {
+                        "links": [
+                            {
+                                "out-node": "aw2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b3": {
+                        "links": [
+                            {
+                                "out-node": "aw3",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b4": {
+                        "links": [
+                            {
+                                "out-node": "aw4",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b5": {
+                        "links": [
+                            {
+                                "out-node": "aw5",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b6": {
+                        "links": [
+                            {
+                                "out-node": "aw6",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b7": {
+                        "links": [
+                            {
+                                "out-node": "aw7",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "b8": {
+                        "links": [
+                            {
+                                "out-node": "aw8",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "cond1": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Replace ( B )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond2": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Add ( A + B )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond3": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Subtract ( A - B )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond4": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Diff ( abs( A - B ) )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond5": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Multiply ( A * B )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond6": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Max ( max( A, B ) )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond7": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Min ( min( A, B ) )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "cond8": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Combine Type\") == \"Blend ( A*( 1 - blend ) + B*blend )\"",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    458.0,
+                    2053.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SwitchIf1": {
+                "name": "SwitchIf1",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle3",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle4",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Invert Mask\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    526.0,
+                    1508.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SwitchIf5": {
+                "name": "SwitchIf5",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "CreateAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "if_use_mask",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": [
+                            {
+                                "out-node": "HasAttribute1",
+                                "out-socket": "hasAttr",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 1,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    663.0,
+                    3329.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SwitchIf6": {
+                "name": "SwitchIf6",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "DeleteAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask1",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../显示Mask\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    687.0,
+                    3976.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Use Clamp Max": {
+                "name": "Use Clamp Max",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Use Clamp Min": {
+                "name": "Use Clamp Min",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Use Mask": {
+                "name": "Use Mask",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw1": {
+                "name": "aw1",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = @_temp_mask_b;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -128.0,
+                    1856.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw2": {
+                "name": "aw2",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = @_temp_mask_a + @_temp_mask_b;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    167.0,
+                    1853.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw3": {
+                "name": "aw3",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = @_temp_mask_a - @_temp_mask_b;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    463.0,
+                    1846.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw4": {
+                "name": "aw4",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = abs(@_temp_mask_a - @_temp_mask_b);",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    729.0,
+                    1836.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw5": {
+                "name": "aw5",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = @_temp_mask_a * @_temp_mask_b;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    999.0,
+                    1835.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw6": {
+                "name": "aw6",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = max(@_temp_mask_a, @_temp_mask_b);",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1266.0,
+                    1834.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw7": {
+                "name": "aw7",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_temp_mask_c = min(@_temp_mask_a, @_temp_mask_b);",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1559.0,
+                    1831.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "aw8": {
+                "name": "aw8",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float blend = ref(\"../Blend\");\n@_temp_mask_c = (1 - blend) * @_temp_mask_a + @_temp_mask_b * blend;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1817.0,
+                    1831.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_use_clamp_max": {
+                "name": "if_use_clamp_max",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "if_use_clamp_min",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle14",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Use Clamp Max\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    588.0,
+                    2698.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_use_clamp_min": {
+                "name": "if_use_clamp_min",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle12",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle13",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Use Clamp Min\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    568.0,
+                    2448.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_use_mask": {
+                "name": "if_use_mask",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "if_use_clamp_max",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle15",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Use Mask\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    540.0,
+                    2970.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "显示Mask": {
+                "name": "显示Mask",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "高度场地形_in": {
+                "name": "高度场地形_in",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {
+                    "port": {
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "uipos": [
+                    472.0,
+                    143.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "高度场地形_out": {
+                "name": "高度场地形_out",
+                "class": "SubOutput",
+                "object_inputs": {
+                    "port": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf6",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {},
+                "uipos": [
+                    648.0,
+                    4153.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "Parameters": {
+        "object_inputs": {
+            "高度场地形_in": {
+                "links": null,
+                "type": "geometry",
+                "socket-type": "clone"
+            }
+        },
+        "primitive_inputs": {
+            "显示Mask": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": true
+            },
+            "Input A Layer": {
+                "links": null,
+                "type": "string",
+                "default-value": "_input",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Input B Layer": {
+                "links": null,
+                "type": "string",
+                "default-value": "_result",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Combine Type": {
+                "links": null,
+                "type": "string",
+                "default-value": "Replace ( B )",
+                "control": {
+                    "name": "Enum"
+                },
+                "controlProps": {
+                    "items": [
+                        "Replace ( B )",
+                        "Add ( A + B )",
+                        "Subtract ( A - B )",
+                        "Diff ( abs( A - B ) )",
+                        "Multiply ( A * B )",
+                        "Max ( max( A, B ) )",
+                        "Min ( min( A, B ) )",
+                        "Blend ( A*( 1 - blend ) + B*blend )"
+                    ]
+                },
+                "socket-type": "primitive",
+                "visible": true
+            },
+            "Blend": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Output C Layer": {
+                "links": null,
+                "type": "string",
+                "default-value": "_output",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Use Mask": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": true
+            },
+            "Mask Layer": {
+                "links": null,
+                "type": "string",
+                "default-value": "ref(\"../Mask Layer\")",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Mask Strength": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Invert Mask": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "A Layer Offset": {
+                "links": null,
+                "type": "float",
+                "default-value": 0.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "A Layer Scale": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "B Layer Offset": {
+                "links": null,
+                "type": "float",
+                "default-value": 0.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "B Layer Scale": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "C Layer Offset": {
+                "links": null,
+                "type": "float",
+                "default-value": 0.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "C Layer Scale": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Use Clamp Min": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Clamp Min": {
+                "links": null,
+                "type": "float",
+                "default-value": 0.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Use Clamp Max": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Clamp Max": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            }
+        },
+        "primitive_outputs": {},
+        "object_outputs": {
+            "高度场地形_out": {
+                "type": "geometry",
+                "socket-type": "output"
+            }
+        }
+    },
+    "subnet-customUi": {
+        "nickname": "",
+        "iconResPath": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">    <path d=\"M4 7H12L15 10H28V25H4V7Z\" stroke=\"#CCCCCC\" stroke-width=\"2\" stroke-linejoin=\"round\"/>    <line x1=\"4\" y1=\"14\" x2=\"28\" y2=\"14\" stroke=\"#CCCCCC\" stroke-width=\"2\"/></svg>",
+        "category": "",
+        "doc": "",
+        "tabs": {
+            "Base": {
+                "Base2": {
+                    "显示Mask": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    },
+                    "Input A Layer": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_input",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Input B Layer": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_result",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Combine Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Replace ( B )",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Replace ( B )",
+                                "Add ( A + B )",
+                                "Subtract ( A - B )",
+                                "Diff ( abs( A - B ) )",
+                                "Multiply ( A * B )",
+                                "Max ( max( A, B ) )",
+                                "Min ( min( A, B ) )",
+                                "Blend ( A*( 1 - blend ) + B*blend )"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": true
+                    },
+                    "Blend": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Output C Layer": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_output",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            },
+            "Masking": {
+                "Group(0)": {
+                    "Use Mask": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    },
+                    "Mask Layer": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Mask Layer\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Strength": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Invert Mask": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            },
+            "Remapping": {
+                "Group(1)": {
+                    "A Layer Offset": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "A Layer Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "B Layer Offset": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "B Layer Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "C Layer Offset": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "C Layer Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            },
+            "Output Clamping": {
+                "Group(2)": {
+                    "Use Clamp Min": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Clamp Min": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Use Clamp Max": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Clamp Max": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            }
+        }
+    }
+}

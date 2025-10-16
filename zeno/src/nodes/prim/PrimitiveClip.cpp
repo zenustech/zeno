@@ -261,24 +261,24 @@ namespace zeno {
             zeno::vec3f origin = { 0,0,0 };
             zeno::vec3f direction = { 0,1,0 };
             float distance = 0.0f;
-            auto reverse = get_param<bool>("reverse");
-            if (has_input("origin"))
-                origin = get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>();
-            if (has_input("direction"))
-                direction = get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>();
-            if (has_input("distance"))
-                distance = get_input<zeno::NumericObject>("distance")->get<float>();
+            auto reverse = ZImpl(get_param<bool>("reverse"));
+            if (ZImpl(has_input("origin")))
+                origin = ZImpl(get_input<zeno::NumericObject>("origin"))->get<zeno::vec3f>();
+            if (ZImpl(has_input("direction")))
+                direction = ZImpl(get_input<zeno::NumericObject>("direction"))->get<zeno::vec3f>();
+            if (ZImpl(has_input("distance")))
+                distance = ZImpl(get_input<zeno::NumericObject>("distance"))->get<float>();
             if (lengthSquared(direction) < 0.000001f) {
-                set_output("outPrim", get_input("prim"));
+                ZImpl(set_output("outPrim", ZImpl(clone_input("prim"))));
                 return;
             }
             direction = reverse ? -normalize(direction) : normalize(direction);
             origin += direction * distance;
 
-            auto refprim = get_input<PrimitiveObject>("prim");
+            auto refprim = ZImpl(get_input<PrimitiveObject>("prim"));
             auto& ref_pos_attr = refprim->attr<zeno::vec3f>("pos");
 
-            auto outprim = std::make_shared<PrimitiveObject>();
+            auto outprim = std::make_unique<PrimitiveObject>();
             std::vector<zeno::vec3f> new_pos_attr;
             std::unordered_map<int32_t, int32_t> point_map;
             for(auto key:refprim->attr_keys())
@@ -325,7 +325,7 @@ namespace zeno {
 
             //outprim->attr<zeno::vec3f>("pos") = new_pos_attr;
             //outprim->resize(new_pos_attr.size());
-            set_output("outPrim", std::move(outprim));
+            ZImpl(set_output("outPrim", std::move(outprim)));
         }
     };
 

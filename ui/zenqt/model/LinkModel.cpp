@@ -1,5 +1,6 @@
-#include "linkmodel.h"
+#include "LinkModel.h"
 #include "uicommon.h"
+#include "declmetatype.h"
 
 
 
@@ -22,55 +23,57 @@ int LinkModel::rowCount(const QModelIndex& parent) const
 QVariant LinkModel::data(const QModelIndex& index, int role) const
 {
     switch (role) {
-        case ROLE_LINK_FROMPARAM_INFO:
+        case QtRole::ROLE_LINK_FROMPARAM_INFO:
         {
             const auto& info = m_items[index.row()];
-            QModelIndex nodeIdx = info.fromParam.data(ROLE_NODEIDX).toModelIndex();
-            const QString& nodeName = nodeIdx.data(ROLE_NODE_NAME).toString();
-            const QString& paramName = info.fromParam.data(ROLE_PARAM_NAME).toString();
-            return QVariantList{ nodeName, paramName, false};
+            QModelIndex nodeIdx = info.fromParam.data(QtRole::ROLE_NODEIDX).toModelIndex();
+            QString nodeName = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
+            nodeName = nodeIdx.data(QtRole::ROLE_NODE_UUID_PATH).toString();
+            const QString& paramName = info.fromParam.data(QtRole::ROLE_PARAM_NAME).toString();
+            return QVariantList{ nodeName, paramName, info.bObjLink, info.fromKey };
         }
-        case ROLE_LINK_TOPARAM_INFO:
+        case QtRole::ROLE_LINK_TOPARAM_INFO:
         {
             const auto& info = m_items[index.row()];
-            QModelIndex nodeIdx = info.toParam.data(ROLE_NODEIDX).toModelIndex();
-            const QString& nodeName = nodeIdx.data(ROLE_NODE_NAME).toString();
-            const QString& paramName = info.toParam.data(ROLE_PARAM_NAME).toString();
-            return QVariantList{ nodeName, paramName, true };
+            QModelIndex nodeIdx = info.toParam.data(QtRole::ROLE_NODEIDX).toModelIndex();
+            QString nodeName = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
+            nodeName = nodeIdx.data(QtRole::ROLE_NODE_UUID_PATH).toString();
+            const QString& paramName = info.toParam.data(QtRole::ROLE_PARAM_NAME).toString();
+            return QVariantList{ nodeName, paramName, info.bObjLink, info.toKey };
         }
-        case ROLE_INSOCK_IDX:
+        case QtRole::ROLE_INSOCK_IDX:
         {
             const auto& info = m_items[index.row()];
             return info.toParam;
         }
-        case ROLE_OUTSOCK_IDX:
+        case QtRole::ROLE_OUTSOCK_IDX:
         {
             const auto& info = m_items[index.row()];
             return info.fromParam;
         }
-        case ROLE_LINK_INFO:
+        case QtRole::ROLE_LINK_INFO:
         {
             const auto& info = m_items[index.row()];
-            const QString& outNode = info.fromParam.data(ROLE_NODE_NAME).toString();
-            const QString& outParam = info.fromParam.data(ROLE_PARAM_NAME).toString();
-            const QString& inNode = info.toParam.data(ROLE_NODE_NAME).toString();
-            const QString& inParam = info.toParam.data(ROLE_PARAM_NAME).toString();
+            const QString& outNode = info.fromParam.data(QtRole::ROLE_NODE_NAME).toString();
+            const QString& outParam = info.fromParam.data(QtRole::ROLE_PARAM_NAME).toString();
+            const QString& inNode = info.toParam.data(QtRole::ROLE_NODE_NAME).toString();
+            const QString& inParam = info.toParam.data(QtRole::ROLE_PARAM_NAME).toString();
             bool bLinkObj = info.bObjLink;
             zeno::EdgeInfo edge = { outNode.toStdString(), outParam.toStdString(), info.fromKey.toStdString(),
                 inNode.toStdString(), inParam.toStdString(), info.toKey.toStdString(), info.targetParam.toStdString(), bLinkObj};
             return QVariant::fromValue(edge);
         }
-        case ROLE_LINKID:
+        case QtRole::ROLE_LINKID:
         {
             const auto& info = m_items[index.row()];
             return info.uuid;
         }
-        case ROLE_COLLASPED:
+        case QtRole::ROLE_COLLASPED:
         {
             const auto& info = m_items[index.row()];
             return info.m_bCollasped;
         }
-        case ROLE_LINK_OBJECT:
+        case QtRole::ROLE_LINK_OBJECT:
         {
             const auto& info = m_items[index.row()];
             return info.bObjLink;
@@ -83,19 +86,19 @@ bool LinkModel::setData(const QModelIndex& index, const QVariant& value, int rol
 {
     switch (role)
     {
-        case ROLE_LINK_OUTKEY:
+        case QtRole::ROLE_LINK_OUTKEY:
         {
             auto& info = m_items[index.row()];
             info.fromKey = value.toString();
             return true;
         }
-        case ROLE_LINK_INKEY:
+        case QtRole::ROLE_LINK_INKEY:
         {
             auto& info = m_items[index.row()];
             info.toKey = value.toString();
             return true;
         }
-        case ROLE_COLLASPED:
+        case QtRole::ROLE_COLLASPED:
         {
             auto& info = m_items[index.row()];
             info.m_bCollasped = value.toBool();
@@ -109,8 +112,8 @@ bool LinkModel::setData(const QModelIndex& index, const QVariant& value, int rol
 QHash<int, QByteArray> LinkModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[ROLE_LINK_FROMPARAM_INFO] = "fromParam";
-    roles[ROLE_LINK_TOPARAM_INFO] = "toParam";
+    roles[QtRole::ROLE_LINK_FROMPARAM_INFO] = "fromParam";
+    roles[QtRole::ROLE_LINK_TOPARAM_INFO] = "toParam";
     return roles;
 }
 

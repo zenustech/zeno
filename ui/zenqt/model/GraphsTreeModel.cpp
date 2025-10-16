@@ -1,11 +1,49 @@
-#include "graphstreemodel.h"
+#include "GraphsTreeModel.h"
 #include "uicommon.h"
+#include "graphsmanager.h"
+#include "zenoapplication.h"
 #include "variantptr.h"
 #include <zeno/core/common.h>
+#include "assetsmodel.h"
+#include "zassert.h"
+
+
+static void initGraphItems(QStandardItem* root, GraphModel* model)
+{
+    for (int r = 0; r < model->rowCount(); r++)
+    {
+        QPersistentModelIndex idx = model->index(r, 0);
+        const QString& name = idx.data(QtRole::ROLE_NODE_NAME).toString();
+        QStandardItem* pItem = new QStandardItem(name);
+        //QVariant::PersistentModelIndex
+        pItem->setData(idx, Qt::UserRole + 1);
+        QVariant val = idx.data(QtRole::ROLE_SUBGRAPH);
+        if (!val.isNull()) {
+            GraphModel* pSubgGraphM = idx.data(QtRole::ROLE_SUBGRAPH).value<GraphModel*>();
+            initGraphItems(pItem, pSubgGraphM);
+        }
+        root->appendRow(pItem);
+    }
+}
+
+static QStandardItem* findGraphItem(QStandardItem* parentItem, QStringList graph_path) {
+    if (graph_path.isEmpty()) {
+        return parentItem;
+    }
+    const QString& nodename = graph_path.front();
+    graph_path.pop_front();
+    for (int r = 0; r < parentItem->rowCount(); r++) {
+        QStandardItem* item = parentItem->child(r);
+        if (item->text() == nodename) {
+            return findGraphItem(item, graph_path);
+        }
+    }
+    return nullptr;
+}
 
 
 GraphsTreeModel::GraphsTreeModel(QObject* parent)
-    : QAbstractItemModel(parent)
+    : _base(parent)
     , m_main(nullptr)
     , m_dirty(false)
 {
@@ -18,135 +56,43 @@ GraphsTreeModel::~GraphsTreeModel()
 void GraphsTreeModel::init(GraphModel* mainModel)
 {
     m_main = mainModel;
-}
-
-QModelIndex GraphsTreeModel::index(int row, int column, const QModelIndex& parent) const
-{
-    if (row < 0 || row >= rowCount(parent))
-        return QModelIndex();
-
-    if (parent.isValid()) {
-        GraphModel* pSubgraph = parent.data(ROLE_SUBGRAPH).value<GraphModel*>();
-        Q_ASSERT(pSubgraph);
-        return createIndex(row, column, pSubgraph);
-    }
-    else {
-        return createIndex(row, column, nullptr);
-    }
-}
-
-QModelIndex GraphsTreeModel::parent(const QModelIndex& child) const
-{
-    if (!child.isValid())
-        return QModelIndex();
-
-    if (child.internalId() == 0) {  //main item on root.
-        return QModelIndex();
-    }
-
-    QModelIndex innerChild = innerIndex(child);
-    auto pModel = innerChild.model();
-    if (!pModel) {
-        return QModelIndex();
-    }
-    if (auto pItem = qobject_cast<NodeItem*>(pModel->parent()))
-    {
-        if (auto parentModel = qobject_cast<GraphModel*>(pItem->parent()))
-        {
-            int row = parentModel->indexFromId(pItem->getName());
-            return createIndex(row, 0, parentModel);
-        }
-    }
-    return createIndex(0, 0);   //main item
-}
-
-int GraphsTreeModel::rowCount(const QModelIndex& parent) const
-{
-    if (!parent.isValid()) {
-        //main item
-        return 1;
-    }
-    else {
-        GraphModel* pSubgraph = parent.data(ROLE_SUBGRAPH).value<GraphModel*>();
-        return pSubgraph ? pSubgraph->rowCount() : 0;
-    }
-}
-
-int GraphsTreeModel::columnCount(const QModelIndex& parent) const
-{
-    return 1;
-}
-
-bool GraphsTreeModel::hasChildren(const QModelIndex& parent) const
-{
-    if (!parent.isValid()) {
-        return true;    //the only child is `main` item.
-    }
-    else {
-        GraphModel* pSubgraph = parent.data(ROLE_SUBGRAPH).value<GraphModel*>();
-        return pSubgraph ? (pSubgraph->rowCount() > 0) : false;
-    }
-    return false;
-}
-
-QModelIndex GraphsTreeModel::innerIndex(const QModelIndex& treeIdx) const
-{
-    if (!treeIdx.isValid())
-        return QModelIndex();
-
-    //treeÏîµÄĞĞºÅºÍÍ¼Ä£ĞÍµÄĞĞºÅÊÇÒ»ÖÂµÄ¡£
-    GraphModel* ownerModel = static_cast<GraphModel*>(treeIdx.internalPointer());
-    Q_ASSERT(ownerModel);
-    return ownerModel->index(treeIdx.row(), 0);
-}
-
-QVariant GraphsTreeModel::data(const QModelIndex& index, int role) const
-{
-    if (!index.isValid())
-        return QVariant();
-
-    if (index.internalId() == 0) {
-        //main item
-        if (Qt::DisplayRole == role || ROLE_NODE_NAME == role || ROLE_CLASS_NAME == role) {
-            return "main";
-        }
-        else if (ROLE_SUBGRAPH == role) {   //Ïàµ±ÓÚ×ÓÍ¼½ÚµãÄÇÑù£¬main¿ÉÒÔ¿´×÷×î¸ù²¿µÄ×ÓÍ¼½Úµã
-            return QVariant::fromValue(m_main);
-        }
-        else if (ROLE_OBJPATH == role) {
-            return "/main";
-        }
-        return QVariant();
-    }
-
-    QModelIndex innerIdx = innerIndex(index);
-    return innerIdx.data(role);
-}
-
-bool GraphsTreeModel::setData(const QModelIndex& index, const QVariant& value, int role)
-{
-    QModelIndex innerIdx = innerIndex(index);
-    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(innerIdx.model());
-    return pModel ? pModel->setData(innerIdx, value, role) : false;
-}
-
-QModelIndexList GraphsTreeModel::match(const QModelIndex& start, int role,
-    const QVariant& value, int hits,
-    Qt::MatchFlags flags) const
-{
-    return QModelIndexList();
+    QStandardItem* main_item = new QStandardItem("main");
+    initGraphItems(main_item, mainModel);
+    appendRow(main_item);
+    emit layoutChanged({ main_item->index() });
 }
 
 QHash<int, QByteArray> GraphsTreeModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[ROLE_CLASS_NAME] = "class";
-    roles[ROLE_NODE_NAME] = "name";
-    roles[ROLE_PARAMS] = "params";
-    roles[ROLE_LINKS] = "linkModel";
-    roles[ROLE_OBJPOS] = "pos";
-    roles[ROLE_SUBGRAPH] = "subgraph";
+    roles[QtRole::ROLE_CLASS_NAME] = "class";
+    roles[QtRole::ROLE_NODE_NAME] = "name";
+    roles[QtRole::ROLE_PARAMS] = "params";
+    roles[QtRole::ROLE_LINKS] = "linkModel";
+    roles[QtRole::ROLE_OBJPOS] = "pos";
+    roles[QtRole::ROLE_SUBGRAPH] = "subgraph";
     return roles;
+}
+
+QStandardItem* GraphsTreeModel::initNodeItem(const QModelIndex& nodeidx) const
+{
+    QString nodename = nodeidx.data(QtRole::ROLE_NODE_NAME).toString();
+    QStandardItem* pItem = new QStandardItem(nodename);
+    pItem->setData(nodeidx, Qt::UserRole + 1);
+
+    zeno::NodeType type = static_cast<zeno::NodeType>(nodeidx.data(QtRole::ROLE_NODETYPE).toInt());
+    if (type == zeno::Node_AssetInstance ||
+        type == zeno::Node_AssetReference ||
+        type == zeno::Node_SubgraphNode)
+    {
+        GraphModel* pSubgraph = nodeidx.data(QtRole::ROLE_SUBGRAPH).value<GraphModel*>();
+        for (int r = 0; r < pSubgraph->rowCount(); r++)
+        {
+            QStandardItem* pChildItem = initNodeItem(pSubgraph->index(r));
+            pItem->appendRow(pChildItem);
+        }
+    }
+    return pItem;
 }
 
 void GraphsTreeModel::onGraphRowsInserted(const QModelIndex& parent, int first, int last)
@@ -155,8 +101,18 @@ void GraphsTreeModel::onGraphRowsInserted(const QModelIndex& parent, int first, 
     if (pGraphM)
     {
         QStringList graphPath = pGraphM->currentPath();
-        QModelIndex treeParentItem = getIndexByPath(graphPath);
-        emit layoutChanged({ treeParentItem });
+        ZASSERT_EXIT(!graphPath.isEmpty());
+        QStandardItem* mainItem = itemFromIndex(this->index(0, 0));
+        graphPath.pop_front();  //"main"
+        QStandardItem* graphItem = findGraphItem(mainItem, graphPath);
+        ZASSERT_EXIT(graphItem);
+
+        QPersistentModelIndex newNodeIdx = pGraphM->index(first);
+        ZASSERT_EXIT(newNodeIdx.isValid());
+        QStandardItem* pItem = initNodeItem(newNodeIdx);
+        graphItem->appendRow(pItem);
+
+        emit layoutChanged({ graphItem->index() });
     }
 }
 
@@ -165,19 +121,44 @@ void GraphsTreeModel::onNameUpdated(const QModelIndex& nodeIdx, const QString& o
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM)
     {
-        const QString& nodePath = nodeIdx.data(ROLE_OBJPATH).toString();
-        QStringList pathitems = nodePath.split("/", Qt::SkipEmptyParts);
-        QModelIndex nodeIdx = getIndexByPath(pathitems);
-        emit dataChanged(nodeIdx, nodeIdx, { Qt::DisplayRole, ROLE_NODE_NAME });
+        QStringList graphPath = pGraphM->currentPath();
+        ZASSERT_EXIT(!graphPath.isEmpty());
+        QStandardItem* mainItem = itemFromIndex(this->index(0, 0));
+        graphPath.pop_front();  //"main"
+        QStandardItem* graphItem = findGraphItem(mainItem, graphPath);
+        ZASSERT_EXIT(graphItem);
+
+        const QString& newName = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
+        //ç›®å‰ä¸å»ºç«‹ç´¢å¼•ï¼Œç›´æ¥é¡ºåºéå†ï¼Œå¾…é‡åˆ°æ€§èƒ½é—®é¢˜å†è¡Œä¼˜åŒ–
+        for (int i = 0; i < graphItem->rowCount(); i++) {
+            QStandardItem* pItem = graphItem->child(i);
+            if (pItem->text() == oldName) {
+                pItem->setText(newName);
+                break;
+            }
+        }
     }
 }
 
 void GraphsTreeModel::onGraphRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    //GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
-    //QString graphPath = pGraphM->currentPath();
-    //QModelIndex treeParentItem = getIndexByPath(graphPath);
-    //emit layoutAboutToBeChanged({ treeParentItem });
+    //æœ‰å¯èƒ½treeå·²ç»æå‰è¢«clearäº†ï¼Œæ¯”å¦‚å…³é—­å·¥ç¨‹çš„æ—¶å€™
+    if (rowCount() == 0) {
+        return;
+    }
+
+    GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
+    if (pGraphM) {
+        QStringList graphPath = pGraphM->currentPath();
+        ZASSERT_EXIT(!graphPath.isEmpty());
+        QStandardItem* mainItem = itemFromIndex(this->index(0, 0));
+        graphPath.pop_front();  //"main"
+        QStandardItem* graphItem = findGraphItem(mainItem, graphPath);
+        ZASSERT_EXIT(graphItem);
+
+        graphItem->removeRow(first);
+        //emit layoutChanged({ graphItem->index() }); //æ ‘æ¯”è¾ƒå¤§çš„æ—¶å€™æœ‰æ€§èƒ½æŸè€—
+    }
 }
 
 void GraphsTreeModel::onGraphRowsRemoved(const QModelIndex& parent, int first, int last)
@@ -185,50 +166,54 @@ void GraphsTreeModel::onGraphRowsRemoved(const QModelIndex& parent, int first, i
     GraphModel* pGraphM = qobject_cast<GraphModel*>(sender());
     if (pGraphM) {
         QStringList graphPath = pGraphM->currentPath();
-        QModelIndex treeParentItem = getIndexByPath(graphPath);
-        emit layoutChanged({ treeParentItem });
     }
 }
 
 int GraphsTreeModel::depth(const QModelIndex& index) const
 {
-    int count = 0;
-    auto anchestor = index;
-    if (!index.isValid()) {
+    if (!index.isValid())
         return 0;
-    }
-    while (anchestor.parent().isValid()) {
-        anchestor = anchestor.parent();
-        ++count;
+
+    QStandardItem* pItem = itemFromIndex(index);
+    int count = 0;
+    while (pItem)
+    {
+        pItem = pItem->parent();
+        count++;
     }
     return count;
 }
 
 GraphModel* GraphsTreeModel::graph(const QModelIndex& index) const
 {
-    if (index.isValid() && index.internalId() == 0)
+    if (!index.isValid())
         return nullptr;
 
-    GraphModel* ownerModel = static_cast<GraphModel*>(index.internalPointer());
-    Q_ASSERT(ownerModel);
-    return ownerModel;
+    QStandardItem* pItem = itemFromIndex(index);
+    QStandardItem* parentItem = pItem->parent();
+    if (parentItem == nullptr && pItem->text() == tr("main")) {
+        return m_main;
+    }
+
+    QPersistentModelIndex idx = pItem->data(Qt::UserRole + 1).value<QPersistentModelIndex>();
+    QAbstractItemModel* ownerModel = const_cast<QAbstractItemModel*>(idx.model());
+    return qobject_cast<GraphModel*>(ownerModel);
 }
 
 QString GraphsTreeModel::name(const QModelIndex& index) const
 {
-    return index.data(ROLE_NODE_NAME).toString();
+    return index.data(QtRole::ROLE_NODE_NAME).toString();
 }
 
 //! Clear the model.
 void GraphsTreeModel::clear()
 {
-    emit layoutAboutToBeChanged();
-    beginResetModel();
-    //delete m_main;
-    //m_main = new GraphModel("main", this);
-    endResetModel();
-    emit layoutChanged();
+    //remove main
+    removeRow(0);
+    QModelIndex rootIndex = invisibleRootItem()->index();
+    m_main = nullptr;
     emit modelClear();
+    m_dirty = false;
 }
 
 /*!
@@ -255,15 +240,20 @@ GraphModel* GraphsTreeModel::getGraphByPath(const QStringList& objPath)
             items.removeAt(0);
             return m_main->getGraphByPath(items);
         }
+        else {
+            //èµ„äº§çš„æƒ…å†µ
+            AssetsModel* assets = zenoApp->graphsManager()->assetsModel();
+            GraphModel* pAssetGraph = assets->getAssetGraph(items[0]);
+            items.removeAt(0);
+            return pAssetGraph->getGraphByPath(items);
+        }
     }
     return nullptr;
 }
 
 QModelIndex GraphsTreeModel::getIndexByUuidPath(const zeno::ObjPath& objPath)
 {
-    if (!m_main)
-        return QModelIndex();
-    return m_main->indexFromUuidPath(objPath);
+    return zenoApp->graphsManager()->getNodeIndexByUuidPath(QString::fromStdString(objPath));
 }
 
 QModelIndex GraphsTreeModel::getIndexByPath(const QStringList& objPath)
@@ -286,7 +276,7 @@ QModelIndex GraphsTreeModel::getIndexByPath(const QStringList& objPath)
                 QModelIndex innerIdx = pGraphM->indexFromName(node);
                 curNode = createIndex(innerIdx.row(), 0, pGraphM);
                 items.removeAt(0);
-                pGraphM = innerIdx.data(ROLE_SUBGRAPH).value<GraphModel*>();
+                pGraphM = innerIdx.data(QtRole::ROLE_SUBGRAPH).value<GraphModel*>();
             }
             return curNode;
         }

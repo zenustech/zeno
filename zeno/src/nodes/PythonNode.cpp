@@ -58,7 +58,7 @@ namespace zeno {
             }
             log_debug("Initialized Python successfully!");
 
-            //getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char**)>>(subprogram_python_main));
+            //getSession().userData().set("subprogram_python", std::make_unique<GenericObject<int(*)(int, char**)>>(subprogram_python_main));
 #endif
             });
 
@@ -151,7 +151,7 @@ namespace zeno {
 
         static Zeno_Object factoryFunctionObject(void* inObj_) {
             PyObject* tmpFunc = reinterpret_cast<PyObject*>(inObj_);
-            auto funcObj = std::make_shared<FunctionObject>(PythonFunctor(tmpFunc));
+            auto funcObj = std::make_unique<FunctionObject>(PythonFunctor(tmpFunc));
             Zeno_Object funcHandle = capiLoadObjectSharedPtr(funcObj);
             return funcHandle;
         }
@@ -208,12 +208,12 @@ namespace zeno {
 
         struct PythonNode : zeno::INode {
             void apply() override {
-                bool onlyui_gen = get_param<bool>("onlyui");
+                bool onlyui_gen = ZImpl(get_param<bool>("onlyui"));
                 if (onlyui_gen)
                     return;
 
-                auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
-                auto path = has_input("path") ? get_input2<std::string>("path") : "";
+                auto args = ZImpl(has_input("args")) ? ZImpl(get_input<DictObject>("args")) : std::make_unique<DictObject>();
+                auto path = ZImpl(has_input("path")) ? ZImpl(get_input2<std::string>("path")) : "";
                 int ret;
                 PyObject* argsDict = PyDict_New();
                 scope_exit argsDel = [=] {
@@ -270,7 +270,7 @@ namespace zeno {
                     //(void)PyDict_SetItemString(zenoModDict, "_currgraph", currGraphLongZero);
                 //};
                 if (path.empty()) {
-                    auto code = get_input2<std::string>("script");
+                    auto code = ZImpl(get_input2<std::string>("script"));
                     mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
                     PyErr_Print();
                 }
@@ -291,7 +291,7 @@ namespace zeno {
                 //    PyErr_Print();
                 //    throw makeError("Python exception occurred, see console for more details");
                 //}
-                auto rets = std::make_shared<DictObject>();
+                auto rets = std::make_unique<DictObject>();
                 {
                     PyObject* key, * value;
                     Py_ssize_t pos = 0;
@@ -314,7 +314,7 @@ namespace zeno {
                     if (retsRAIIDict)
                         PyDict_Clear(retsRAIIDict);
                 }
-                set_output("rets", std::move(rets));
+                ZImpl(set_output("rets", std::move(rets)));
             }
         };
 

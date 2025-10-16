@@ -7,6 +7,18 @@
 
 namespace zeno
 {
+    struct OpacityMicroMapConfig {
+        enum struct AlphaMode {
+            Auto, RGB, Max, X, Y, Z, W
+        };
+
+        std::string path;
+        uint64_t reference;
+
+        float transparencyCutoff;
+        float opacityCutoff;
+        AlphaMode alphaMode;
+    };
 
     struct Texture2DObject
         : IObjectClone<Texture2DObject>

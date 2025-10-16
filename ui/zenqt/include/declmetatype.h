@@ -1,0 +1,35 @@
+#pragma once
+
+
+#include <zeno/core/IObject.h>
+#include <reflect/container/any>
+#include "uicommon.h"
+#include <QObject>
+
+
+Q_DECLARE_METATYPE(PARAMS_INFO)
+Q_DECLARE_METATYPE(zeno::NodeData)
+Q_DECLARE_METATYPE(zeno::ParamPrimitive)
+Q_DECLARE_METATYPE(zeno::EdgeInfo)
+Q_DECLARE_METATYPE(zeno::zvariant)
+Q_DECLARE_METATYPE(zeno::IObject*)
+Q_DECLARE_METATYPE(zeno::reflect::Any)
+Q_DECLARE_METATYPE(zeno::render_update_info);
+Q_DECLARE_METATYPE(zeno::render_reload_info)
+Q_DECLARE_METATYPE(PARAM_LINKS)
+Q_DECLARE_METATYPE(QLinearGradient)
+Q_DECLARE_METATYPE(zeno::NodeDataGroup)
+Q_DECLARE_METATYPE(zeno::SocketProperty)
+Q_DECLARE_METATYPE(CURVES_DATA)
+Q_DECLARE_METATYPE(CURVE_DATA)
+Q_DECLARE_METATYPE(SLIDER_INFO)
+Q_DECLARE_METATYPE(CommandParam)
+Q_DECLARE_METATYPE(COLOR_RAMPS)
+Q_DECLARE_METATYPE(UI_VECTYPE)
+Q_DECLARE_METATYPE(UI_VECSTRING)
+Q_DECLARE_METATYPE(BLACKBOARD_INFO)
+Q_DECLARE_METATYPE(QmlNodeRunStatus::Value)
+Q_DECLARE_METATYPE(zeno::ObjPath)
+Q_DECLARE_METATYPE(zeno::CustomUI)
+Q_DECLARE_METATYPE(zeno::vecvar)
+Q_DECLARE_METATYPE(zeno::PrimVar)

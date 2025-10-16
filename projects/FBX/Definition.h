@@ -44,7 +44,7 @@ inline namespace ZenoFBXDefinition {
         (float)atof(sl[0].c_str()),                     \
         (float)atof(sl[1].c_str()),                     \
         (float)atof(sl[2].c_str())};                    \
-    auto no = std::make_shared<zeno::NumericObject>();  \
+    auto no = std::make_unique<zeno::NumericObject>();  \
     no->set(tmp);
 
 struct SFBXReadOption {
@@ -643,9 +643,51 @@ struct FBXData : zeno::IObjectClone<FBXData>{
 
     zeno::DictObject iVisibility;
 
-    std::shared_ptr<BoneTree> boneTree;
-    std::shared_ptr<NodeTree> nodeTree;
-    std::shared_ptr<AnimInfo> animInfo;
+    FBXData() {}
+
+    FBXData(const FBXData& rhs) {
+        iMeshName = rhs.iMeshName;
+        iPathName = rhs.iPathName;
+        iMeshInfo = rhs.iMeshInfo;
+        iVertices = rhs.iVertices;
+        iIndices = rhs.iIndices;
+        iBlendSData = rhs.iBlendSData;
+        iKeyMorph = rhs.iKeyMorph;
+        iPathTrans = rhs.iPathTrans;
+        iMaterial = rhs.iMaterial;
+        iCamera = rhs.iCamera;
+        iLight = rhs.iLight;
+
+        iVisibility = rhs.iVisibility;
+        boneTree = zeno::safe_uniqueptr_cast<BoneTree>(rhs.boneTree->clone());
+        nodeTree = zeno::safe_uniqueptr_cast<NodeTree>(rhs.nodeTree->clone());
+        animInfo = zeno::safe_uniqueptr_cast<AnimInfo>(rhs.animInfo->clone());
+    }
+
+    FBXData& operator=(const FBXData& rhs) {
+        iMeshName = rhs.iMeshName;
+        iPathName = rhs.iPathName;
+        iMeshInfo = rhs.iMeshInfo;
+        iVertices = rhs.iVertices;
+        iIndices = rhs.iIndices;
+        iBlendSData = rhs.iBlendSData;
+        iKeyMorph = rhs.iKeyMorph;
+        iPathTrans = rhs.iPathTrans;
+        iMaterial = rhs.iMaterial;
+        iCamera = rhs.iCamera;
+        iLight = rhs.iLight;
+
+        iVisibility = rhs.iVisibility;
+        boneTree = zeno::safe_uniqueptr_cast<BoneTree>(rhs.boneTree->clone());
+        nodeTree = zeno::safe_uniqueptr_cast<NodeTree>(rhs.nodeTree->clone());
+        animInfo = zeno::safe_uniqueptr_cast<AnimInfo>(rhs.animInfo->clone());
+        return *this;
+    }
+
+
+    std::unique_ptr<BoneTree> boneTree;
+    std::unique_ptr<NodeTree> nodeTree;
+    std::unique_ptr<AnimInfo> animInfo;
 };
 
 struct IFBXData : zeno::IObjectClone<IFBXData>{

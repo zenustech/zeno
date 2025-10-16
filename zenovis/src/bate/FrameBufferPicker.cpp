@@ -3,12 +3,12 @@
 #include <zenovis/Scene.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
 #include <zenovis/opengl/vao.h>
-
+#include <zeno/types/IGeometryObject.h>
+#include <zeno/types/GeometryObject.h>
 #include <unordered_map>
 #include <fstream>
 #include <random>
@@ -284,14 +284,15 @@ struct FrameBufferPicker : IPicker {
 
         // construct prim set
         // use focus_prim if focus_prim_name is not empty else all prims
-        vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims, prims_shared;
-        std::map<std::string, std::shared_ptr<zeno::IObject>> tmp;
-        zeno::getSession().objsMan->export_all_view_objs(tmp);
-        for (auto& [key, obj]:tmp)
+        vector<std::pair<string, zeno::IObject*>> prims, prims_shared;
+        std::map<std::string, zeno::IObject*> tmp;
+        //TODO: get all view objs
+        //zeno::getSession().objsMan->export_all_view_objs(tmp);
+        for (auto& [key, obj] : tmp)
             scene->convertListObjs(obj, prims_shared);
 
         if (!focus_prim_name.empty()) {
-            std::shared_ptr<zeno::IObject> focus_prim;
+            zeno::IObject* focus_prim = nullptr;
             for (const auto& [k, v] : prims_shared) {
                 if (focus_prim_name == k)
                     focus_prim = v;
@@ -304,7 +305,7 @@ struct FrameBufferPicker : IPicker {
         // shading primitive objects
         for (unsigned int id = 0; id < prims.size(); id++) {
             auto it = prims.begin() + id;
-            auto prim = dynamic_cast<PrimitiveObject*>(it->second.get());
+            auto prim = dynamic_cast<PrimitiveObject*>(it->second);
             if (prim && prim->has_attr("pos")) {
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -490,6 +491,43 @@ struct FrameBufferPicker : IPicker {
                     }
                     ebo->unbind();
                     // ----- disable depth test -----
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                }
+
+                // unbind vbo
+                vbo->disable_attribute(0);
+                vbo->unbind();
+                vao->unbind();
+
+                // store object's name
+                id_table[id + 1] = it->first;
+            }
+
+            auto geo = dynamic_cast<zeno::GeometryObject_Adapter*>(it->second);
+            if (geo) {
+                const std::vector<vec3f>& pos = geo->m_impl->points_pos();
+                vao->bind();
+                vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
+                vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
+
+                bool pick_particle = false;
+                PICK_MODE mode = scene->get_select_mode();
+                if (PICK_MODE::PICK_OBJECT == mode) {
+                    pick_particle = geo->nfaces() == 0;
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
+
+                    // shader uniform
+                    obj_shader->use();
+                    scene->camera->set_program_uniforms(obj_shader);
+                    CHECK_GL(glUniform1ui(glGetUniformLocation(obj_shader->pro, "gObjectIndex"), id + 1));
+                    // draw prim
+                    std::vector<vec3i> tris = geo->m_impl->tri_indice();
+                    ebo->bind_data(tris.data(), tris.size() * sizeof(tris[0]));
+                    CHECK_GL(glDrawElements(GL_TRIANGLES, tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    ebo->unbind();
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
 

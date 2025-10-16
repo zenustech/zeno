@@ -56,6 +56,9 @@ public:
     virtual void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) {};
     virtual void onOptionsUpdated(int options) {};
     virtual void onViewUpdated(bool bView) {};
+    virtual void onByPassUpdated(bool bypass) {}
+    virtual void onNoCachedUpdated(bool nocache) {}
+    virtual void onClearSubnetUpdated(bool clearSubnet) {}
     virtual void setSelected(bool);
     virtual void onNameUpdated(const QString& newName) {};
 

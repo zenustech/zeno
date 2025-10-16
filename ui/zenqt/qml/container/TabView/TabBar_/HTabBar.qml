@@ -33,13 +33,13 @@ RowLayout  {
         // 方法：重设标签按钮宽度
         function resetTabBtnWidth() {
             let w = hTabBarMain.width
-            if(!app.tab.barIsLock) w -= tabBarControl.width // 无锁定时，减去+按钮宽度
+            if(!nodeseditor.tab.barIsLock) w -= tabBarControl.width // 无锁定时，减去+按钮宽度
             w = Math.round(w / barController.model.count)
             tabWidth = Math.min(w, maxTabWidth)
         }
         onWidthChanged: resetTabBtnWidth()  // 监听标签栏总宽度变化
         // 监听改变锁定，重设宽度
-        property bool isLock: app.tab.barIsLock
+        property bool isLock: nodeseditor.tab.barIsLock
         onIsLockChanged: {
             hTabBarMain.resetTabBtnWidth()
         }
@@ -48,8 +48,8 @@ RowLayout  {
             anchors.fill: parent
             onClicked: {
                 /*
-                if(!app.tab.barIsLock)
-                    app.tab.addNavi() // 添加导航页
+                if(!nodeseditor.tab.barIsLock)
+                    nodeseditor.tab.addNavi() // 添加导航页
                 */
             }
         }
@@ -143,7 +143,7 @@ RowLayout  {
                     let go = btnDragIndex(index) // 应该拖放到的序号
                     if(index !== go){ // 需要移动
                         // model.move(index, go, 1)
-                        app.tab.moveTabPage(index, go)
+                        nodeseditor.tab.moveTabPage(index, go)
                     } else { // 无需移动，则回到原位
                         itemAt(index).x = originalX
                     }
@@ -159,7 +159,7 @@ RowLayout  {
                 Component.onCompleted: size = hTabBarMain.height
                 width: size // w和h不能动态绑定到父组件height，可能会被意外置0
                 height: size // 所以初始化时绑定一次即可。
-                visible: !app.tab.barIsLock
+                visible: !nodeseditor.tab.barIsLock
                 z: 100000
                 x:100
 
@@ -183,7 +183,7 @@ RowLayout  {
                         )
                     }
                     onClicked: {
-                        app.tab.addNavi() // 添加导航页
+                        nodeseditor.tab.addNavi() // 添加导航页
                     }
                 }
             }
@@ -226,7 +226,7 @@ RowLayout  {
             implicitHeight: hTabBarMain.height - 10
             font.pixelSize: hTabBarMain.height - 14
             checkable: true
-            checked: app.tab.barIsLock
+            checked: nodeseditor.tab.barIsLock
 
             text: "L"
             font.bold: true
@@ -238,7 +238,7 @@ RowLayout  {
                 )
             }
             onCheckedChanged: { // 双向绑定锁定标记
-                app.tab.barIsLock = checked
+                nodeseditor.tab.barIsLock = checked
             }
         }
     }

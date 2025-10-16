@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/GeometryObject.h>
 #include <zeno/types/DictObject.h>
@@ -11,6 +12,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/geo/geometryutil.h>
+#include <zeno/geo/commonutil.h>
 #include <cmath>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -25,6 +27,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 #include <zeno/utils/reflectutil.h>
+#include <zeno/utils/interfaceutil.h>
 #include <cstdlib>
 
 
@@ -34,7 +37,7 @@
     p = zeno::vec3f(gp.x, gp.y, gp.z);
 
 #define ROTATE_MATRIX                           \
-    auto rotate = get_input2<zeno::vec3f>("rotate"); \
+    auto rotate = get_input2_vec3f_("rotate"); \
     float ax = rotate[0] * (M_PI / 180.0);      \
     float ay = rotate[1] * (M_PI / 180.0);      \
     float az = rotate[2] * (M_PI / 180.0);      \
@@ -52,11 +55,11 @@
         0, 0, 1);
 
 #define NORMUV_CIHOU                            \
-    if (!get_input2<bool>("isFlipFace"))        \
+    if (!get_input2_bool("isFlipFace"))        \
         cc4::flipPrimFaceOrder(prim.get());     \
-    if (!get_input2<bool>("hasNormal"))         \
+    if (!get_input2_bool("hasNormal"))         \
         prim->verts.attrs.erase("nrm");         \
-    if (!get_input2<bool>("hasVertUV"))         \
+    if (!get_input2_bool("hasVertUV"))         \
         prim->verts.attrs.erase("uv");
 
 namespace zeno {
@@ -75,16 +78,33 @@ namespace zeno {
 namespace {
 
 struct CreateCube : zeno::INode {
-    virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
 
-        auto size = get_input2<float>("size");
-        auto div_w = get_input2<int>("div_w");
-        auto div_h = get_input2<int>("div_h");
-        auto div_d = get_input2<int>("div_d");
-        auto quad = get_input2<bool>("quads");
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scale = get_input2<zeno::vec3f>("scaleSize");
+    CreateCube() {
+        int j;
+        j = 0;
+    }
+
+    ~CreateCube() {
+        int j;
+        j = 0;
+    }
+
+    CustomUI export_customui() const override {
+        CustomUI ui = INode::export_customui();
+        ui.uistyle.iconResPath = ":/icons/node/cube.svg";
+        return ui;
+    }
+
+    virtual void apply() override {
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+
+        auto size = get_input2_float("size");
+        auto div_w = get_input2_int("div_w");
+        auto div_h = get_input2_int("div_h");
+        auto div_d = get_input2_int("div_d");
+        auto quad = get_input2_bool("quads");
+        auto position = get_input2_vec3f_("position");
+        auto scale = get_input2_vec3f_("scaleSize");
         ROTATE_MATRIX
 
         auto &verts = prim->verts;
@@ -459,7 +479,8 @@ struct CreateCube : zeno::INode {
         }
 
         NORMUV_CIHOU
-        set_output("prim", std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geo));
     }
 };
 
@@ -478,21 +499,18 @@ ZENDEFNODE(CreateCube, {
         {gParamType_Float, "size", "1", Socket_Primitve, Lineedit},
         {gParamType_Bool, "quads", "0", Socket_Primitve, Checkbox},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
-    {"create"},
-    {"Cube"},
-    {":/icons/node/box.svg"},
-    {"创建一个立方体"}
+    {"create"}
 });
 
 struct CreateDisk : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<float>("radius");
-        auto divisions = get_input2<int>("divisions");
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto position = get_input2_vec3f_("position");
+        auto scaleSize = get_input2_vec3f_("scaleSize");
+        auto radius = get_input2_float("radius");
+        auto divisions = get_input2_int("divisions");
 
         ROTATE_MATRIX
 
@@ -530,7 +548,8 @@ struct CreateDisk : zeno::INode {
         tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
 
         NORMUV_CIHOU
-        set_output("prim", std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geo));
     }
 };
 
@@ -545,20 +564,20 @@ ZENDEFNODE(CreateDisk, {
         {gParamType_Float, "radius", "1"},
         {gParamType_Int, "divisions", "32"},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
     {"create"},
 });
 
 struct CreatePlane : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scale = get_input2<zeno::vec3f>("scaleSize");
-        auto size = get_input2<float>("size");
-        auto rows = get_input2<int>("rows");
-        auto columns = get_input2<int>("columns");
-        auto quad = get_input2<bool>("quads");
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto position = get_input2_vec3f_("position");
+        auto scale = get_input2_vec3f_("scaleSize");
+        auto size = get_input2_float("size");
+        auto rows = get_input2_int("rows");
+        auto columns = get_input2_int("columns");
+        auto quad = get_input2_bool("quads");
 
         ROTATE_MATRIX
 
@@ -679,7 +698,7 @@ struct CreatePlane : zeno::INode {
             prim->uvs.emplace_back(uvs[i][0], uvs[i][1]);
         }
 
-        if(prim->loops.size()!= 0 && get_input2<bool>("hasVertUV")){
+        if(prim->loops.size()!= 0 && get_input2_bool("hasVertUV")){
             loops.add_attr<int>("uvs");
             for (auto i = 0; i < prim->loops.size(); i++) {
                 auto lo = prim->loops[i];
@@ -687,11 +706,12 @@ struct CreatePlane : zeno::INode {
             }
         }
 
-        prim->userData().setLiterial("pos", std::move(position));
-        prim->userData().setLiterial("scale", std::move(scale));
-        prim->userData().setLiterial("rotate", std::move(rotate));
+        prim->userData()->set_vec3f("pos", toAbiVec3f(position));
+        prim->userData()->set_vec3f("scale", toAbiVec3f(scale));
+        prim->userData()->set_vec3f("rotate", toAbiVec3f(rotate));
 
         NORMUV_CIHOU
+        auto geo = create_GeometryObject(prim.get());
         set_output("prim", std::move(prim));
     }
 };
@@ -709,21 +729,21 @@ ZENDEFNODE(CreatePlane, {
         {gParamType_Int, "columns", "1"},
         {gParamType_Bool, "quads", "0"},
     },
-   { {gParamType_Primitive, "prim"}},
+   { {gParamType_Geometry, "prim"}},
     {},
     {"create"},
 });
 
 struct CreateTube : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scale = get_input2<zeno::vec3f>("scaleSize");
-        auto radius1 = get_input2<float>("radius1");
-        auto radius2 = get_input2<float>("radius2");
-        auto height = get_input2<float>("height");
-        auto rows = get_input2<int>("rows");
-        auto columns = get_input2<int>("columns");
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto position = get_input2_vec3f_("position");
+        auto scale = get_input2_vec3f_("scaleSize");
+        auto radius1 = get_input2_float("radius1");
+        auto radius2 = get_input2_float("radius2");
+        auto height = get_input2_float("height");
+        auto rows = get_input2_int("rows");
+        auto columns = get_input2_int("columns");
 
         ROTATE_MATRIX
 
@@ -934,7 +954,8 @@ struct CreateTube : zeno::INode {
         }
 
         NORMUV_CIHOU
-        set_output("prim", std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geo));
     }
 };
 
@@ -952,17 +973,17 @@ ZENDEFNODE(CreateTube, {
         {gParamType_Int, "rows", "3"},
         {gParamType_Int, "columns", "12"}
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
     {"create"},
 });
 
 struct CreateTorus : zeno::INode {
     virtual void apply() override {
-        auto majorSegment = get_input2<int>("MajorSegment");
-        auto minorSegment = get_input2<int>("MinorSegment");
-        auto majorRadius = get_input2<float>("MajorRadius");
-        auto minorRadius = get_input2<float>("MinorRadius");
+        auto majorSegment = get_input2_int("MajorSegment");
+        auto minorSegment = get_input2_int("MinorSegment");
+        auto majorRadius = get_input2_float("MajorRadius");
+        auto minorRadius = get_input2_float("MinorRadius");
 
         if (majorSegment < 3) {
             majorSegment = 3;
@@ -971,7 +992,7 @@ struct CreateTorus : zeno::INode {
             minorSegment = 3;
         }
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         prim->verts.resize(majorSegment * minorSegment);
         auto &nrm = prim->verts.add_attr<zeno::vec3f>("nrm");
         for (auto j = 0; j < minorSegment; j++) {
@@ -1016,15 +1037,15 @@ struct CreateTorus : zeno::INode {
         for (auto i = 0; i < prim->polys.size(); i++) {
             prim->polys[i] = {i * 4, 4};
         }
-        auto position = get_input2<zeno::vec3f>("position");
-        auto rotate = get_input2<zeno::vec3f>("rotate");
+        auto position = get_input2_vec3f_("position");
+        auto rotate = get_input2_vec3f_("rotate");
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
 
-            auto order = get_input2<std::string>("EulerRotationOrder");
+            auto order = get_input2_string_("EulerRotationOrder");
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure");
+            auto measure = get_input2_string_("EulerAngleMeasure");
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
@@ -1042,19 +1063,20 @@ struct CreateTorus : zeno::INode {
             nrm[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
 
-        if (!get_input2<bool>("hasNormal")){
+        if (!get_input2_bool("hasNormal")){
             prim->verts.attrs.erase("nrm");
         }
 
-        if (!get_input2<bool>("hasVertUV")){
+        if (!get_input2_bool("hasVertUV")){
             prim->uvs.clear();
             prim->loops.erase_attr("uvs");
         }
 
-        if (!get_input2<bool>("quads")){
+        if (!get_input2_bool("quads")){
             primTriangulate(prim.get());
         }
-        set_output("prim",std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim",std::move(geo));
     }
 };
 
@@ -1070,7 +1092,7 @@ ZENDEFNODE(CreateTorus, {
         {gParamType_Int, "MinorSegment", "12"},
         {gParamType_Bool, "quads", "0"},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1080,14 +1102,14 @@ ZENDEFNODE(CreateTorus, {
 
 struct CreateSphere : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scale = get_input2<zeno::vec3f>("scaleSize");
-        auto rotate = get_input2<zeno::vec3f>("rotate");
-        auto rows = get_input2<int>("rows");
-        auto columns = get_input2<int>("columns");
-        auto radius = get_input2<float>("radius");
-        auto quad = get_input2<bool>("quads");
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto position = get_input2_vec3f_("position");
+        auto scale = get_input2_vec3f_("scaleSize");
+        auto rotate = get_input2_vec3f_("rotate");
+        auto rows = get_input2_int("rows");
+        auto columns = get_input2_int("columns");
+        auto radius = get_input2_float("radius");
+        auto quad = get_input2_bool("quads");
 
         if (rows < 2) {
             rows = 2;
@@ -1200,10 +1222,10 @@ struct CreateSphere : zeno::INode {
         glm::mat4 transform = glm::mat4 (1.0);
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
 
-            auto order = get_input2<std::string>("EulerRotationOrder");
+            auto order = get_input2_string_("EulerRotationOrder");
             auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::YXZ);
 
-            auto measure = get_input2<std::string>("EulerAngleMeasure");
+            auto measure = get_input2_string_("EulerAngleMeasure");
             auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
             glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
@@ -1248,16 +1270,16 @@ struct CreateSphere : zeno::INode {
             nors2[i] = nors[i];
         }
 
-        if (!get_input2<bool>("hasNormal")){
+        if (!get_input2_bool("hasNormal")){
             prim->verts.attrs.erase("nrm");
         }
 
-        if (!get_input2<bool>("hasVertUV")){
+        if (!get_input2_bool("hasVertUV")){
             prim->uvs.clear();
             prim->loops.erase_attr("uvs");
         }
 
-        if (get_input2<bool>("isFlipFace")){
+        if (get_input2_bool("isFlipFace")){
             for (auto i = 0; i < prim->polys.size(); i++) {
                 auto [base, cnt] = prim->polys[i];
                 for (int j = 0; j < (cnt / 2); j++) {
@@ -1273,16 +1295,16 @@ struct CreateSphere : zeno::INode {
             primTriangulate(prim.get());
         }
 
-        auto SphereRT = get_input2<bool>("SphereRT");
+        auto SphereRT = get_input2_bool("SphereRT");
 
         if (SphereRT) {
-            prim->userData().set2("sphere_center", std::move(position));
-            prim->userData().set2("sphere_radius", std::move(radius));
+            prim->userData()->set_vec3f("sphere_center", toAbiVec3f(position));
+            prim->userData()->set_float("sphere_radius", radius);
 
-            prim->userData().set2("sphere_rotate", std::move(rotate));
-            prim->userData().set2("sphere_scale", std::move(scale));
+            prim->userData()->set_vec3f("sphere_rotate", toAbiVec3f(rotate));
+            prim->userData()->set_vec3f("sphere_scale", toAbiVec3f(scale));
 
-            // auto sphere_transform = std::make_shared<zeno::MatrixObject>();
+            // auto sphere_transform = std::make_unique<zeno::MatrixObject>();
             // sphere_transform->m = transform;
             auto transform_ptr = glm::value_ptr(transform);
             
@@ -1293,13 +1315,14 @@ struct CreateSphere : zeno::INode {
             memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
             memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
 
-            prim->userData().set2("_transform_row0", row0);
-            prim->userData().set2("_transform_row1", row1);
-            prim->userData().set2("_transform_row2", row2);
-            prim->userData().set2("_transform_row3", row3);
+            prim->userData()->set_vec4f("_transform_row0", toAbiVec4f(row0));
+            prim->userData()->set_vec4f("_transform_row1", toAbiVec4f(row1));
+            prim->userData()->set_vec4f("_transform_row2", toAbiVec4f(row2));
+            prim->userData()->set_vec4f("_transform_row3", toAbiVec4f(row3));
         }
 
-        set_output("prim",std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim",std::move(geo));
     }
 };
 
@@ -1317,7 +1340,7 @@ ZENDEFNODE(CreateSphere, {
         {gParamType_Bool, "quads", "0"},
         {gParamType_Bool, "SphereRT", "0"}
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {
         {"enum " + EulerAngle::RotationOrderListString(), "EulerRotationOrder", "XYZ"},
         {"enum " + EulerAngle::MeasureListString(), "EulerAngleMeasure", "Degree"}
@@ -1327,12 +1350,12 @@ ZENDEFNODE(CreateSphere, {
 
 struct CreateCone : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<float>("radius");
-        auto height = get_input2<float>("height");
-        auto lons = get_input2<int>("lons");
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto position = get_input2_vec3f_("position");
+        auto scaleSize = get_input2_vec3f_("scaleSize");
+        auto radius = get_input2_float("radius");
+        auto height = get_input2_float("height");
+        auto lons = get_input2_int("lons");
 
         auto &pos = prim->verts;
         for (size_t i = 0; i < lons; i++) {
@@ -1349,7 +1372,8 @@ struct CreateCone : zeno::INode {
             tris.push_back(vec3i(lons, i, (i + 1) % lons));
             tris.push_back(vec3i(i, lons + 1, (i + 1) % lons));
         }
-        set_output("prim", std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geo));
     }
 };
 
@@ -1361,20 +1385,20 @@ ZENDEFNODE(CreateCone, {
         {gParamType_Float, "height", "2"},
         {gParamType_Int, "lons", "32"},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
     {"create"},
 });
 
 struct CreateCylinder : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
 
-        auto position = get_input2<zeno::vec3f>("position");
-        auto scaleSize = get_input2<zeno::vec3f>("scaleSize");
-        auto radius = get_input2<float>("radius");
-        auto height = get_input2<float>("height");
-        auto lons = get_input2<int>("lons");
+        auto position = get_input2_vec3f_("position");
+        auto scaleSize = get_input2_vec3f_("scaleSize");
+        auto radius = get_input2_float("radius");
+        auto height = get_input2_float("height");
+        auto lons = get_input2_int("lons");
 
         auto &pos = prim->verts;
         for (size_t i = 0; i < lons; i++) {
@@ -1406,7 +1430,8 @@ struct CreateCylinder : zeno::INode {
             tris.push_back(vec3i(_1, _0, _2));
             tris.push_back(vec3i(_2, _0, _3));
         }
-        set_output("prim", std::move(prim));
+        auto geo = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geo));
     }
 };
 
@@ -1418,14 +1443,14 @@ ZENDEFNODE(CreateCylinder, {
         {gParamType_Float, "height", "2"},
         {gParamType_Int, "lons", "32"},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
     {"create"},
 });
 struct CreateFolder : zeno::INode {
     virtual void apply() override {
         namespace fs = std::filesystem;
-        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        auto folderPath = fs::u8path(get_input2_string_("folderPath"));
         if (!fs::exists(folderPath)) {
             fs::create_directories(folderPath);
         }
@@ -1444,11 +1469,11 @@ ZENDEFNODE(CreateFolder, {
 struct RemoveFolder : zeno::INode {
     virtual void apply() override {
         namespace fs = std::filesystem;
-        auto folderPath = fs::u8path(get_input2<std::string>("folderPath"));
+        auto folderPath = fs::u8path(get_input2_string_("folderPath"));
         if (fs::exists(folderPath)) {
             std::error_code errorCode;
             fs::remove_all(folderPath, errorCode);
-            if (get_input2<bool>("clean")) {
+            if (get_input2_bool("clean")) {
                 fs::create_directories(folderPath);
             }
         }
@@ -1465,15 +1490,38 @@ ZENDEFNODE(RemoveFolder, {
     {"create"},
 });
 
+struct CopyFile : zeno::INode {
+    void apply() override {
+        namespace fs = std::filesystem;
+        auto sourcePath = fs::u8path(ZImpl(get_input2<std::string>("sourcePath")));
+        auto targetPath = fs::u8path(ZImpl(get_input2<std::string>("targetPath")));
+        auto folderPath = targetPath.parent_path();
+        if (fs::exists(folderPath) == false) {
+            fs::create_directories(folderPath);
+        }
+        fs::copy(sourcePath, targetPath, fs::copy_options::overwrite_existing);
+    }
+};
+
+ZENDEFNODE(CopyFile, {
+    {
+        {"readpath", "sourcePath"},
+        {"writepath", "targetPath"},
+    },
+    {},
+    {},
+    {"create"},
+});
+
 struct HEdgeGeoSelfTest : zeno::INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> prim;
-        if (has_input("prim")) {
-            prim = get_input<zeno::PrimitiveObject>("prim");
+        PrimitiveObject* prim = nullptr;
+        if (ZImpl(has_input("prim"))) {
+            prim = get_input_PrimitiveObject("prim");
         }
-        auto spGeom = std::make_shared<GeometryObject>(prim.get());
+        auto spGeom = std::make_unique<GeometryObject>(prim);
         auto spRes = spGeom->toPrimitive();
-        set_output("prim", spRes);
+        set_output("prim", std::move(spRes));
     }
 };
 
@@ -1489,12 +1537,12 @@ ZENDEFNODE(HEdgeGeoSelfTest, {
 
 struct HEdgeBasedPrim : zeno::INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> prim;
+        PrimitiveObject* prim = nullptr;
         if (has_input("prim")) {
-            prim = get_input<zeno::PrimitiveObject>("prim");
+            prim = get_input_PrimitiveObject("prim");
         }
-        auto spGeom = std::make_shared<GeometryObject>(prim.get());
-        set_output("prim", spGeom);
+        auto spGeom = create_GeometryObject(prim);
+        set_output("prim", std::move(spGeom));
     }
 };
 
@@ -1511,10 +1559,10 @@ ZENDEFNODE(HEdgeBasedPrim, {
 struct FFMPEGImagesToVideo : zeno::INode {
     virtual void apply() override {
         namespace fs = std::filesystem;
-        auto fps = get_input2<int>("fps");
-        auto imageFolderPath = get_input2<std::string>("imageFolderPath");
-        auto bitrate = get_input2<int>("bitrate");
-        auto outPath = get_input2<std::string>("outPath");
+        auto fps = get_input2_int("fps");
+        auto imageFolderPath = get_input2_string_("imageFolderPath");
+        auto bitrate = get_input2_int("bitrate");
+        auto outPath = get_input2_string_("outPath");
 
         bool ok = fs::exists(imageFolderPath) && fs::is_directory(imageFolderPath);
         if (!ok) {
@@ -1555,3 +1603,4 @@ ZENDEFNODE(FFMPEGImagesToVideo, {
 
 }
 }
+

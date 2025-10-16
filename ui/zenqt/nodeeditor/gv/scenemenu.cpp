@@ -90,14 +90,14 @@ bool sceneMenuEvent(
 
         if (selParam.isValid())
         {
-            bool bInput = selParam.data(ROLE_ISINPUT).toBool();
-            QString paramName = selParam.data(ROLE_PARAM_NAME).toString();
-            int type = selParam.data(ROLE_PARAM_TYPE).toLongLong();
+            bool bInput = selParam.data(QtRole::ROLE_ISINPUT).toBool();
+            QString paramName = selParam.data(QtRole::ROLE_PARAM_NAME).toString();
+            int type = selParam.data(QtRole::ROLE_PARAM_TYPE).toLongLong();
 
             QMenu* socketMenu = new QMenu;
 
             //check whether it's a vector param.
-            if (type == zeno::types::gParamType_Vec2i || type == zeno::types::gParamType_Vec2f) {
+            if (type == ui_gParamType_Vec2i || type == ui_gParamType_Vec2f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -120,7 +120,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_y);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type == zeno::types::gParamType_Vec3i || type == zeno::types::gParamType_Vec3f) {
+            else if (type == ui_gParamType_Vec3i || type == ui_gParamType_Vec3f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -152,7 +152,7 @@ bool sceneMenuEvent(
                 pCopyElem->addAction(copy_z);
                 socketMenu->addAction(pCopyElem->menuAction());
             }
-            else if (type == zeno::types::gParamType_Vec4i || type == zeno::types::gParamType_Vec4f) {
+            else if (type == ui_gParamType_Vec4i || type == ui_gParamType_Vec4f) {
                 QMenu* pCopyElem = new QMenu(socketMenu);
                 pCopyElem->setTitle(QObject::tr("copy vec param"));
 
@@ -195,9 +195,9 @@ bool sceneMenuEvent(
             }
 
             //paste action for editable param
-            if (type == zeno::types::gParamType_Float || 
-                type == zeno::types::gParamType_Int || 
-                type == zeno::types::gParamType_String)
+            if (type == ui_gParamType_Float || 
+                type == ui_gParamType_Int || 
+                type == ui_gParamType_String)
             {
                 const QMimeData* pMimeData_ = QApplication::clipboard()->mimeData();
                 if (pMimeData_ && pMimeData_->text().startsWith("ref("))
@@ -207,7 +207,7 @@ bool sceneMenuEvent(
                         const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
                         if (pMimeData) {
                             QString refExp = pMimeData->text();
-                            UiHelper::qIndexSetData(selParam, refExp, ROLE_PARAM_VALUE);
+                            UiHelper::qIndexSetData(selParam, refExp, QtRole::ROLE_PARAM_VALUE);
                         }
                         });
                     socketMenu->addAction(pasteRef);
@@ -219,13 +219,13 @@ bool sceneMenuEvent(
                 //input socket menu
                 QAction* pCopyRef = new QAction(QObject::tr("Copy Param Reference"));
                 QObject::connect(pCopyRef, &QAction::triggered, [=]() {
-                    QModelIndex nodeIdx = selParam.data(ROLE_NODE_IDX).toModelIndex();
-                    if (nodeIdx.isValid() && nodeIdx.data(ROLE_CLASS_NAME) == "SubInput")
+                    QModelIndex nodeIdx = selParam.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+                    if (nodeIdx.isValid() && nodeIdx.data(QtRole::ROLE_CLASS_NAME) == "SubInput")
                     {
-                        const QString& paramName = selParam.data(ROLE_PARAM_NAME).toString();
+                        const QString& paramName = selParam.data(QtRole::ROLE_PARAM_NAME).toString();
                         QString subgName, nodename, paramPath;
                         //TODO: deprecated.
-                        QString str = selParam.data(ROLE_OBJPATH).toString();
+                        QString str = selParam.data(QtRole::ROLE_OBJPATH).toString();
                         UiHelper::getSocketInfo(str, subgName, nodename, paramPath);
                         if (paramName == "port") {
                             QString refExpression = QString("ref(%1/_IN_port)").arg(nodename);
@@ -248,7 +248,7 @@ bool sceneMenuEvent(
 #if 0
                 IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                 ZASSERT_EXIT(pModel, false);
-                const QString& path = selParam.data(ROLE_OBJPATH).toString();
+                const QString& path = selParam.data(QtRole::ROLE_OBJPATH).toString();
                 const QKeyList<QString, CommandParam>& params = pModel->commandParams();
                 if (!params.contains(path))
                 {
@@ -257,7 +257,7 @@ bool sceneMenuEvent(
                     QObject::connect(pCreateCommParam, &QAction::triggered, [=]() {
                         CommandParam val;
                         val.name = paramName;
-                        val.value = selParam.data(ROLE_PARAM_VALUE);
+                        val.value = selParam.data(QtRole::ROLE_PARAM_VALUE);
                         if (!pModel->addCommandParam(path, val))
                         {
                             QMessageBox::warning(nullptr, QObject::tr("Create Command Param"), QObject::tr("Create Command Param Failed!"));
@@ -295,8 +295,8 @@ bool sceneMenuEvent(
         GraphModel* pGraphM = pScene->getGraphModel();
         ZASSERT_EXIT(pGraphM, false);
 
-        zeno::NodeCates cates = zenoApp->graphsManager()->getCates();
-        auto m_menu = new ZenoNewnodeMenu(pGraphM, cates, scenePos);
+        //zeno::NodeCates cates = zenoApp->graphsManager()->getCates();
+        auto m_menu = new ZenoNewnodeMenu(pGraphM, /*cates, */scenePos);
         m_menu->setEditorFocus();
         m_menu->exec(QCursor::pos());
         m_menu->deleteLater();

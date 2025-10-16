@@ -23,6 +23,9 @@ void removeElements(std::vector<std::shared_ptr<T>>& vec, const std::set<int>& i
 
     std::set<T*> sPtrs;
     for (auto idx : indice) {
+        if (idx < 0 || idx >= vec.size()) {
+            continue;
+        }
         sPtrs.insert(vec[idx].get());
     }
     vec.erase(std::remove_if(vec.begin(), vec.end(), [&](const auto& val) {

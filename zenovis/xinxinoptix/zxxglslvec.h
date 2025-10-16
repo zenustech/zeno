@@ -1,7 +1,14 @@
 #pragma once
-
 #include <cuda_fp16.h>
 #include <cuda/helpers.h>
+
+#ifndef var
+#define var auto
+#endif
+
+#ifndef let
+#define let auto const
+#endif
 
 __forceinline__ __device__ float to_radians(float degrees) {
     return degrees * M_PIf / 180.0f;
@@ -56,7 +63,15 @@ struct vec3{
         return *ptr;
     }
 
-    __forceinline__ __device__ vec3(const float3 &_v)
+    __forceinline__ __device__ bool operator==(vec3 other) const {
+        return x==other.x && y==other.y && z==other.z;
+    }
+
+    __forceinline__ __device__ bool operator!=(vec3 other) const {
+        return !(*this==other);
+    }
+
+    __forceinline__ __host__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;
         y = _v.y;
@@ -79,14 +94,39 @@ struct vec3{
     __forceinline__ __device__ operator float3() const {
         return make_float3(x, y, z);
     }
+
+    __forceinline__ __device__ vec3& operator*= (float in)
+    {
+        x = x * in;
+        y = y * in;
+        z = z * in;
+        return *this;    
+    }
+
+    __forceinline__ __device__ vec3& operator+= (vec3 in)
+    {
+        x = x + in.x;
+        y = y + in.y;
+        z = z + in.z;
+        return *this;    
+    }
+    
+    __forceinline__ __device__ vec3& operator/= (float in)
+    {
+        x /= in;
+        y /= in;
+        z /= in;
+        return *this;    
+    }
+
     __forceinline__ __device__ vec3 rotX(float a) {
-        return vec3(x, cos(a) * y - sin(a) * z, sin(a) * y + cos(a) * z);
+        return vec3(x, cosf(a) * y - sinf(a) * z, sinf(a) * y + cosf(a) * z);
     }
     __forceinline__ __device__ vec3 rotY(float a) {
-        return vec3(cos(a) * x - sin(a) * z, y, cos(a) * z + sin(a) * x);
+        return vec3(cosf(a) * x - sinf(a) * z, y, cosf(a) * z + sinf(a) * x);
     }
     __forceinline__ __device__ vec3 rotZ(float a) {
-        return vec3(cos(a) * x - sin(a) * y, cos(a) * y + sin(a) * x, z);
+        return vec3(cosf(a) * x - sinf(a) * y, cosf(a) * y + sinf(a) * x, z);
     }
 };
 
@@ -300,10 +340,6 @@ __forceinline__ __device__ vec4 operator-(vec4 a)
 
 
 /////////////////trig func//////////////////////////////////////////////////
-__forceinline__ __device__ float sin(float a)
-{
-    return sinf(a);
-}
 __forceinline__ __device__ vec2 sin(vec2 a)
 {
     return vec2(sinf(a.x), sinf(a.y));
@@ -317,11 +353,6 @@ __forceinline__ __device__ vec4 sin(vec4 a)
     return vec4(sinf(a.x), sinf(a.y), sinf(a.z), sinf(a.w));
 }
 
-
-__forceinline__ __device__ float cos(float a)
-{
-    return cosf(a);
-}
 __forceinline__ __device__ vec2 cos(vec2 a)
 {
     return vec2(cosf(a.x), cosf(a.y));
@@ -335,11 +366,6 @@ __forceinline__ __device__ vec4 cos(vec4 a)
     return vec4(cosf(a.x), cosf(a.y), cosf(a.z), cosf(a.w));
 }
 
-
-__forceinline__ __device__ float tan(float a)
-{
-    return tanf(a);
-}
 __forceinline__ __device__ vec2 tan(vec2 a)
 {
     return vec2(tanf(a.x), tanf(a.y));
@@ -353,10 +379,6 @@ __forceinline__ __device__ vec4 tan(vec4 a)
     return vec4(tanf(a.x), tanf(a.y), tanf(a.z), tanf(a.w));
 }
 
-__forceinline__ __device__ float asin(float a)
-{
-    return asinf(a);
-}
 __forceinline__ __device__ vec2 asin(vec2 a)
 {
     return vec2(asinf(a.x), asinf(a.y));
@@ -370,10 +392,6 @@ __forceinline__ __device__ vec4 asin(vec4 a)
     return vec4(asinf(a.x), asinf(a.y), asinf(a.z), asinf(a.w));
 }
 
-__forceinline__ __device__ float acos(float a)
-{
-    return acosf(a);
-}
 __forceinline__ __device__ vec2 acos(vec2 a)
 {
     return vec2(acosf(a.x), acosf(a.y));
@@ -387,10 +405,6 @@ __forceinline__ __device__ vec4 acos(vec4 a)
     return vec4(acosf(a.x), acosf(a.y), acosf(a.z), acosf(a.w));
 }
 
-__forceinline__ __device__ float atan(float a)
-{
-    return atanf(a);
-}
 __forceinline__ __device__ vec2 atan(vec2 a)
 {
     return vec2(atanf(a.x), atanf(a.y));
@@ -433,10 +447,6 @@ __forceinline__ __device__ vec4 atan(vec4 &a, float &b)
 
 
 ////////////////exponential////////////////////////////////////////////////////////
-__forceinline__ __device__ float pow(float a, float b)
-{
-    return powf(a, b);
-}
 __forceinline__ __device__ vec2 pow(vec2 a, vec2 b)
 {
     return vec2(powf(a.x, b.x), powf(a.y, b.y));
@@ -464,10 +474,6 @@ __forceinline__ __device__ vec4 pow(vec4 a, float b)
     return vec4(powf(a.x, b), powf(a.y, b), powf(a.z, b), powf(a.w, b));
 }
 
-__forceinline__ __device__ float exp(float a)
-{
-    return expf(a);
-}
 __forceinline__ __device__ vec2 exp(vec2 a)
 {
     return vec2(expf(a.x), expf(a.y));
@@ -483,11 +489,6 @@ __forceinline__ __device__ vec4 exp(vec4 a)
     return vec4(expf(a.x), expf(a.y), expf(a.z), expf(a.w));
 }
 
-
-__forceinline__ __device__ float log(float a)
-{
-    return logf(a);
-}
 __forceinline__ __device__ vec2 log(vec2 a)
 {
     return vec2(logf(a.x), logf(a.y));
@@ -503,10 +504,6 @@ __forceinline__ __device__ vec4 log(vec4 a)
     return vec4(logf(a.x), logf(a.y), logf(a.z), logf(a.w));
 }
 
-__forceinline__ __device__ float sqrt(float a)
-{
-    return sqrtf(a);
-}
 __forceinline__ __device__ vec2 sqrt(vec2 a)
 {
     return vec2(sqrtf(a.x), sqrtf(a.y));
@@ -519,6 +516,12 @@ __forceinline__ __device__ vec4 sqrt(vec4 a)
 {
     return vec4(sqrtf(a.x), sqrtf(a.y), sqrtf(a.z), sqrtf(a.w));
 }
+
+#ifndef __CUDACC_RTC__
+float rsqrtf(float a) {
+    return 1.0/sqrtf(a);
+}
+#endif
 
 __forceinline__ __device__ float inversesqrt(float a)
 {
@@ -540,10 +543,6 @@ __forceinline__ __device__ vec4 inversesqrt(vec4 a)
 
 
 //////////////begin of common math/////////////////////////////////////////////////
-// __forceinline__ __device__ float abs(float a)
-// {
-//     return float(fabsf(a));
-// }
 __forceinline__ __device__ vec2 abs(vec2 a)
 {
     return vec2(fabsf(a.x), fabsf(a.y));
@@ -583,10 +582,6 @@ __forceinline__ __device__ vec4 sign(vec4 a)
     return vec4(m_sign(a.x), m_sign(a.y), m_sign(a.z), m_sign(a.w));
 }
 
-__forceinline__ __device__ float floor(float a)
-{
-    return floorf(a);
-}
 __forceinline__ __device__ vec2 floor(vec2 a)
 {
     return vec2(floorf(a.x), floorf(a.y));
@@ -600,10 +595,6 @@ __forceinline__ __device__ vec4 floor(vec4 a)
     return vec4(floorf(a.x), floorf(a.y), floorf(a.z), floorf(a.w));
 }
 
-__forceinline__ __device__ float ceil(float a)
-{
-    return ceilf(a);
-}
 __forceinline__ __device__ vec2 ceil(vec2 a)
 {
     return vec2(ceilf(a.x), ceilf(a.y));
@@ -706,10 +697,6 @@ __forceinline__ __device__ vec4 max(vec4 a, vec4 b)
     return vec4(fmaxf(a.x, b.x), fmaxf(a.y,b.y), fmaxf(a.z, b.z), fmaxf(a.w, b.w));
 }
 
-//__forceinline__ __device__ float clamp(float a, float b, float c)
-//{
-    //return min(max(a, b), c);
-//}
 __forceinline__ __device__ vec2 clamp(vec2 a, float b, float c)
 {
     return min(max(a, b), c);
@@ -742,17 +729,17 @@ __forceinline__ __device__ float saturate(float a)
 
 __forceinline__ __device__ vec2 saturate(vec2 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec2(0.0f), vec2(1.0f));
 }
 
 __forceinline__ __device__ vec3 saturate(vec3 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec3(0.0f), vec3(1.0f));
 }
 
 __forceinline__ __device__ vec4 saturate(vec4 a)
 {
-    return clamp(a, 0.0f, 1.0f);
+    return clamp(a, vec4(0.0f), vec4(1.0f));
 }
 
 __forceinline__ __device__ float mix(float a, float b, float c)
@@ -797,7 +784,7 @@ __forceinline__ __device__ vec3 mix(vec3 a, float b, float c)
 }
 __forceinline__ __device__ vec3 mix(vec3 a, vec3 b, float c)
 {
-    return (1-c)*a + c * b;
+    return (1.f-c)*a + c * b;
 }
 __forceinline__ __device__ vec3 mix(vec3 a, vec3 b, vec3 c)
 {
@@ -819,8 +806,6 @@ __forceinline__ __device__ vec3 mix(float a, vec3 b, vec3 c)
 {
     return (1-c)*a + c * b;
 }
-
-
 
 __forceinline__ __device__ vec4 mix(vec4 a, float b, float c)
 {
@@ -885,15 +870,8 @@ __forceinline__ __device__ vec4 step(vec4 limit, vec4 a)
 
 __forceinline__ __device__ float smoothstep(float a, float b, float c)
 {
-    if(c>b)
-    {
-        return 1;
-    }
-    if(c>a)
-    {
-        return (c-a)/(b-a);
-    }
-    return 0;
+    auto t = clamp((c - a) / (b - a), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
 }
 __forceinline__ __device__ vec2 smoothstep(vec2 a, vec2 b, vec2 c)
 {
@@ -962,15 +940,9 @@ __forceinline__ __device__ vec4 faceforward(vec4 n, vec4 i, vec4 nref)
 {
     return dot(nref, i) >= 0 ? n : -n;
 }
-__forceinline__ __device__ float length(vec2 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec3 a)
-{
-    return sqrtf(dot(a,a));
-}
-__forceinline__ __device__ float length(vec4 a)
+
+template <typename T>
+__forceinline__ __device__ float length(T a)
 {
     return sqrtf(dot(a,a));
 }
@@ -1025,12 +997,101 @@ __forceinline__ __device__ vec3 cross(vec3 a, vec3 b)
     return vec3(res.x, res.y, res.z);
 }
 
-__forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
+#ifndef __CUDACC_RTC__
+template <typename T>
+T tex2D(unsigned long long t, float x, float y) {
+    return T{};
+}
+#endif
+
+__forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
 {
-    float4 res = tex2D<float4>(texObj, uv.x, uv.y);
-    return vec4(res.x, res.y, res.z, res.w);
+    return 0.5 * length(cross(v1-v0, v2-v0));
 }
 
+template <typename T=float4, typename R=vec4>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
+{
+    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
+    return *(R*)&tmp;
+}
+__forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
+                                           vec2 uv0, vec2 uv1, vec2 uv2, 
+                                           vec3 v0, vec3 v1, vec3 v2, vec3 p, 
+                                           vec3 ray, vec3 N, bool isShadowRay, vec3 &pOffset, int depth, vec4 h, bool forced_hit)
+{
+    if(depth>1 || isShadowRay)
+        return vec4(uv.x, uv.y, 1, 0);
+    pOffset = vec3(0);
+    auto r = normalize(ray);
+    // number of depth layers
+    float a0 = area(v0,v1,v2);
+
+    const float minLayers = 8;
+    const float maxLayers = 32;
+    float numLayers = min(8.0f * 1.0f/abs(dot(r,N)), 64.0f);
+    float height_amp = min(1.0f/abs(dot(r,N)), 100.0f);
+    float layerDepth = 1.0 / numLayers;
+    float currentLayerDepth = 0.0;
+
+    float l0 = length(v1 - v2);
+    float l1 = length(v2 - v0);
+    float l2 = length(v1 - v0);
+    float perimeter = l0 + l1 + l2;
+    vec3 pw = vec3(l0/perimeter, l1/perimeter, l2/perimeter);
+    vec3 incenter = v0 * pw.x + v1 * pw.y + v2 * pw.z;
+    float half_inradius = a0/perimeter;
+    vec3 ddir = r * h.x * layerDepth * height_amp;
+    float dx = length(ddir)<half_inradius?1.0f:length(ddir)/half_inradius;
+    vec3 p1 = incenter + ddir/dx;
+    vec3 p11 = p1 - dot(ddir/dx, N) * N;
+    float a10 = area(p11, v1, v2);
+    float a11 = area(p11, v0, v2);
+
+
+    //w, u, v, v0, v1, v2
+    //             1
+    //        v
+    //  0         w
+    //      u      2
+    float wp = min(a10/a0,1.0f);
+    float up = min(a11/a0,1.0f);
+    float vp = max(1.0 - wp - up,0.0f);
+
+    vec3 duvw = vec3(wp - pw.x, up - pw.y, vp - pw.z) * dx;
+    vec3 current_uvw = uvw;
+    vec2 uvp = wp * uv0 + up * uv1 + vp * uv2;
+    vec2 duv = (uvp - (pw.x*uv0 + pw.y*uv1 + pw.z*uv2)) * dx  ;
+    vec2  currentTexCoords = uv;
+    float currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
+
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        current_uvw = current_uvw + duvw;
+        currentTexCoords = currentTexCoords + duv;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = 1.0f - texture2D(texObj, vec2(currentTexCoords)*uvtiling).x;
+        // get depth of next layer
+        currentLayerDepth += layerDepth;
+    }
+    vec2 prevTexCoords = currentTexCoords - duv;
+    vec3 prev_uvw = current_uvw - duvw;
+    bool hit = prev_uvw.x>=0 && prev_uvw.x<=1 && prev_uvw.y>=0 && prev_uvw.y<=1 && prev_uvw.z>=0 && prev_uvw.z<=1;
+    // get depth after and before collision for linear interpolation
+    float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = (1.0f - texture2D(texObj, vec2(prevTexCoords)*uvtiling).x) - currentLayerDepth + layerDepth;
+
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+    float c = smoothstep(h.z, h.w, abs(dot(r,N)));
+    hit = forced_hit?true:hit;
+
+    pOffset = {};//hit?vec3(0,0,0): h.y * h.x * N;
+    return vec4(finalTexCoords.x, finalTexCoords.y, hit?1:0, 0);
+}
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
@@ -1085,38 +1146,6 @@ __forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
 {
     return vec4(dot(a.m0, b), dot(a.m1, b), dot(a.m2, b), dot(a.m3, b));
 }
-
-//__forceinline__ __device__ float cudatoglsl(float a) {
-    //return a;
-//}
-
-//__forceinline__ __device__ vec2 cudatoglsl(float2 a) {
-    //return vec2(a.x, a.y);
-//}
-
-//__forceinline__ __device__ vec3 cudatoglsl(float3 a) {
-    //return vec3(a.x, a.y, a.z);
-//}
-
-//__forceinline__ __device__ vec4 cudatoglsl(float4 a) {
-    //return vec4(a.x, a.y, a.z, a.w);
-//}
-
-//__forceinline__ __device__ float glsltocuda(float a) {
-    //return a;
-//}
-
-//__forceinline__ __device__ float2 glsltocuda(vec2 a) {
-    //return make_float2(a.x, a.y);
-//}
-
-//__forceinline__ __device__ float3 glsltocuda(vec3 a) {
-    //return make_float3(a.x, a.y, a.z);
-//}
-
-//__forceinline__ __device__ float4 glsltocuda(vec4 a) {
-    //return make_float4(a.x, a.y, a.z, a.w);
-//}
 
 __forceinline__ __device__ vec3 normalmap(vec3 norm, float scale) {
     //norm = norm * 2 - 1;
@@ -1219,7 +1248,7 @@ __forceinline__ __device__ vec4 convertTo4(vec4 v) {
 }
 
 __forceinline__ __device__ float luminance(vec3 c) {
-    return dot(c, vec3(0.2722287, 0.6740818, 0.0536895));
+    return dot(c, vec3(0.2722287f, 0.6740818f, 0.0536895f));
 }
 
 __forceinline__ __device__ float safepower(float in1, float in2) {
@@ -1394,4 +1423,101 @@ __forceinline__ __device__ float3 decodeColor(float4 c)
 __forceinline__ __device__ float3 decodeNormal(float4 c)
 {
   return make_float3(c.x, c.y, c.z);
+}
+
+__forceinline__ __device__ bool operator==(float3 a, float3 b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+__forceinline__ __device__ bool operator!=(float3 a, float3 b) {
+    return !(a == b);
+}
+
+struct half3 {
+    half x, y, z;
+    half3() = default;
+    half3(half3& h3) = default;
+
+    half3(half a, half b, half c) {
+        x=a; y=b; z=c;
+    }
+
+    half3(float f) {
+        x = y = z = __float2half(f);
+    }
+
+    // half3(float3& f3) {
+    //     x = __float2half(f3.x);
+    //     y = __float2half(f3.y);
+    //     z = __float2half(f3.z);
+    // }
+};
+
+__forceinline__ __device__ half3 operator*(half3 a, half3 b)
+{
+    return {__hmul(a.x, b.x), __hmul(a.y, b.y), __hmul(a.z, b.z)};
+}
+
+__forceinline__ __device__ half3 operator*(half3 a, half b)
+{
+    return {__hmul(a.x, b), __hmul(a.y, b), __hmul(a.z, b)};
+}
+
+__forceinline__ __device__ half3 operator*(half b, half3 a)
+{
+    return a * b;
+}
+
+__forceinline__ __device__ half3 operator+(half3 a, half3 b)
+{
+    return {__hadd(a.x, b.x), __hadd(a.y, b.y), __hadd(a.z, b.z)};
+}
+
+__forceinline__ half3 interp(float2 barys, half3 a, half3 b, half3 c) 
+{    
+    half w0 = __float2half(1.f - barys.x - barys.y);
+    half w1 = __float2half(barys.x);
+    half w2 = __float2half(barys.y);
+
+    return w0*a + w1*b + w2*c;
+}
+
+__forceinline__ __device__ float3 decodeHalf(half3 c)
+{
+    return { __half2float(c.x), __half2float(c.y), __half2float(c.z) };
+}
+
+__forceinline__ __device__ half3 float3_to_half3(const float3& in)
+{
+    return {
+        __float2half(in.x), 
+        __float2half(in.y),
+        __float2half(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const half3& in)
+{
+    return {
+        __half2float(in.x),
+        __half2float(in.y),
+        __half2float(in.z)
+    };
+}
+
+__forceinline__ __device__ float3 half3_to_float3(const ushort3& in) 
+{
+    return half3_to_float3(reinterpret_cast<const half3&>(in));
+}
+
+__forceinline__ __device__ ushort1 float_to_half(float in)
+{
+    half x = __float2half(in);
+    return reinterpret_cast<ushort1&>(x);
+}
+
+__forceinline__ __device__ float half_to_float(ushort1 in)
+{
+    half x = reinterpret_cast<half&>(in);
+    return __half2float(x);
 }

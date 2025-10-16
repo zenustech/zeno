@@ -31,7 +31,7 @@ struct GraphException {
     }
 
     template <class Func>
-    static void translated(Func &&func, INode* const pNode, std::string param = "") {
+    static void translated(Func &&func, NodeImpl* const pNode, std::string param = "") {
         try {
             func();
         } catch (GraphException const &ge) {

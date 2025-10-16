@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "widgets/ztimeline.h"
 #include "zassert.h"
+#include "declmetatype.h"
 
 
 namespace zeno {
@@ -20,7 +21,7 @@ struct NodeLocation{
           subgraph(s){
     }
     QString get_node_id() const {
-        return node.data(ROLE_NODE_NAME).toString();
+        return node.data(QtRole::ROLE_NODE_NAME).toString();
     }
 };
 
@@ -105,8 +106,8 @@ class NodeSyncMgr {
             return;
         }
 
-        auto node_id = node_location.node.data(ROLE_NODE_NAME).toString();
-        auto inputs = node_location.node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+        auto node_id = node_location.node.data(QtRole::ROLE_NODE_NAME).toString();
+        auto inputs = node_location.node.data(QtRole::ROLE_INPUTS).value<PARAMS_INFO>();
         QVariant old_value = QVariant::fromValue(inputs[input_name.c_str()].defl);
         QVariant value;
         if (!getNewValue<T>(old_value, new_value, value))

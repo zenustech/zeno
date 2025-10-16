@@ -2,6 +2,7 @@
 #define __ZTIMELINE_H__
 
 #include <QtWidgets>
+#include <zeno/core/common.h>
 
 class ZSlider;
 class ZIconLabel;
@@ -27,6 +28,7 @@ public:
     void updateDopnetworkFrameCached(int frame);
     void updateDopnetworkFrameRemoved(int frame);
     void updateCachedFrame();
+    void onSolverUpdate(zeno::SOLVER_MSG msg, int startFrame, int EndFrame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -44,6 +46,7 @@ public slots:
     void setSliderValue(int frameid);
     void setPlayButtonChecked(bool bToggle);
     void togglePlayButton(bool bOn);
+    void stopSolver();
 
 private:
     void initStyleSheet();
@@ -53,7 +56,7 @@ private:
 
     int m_frames;
 
-    Ui::Timeline *m_ui;
+    QScopedPointer<Ui::Timeline> m_ui;
 };
 
 #endif

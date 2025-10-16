@@ -117,11 +117,11 @@ struct face_polys {
 };
 struct PrimVertsAttrToFaces : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto faceType = get_input2<std::string>("faceType");
-        auto attr = get_input2<std::string>("vertAttr");
-        auto attrOut = get_input2<std::string>("faceAttr");
-        auto method = get_input2<std::string>("method");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto faceType = ZImpl(get_input2<std::string>("faceType"));
+        auto attr = ZImpl(get_input2<std::string>("vertAttr"));
+        auto attrOut = ZImpl(get_input2<std::string>("faceAttr"));
+        auto method = ZImpl(get_input2<std::string>("method"));
 
         std::visit([&] (auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
@@ -151,7 +151,7 @@ struct PrimVertsAttrToFaces : INode {
             "lines", "tris", "quads", "polys"
         }, faceType)));
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -173,12 +173,12 @@ ZENDEFNODE(PrimVertsAttrToFaces, {
 
 struct PrimFacesAttrToVerts : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto faceType = get_input2<std::string>("faceType");
-        auto attr = get_input2<std::string>("faceAttr");
-        auto attrOut = get_input2<std::string>("vertAttr");
-        auto method = get_input2<std::string>("method");
-        auto deflValPtr = get_input<NumericObject>("deflVal");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto faceType = ZImpl(get_input2<std::string>("faceType"));
+        auto attr = ZImpl(get_input2<std::string>("faceAttr"));
+        auto attrOut = ZImpl(get_input2<std::string>("vertAttr"));
+        auto method = ZImpl(get_input2<std::string>("method"));
+        auto deflValPtr = ZImpl(get_input<NumericObject>("deflVal"));
 
         std::visit([&] (auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
@@ -219,7 +219,7 @@ struct PrimFacesAttrToVerts : INode {
             "lines", "tris", "quads", "polys"
         }, faceType)));
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -242,10 +242,10 @@ ZENDEFNODE(PrimFacesAttrToVerts, {
 
 struct PrimFacesCenterAsVerts : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto faceType = get_input2<std::string>("faceType");
-        auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
-        auto outprim = std::make_shared<PrimitiveObject>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto faceType = ZImpl(get_input2<std::string>("faceType"));
+        auto copyFaceAttrs = ZImpl(get_input2<bool>("copyFaceAttrs"));
+        auto outprim = std::make_unique<PrimitiveObject>();
 
         auto process = [&] (size_t base, auto faceTy) {
             auto &prim_faces = faceTy.from_prim(prim.get());
@@ -282,7 +282,7 @@ struct PrimFacesCenterAsVerts : INode {
             throw makeError("invalid faceType: " + faceType);
         }
 
-        set_output("prim", std::move(outprim));
+        ZImpl(set_output("prim", std::move(outprim)));
     }
 };
 

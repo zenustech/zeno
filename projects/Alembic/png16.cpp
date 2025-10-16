@@ -26,8 +26,8 @@
 #include <cstdio>
 #include <vector>
 
-static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
-    auto img = std::make_shared<zeno::PrimitiveObject>();
+static std::unique_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
+    auto img = std::make_unique<zeno::PrimitiveObject>();
     FILE* file = fopen(file_path, "rb");
     if (!file) {
         zeno::log_error("Error: File not found: {}", file_path);
@@ -138,21 +138,21 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     img->verts.values = image_data;
     zeno::image_flip_vertical(alpha_data.data(), width, height);
     img->add_attr<float>("alpha") = alpha_data;
-    img->userData().set2("isImage", 1);
-    img->userData().set2("w", width);
-    img->userData().set2("h", height);
-    img->userData().set2("bit_depth", bit_depth);
-    img->userData().set2("channels", channels);
+    img->userData()->set_int("isImage", 1);
+    img->userData()->set_int("w", width);
+    img->userData()->set_int("h", height);
+    img->userData()->set_int("bit_depth", bit_depth);
+    img->userData()->set_int("channels", channels);
     return img;
 }
 
 namespace zeno {
 struct ReadPNG16 : INode {//todo: select custom color space
     virtual void apply() override {
-        auto path = get_input2<std::string>("path");
+        auto path = zsString2Std(get_input2_string("path"));
         path = std::filesystem::u8path(path).string();
         auto img = read_png(path.c_str());
-        set_output("image", img);
+        set_output("image", std::move(img));
     }
 };
 ZENDEFNODE(ReadPNG16, {
@@ -222,12 +222,12 @@ static void SaveMultiLayerEXR(
 }
 struct WriteExr : INode {
     virtual void apply() override {
-        auto path = get_input2<std::string>("path");
+        auto path = zsString2Std(get_input2_string("path"));
         create_directories_when_write_file(path);
         std::vector<float*> pixels;
         std::vector<std::string> channels;
         std::vector<std::pair<int, int>> width_heights;
-        auto dict = get_input<DictObject>("channels");
+        auto dict = safe_uniqueptr_cast<DictObject>(clone_input("channels"));
         for (auto &[k, v]: dict->lut) {
             if (k.size()) {
                 channels.push_back(k+'.');
@@ -235,12 +235,12 @@ struct WriteExr : INode {
             else {
                 channels.push_back(k);
             }
-            auto img = std::dynamic_pointer_cast<PrimitiveObject>(v);
-            if (!img || !img->userData().get2<int>("isImage", 0)) {
+            auto img = safe_dynamic_cast<PrimitiveObject>(v.get());
+            if (!img || !img->userData()->get_int("isImage", 0)) {
                 throw zeno::makeError("input not image");
             }
-            int w = img->userData().get2<int>("w");
-            int h = img->userData().get2<int>("h");
+            int w = img->userData()->get_int("w");
+            int h = img->userData()->get_int("h");
             width_heights.emplace_back(w, h);
             pixels.push_back(reinterpret_cast<float *>(img->verts.data()));
         }

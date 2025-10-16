@@ -40,7 +40,7 @@ public:
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx, const QString keyName);
     ZenoSocketItem* getTopBottomSocketItem(const QModelIndex& sockIdx, bool bInput);
-    void markNodeStatus(zeno::NodeRunStatus status);
+    void markNodeStatus(QmlNodeRunStatus::Value status);
 
     void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();
@@ -144,7 +144,7 @@ private:
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;
 
-    zeno::NodeRunStatus m_nodeStatus;
+    QmlNodeRunStatus::Value m_nodeStatus;
     QString m_dbgName;      //only used to debug.
 };
 

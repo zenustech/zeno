@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/para/parallel_reduce.h>
@@ -16,13 +17,26 @@ ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject *prim) {
     return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
 }
 
+ZENO_API std::optional<std::pair<vec3f, vec3f>> primBoundingBox2(PrimitiveObject *prim) {
+    if (!prim->verts.size())
+        return std::nullopt;
+    return parallel_reduce_minmax(prim->verts.begin(), prim->verts.end());
+}
+
+static std::pair<vec3f, vec3f> geoBoundingBox(GeometryObject_Adapter* prim) {
+    const std::vector<zeno::vec3f>& pts = prim->points_pos();
+    if (pts.empty())
+        return {{0, 0, 0}, {0, 0, 0}};
+    return parallel_reduce_minmax(pts.begin(), pts.end());
+}
+
 namespace {
 
 struct PrimBoundingBox : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto extraBound = get_input2<float>("extraBound");
-    auto [bmin, bmax] = primBoundingBox(prim.get());
+    auto prim = get_input_Geometry("prim");
+    auto extraBound = ZImpl(get_input2<float>("extraBound"));
+    auto [bmin, bmax] = geoBoundingBox(prim);
     if (extraBound != 0) {
         bmin -= extraBound;
         bmax += extraBound;
@@ -30,17 +44,17 @@ struct PrimBoundingBox : INode {
     auto center = (bmin + bmax) / 2;
     auto radius = (bmax - bmin) / 2;
     auto diameter = bmax - bmin;
-    set_output2("bmin", bmin);
-    set_output2("bmax", bmax);
-    set_output2("center", center);
-    set_output2("radius", radius);
-    set_output2("diameter", diameter);
+    ZImpl(set_output2("bmin", bmin));
+    ZImpl(set_output2("bmax", bmax));
+    ZImpl(set_output2("center", center));
+    ZImpl(set_output2("radius", radius));
+    ZImpl(set_output2("diameter", diameter));
   }
 };
 
 ZENO_DEFNODE(PrimBoundingBox)({
     {
-    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Geometry, "prim"},
     {gParamType_Float, "extraBound", "0"},
     },
     {
@@ -92,9 +106,9 @@ _ZENO_C(primitive)
 
 struct PrimCalcCentroid : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto method = get_input2<std::string>("method");
-        auto density = get_input2<float>("density");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto method = ZImpl(get_input2<std::string>("method"));
+        auto density = ZImpl(get_input2<float>("density"));
 
         vec4f acc;
         if (method == "Vertex") {
@@ -134,8 +148,8 @@ struct PrimCalcCentroid : zeno::INode {
             vec3f(acc[0], acc[1], acc[2]) / acc[3];
         auto mass = std::abs(acc[3]) * density;
 
-        set_output2("centroid", centroid);
-        set_output2("mass", mass);
+        ZImpl(set_output2("centroid", centroid));
+        ZImpl(set_output2("mass", mass));
     }
 };
 

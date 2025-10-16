@@ -12,7 +12,7 @@
 
 namespace zeno {
 
-struct INode;
+struct NodeImpl;
 
 struct GVariable {
     std::string name;
@@ -52,11 +52,11 @@ public:
 };
 
 struct GlobalVariableOverride {
-    std::weak_ptr<INode> currNode;
+    NodeImpl* currNode;
     GVariable gvar;
     bool overrideSuccess;
 
-    ZENO_API GlobalVariableOverride(std::weak_ptr<INode> currNode, std::string gvarName, zeno::reflect::Any gvar);;
+    ZENO_API GlobalVariableOverride(NodeImpl* pNode, std::string gvarName, zeno::reflect::Any gvar);;
     ZENO_API ~GlobalVariableOverride();;
     ZENO_API bool updateGlobalVariable(GVariable globalVariable);
 };

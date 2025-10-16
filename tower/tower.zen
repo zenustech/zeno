@@ -1,0 +1,1866 @@
+{
+    "main": {
+        "type": 2,
+        "nodes": {
+            "AverageFuse1": {
+                "name": "AverageFuse1",
+                "class": "AverageFuse",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Transform1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Snap Distance": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.009999999776482582,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    122.0,
+                    662.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AverageFuse2": {
+                "name": "AverageFuse2",
+                "class": "AverageFuse",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Transform5",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Snap Distance": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.009999999776482582,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    377.0,
+                    1638.0
+                ],
+                "status": [
+                    "View"
+                ],
+                "collasped": false
+            },
+            "Circle2": {
+                "name": "Circle2",
+                "class": "Circle",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Segments": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 6.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Radius": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Arc Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Open Arc",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "arcAngle": {
+                        "links": null,
+                        "type": "vec2f",
+                        "default-value": [
+                            0.0,
+                            360.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 2"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ZX",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "bCalcPointNormals": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    269.0,
+                    354.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyToPoints1": {
+                "name": "CopyToPoints1",
+                "class": "CopyToPoints",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Transform3",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    },
+                    "Target Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Transform4",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -203.0,
+                    1282.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform1": {
+                "name": "Transform1",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Circle2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "eulerXYZ": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            45.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "quatRotation": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Scaling": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "shear": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivot": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "bboxCenter",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivotPos": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "YXZ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "measure": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Degree",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    226.0,
+                    491.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform2": {
+                "name": "Transform2",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "AverageFuse1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "eulerXYZ": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "quatRotation": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Scaling": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0299999713897706,
+                            1.0299999713897706,
+                            1.0299999713897706
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "shear": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivot": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "bboxCenter",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivotPos": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "YXZ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "measure": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Degree",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    131.0,
+                    792.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform3": {
+                "name": "Transform3",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Tube1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "eulerXYZ": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "quatRotation": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Scaling": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "shear": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivot": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "bboxCenter",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivotPos": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "YXZ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "measure": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Degree",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -327.0,
+                    1050.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform4": {
+                "name": "Transform4",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "set_N",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            "ref(\"./Tube1.Height\") / 2",
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "eulerXYZ": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "quatRotation": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Scaling": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "shear": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivot": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "bboxCenter",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivotPos": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "YXZ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "measure": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Degree",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -39.0,
+                    1065.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform5": {
+                "name": "Transform5",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "Transform2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            "ref(\"./Tube1.Height\")",
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "eulerXYZ": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "quatRotation": {
+                        "links": null,
+                        "type": "vec4f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 4"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Scaling": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "shear": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivot": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "bboxCenter",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "pivotPos": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localX": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "localY": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "YXZ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "measure": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Degree",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    277.0,
+                    923.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Tube1": {
+                "name": "Tube1",
+                "class": "Tube",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            "ref(\"./Tube1.Height\") / 2",
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Up Radius": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "0.5 * 0.1734578",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Down Radius": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "0.5 * 0.1734578",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Uniform Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Height": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 3.5899999141693117,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rows": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Columns": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 12,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Y Axis",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Point Normals": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "End Caps": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -307.0,
+                    818.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "set_N": {
+                "name": "set_N",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "Transform2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "//@N = normalize(point(1, \"P\",@ptnum) - @P);\r\n\r\n",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    58.0,
+                    926.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "views": {
+        "timeline": {
+            "start-frame": 0,
+            "end-frame": 100,
+            "curr-frame": 0,
+            "always": false,
+            "timeline-fps": 24
+        }
+    },
+    "version": "v3"
+}

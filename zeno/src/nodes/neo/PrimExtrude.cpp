@@ -2,11 +2,11 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveUtils.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
-#include <zeno/extra/TempNode.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/zeno.h>
 #include <numeric>
 #include <set>
@@ -16,19 +16,19 @@ namespace {
 
 struct PrimExtrude : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto maskAttr = get_input2<std::string>("maskAttr");
-        auto extrude = get_input2<float>("extrude");
-        auto inset = get_input2<float>("inset");
-        auto offset = get_input2<zeno::vec3f>("offset");
-        //auto bridgeMaskAttrO = get_input2<std::string>("bridgeMaskAttrO");
-        auto sourceMaskAttrO = get_input2<std::string>("sourceMaskAttrO");
-        auto delOldFaces = get_input2<bool>("delOldFaces");
-        auto autoFindEdges = get_input2<bool>("autoFindEdges");
-        auto averagedExtrude = get_input2<bool>("averagedExtrude");
-        auto flipOldFaces = get_input2<bool>("flipOldFaces");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto maskAttr = ZImpl(get_input2<std::string>("maskAttr"));
+        auto extrude = ZImpl(get_input2<float>("extrude"));
+        auto inset = ZImpl(get_input2<float>("inset"));
+        auto offset = ZImpl(get_input2<zeno::vec3f>("offset"));
+        //auto bridgeMaskAttrO = ZImpl(get_input2<std::string>("bridgeMaskAttrO"));
+        auto sourceMaskAttrO = ZImpl(get_input2<std::string>("sourceMaskAttrO"));
+        auto delOldFaces = ZImpl(get_input2<bool>("delOldFaces"));
+        auto autoFindEdges = ZImpl(get_input2<bool>("autoFindEdges"));
+        auto averagedExtrude = ZImpl(get_input2<bool>("averagedExtrude"));
+        auto flipOldFaces = ZImpl(get_input2<bool>("flipOldFaces"));
 
-        auto prim2 = std::make_shared<PrimitiveObject>(*prim);
+        auto prim2 = std::make_unique<PrimitiveObject>(*prim);
 
         if (autoFindEdges && !maskAttr.empty()) {
             //AttrVector<vec2i> oldlines = std::move(prim2->lines);
@@ -65,7 +65,7 @@ struct PrimExtrude : INode {
         std::vector<vec3f> p2norms;
         if (extrude != 0 || inset != 0) {
             std::string tmpNormAttr = "%%extrude2";
-            primCalcNormal(prim2.get(), 1.0f, tmpNormAttr);
+            primCalcNormal(prim2.get(), 1.0f, zeno::String(tmpNormAttr.c_str()));
             p2norms = std::move(prim2->verts.attr<zeno::vec3f>(tmpNormAttr));
             prim2->verts.erase_attr(tmpNormAttr);
         }
@@ -251,7 +251,7 @@ struct PrimExtrude : INode {
             }
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

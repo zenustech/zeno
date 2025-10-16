@@ -149,9 +149,9 @@ namespace {
 
 struct PrimitivePolygonate : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        primPolygonate(prim.get(), get_param<bool>("with_uv"));
-        set_output("prim", std::move(prim));
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        primPolygonate(prim.get(), ZImpl(get_param<bool>("with_uv")));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

@@ -8,7 +8,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/zeno.h>
 #if defined(_OPENMP)
 #define WXL 1
@@ -413,12 +413,12 @@ struct BVH { // TODO: WXL please complete this to accel up
 
 struct PrimProject : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto targetPrim = get_input<PrimitiveObject>("targetPrim");
-        auto offset = get_input2<float>("offset");
-        auto limit = get_input2<float>("limit");
-        auto nrmAttr = get_input2<std::string>("nrmAttr");
-        auto allowDir = get_input2<std::string>("allowDir");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto targetPrim = ZImpl(get_input<PrimitiveObject>("targetPrim"));
+        auto offset = ZImpl(get_input2<float>("offset"));
+        auto limit = ZImpl(get_input2<float>("limit"));
+        auto nrmAttr = ZImpl(get_input2<std::string>("nrmAttr"));
+        auto allowDir = ZImpl(get_input2<std::string>("allowDir"));
 
         BVH bvh;
         bvh.build(targetPrim.get());
@@ -462,7 +462,7 @@ struct PrimProject : INode {
             },
             cond);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -484,12 +484,12 @@ ZENDEFNODE(PrimProject, {
 
 struct TestRayBox : INode {
     void apply() override {
-        auto origin = get_input2<zeno::vec3f>("ray_origin");
-        auto dir = get_input2<zeno::vec3f>("ray_dir");
-        auto bmin = get_input2<zeno::vec3f>("box_min");
-        auto bmax = get_input2<zeno::vec3f>("box_max");
-        set_output("predicate",
-                   std::make_shared<NumericObject>((int)ray_box_intersect(origin, dir, std::make_pair(bmin, bmax))));
+        auto origin = ZImpl(get_input2<zeno::vec3f>("ray_origin"));
+        auto dir = ZImpl(get_input2<zeno::vec3f>("ray_dir"));
+        auto bmin = ZImpl(get_input2<zeno::vec3f>("box_min"));
+        auto bmax = ZImpl(get_input2<zeno::vec3f>("box_max"));
+        ZImpl(set_output("predicate",
+                   std::make_unique<NumericObject>((int)ray_box_intersect(origin, dir, std::make_pair(bmin, bmax)))));
     }
 };
 

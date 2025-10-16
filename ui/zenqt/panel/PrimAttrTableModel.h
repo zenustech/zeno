@@ -18,11 +18,11 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
 //    bool	setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole)
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    void setModelData(zeno::PrimitiveObject* prim);
+    void setModelData(std::shared_ptr<zeno::PrimitiveObject> prim);
     void setSelAttr(std::string sel_attr_);
 
 private:
-    std::shared_ptr<zeno::PrimitiveObject> m_prim = nullptr;
+    std::shared_ptr<zeno::PrimitiveObject> m_prim;
     std::string sel_attr = "Vertex";
 
     QVariant vertexData(const QModelIndex &index) const;

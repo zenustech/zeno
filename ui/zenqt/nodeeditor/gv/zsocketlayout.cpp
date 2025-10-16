@@ -12,6 +12,7 @@
 #include "zitemfactory.h"
 #include "util/uihelper.h"
 #include "model/parammodel.h"
+#include "declmetatype.h"
 
 
 ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInput, SocketBackgroud* parentItem)
@@ -29,7 +30,7 @@ ZSocketLayout::ZSocketLayout(const QPersistentModelIndex& viewSockIdx, bool bInp
     QObject::connect(pModel, &IGraphsModel::updateCommandParamSignal, [=](const QString& path) {
         if (!m_text)
             return;
-        QString socketPath = m_viewSockIdx.data(ROLE_OBJPATH).toString();
+        QString socketPath = m_viewSockIdx.data(QtRole::ROLE_OBJPATH).toString();
         if (socketPath != path)
             return;
         m_text->update();
@@ -54,14 +55,14 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     }
     else
     {
-        sockName = m_paramIdx.data(ROLE_PARAM_NAME).toString();
-        sockProp = m_paramIdx.data(ROLE_PARAM_SOCKPROP).value<zeno::SocketProperty>();
+        sockName = m_paramIdx.data(QtRole::ROLE_PARAM_NAME).toString();
+        sockProp = m_paramIdx.data(QtRole::ROLE_PARAM_SOCKPROP).value<zeno::SocketProperty>();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
-        toolTip = m_paramIdx.data(ROLE_PARAM_TOOLTIP).toString();
+        toolTip = m_paramIdx.data(QtRole::ROLE_PARAM_TOOLTIP).toString();
 
-        QModelIndex nodeIdx = m_paramIdx.data(ROLE_NODE_IDX).toModelIndex();
-        if (nodeIdx.data(ROLE_NODETYPE) != zeno::NoVersionNode &&
-            SOCKPROP_LEGACY != m_paramIdx.data(ROLE_PARAM_SOCKPROP))
+        QModelIndex nodeIdx = m_paramIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+        if (nodeIdx.data(QtRole::ROLE_NODETYPE) != zeno::NoVersionNode &&
+            SOCKPROP_LEGACY != m_paramIdx.data(QtRole::ROLE_PARAM_SOCKPROP))
         {
             bEnableNode = true;
         }
@@ -71,7 +72,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
 
     QSizeF szSocket(14, 14);//(10, 20);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
-    zeno::SocketType sockType = (zeno::SocketType)m_paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+    zeno::SocketType sockType = (zeno::SocketType)m_paramIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
     m_socket->setVisible(sockType != zeno::NoSocket && sockProp != zeno::Socket_Disable);
     m_socket->setZValue(ZVALUE_ELEMENT);
     m_socket->setEnabled(bEnableNode);
@@ -79,8 +80,8 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
         QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput) {
             cbSock.cbOnSockClicked(m_socket);
         });
-        if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_paramIdx.data(ROLE_NODE_IDX).value<QModelIndex>().data(ROLE_PARAMS))) {
-            //TODO: 范围大，可以考虑根据是否显示决定优化
+        if (ParamsModel* paramsM = QVariantPtr<ParamsModel>::asPtr(m_paramIdx.data(QtRole::ROLE_NODE_IDX).value<QModelIndex>().data(QtRole::ROLE_PARAMS))) {
+            //TODO: 鑼冨洿澶э紝鍙互鑰冭檻鏍规嵁鏄惁鏄剧ず鍐冲畾浼樺寲
             QObject::connect(paramsM, &QStandardItemModel::dataChanged, m_socket, &ZenoSocketItem::onCustomParamDataChanged);
         }
     }
@@ -88,7 +89,7 @@ void ZSocketLayout::initUI(const CallbackForSocket& cbSock)
     if (m_bEditable && bEnableNode)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
-            UiHelper::qIndexSetData(m_paramIdx, newText, ROLE_PARAM_NAME);
+            UiHelper::qIndexSetData(m_paramIdx, newText, QtRole::ROLE_PARAM_NAME);
         };
         ZSocketEditableItem *pItem = new ZSocketEditableItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
         if (!m_bInput) 
@@ -230,8 +231,8 @@ ZGroupSocketLayout::~ZGroupSocketLayout() {
 void ZGroupSocketLayout::initUI(const CallbackForSocket &cbSock) 
 {
     setContentsMargin(0, ZenoStyle::dpiScaled(6), 0, 0);
-    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
-    const QString &name = m_paramIdx.data(ROLE_PARAM_NAME).toString();
+    bool bInput = m_paramIdx.data(QtRole::ROLE_ISINPUT).toBool();
+    const QString &name = m_paramIdx.data(QtRole::ROLE_PARAM_NAME).toString();
 
     m_pGroupLine = new ZenoParamGroupLine(name);
     m_pGroupLine->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, 32)));

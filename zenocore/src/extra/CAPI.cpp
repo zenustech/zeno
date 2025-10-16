@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/extra/CAPI.h>
 
@@ -399,3 +400,4 @@ ZENO_API Zeno_Error capiLastErrorCatched(std::function<void()> const &func) noex
 }
 
 }
+#endif

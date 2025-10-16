@@ -12,6 +12,7 @@
 
 #include <sampleConfig.h>
 
+#include <stdio.h>
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
@@ -25,39 +26,44 @@
 #include "optixVolume.h"
 #include "optix_types.h"
 #include "raiicuda.h"
-#include "zeno/types/TextureObject.h"
 #include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
 #include <filesystem>
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/md5.h>
-#include <cryptopp/hex.h>
+#include <zeno/utils/image_proc.h>
+#include <png.h>
+
 
 //#include <GLFW/glfw3.h>
 
 #include <tbb/task_group.h>
+#include <parallel_hashmap/phmap.h>
+
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
 
 #include <array>
+#include <vector>
+#include <string>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <filesystem>
 
 #include "BCX.h"
 #include "ies/ies.h"
+#include "md5.hpp"
 
 #include "zeno/utils/fileio.h"
-#include "zeno/extra/TempNode.h"
+#include <tinygltf/json.hpp>
+
+#include "zeno/utils/fileio.h"
 #include "zeno/types/PrimitiveObject.h"
+//#include <zeno/geo/commonutil.h>
 #include "ChiefDesignerEXR.h"
 #include <stb_image.h>
 #include <cudaMemMarco.hpp>
-#include <vector>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
@@ -72,6 +78,7 @@ inline raii<OptixDeviceContext>             context                  ;
 inline OptixPipelineCompileOptions          pipeline_compile_options ;
 inline raii<OptixPipeline>                  pipeline                 ;
 
+inline std::tuple<bool, bool>  raygen_config;
 inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
@@ -102,7 +109,6 @@ inline void resetAll() {
 
     raygen_module.reset();
 
-    auto count = garbageTasks.size();
     for (auto& task : garbageTasks) {
         task();
     }
@@ -117,7 +123,9 @@ inline void resetAll() {
     context.reset();
 }
 
-inline bool isPipelineCreated = false;
+typedef std::tuple<uint, uint> PipelineMark;
+
+inline PipelineMark pipelineMark = {};
 ////end material independent stuffs
 
 inline static auto DefaultCompileOptions() {
@@ -127,7 +135,7 @@ inline static auto DefaultCompileOptions() {
     module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 #else 
     module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+    module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
     return module_compile_options;
 }
@@ -138,7 +146,7 @@ inline void createContext()
     CUDA_CHECK( cudaFree( 0 ) );
 
     CUcontext          cu_ctx = 0;  // zero means take the current context
-    OPTIX_CHECK( optixInit() );
+    OPTIX_CHECK_LOG( optixInit() );
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
 #if defined( NDEBUG )
@@ -146,15 +154,16 @@ inline void createContext()
 #else
     options.logCallbackLevel          = 4;
 #endif
-    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
-    OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
+    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
+    OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
 inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
-    if (CachedPrimitiveTypeFlags != UINT_MAX && (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags == usesPrimitiveTypeFlags)) { return false; }
+    auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
+    if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
     CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
     pipeline_compile_options = {};
@@ -164,15 +173,16 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
     pipeline_compile_options.numAttributeValues    = 2;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
-    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
+    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_USER;
     //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
     pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+    pipeline_compile_options.allowOpacityMicromaps = true;
 
     OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
     OptixBuiltinISOptions builtin_is_options {};
-    builtin_is_options.usesMotionBlur = false;
-    builtin_is_options.buildFlags     = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+    builtin_is_options.usesMotionBlur      = false;
+    builtin_is_options.buildFlags          = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
     const static auto PrimitiveTypeConfigs = std::vector<std::tuple<OptixPrimitiveTypeFlags, OptixPrimitiveType, OptixModule*>> {
 
@@ -236,27 +246,152 @@ inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
     }  
 }
 
-static std::vector<char> readData(std::string const& filename)
-{
-  std::ifstream inputData(filename, std::ios::binary);
+inline std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
+    auto img = std::make_shared<zeno::PrimitiveObject>();
+    FILE* file = fopen(file_path, "rb");
+    if (!file) {
+        zeno::log_error("Error: File not found: {}", file_path);
+        return img;
+    }
 
-  if (inputData.fail())
-  {
-    std::cerr << "ERROR: readData() Failed to open file " << filename << '\n';
-    return std::vector<char>();
-  }
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
+        fclose(file);
+        zeno::log_error("Error: png_create_read_struct failed.");
+        return img;
+    }
 
-  // Copy the input buffer to a char vector.
-  std::vector<char> data(std::istreambuf_iterator<char>(inputData), {});
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+        fclose(file);
+        zeno::log_error("Error: png_create_info_struct failed.");
+        return img;
+    }
 
-  if (inputData.fail())
-  {
-    std::cerr << "ERROR: readData() Failed to read file " << filename << '\n';
-    return std::vector<char>();
-  }
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+        fclose(file);
+        zeno::log_error("Error: Error during png_read_png.");
+        return img;
+    }
 
-  return data;
+    png_init_io(png_ptr, file);
+    png_set_sig_bytes(png_ptr, 0);
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
+
+    int width = png_get_image_width(png_ptr, info_ptr);
+    int height = png_get_image_height(png_ptr, info_ptr);
+
+    int bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+    int channels = png_get_channels(png_ptr, info_ptr);
+
+    png_bytep* row_pointers = png_get_rows(png_ptr, info_ptr);
+    std::vector<zeno::vec3f> image_data;
+    image_data.reserve(width * height);
+    std::vector<float> alpha_data;
+    alpha_data.reserve(width * height);
+
+    for (int y = 0; y < height; y++) {
+        png_bytep row = row_pointers[y];
+        for (int x = 0; x < width; x++) {
+            zeno::vec3f color;
+            float alpha = 1;
+            if (bit_depth == 16) {
+                if (channels == 1) {
+                    uint16_t value = (row[x * 2] << 8) | row[x * 2 + 1];
+                    float normalized_value = float(value) / 65535.0f;
+                    color = zeno::vec3f(normalized_value);
+                }
+                else if (channels == 3) {
+                    uint16_t r = (row[x * 6] << 8) | row[x * 6 + 1];
+                    uint16_t g = (row[x * 6 + 2] << 8) | row[x * 6 + 3];
+                    uint16_t b = (row[x * 6 + 4] << 8) | row[x * 6 + 5];
+
+                    color[0] = float(r) / 65535.0f;
+                    color[1] = float(g) / 65535.0f;
+                    color[2] = float(b) / 65535.0f;
+                }
+                else if (channels == 4) {
+                    uint16_t r = (row[x * 8] << 8) | row[x * 8 + 1];
+                    uint16_t g = (row[x * 8 + 2] << 8) | row[x * 8 + 3];
+                    uint16_t b = (row[x * 8 + 4] << 8) | row[x * 8 + 5];
+                    uint16_t a = (row[x * 8 + 6] << 8) | row[x * 8 + 7];
+
+                    color[0] = float(r) / 65535.0f;
+                    color[1] = float(g) / 65535.0f;
+                    color[2] = float(b) / 65535.0f;
+                    alpha = float(a) / 65535.0f;
+                }
+            }
+            else if (bit_depth == 8) {
+                if (channels == 1) {
+                    uint8_t value = row[x];
+                    float normalized_value = float(value) / 255.0f;
+                    color = zeno::vec3f(normalized_value);
+                }
+                else if (channels == 3) {
+                    uint8_t r = row[x * 3];
+                    uint8_t g = row[x * 3 + 1];
+                    uint8_t b = row[x * 3 + 2];
+
+                    color[0] = float(r) / 255.0f;
+                    color[1] = float(g) / 255.0f;
+                    color[2] = float(b) / 255.0f;
+                }
+                else if (channels == 4) {
+                    uint8_t r = row[x * 4];
+                    uint8_t g = row[x * 4 + 1];
+                    uint8_t b = row[x * 4 + 2];
+                    uint8_t a = row[x * 4 + 3];
+
+                    color[0] = float(r) / 255.0f;
+                    color[1] = float(g) / 255.0f;
+                    color[2] = float(b) / 255.0f;
+                    alpha = float(a) / 255.0f;
+                }
+            }
+
+            image_data.push_back(color);
+            alpha_data.push_back(alpha);
+        }
+    }
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+    fclose(file);
+    zeno::image_flip_vertical(image_data.data(), width, height);
+    img->verts.values = image_data;
+    zeno::image_flip_vertical(alpha_data.data(), width, height);
+    img->add_attr<float>("alpha") = alpha_data;
+    img->userData()->set_int("isImage", 1);
+    img->userData()->set_int("w", width);
+    img->userData()->set_int("h", height);
+    img->userData()->set_int("bit_depth", bit_depth);
+    img->userData()->set_int("channels", channels);
+    return img;
 }
+
+static std::vector<char> readData(std::string const& filename) {
+
+    std::ifstream inputData(filename, std::ios::binary);
+
+    if (inputData.fail())
+    {
+        std::cerr << "ERROR: readData() Failed to open file " << filename << '\n';
+        return std::vector<char>();
+    }
+
+    // Copy the input buffer to a char vector.
+    std::vector<char> data(std::istreambuf_iterator<char>(inputData), {});
+
+    if (inputData.fail())
+    {
+        std::cerr << "ERROR: readData() Failed to read file " << filename << '\n';
+        return std::vector<char>();
+    }
+
+    return data;
+} // readData
 
 inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
 {
@@ -268,38 +403,39 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
 
     size_t      inputSize = 0;
     //TODO: the file path problem
-    bool is_success=false;
+    bool success=false;
 
     std::vector<const char*> compilerOptions {
-        "-std=c++17", "-default-device" 
+        "-std=c++17", "-default-device"
         //,"-extra-device-vectorization"
   #if !defined( NDEBUG )      
         ,"-lineinfo" //"-G"//"--dopt=on",
   #endif
-        // "--gpu-architecture=compute_60",
         ,"--relocatable-device-code=true"
         // "--extensible-whole-program"
-        ,"--split-compile=0"
+        , "--optix-ir"
     };
 
     std::string flat_macros = ""; 
 
     for (auto &ele : macros) {
         compilerOptions.push_back(ele.c_str());
-        flat_macros += ele;
+        flat_macros += ele + "\n";
     }
 
-    const char* input = sutil::getCodePTX( source, flat_macros.c_str(), name, inputSize, is_success, nullptr, compilerOptions);
+    const auto input = sutil::cuCompiled(source, flat_macros.c_str(), name, inputSize, success, nullptr, compilerOptions);
 
-    if(is_success==false)
-    {
+    if(!success) {
         return false;
     }
 
     if (_c_group == nullptr) {
-        OPTIX_CHECK(
-            optixModuleCreate( context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module )
-        );
+        //OPTIX_CHECK(
+        auto resu = optixModuleCreate(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module);
+        if (resu != OPTIX_SUCCESS) {
+            printf(" optix error %d \n source = %s \n", resu, source);
+        }
+        //);
     } else {
         
         OptixTask firstTask;
@@ -359,15 +495,14 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
         memset( &desc, 0, sizeof( OptixProgramGroupDesc ) );
         desc.kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        desc.miss.module            = nullptr;  // NULL miss program for occlusion rays
-        desc.miss.entryFunctionName = nullptr;
+        desc.miss.module            = _module;
+        desc.miss.entryFunctionName = "__miss__occlusion";
         sizeof_log                  = sizeof( log );
         OPTIX_CHECK_LOG( optixProgramGroupCreate(
                     context, &desc,
                     1,  // num program groups
                     &program_group_options,
-                    log,
-                    &sizeof_log,
+                    log, &sizeof_log,
                     &occlusion_miss_group.reset()
                     ) );
     }
@@ -380,8 +515,8 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
     size_t sizeof_log = sizeof( log );
-    std::cout<<kind<<std::endl;
-    std::cout<<entry<<std::endl;
+//    std::cout<<kind<<std::endl;
+//    std::cout<<entry<<std::endl;
 
     OptixProgramGroupDesc desc        = {};
     desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
@@ -397,7 +532,7 @@ if (entryName != nullptr) {
     } 
     else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
-        desc.hitgroup.moduleAH            = _module;
+        desc.hitgroup.moduleAH           = _module;
         desc.hitgroup.entryFunctionNameAH = entryName;
     }
 }
@@ -429,6 +564,7 @@ struct cuTexture{
     cudaArray_t gpuImageArray = nullptr;
     cudaTextureObject_t texture = 0llu;
 
+    uint8_t channel;
     uint32_t width, height;
     float average = 0.0f;
 
@@ -455,14 +591,15 @@ inline sutil::Texture loadCubeMap(const std::string& ppm_filename)
     return loadPPMTexture( ppm_filename, make_float3(1,1,1), nullptr );
 }
 
-
-
 inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, int ny, int nc, bool blockCompression)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
 
+    if (nx % 4 || ny % 4) {
+        blockCompression = false;
+    }
+
     std::vector<uchar4> alt;
-    
     if (nc == 3 && !blockCompression) { // cuda doesn't support raw rgb, should be raw rgba or compressed rgb 
         auto count = nx * ny;    
         alt.resize(count);
@@ -472,10 +609,6 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
         }
         nc = 4;
         img = (unsigned char*)alt.data();
-    }
-
-    if (nx%4 || ny%4) {
-        blockCompression = false;
     }
 
     cudaError_t rc;
@@ -555,34 +688,169 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(unsigned char* img, int nx, in
     }
 
     texture->blockCompression = blockCompression;
+    texture->channel = nc;
     return texture;
 
 }
-inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc)
+
+inline std::shared_ptr<cuTexture> makeFallbackAlphaTexture() {
+    std::vector<uint8_t> img(4, 255);
+    return makeCudaTexture(img.data(), 2, 2, 1, false);
+}
+
+inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, unsigned char* img, int nx, int ny, int nc, bool blockCompression=false)
+{
+    cudaFreeArray(texture->gpuImageArray);
+    std::vector<uchar4> alt;
+
+    if (nc == 3 && !blockCompression) { // cuda doesn't support raw rgb, should be raw rgba or compressed rgb
+        auto count = nx * ny;
+        alt.resize(count);
+
+        for (size_t i=0; i<count; ++i) {
+            alt[i] = { img[i*nc + 0], img[i*nc + 1], img[i*nc + 2], 255u };
+        }
+        nc = 4;
+        img = (unsigned char*)alt.data();
+    }
+
+    if (nx%4 || ny%4) {
+        blockCompression = false;
+    }
+
+    cudaError_t rc;
+
+    if (blockCompression == false) {
+        std::vector<int> xyzw(4, 0);
+        for (int i=0; i<nc; ++i) {xyzw[i] = 8;}
+
+        cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindUnsigned);
+        rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+        if (rc != cudaSuccess) {
+            std::cout<<"texture space alloc failed\n";
+            return;
+        }
+
+        rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, img, sizeof(unsigned char) * nc * nx * ny, cudaMemcpyHostToDevice);
+
+    } else {
+
+        std::vector<unsigned char> bc_data;
+        cudaChannelFormatDesc channelDescriptor;
+
+        if (nc == 1) {
+            bc_data = compressBC4(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed4>();
+        } else if (nc == 2) {
+            bc_data = compressBC5(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed5>();
+        } else if (nc == 3) {
+            bc_data = compressBC1(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed1>();
+        } else if (nc == 4) {
+            bc_data = compressBC3(img, nx, ny);
+            channelDescriptor = cudaCreateChannelDesc<cudaChannelFormatKindUnsignedBlockCompressed3>();
+        } else {
+            std::cout<<"texture data unsupported \n";
+            return;
+        }
+
+        rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+
+        if (rc != cudaSuccess) {
+            std::cout<<"texture space alloc failed\n";
+            return;
+        }
+
+        rc = cudaMemcpyToArray(texture->gpuImageArray, 0, 0, bc_data.data(), bc_data.size(), cudaMemcpyHostToDevice);
+    }
+
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return;
+    }
+    texture->blockCompression = blockCompression;
+}
+
+inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, float* img, int nx, int ny, int nc)
+        {
+    cudaFreeArray(texture->gpuImageArray);
+    
+    auto channel = (nc==3) ? 4:nc;
+    std::vector<half> data(nx * ny * channel, 0);
+    if (nc == channel) {
+        for (size_t i=0; i<data.size(); ++i) {
+            data[i] = (Imath::half)img[i];
+        }
+    } else {
+        auto count = nx * ny;
+        for (size_t i=0; i<count; ++i) {
+            size_t dst_idx = i * channel;
+            size_t src_idx = i * nc;
+
+            for (int c=0; c<nc; ++c)
+                data[dst_idx+c] = (Imath::half)img[src_idx+c];
+        }
+    }
+    
+    std::vector<int> xyzw(4, 0);
+    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(Imath::half) * 8;}
+
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindFloat);
+    cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
+    
+    if (rc != cudaSuccess) {
+        std::cout<<"texture space alloc failed\n";
+        return;
+    }
+
+    rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
+                             nx * sizeof(Imath::half) * channel,
+                             nx * sizeof(Imath::half) * channel,
+                             ny,
+                             cudaMemcpyHostToDevice);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+    }
+}
+
+inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc, bool commpress=false)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
-    std::vector<float4> data;
-    data.resize(nx*ny);
-    for(int j=0;j<ny;j++)
-        for(int i=0;i<nx;i++)
-        {
-            size_t idx = j*nx + i;
-            data[idx] = {
-                    nc>=1?img[idx*nc + 0]:0,
-                    nc>=2?img[idx*nc + 1]:0,
-                    nc>=3?img[idx*nc + 2]:0,
-                    nc>=4?img[idx*nc + 3]:0,
-            };
+    auto channel = (nc==3) ? 4:nc;
+
+    std::vector<half> data(nx * ny * channel, 0);
+    if (nc == channel) {
+        for (size_t i=0; i<data.size(); ++i) {
+            data[i] = (Imath::half)img[i];
         }
-    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(32, 32, 32, 32, cudaChannelFormatKindFloat);
+    } else {
+        auto count = nx * ny;
+        for (size_t i=0; i<count; ++i) {
+            size_t dst_idx = i * channel;
+            size_t src_idx = i * nc;
+
+            for (int c=0; c<nc; ++c)
+                data[dst_idx+c] = (Imath::half)img[src_idx+c];
+        }
+    }
+
+    std::vector<int> xyzw(4, 0);
+    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(Imath::half) * 8;}
+
+    cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindFloat);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
     if (rc != cudaSuccess) {
         std::cout<<"texture space alloc failed\n";
         return 0;
     }
     rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
-                             nx * sizeof(float) * 4,
-                             nx * sizeof(float) * 4,
+                             nx * sizeof(Imath::half) * channel,
+                             nx * sizeof(Imath::half) * channel,
                              ny,
                              cudaMemcpyHostToDevice);
     if (rc != cudaSuccess) {
@@ -612,6 +880,7 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
         texture->gpuImageArray = nullptr;
         return 0;
     }
+    texture->channel = channel;
     return texture;
 }
 
@@ -633,109 +902,6 @@ inline void logInfoVRAM(std::string info) {
     std::cout << " <<< " << info << " >>> " << std::endl;
     printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
         used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
-}
-
-inline std::map<std::string, uint> matIDtoShaderIndex;
-
-inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb_cached_map;
-inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
-
-inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
-
-inline std::vector<std::tuple<std::string, uint8_t, glm::mat4>> volumeTrans;
-inline std::vector<std::tuple<std::string, std::shared_ptr<VolumeWrapper>>> volumeBoxs;
-
-inline bool preloadVolumeBox(std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
-
-    volumeTrans.push_back( {matid, bounds, transform} );
-    return true;
-}
-
-inline bool processVolumeBox() {
-
-    volumeBoxs.clear();
-    for (auto& [key, bounds, val] : volumeTrans) {
-        auto volume_ptr = std::make_shared<VolumeWrapper>();
-        volume_ptr->bounds = bounds;
-        volume_ptr->transform = val;
-        buildVolumeAccel(volume_ptr->accel, *volume_ptr, context);
-        volumeBoxs.emplace_back( std::tuple{ key, volume_ptr } );
-    }
-    volumeTrans.clear();
-    return true;
-}
-
-inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB, 
-                       uint index_of_shader, uint index_inside_shader,
-                       const glm::mat4& transform, 
-                       std::string& combined_key)
-{
-    auto path = texVDB.path;
-    auto channel = texVDB.channel;
-
-    std::filesystem::path filePath = path;
-
-    if ( !std::filesystem::exists(filePath) ) {
-        std::cout << filePath.string() << " doesn't exist" << std::endl;
-        return false;
-    }
-
-    auto fileTime = std::filesystem::last_write_time(filePath);
-    // std::filesystem::file_time_type::duration ft = fileTime.time_since_epoch();
-    // if (filePath.extension() != ".vdb")
-    // {
-    //     std::cout << filePath.filename() << " doesn't exist";
-    //     return false;
-    // }
-
-        auto isNumber = [] (const std::string& s)
-        {
-            for (char const &ch : s) {
-                if (std::isdigit(ch) == 0)
-                    return false;
-            }
-            return true;
-        };
-
-    if ( isNumber(channel) ) {
-        auto channel_index = (uint)std::stoi(channel);
-        channel = fetchGridName(path, channel_index);
-    } else {
-        checkGridName(path, channel);
-    }
-
-    const auto vdb_key = path + "{" + channel + "}";
-    combined_key = vdb_key;
-
-    zeno::log_debug("loading VDB :{}", path);
-
-    if (g_vdb_cached_map.count(vdb_key)) {
-
-        auto& cached = g_vdb_cached_map[vdb_key];
-
-        if (transform == cached->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
-
-            g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
-            return true;
-        } else {
-            cleanupVolume(*g_vdb_cached_map[vdb_key]);
-        }
-    }
-
-    auto volume_ptr = std::make_shared<VolumeWrapper>();
-    volume_ptr->file_time = fileTime;
-    volume_ptr->transform = transform;
-    volume_ptr->selected = {channel};
-    volume_ptr->type = texVDB.eleType;
-    
-    auto succ = loadVolume(*volume_ptr, path); 
-    
-    if (!succ) {return false;}
-
-    g_vdb_cached_map[vdb_key] = volume_ptr;
-    g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
-
-    return true;
 }
 
 inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
@@ -776,10 +942,31 @@ struct TexKey {
     }
 };
 
-inline std::map<TexKey, std::shared_ptr<cuTexture>> tex_lut;
-inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
-inline std::map<std::string, std::string> md5_path_mapping;
+struct TexKeyHash
+{
+    size_t operator()(const TexKey& key) const
+    {
+        return hash(key);
+    }
+
+    static size_t hash(const TexKey& s) noexcept
+    {
+        std::size_t h1 = std::hash<std::string>{}(s.path);
+        std::size_t h2 = std::hash<bool>{}(s.blockCompression);
+        return h1 ^ (h2 << 1); // or use boost::hash_combine (see Discussion)
+    }
+
+    static bool equal( const TexKey& x, const TexKey& y ) {
+        return x.path == y.path && x.blockCompression == y.blockCompression;
+    }
+};
+
+inline phmap::parallel_node_hash_map_m<TexKey, std::shared_ptr<cuTexture>, TexKeyHash> tex_lut;
+inline phmap::parallel_flat_hash_map_m<TexKey, std::filesystem::file_time_type, TexKeyHash> g_tex_last_write_time;
+inline phmap::parallel_flat_hash_map_m<std::string, std::string> md5_path_mapping;
+
 inline std::optional<std::string> sky_tex;
+inline std::shared_ptr<cuTexture> sky_tex_ptr;
 inline std::string default_sky_tex;
 
 inline std::optional<std::function<void(void)>> portal_delayed;
@@ -850,14 +1037,22 @@ inline void calc_sky_cdf_map(cuTexture* tex, int nx, int ny, int nc, std::functi
 }
 
 static std::string calculateMD5(const std::vector<char>& input) {
-    unsigned char digest[CryptoPP::Weak::MD5::DIGESTSIZE];
-    CryptoPP::Weak::MD5().CalculateDigest(digest, (const unsigned char*)input.data(), input.size());
-    CryptoPP::HexEncoder encoder;
-    std::string output;
-    encoder.Attach(new CryptoPP::StringSink(output));
-    encoder.Put(digest, sizeof(digest));
-    encoder.MessageEnd();
-    return output;
+    websocketpp::md5::md5_state_t ctx;
+    websocketpp::md5::md5_init(&ctx);
+    websocketpp::md5::md5_append(&ctx,
+        reinterpret_cast<const websocketpp::md5::md5_byte_t*>(input.data()),
+        input.size()
+    );
+    websocketpp::md5::md5_byte_t digest[16];
+    websocketpp::md5::md5_finish(&ctx, digest);
+
+    // 转为十六进制字符串
+    std::ostringstream oss;
+    oss << std::hex << std::setfill('0');
+    for (int i = 0; i < 16; ++i) {
+        oss << std::setw(2) << static_cast<int>(digest[i]);
+    }
+    return oss.str();
 }
 
 namespace detail {
@@ -869,27 +1064,41 @@ namespace detail {
     };
 }
 
+template<typename T=float>
+static std::shared_ptr<cuTexture> changeOrCreateCuImage(const TexKey& tex_key, T* img, int nx, int ny, int nc, bool compress=false) {
+        
+    auto find = tex_lut.find(tex_key);
+
+     if(find != tex_lut.end()) {
+        auto ptr = find->second;
+        if constexpr (std::is_same_v<T, float>)
+            changeCudaTexture(ptr, img, nx, ny, nc);
+        else if constexpr (std::is_same_v<T, unsigned char>)
+            changeCudaTexture(ptr, img, nx, ny, nc, compress);
+
+        return ptr;
+    } else {
+        return makeCudaTexture(img, nx, ny, nc, compress);
+    }
+}
+
 template<typename TaskType=void>
 inline void addTexture(std::string path, bool blockCompression=false, TaskType* task=nullptr)
 {
     std::string native_path = std::filesystem::u8path(path).string();
 
-    TexKey tex_key {path, blockCompression}; 
-
-    if (tex_lut.count(tex_key)) {
-        return; // do nothing
-    }
+    TexKey tex_key {path, blockCompression};
 
     zeno::log_debug("loading texture :{}", path);
 
-    bool should_reload = false;
     if (std::filesystem::exists(native_path)) {
         std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
 
-        if(g_tex_last_write_time[path] != ftime) {
-            should_reload = true;
+        if (g_tex_last_write_time.count(tex_key)) {
+            if (g_tex_last_write_time[tex_key] == ftime) return;
         }
-        g_tex_last_write_time[path] = ftime;
+        g_tex_last_write_time.insert( {tex_key, ftime} );
+
     } else {
         zeno::log_info("file {} doesn't exist", path);
         return;
@@ -898,27 +1107,31 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     auto input = readData(native_path);
     std::string md5Hash = calculateMD5(input);
 
-    if ( md5_path_mapping.count(md5Hash) && !should_reload) {
+    if ( md5_path_mapping.count(md5Hash)) {
 
         auto& alt_path = md5_path_mapping[md5Hash];
         auto alt_key = TexKey { alt_path, blockCompression };
 
         if (tex_lut.count(alt_key)) {
-
-            tex_lut[tex_key] = tex_lut[alt_key];
-            zeno::log_info("path {} reuse {} tex", path, alt_path);
+            tex_lut.insert( {tex_key, tex_lut[alt_key]} );
+            //zeno::log_info("path {} reuse {} tex", path, alt_path);
             return;
         }
     }
     else {
-        md5_path_mapping[md5Hash] = path;
+        md5_path_mapping.insert({md5Hash, path});
     }
+
+    unsigned char* ldr_image = nullptr;
+    float* hdr_image = nullptr;
 
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
 
     std::function<float(uint32_t)> lookupTexture = [](uint32_t x) {return 0.0f;};
     std::function<void(void)>     cleanupTexture = [](){};
+
+    std::shared_ptr<cuTexture> newTexture = nullptr;
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -941,8 +1154,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             }
         }
         assert(rgba);
-
-        tex_lut[tex_key] = makeCudaTexture(rgba, nx, ny, nc);
+        hdr_image = rgba;
 
         lookupTexture = [rgba](uint32_t idx) {
             return rgba[idx];
@@ -962,26 +1174,22 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
 
         raii<CUdeviceptr> iesBuffer;
         size_t data_length = iesd.size() * sizeof(float);
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &iesBuffer.reset() ), data_length) );
+        iesBuffer.resize(data_length);
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );
         
         g_ies[path] = {std::move(iesBuffer), coneAngle };
+        return;
     }
     else if (zeno::getSession().nodeClasses.count("ReadPNG16") > 0 && zeno::ends_with(path, ".png", false)) {
-        auto outs = zeno::TempNodeSimpleCaller("ReadPNG16")
-                .set2("path", path)
-                .call();
-
-        // Create nodes
-        auto img = outs.get<zeno::PrimitiveObject>("image");
+        path = std::filesystem::u8path(path).string();
+        auto img = read_png(path.c_str());
         if (img->verts.size() == 0) {
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            newTexture = std::make_shared<cuTexture>();
             return;
         }
-        nx = std::max(img->userData().get2<int>("w"), 1);
-        ny = std::max(img->userData().get2<int>("h"), 1);
-        nc = std::max(img->userData().get2<int>("channels"), 1);
+        nx = std::max(img->userData()->get_int("w"), 1);
+        ny = std::max(img->userData()->get_int("h"), 1);
+        nc = std::max(img->userData()->get_int("channels"), 1);
 
         auto ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
 
@@ -993,7 +1201,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
                     ucdata->at(i*nc+c) = (img->verts[i][c] * 255.0);
                 }
             }
-            tex_lut[tex_key] = makeCudaTexture(ucdata->data(), nx, ny, nc, blockCompression);
+            ldr_image = ucdata->data();
 
         } else {
 
@@ -1006,7 +1214,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
                 data[i].z = (unsigned char)(img->verts[i][2]*255.0);
                 data[i].w = (unsigned char)(alpha[i]        *255.0);
             }
-            tex_lut[tex_key] = makeCudaTexture((unsigned char *)data, nx, ny, 4, blockCompression);
+            ldr_image = ucdata->data();
         }
         
         lookupTexture = [ucdata=ucdata, img=img](uint32_t idx) {
@@ -1018,15 +1226,14 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            newTexture = std::make_shared<cuTexture>();
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
+        hdr_image = img;
         
-        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc);
-
         lookupTexture = [img](uint32_t idx) {
             return img[idx];
         };
@@ -1035,16 +1242,17 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         };
     }
     else {
+
         unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading ldr texture failed:{}", path);
-            tex_lut[tex_key] = std::make_shared<cuTexture>();
+            tex_lut.insert( {tex_key, std::make_shared<cuTexture>()} );
             return;
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         
-        tex_lut[tex_key] = makeCudaTexture(img, nx, ny, nc, blockCompression);
+        ldr_image = img;
 
         lookupTexture = [img](uint32_t idx) {
             return (float)img[idx] / 255;
@@ -1053,34 +1261,57 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             stbi_image_free(img);
         };
     }
-    tex_lut[tex_key]->md5 = md5Hash;
+
+    if (hdr_image != nullptr) {
+        newTexture = changeOrCreateCuImage(tex_key, hdr_image, nx, ny, nc, blockCompression);
+    } else if  (ldr_image != nullptr) {
+        newTexture = changeOrCreateCuImage(tex_key, ldr_image, nx, ny, nc, blockCompression);
+    } else {
+        newTexture = makeFallbackAlphaTexture();
+    }
+
+    if (newTexture != nullptr) {
+        newTexture->md5 = md5Hash;
 
     if constexpr (!detail::is_void<TaskType>::value) {
         if (task != nullptr) {
-            (*task)(tex_lut[tex_key].get(), nx, ny, nc, lookupTexture);
+                (*task)(newTexture.get(), nx, ny, nc, lookupTexture);
         }
     }
-
+        tex_lut.insert({ tex_key, newTexture });
+    }
     cleanupTexture();
 }
+
 inline void removeTexture(const TexKey &key) {
 
     auto& path = key.path;
 
-    if (path.size()) {
+    if (!path.empty()) {
+
         if (tex_lut.count(key)) {
-            zeno::log_info("removeTexture: {} blockCompresssion: {}", path, key.blockCompression);
+
             md5_path_mapping.erase(tex_lut[key]->md5);
+            tex_lut.erase(key);
         }
         else {
             zeno::log_error("removeTexture: {} not exists!", path);
         }
-        tex_lut.erase(key);
-        g_tex_last_write_time.erase(path);
+        g_tex_last_write_time.erase(key);
     }
 }
 
-inline void addSkyTexture(std::string path) {
+inline std::shared_ptr<cuTexture> getTexturePtr(const std::string& path) {
+    
+    auto find = OptixUtil::tex_lut.find({path, false});
+
+    if (find != OptixUtil::tex_lut.end())
+        return find->second;
+    else
+        return nullptr;
+}
+
+inline void setSkyTexture(std::string& path) {
     
     auto task = [](cuTexture* tex, uint32_t nx, uint32_t ny, uint32_t nc, std::function<float(uint32_t)> &lookupTexture) {
         
@@ -1096,6 +1327,7 @@ inline void addSkyTexture(std::string path) {
     };
 
     addTexture(path, false, &task);
+    sky_tex_ptr = OptixUtil::getTexturePtr(path);
 }
 
 struct OptixShaderCore {
@@ -1144,7 +1376,7 @@ struct OptixShaderCore {
          
         if(createModule(module.reset(), context, _source, tmp_name.c_str(), macro_list, _c_group))
         {
-            std::cout<<"module created"<<std::endl;
+            // std::cout<<"module created"<<std::endl;
 
             m_radiance_hit_group.reset();
             m_occlusion_hit_group.reset();
@@ -1166,15 +1398,26 @@ struct OptixShaderCore {
 
 struct OptixShaderWrapper
 {
+    bool dirty = true;
     std::shared_ptr<OptixShaderCore> core{};
     
     std::string                 callable {};
     raii<OptixModule>           callable_module {};
     raii<OptixProgramGroup> callable_prog_group {};
    
-    std::map<int, TexKey>                m_texs {};
-    bool                                has_vdb {};
-    std::string                       parameters{};
+    std::vector<uint64_t>                  texs {};
+    std::vector<std::string>               vbds {};
+
+    nlohmann::json                    parameters{};
+    std::map<std::string, std::string>   macros {};
+
+    bool isVol() const {
+        return macros.count("_volu_");
+    }
+
+    bool isHomoVol() const {
+        return macros.count("_homo_");
+    }
 
     OptixShaderWrapper() = default;
     ~OptixShaderWrapper() = default;
@@ -1191,13 +1434,17 @@ struct OptixShaderWrapper
         std::string tmp_name = "Callable.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
 
-        std::vector<std::string> macros {};
+        std::vector<std::string> _macros_ {};
 
-        if (fallback) {
-            macros.push_back("--define-macro=_FALLBACK_"); 
+        if (!fallback) {
+            _macros_.push_back("--define-macro=__FORWARD__");
         }
 
-        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), macros); 
+        for (auto& [k, v] : this->macros) {
+            _macros_.push_back("--define-macro=" + k + "=" + v);
+        }
+
+        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), _macros_); 
         if (callable_done) {
 
             // Callable programs
@@ -1222,30 +1469,26 @@ struct OptixShaderWrapper
 
     void clearTextureRecords()
     {
-        m_texs.clear();
-    }
-    void addTexture(int i, TexKey key)
-    {
-        m_texs[i] = key;
+        texs = {};
     }
     cudaTextureObject_t getTexture(int i)
     {
-        if(m_texs.find(i)!=m_texs.end())
-        {
-            if(tex_lut.find(m_texs[i])!=tex_lut.end())
-            {
-                return tex_lut[m_texs[i]]->texture;
-            }
-            return 0;
-        }
+        if (i>=texs.size())
         return 0;
+        else
+            return texs[i];
     }
 };
 
 inline std::vector<OptixShaderWrapper> rtMaterialShaders;//just have an arry of shaders
 
-inline void createPipeline()
+inline void createPipeline(uint tree_depth, bool shaderDirty)
 {
+    auto shader_count = rtMaterialShaders.size();
+    auto newMark = PipelineMark {tree_depth, shader_count};
+    if (!shaderDirty && newMark == pipelineMark)
+        return;
+
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
 
@@ -1266,10 +1509,10 @@ inline void createPipeline()
     char   log[2048];
     size_t sizeof_log = sizeof( log );
 
-    if (isPipelineCreated)
+    if (std::get<0>(pipelineMark)!=0)
     {
-        OPTIX_CHECK(optixPipelineDestroy(pipeline));
-        isPipelineCreated = false;
+        OPTIX_CHECK_LOG(optixPipelineDestroy(pipeline));
+        pipelineMark = newMark;
     }
     OPTIX_CHECK_LOG( optixPipelineCreate(
                 context,
@@ -1281,7 +1524,7 @@ inline void createPipeline()
                 &sizeof_log,
                 &pipeline
                 ) );
-    isPipelineCreated = true;
+    pipelineMark = newMark;
 
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
@@ -1309,7 +1552,7 @@ inline void createPipeline()
                 &continuation_stack_size
                 ) );
 
-    const uint32_t max_traversal_depth = 3;
+    const uint32_t max_traversal_depth = tree_depth;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
                 direct_callable_stack_size_from_traversal,
@@ -1320,70 +1563,4 @@ inline void createPipeline()
 }
 
 
-template <typename T = char>
-class CuBuffer
-{
-  public:
-    CuBuffer( size_t count = 0 ) { alloc( count ); }
-    ~CuBuffer() { free(); }
-    void alloc( size_t count )
-    {
-        free();
-        m_allocCount = m_count = count;
-        if( m_count )
-        {
-            CUDA_CHECK( cudaMalloc( &m_ptr, m_allocCount * sizeof( T ) ) );
         }
-    }
-    void allocIfRequired( size_t count )
-    {
-        if( count <= m_allocCount )
-        {
-            m_count = count;
-            return;
-        }
-        alloc( count );
-    }
-    CUdeviceptr get() const { return reinterpret_cast<CUdeviceptr>( m_ptr ); }
-    CUdeviceptr get( size_t index ) const { return reinterpret_cast<CUdeviceptr>( m_ptr + index ); }
-    void        free()
-    {
-        m_count      = 0;
-        m_allocCount = 0;
-        CUDA_CHECK( cudaFree( m_ptr ) );
-        m_ptr = nullptr;
-    }
-    CUdeviceptr release()
-    {
-        m_count             = 0;
-        m_allocCount        = 0;
-        CUdeviceptr current = reinterpret_cast<CUdeviceptr>( m_ptr );
-        m_ptr               = nullptr;
-        return current;
-    }
-    void upload( const T* data )
-    {
-        CUDA_CHECK( cudaMemcpy( m_ptr, data, m_count * sizeof( T ), cudaMemcpyHostToDevice ) );
-    }
-
-    void download( T* data ) const
-    {
-        CUDA_CHECK( cudaMemcpy( data, m_ptr, m_count * sizeof( T ), cudaMemcpyDeviceToHost ) );
-    }
-    void downloadSub( size_t count, size_t offset, T* data ) const
-    {
-        assert( count + offset <= m_allocCount );
-        CUDA_CHECK( cudaMemcpy( data, m_ptr + offset, count * sizeof( T ), cudaMemcpyDeviceToHost ) );
-    }
-    size_t count() const { return m_count; }
-    size_t reservedCount() const { return m_allocCount; }
-    size_t byteSize() const { return m_allocCount * sizeof( T ); }
-
-  private:
-    size_t m_count      = 0;
-    size_t m_allocCount = 0;
-    T*     m_ptr        = nullptr;
-};
-
-
-}

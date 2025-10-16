@@ -2,6 +2,8 @@
 #include <openvdb/tools/GridTransformer.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/zeno.h>
+#include <zeno/utils/interfaceutil.h>
+
 
 namespace zeno {
 struct TransformVDB : INode {
@@ -21,32 +23,31 @@ struct TransformVDB : INode {
     }
 
     void apply() override {
-        auto vdb = get_input<VDBGrid>("VDBGrid");
-        auto tran = get_input2<zeno::vec3f>("translation");
-        auto euler = get_input2<zeno::vec3f>("eulerXYZ");
-        auto sca = get_input2<zeno::vec3f>("scaling");
+        auto vdb = safe_uniqueptr_cast<VDBGrid>(clone_input("VDBGrid"));
+        auto tran = toVec3f(get_input2_vec3f("translation"));
+        auto euler = toVec3f(get_input2_vec3f("eulerXYZ"));
+        auto sca = toVec3f(get_input2_vec3f("scaling"));
 
         auto type = vdb->getType();
         if (type == "FloatGrid") {
-            auto &grid = std::dynamic_pointer_cast<VDBFloatGrid>(vdb)->m_grid;
+            auto grid = safe_dynamic_cast<VDBFloatGrid>(vdb.get())->m_grid;
             vdb_transform(grid, tran, euler, sca);
         } else if (type == "Int32Grid") {
-            auto &grid = std::dynamic_pointer_cast<VDBIntGrid>(vdb)->m_grid;
+            auto &grid = safe_dynamic_cast<VDBIntGrid>(vdb.get())->m_grid;
             vdb_transform(grid, tran, euler, sca);
         } else if (type == "Vec3fGrid") {
-            auto &grid = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb)->m_grid;
+            auto &grid = safe_dynamic_cast<VDBFloat3Grid>(vdb.get())->m_grid;
             vdb_transform(grid, tran, euler, sca);
         } else if (type == "Vec3IGrid") {
-            auto &grid = std::dynamic_pointer_cast<VDBInt3Grid>(vdb)->m_grid;
+            auto &grid = safe_dynamic_cast<VDBInt3Grid>(vdb.get())->m_grid;
             vdb_transform(grid, tran, euler, sca);
         } else if (type == "PointDataGrid") {
-            auto &grid = std::dynamic_pointer_cast<VDBPointsGrid>(vdb)->m_grid;
+            auto &grid = safe_dynamic_cast<VDBPointsGrid>(vdb.get())->m_grid;
             vdb_transform(grid, tran, euler, sca);
         } else {
             throw zeno::Exception("Bad VDB type.");
         }
-
-        set_output("VDBGrid", vdb);
+        set_output("VDBGrid", std::move(vdb));
     }
 };
 

@@ -1,4 +1,4 @@
-#include "zenolink.h"
+﻿#include "zenolink.h"
 #include "zenonodebase.h"
 #include "zenosubgraphscene.h"
 #include "nodeeditor/gv/nodesys_common.h"
@@ -12,6 +12,7 @@
 #include "model/graphsmanager.h"
 #include "zenomainwindow.h"
 #include "util/uihelper.h"
+#include "declmetatype.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -112,7 +113,7 @@ ZenoTempLink::ZenoTempLink(
     , m_adsortedSocket(nullptr)
     , m_selNodes(selNodes)
 {
-    int type = m_fixedSocket->paramIndex().data(ROLE_SOCKET_TYPE).toInt();
+    int type = m_fixedSocket->paramIndex().data(QtRole::ROLE_SOCKET_TYPE).toInt();
     m_bObjLink = type != zeno::Socket_Primitve;
 }
 
@@ -189,7 +190,7 @@ void ZenoTempLink::setAdsortedSocket(ZenoSocketItem* pSocket)
     if (m_adsortedSocket)
     {
         QModelIndex idx = m_adsortedSocket->paramIndex();
-        PARAM_LINKS links = idx.data(ROLE_LINKS).value<PARAM_LINKS>();
+        PARAM_LINKS links = idx.data(QtRole::ROLE_LINKS).value<PARAM_LINKS>();
         if (links.isEmpty() || (links.size() == 1 && links[0] == m_oldLink))
             m_adsortedSocket->setSockStatus(ZenoSocketItem::STATUS_TRY_DISCONN);
     }
@@ -217,23 +218,24 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
     , m_index(idx)
     , m_bLegacyLink(false)
     , m_bHover(false)
+    , m_pTextItem(nullptr)
 {
     setAcceptHoverEvents(true);
     setFlags(ItemIsSelectable | ItemIsFocusable);
     ZASSERT_EXIT(inNode && outNode && idx.isValid());
 
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(QtRole::ROLE_OUTSOCK_IDX).toModelIndex();
     setZValue(ZVALUE_LINK);
     setFlag(QGraphicsItem::ItemIsSelectable);
 
-    if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP) ||
-        SOCKPROP_LEGACY == outSockIdx.data(ROLE_PARAM_SOCKPROP))
+    if (SOCKPROP_LEGACY == inSockIdx.data(QtRole::ROLE_PARAM_SOCKPROP) ||
+        SOCKPROP_LEGACY == outSockIdx.data(QtRole::ROLE_PARAM_SOCKPROP))
     {
         m_bLegacyLink = true;
     }
 
-    zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    zeno::EdgeInfo edge = m_index.data(QtRole::ROLE_LINK_INFO).value<zeno::EdgeInfo>();
 
     QString outKey = QString::fromStdString(edge.outKey);
     QString inKey = QString::fromStdString(edge.inKey);
@@ -241,6 +243,14 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNodeBase* outNo
     m_dstPos = inNode->getSocketPos(inSockIdx, inKey);
     m_srcPos = outNode->getSocketPos(outSockIdx, outKey);
     m_bObjLink = edge.bObjLink;
+
+    if (!inKey.isEmpty()) {
+        m_pTextItem = new ZGraphicsTextItem(this);
+        m_pTextItem->setDefaultTextColor(QColor("#FFFFFF"));
+        m_pTextItem->setFont(QApplication::font());
+        m_pTextItem->setText(inKey);
+        updateTextItemPosition();
+    }
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
@@ -263,15 +273,15 @@ void ZenoFullLink::onInSocketPosChanged()
     ZenoNodeBase* pNode = qobject_cast<ZenoNodeBase*>(sender());
     ZASSERT_EXIT(pNode);
 
-    zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    zeno::EdgeInfo edge = m_index.data(QtRole::ROLE_LINK_INFO).value<zeno::EdgeInfo>();
     QString inKey = QString::fromStdString(edge.inKey);
 
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    const QModelIndex& inNodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-    const QModelIndex& outNodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-    m_bothCollaspedNode = inNodeIdx.data(ROLE_COLLASPED).toBool() &&
-        outNodeIdx.data(ROLE_COLLASPED).toBool();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(QtRole::ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inNodeIdx = inSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+    const QModelIndex& outNodeIdx = outSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+    m_bothCollaspedNode = inNodeIdx.data(QtRole::ROLE_COLLASPED).toBool() &&
+        outNodeIdx.data(QtRole::ROLE_COLLASPED).toBool();
 
     bool bCollasped = false;
     zeno::SocketType inSockProp = zeno::NoSocket;
@@ -291,15 +301,29 @@ void ZenoFullLink::onInSocketPosChanged()
             m_dstPos = pNode->getSocketPos(inSockIdx, inKey);
         }
     }
+
+    updateTextItemPosition();
 }
 
 void ZenoFullLink::getConnectedState(zeno::SocketType& inSockProp, bool& inNodeCollasped)
 {
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(inSockIdx.isValid());
-    const QModelIndex& inNode = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-    inNodeCollasped = inNode.data(ROLE_COLLASPED).toBool();
-    inSockProp = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
+    const QModelIndex& inNode = inSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+    inNodeCollasped = inNode.data(QtRole::ROLE_COLLASPED).toBool();
+    inSockProp = (zeno::SocketType)inSockIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
+}
+
+void ZenoFullLink::updateTextItemPosition()
+{
+    if (!m_pTextItem || m_pTextItem->toPlainText().isEmpty())
+        return;
+
+    QPointF midPoint = (m_srcPos + m_dstPos) / 2.0;
+    QRectF textRect = m_pTextItem->boundingRect();
+    midPoint -= QPointF(textRect.width() / 2.0, textRect.height() / 2.0);
+
+    m_pTextItem->setPos(midPoint);
 }
 
 void ZenoFullLink::onOutSocketPosChanged()
@@ -310,27 +334,29 @@ void ZenoFullLink::onOutSocketPosChanged()
     ZenoNodeBase* pNode = qobject_cast<ZenoNodeBase*>(sender());
     ZASSERT_EXIT(pNode);
 
-    zeno::EdgeInfo edge = m_index.data(ROLE_LINK_INFO).value<zeno::EdgeInfo>();
+    zeno::EdgeInfo edge = m_index.data(QtRole::ROLE_LINK_INFO).value<zeno::EdgeInfo>();
     QString outKey = QString::fromStdString(edge.outKey);
 
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    const QModelIndex& inNodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-    const QModelIndex& outNodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-    m_bothCollaspedNode = inNodeIdx.data(ROLE_COLLASPED).toBool() &&
-        outNodeIdx.data(ROLE_COLLASPED).toBool();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(QtRole::ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inNodeIdx = inSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+    const QModelIndex& outNodeIdx = outSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
+    m_bothCollaspedNode = inNodeIdx.data(QtRole::ROLE_COLLASPED).toBool() &&
+        outNodeIdx.data(QtRole::ROLE_COLLASPED).toBool();
 
     m_srcPos = pNode->getSocketPos(outSockIdx, outKey);
+
+    updateTextItemPosition();
 }
 
 bool ZenoFullLink::isPrimLink()
 {
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
+    const QModelIndex& outSockIdx = m_index.data(QtRole::ROLE_OUTSOCK_IDX).toModelIndex();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
     ZASSERT_EXIT(outSockIdx.isValid() && inSockIdx.isValid(), false);
 
-    zeno::SocketType outprop = (zeno::SocketType)outSockIdx.data(ROLE_SOCKET_TYPE).toInt();
-    zeno::SocketType inprop = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
+    zeno::SocketType outprop = (zeno::SocketType)outSockIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
+    zeno::SocketType inprop = (zeno::SocketType)inSockIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
     return outprop == zeno::Socket_ReadOnly && outprop == inprop;
 }
 
@@ -338,10 +364,10 @@ void ZenoFullLink::focusOnNode(const QModelIndex& nodeIdx)
 {
     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
     ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
-    if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
+    if (ZenoSubGraphView* pView = pScene->getView())
     {
         ZASSERT_EXIT(nodeIdx.isValid());
-        pView->focusOn(nodeIdx.data(ROLE_NODE_NAME).toString(), QPointF(), false);
+        pView->focusOn(nodeIdx.data(QtRole::ROLE_NODE_NAME).toString(), QPointF(), false);
     }
 }
 
@@ -406,8 +432,8 @@ int ZenoFullLink::type() const
 
 void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
-    const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-    auto inSockProp = (zeno::SocketType)inSockIdx.data(ROLE_SOCKET_TYPE).toInt();
+    const QModelIndex& inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
+    auto inSockProp = (zeno::SocketType)inSockIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
     if (m_bLegacyLink)
     {
         painter->save();
@@ -428,7 +454,11 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
             painter->save();
             QPen pen;
             pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(192, 36, 36, 153));
-            pen.setWidthF(ZenoStyle::scaleWidth(4));
+            if (m_pTextItem && !m_pTextItem->document()->isEmpty()) {
+                pen.setWidthF(ZenoStyle::scaleWidth(2));
+            } else {
+                pen.setWidthF(ZenoStyle::scaleWidth(4));
+            }
             pen.setJoinStyle(Qt::RoundJoin);
             //pen.setStyle(Qt::DashLine);
             painter->setRenderHint(QPainter::Antialiasing);
@@ -462,13 +492,13 @@ void ZenoFullLink::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     QAction* pTraceToInput = new QAction(tr("trace to input socket"));
 
     connect(pTraceToOutput, &QAction::triggered, this, [=]() {
-        QModelIndex outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-        QModelIndex nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+        QModelIndex outSockIdx = m_index.data(QtRole::ROLE_OUTSOCK_IDX).toModelIndex();
+        QModelIndex nodeIdx = outSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
         focusOnNode(nodeIdx);
     });
     connect(pTraceToInput, &QAction::triggered, this, [=]() {
-        QModelIndex inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
-        QModelIndex nodeIdx = inSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+        QModelIndex inSockIdx = m_index.data(QtRole::ROLE_INSOCK_IDX).toModelIndex();
+        QModelIndex nodeIdx = inSockIdx.data(QtRole::ROLE_NODE_IDX).toModelIndex();
         focusOnNode(nodeIdx);
     });
 

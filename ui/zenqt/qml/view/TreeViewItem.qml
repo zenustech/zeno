@@ -191,10 +191,11 @@ Item {
                         target: root.model
                         ignoreUnknownSignals: true
                         function onDataChanged(modelIndex) {
-                           const changedId = modelIndex.internalId
-                           const currentId = _prop.currentIndex.internalId
+                           //整棵树遍历的，有点低效，先用着
+                           const changedId = root.model.data(modelIndex)
+                           const currentId = root.model.data(_prop.currentIndex)
                            if(changedId === currentId){
-                               contentItemLoader.currentRow.currentData = root.model.data(modelIndex);
+                               contentItemLoader.currentRow.currentData = changedId;
                            }
                         }
                      }

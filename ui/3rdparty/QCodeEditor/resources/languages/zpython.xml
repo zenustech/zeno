@@ -1,56 +1,91 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
-    <section name="Keyword">
-		<name>function</name>
-		<name>zeno</name>
-		
-        <name>break</name>
-        <name>const</name>
-        <name>continue</name>
-        <name>do</name>
-        <name>else</name>
-        <name>export</name>
-        <name>for</name>
+	<!--
+	<section name="Keyword">
+		<name>break</name>
+		<name>continue</name>
+		<name>do</name>
+		<name>else</name>
+		<name>for</name>
 		<name>foreach</name>
-        <name>if</name>
-        <name>import</name>
-        <name>return</name>
-        <name>struct</name>
-        <name>while</name>
-    </section>
-    <section name="Type">
+		<name>if</name>
+		<name>while</name>
+		<name>true</name>
+		<name>false</name>
+	</section>
+	<section name="Type">
 		<name>vector</name>
-		<name>array</name>
-		
-        <name>bool</name>
-        <name>double</name>
-        <name>float</name>
-        <name>int</name>
-        <name>void</name>
-    </section>
-    <section name="Function">
-        <name>graph</name>
-        <name>createGraph</name>
-        <name>removeGraph</name>
-        <name>forkMaterial</name>
-        <name>forkGraph</name>
-        <name>renameGraph</name>
+		<name>bool</name>
+		<name>double</name>
+		<name>float</name>
+		<name>int</name>
+		<name>void</name>
+	</section>
+	<section name="Function">
+		<name>ref</name>
+		<name>param</name>
+		<name>parameter</name>
+		<name>log</name>
+		<name>vec3</name>
 
-        <name>name</name>
-        <name>objCls</name>
-        <name>ident</name>
-
-        <name>createNode</name>
-        <name>deleteNode</name>
-        <name>node</name>
-        <name>addLink</name>
-        <name>removeLink</name>
-		
 		<name>sin</name>
 		<name>sinh</name>
 		<name>cos</name>
 		<name>cosh</name>
-		<name>ref</name>
 		<name>rand</name>
+
+		<name>create_attr</name>
+		<name>create_face_attr</name>
+		<name>create_point_attr</name>
+		<name>create_vertex_attr</name>
+		<name>create_geometry_attr</name>
+
+		<name>set_attr</name>
+		<name>set_vertex_attr</name>
+		<name>set_point_attr</name>
+		<name>set_face_attr</name>
+		<name>set_geometry_attr</name>
+
+		<name>has_attr</name>
+		<name>has_vertex_attr</name>
+		<name>has_point_attr</name>
+		<name>has_face_attr</name>
+		<name>has_geometry_attr</name>
+
+		<name>delete_attr</name>
+		<name>delete_vertex_attr</name>
+		<name>delete_point_attr</name>
+		<name>delete_face_attr</name>
+		<name>delete_geometry_attr</name>
+
+		<name>add_vertex</name>
+		<name>add_point</name>
+		<name>add_face</name>
+
+		<name>remove_face</name>
+		<name>remove_point</name>
+		<name>remove_vertex</name>
+
+		<name>npoints</name>
+		<name>nfaces</name>
+		<name>nvertices</name>
+
+		<name>point_faces</name>
+		<name>point_vertex</name>
+		<name>point_vertices</name>
+
+		<name>face_point</name>
+		<name>face_points</name>
+		<name>face_vertex</name>
+		<name>face_vertex_count</name>
+		<name>face_vertices</name>
+
+		<name>vertex_index</name>
+		<name>vertex_next</name>
+		<name>vertex_prev</name>
+		<name>vertex_point</name>
+		<name>vertex_face</name>
+		<name>vertex_face_index</name>
 	</section>
+	-->
 </root>

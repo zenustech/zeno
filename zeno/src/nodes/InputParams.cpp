@@ -33,10 +33,10 @@ struct ParamFormatInfo: IObject {
 
 struct ParamFormat : zeno::INode {
     virtual void apply() override {
-        auto format = std::make_shared<zeno::ParamFormatInfo>();
-        format->name = get_input2<std::string>("name");
-        format->_type = get_input2<std::string>("type");
-        auto defaultValue = get_input2<std::string>("defaultValue");
+        auto format = std::make_unique<zeno::ParamFormatInfo>();
+        format->name = ZImpl(get_input2<std::string>("name");
+        format->_type = ZImpl(get_input2<std::string>("type");
+        auto defaultValue = ZImpl(get_input2<std::string>("defaultValue");
         auto items = zeno::split_str(defaultValue, ',');
         if (format->_type == "int") {
             format->defaultValue = std::stoi(defaultValue);
@@ -90,7 +90,7 @@ struct ParamFormat : zeno::INode {
             format->defaultValue = defaultValue;
         }
 
-        set_output("format", std::move(format));
+        ZImpl(set_output("format", std::move(format));
     }
 };
 
@@ -107,9 +107,9 @@ ZENDEFNODE(ParamFormat, {
 
 struct ParamFileParser : zeno::INode {
     virtual void apply() override {
-        auto formatList = get_input<zeno::ListObject>("formatList");
-        auto params = std::make_shared<zeno::DictObject>();
-        auto path = get_input2<std::string>("configFilePath");
+        auto formatList = ZImpl(get_input<zeno::ListObject>("formatList");
+        auto params = std::make_unique<zeno::DictObject>();
+        auto path = ZImpl(get_input2<std::string>("configFilePath");
         std::string configFilePath = zeno::getConfigVariable("configFilePath");
         if (!configFilePath.empty()) {
             path = configFilePath;
@@ -127,19 +127,19 @@ struct ParamFileParser : zeno::INode {
                 auto items = zeno::split_str(line, ',');
                 zany value;
                 if (items[1] == "int") {
-                    value = std::make_shared<NumericObject>(
+                    value = std::make_unique<NumericObject>(
                             std::stoi(items[2])
                     );
                 }
                 else if (items[1] == "vec2i") {
-                    value = std::make_shared<NumericObject>(vec2i(
+                    value = std::make_unique<NumericObject>(vec2i(
                             std::stoi(items[2]),
                             std::stoi(items[3])
                             )
                     );
                 }
                 else if (items[1] == "vec3i") {
-                    value = std::make_shared<NumericObject>(vec3i(
+                    value = std::make_unique<NumericObject>(vec3i(
                                 std::stoi(items[2]),
                                 std::stoi(items[3]),
                                 std::stoi(items[4])
@@ -147,7 +147,7 @@ struct ParamFileParser : zeno::INode {
                     );
                 }
                 else if (items[1] == "vec4i") {
-                    value = std::make_shared<NumericObject>(vec4i(
+                    value = std::make_unique<NumericObject>(vec4i(
                             std::stoi(items[2]),
                             std::stoi(items[3]),
                             std::stoi(items[4]),
@@ -156,19 +156,19 @@ struct ParamFileParser : zeno::INode {
                     );
                 }
                 else if (items[1] == "float") {
-                    value = std::make_shared<NumericObject>(
+                    value = std::make_unique<NumericObject>(
                         std::stof(items[2])
                     );
                 }
                 else if (items[1] == "vec2f") {
-                    value = std::make_shared<NumericObject>(vec2f(
+                    value = std::make_unique<NumericObject>(vec2f(
                             std::stof(items[2]),
                             std::stof(items[3])
                         )
                     );
                 }
                 else if (items[1] == "vec3f") {
-                    value = std::make_shared<NumericObject>(vec3f(
+                    value = std::make_unique<NumericObject>(vec3f(
                             std::stof(items[2]),
                             std::stof(items[3]),
                             std::stof(items[4])
@@ -176,7 +176,7 @@ struct ParamFileParser : zeno::INode {
                     );
                 }
                 else if (items[1] == "vec4f") {
-                    value = std::make_shared<NumericObject>(vec4f(
+                    value = std::make_unique<NumericObject>(vec4f(
                             std::stof(items[2]),
                             std::stof(items[3]),
                             std::stof(items[4]),
@@ -185,7 +185,7 @@ struct ParamFileParser : zeno::INode {
                     );
                 }
                 else {
-                    value = std::make_shared<StringObject>(items[2]);
+                    value = std::make_unique<StringObject>(items[2]);
                 }
                 params->lut[items[0]] = value;
                 saved_names.insert(items[0]);
@@ -206,54 +206,54 @@ struct ParamFileParser : zeno::INode {
                 zany value;
                 if (std::holds_alternative<int>(p->defaultValue)) {
                     auto v = std::get<int>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d\n", p->name.c_str(), p->_type.c_str(), v);
                 }
                 else if (std::holds_alternative<vec2i>(p->defaultValue)) {
                     auto v = std::get<zeno::vec2i>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1]);
                 }
                 else if (std::holds_alternative<vec3i>(p->defaultValue)) {
                     auto v = std::get<zeno::vec3i>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2]);
                 }
                 else if (std::holds_alternative<vec4i>(p->defaultValue)) {
                     auto v = std::get<zeno::vec4i>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%d,%d,%d,%d\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2], v[3]);
                 }
                 else if (std::holds_alternative<float>(p->defaultValue)) {
                     auto v = std::get<float>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f\n", p->name.c_str(), p->_type.c_str(), v);
                 }
                 else if (std::holds_alternative<vec2f>(p->defaultValue)) {
                     auto v = std::get<zeno::vec2f>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1]);
                 }
                 else if (std::holds_alternative<vec3f>(p->defaultValue)) {
                     auto v = std::get<zeno::vec3f>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2]);
                 }
                 else if (std::holds_alternative<vec4f>(p->defaultValue)) {
                     auto v = std::get<zeno::vec4f>(p->defaultValue);
-                    value = std::make_shared<NumericObject>(v);
+                    value = std::make_unique<NumericObject>(v);
                     fprintf(fp, "%s,%s,%f,%f,%f,%f\n", p->name.c_str(), p->_type.c_str(), v[0], v[1], v[2], v[3]);
                 }
                 else if (std::holds_alternative<std::string>(p->defaultValue)) {
                     auto v = std::get<std::string>(p->defaultValue);
-                    value = std::make_shared<StringObject>(v);
+                    value = std::make_unique<StringObject>(v);
                     fprintf(fp, "%s,%s,%s\n", p->name.c_str(), p->_type.c_str(), v.c_str());
                 }
                 params->lut[p->name] = value;
             }
             fclose(fp);
         }
-        set_output("params", std::move(params));
+        ZImpl(set_output("params", std::move(params));
     }
 };
 

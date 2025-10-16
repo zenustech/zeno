@@ -1,10 +1,8 @@
-#ifndef __ZENO_MAINWINDOW_H__
+﻿#ifndef __ZENO_MAINWINDOW_H__
 #define __ZENO_MAINWINDOW_H__
 
 #include <unordered_set>
 #include <QtWidgets>
-#include "layout/zdockwidget.h"
-#include "panel/zenolights.h"
 #include "layout/winlayoutrw.h"
 #include <QTcpSocket>
 #include <QLocalSocket>
@@ -18,6 +16,8 @@ class LiveHttpServer;
 class LiveSignalsBridge;
 class ViewportWidget;
 class ZenoPropPanel;
+class ZenoImagePanel;
+class ZGeometrySpreadsheet;
 
 namespace ads
 {
@@ -42,29 +42,27 @@ public:
     void setInDlgEventLoop(bool bOn);
     zeno::TimelineInfo timelineInfo();
     void setAlways(bool bAlways);
-    void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
     bool isAlways() const;
-    bool isAlwaysLightCamera() const;
-    bool isAlwaysMaterial() const;
     void resetTimeline(zeno::TimelineInfo info);
     void initUserdata(USERDATA_SETTING info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
+    QVector<ZenoImagePanel*> imagepanels() const;
     DisplayWidget* getCurrentViewport() const;
     DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
+    QVector<ZGeometrySpreadsheet*> getGeoSpreadSheet() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
-
-    void doFrameUpdate(int frame);
+    void onSolverCallback(zeno::SOLVER_MSG msg, int startFrame, int endFrame);
     void sortRecentFile(QStringList &lst);
     bool isOnlyOptixWindow() const;
     bool isRecordByCommandLine() const;
     void statusbarShowMessage(const std::string& text, int timeout = 0) const;
 
     bool propPanelIsFloating(ZenoPropPanel* panel);
+    void updateStatusTip(bool showProgress, const QString& text, float progress = 0.f);
 
     QLineEdit* selected = nullptr;
-    ZenoLights* lightPanel = nullptr;
 
     enum ActionType {
         //File
@@ -118,8 +116,11 @@ public:
         ACTION_GL_VIEWPORT,
         ACTION_NODE_PARAMETERS,
         ACTION_OBJECT_DATA,
+        ACTION_OBJECT_DATA_QML,
         ACTION_LOG,
+        ACTION_PYTHON_EXECUTOR,
         ACTION_OPTIX_VIEW,
+        ACTION_NODE_EDITOR_QML,
         ACTION_IMAGE,
         ACTION_COMMAND_ARGS,
         ACTION_OPEN_PATH,
@@ -136,6 +137,8 @@ public:
         ACTION_ZENCACHE,
         ACTION_SET_SHORTCUT,
         ACTION_PREFERENCES,
+        //tools
+        ACTION_COMPOSE_VIDEO,
         //Others
         ACTION_CUSTOM_UI,
         ACTION_ZOOM,
@@ -169,28 +172,30 @@ public slots:
     void importGraph(bool bPreset = false);
     void exportGraph();
     void onNodesSelected(GraphModel* subgraph, const QModelIndexList& nodes, bool select);
-    void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
+    void onPrimitiveSelected(const std::unordered_set<std::string>& primids, std::string mtlid = "", bool selecFromOpitx = false);
     void updateViewport(const QString& action = "");
     void onRunFinished();
     void onFeedBack();
     void clearErrorMark();
-    void updateLightList();
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void optixClientSend(QString& info);
     void optixClientStartRec();
-    void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRunTriggered();
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
     void onCheckUpdate();
-    void onCalcFinished(bool bSucceed, zeno::ObjPath nodeUuidPath, QString msg);
-    void justLoadObjects();
+    void onCalcFinished(bool bSucceed, QString nodeUuidPath, QString msg);
+    void reload_qml();
+    void onSetTimelineValue();
+    void onComposeVideo();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* e) override;
     void closeEvent(QCloseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -201,6 +206,7 @@ protected:
 private:
     void init(PANEL_TYPE onlyView);
     void initMenu();
+    void initStatusBar();
     void initDocks(PANEL_TYPE onlyView);
     void initAllDockWidgets();
     void initWindowProperty();
@@ -234,11 +240,11 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
-    bool m_bAlwaysLightCamera;
-    bool m_bAlwaysMaterial;
     int m_nResizeTimes;
     bool m_bOnlyOptix;          //isolate optix window.
-    Ui::MainWindow* m_ui;
+    QScopedPointer<Ui::MainWindow> m_ui;
+
+    QProgressBar* m_status_progressbar;
 
     std::unique_ptr<QLocalSocket> optixClientSocket;
     bool m_bOptixProcRecording = false;
@@ -246,6 +252,8 @@ private:
     bool m_bRecordByCommandLine = false;
 
     ads::CDockManager* m_pDockManager;
+    QWidget* m_qml_gl;
 };
 
 #endif
+

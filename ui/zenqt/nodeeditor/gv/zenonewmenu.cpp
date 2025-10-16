@@ -9,10 +9,9 @@
 #include "zassert.h"
 
 
-ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent)
+ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const QPointF& scenePos, QWidget* parent)
     : QMenu(parent)
     , m_preSearchMode(false)
-    , m_cates(cates)
     , m_pGraphM(pGraphM)
     , m_scenePos(scenePos)
     , m_searchEdit(nullptr)
@@ -47,11 +46,13 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cat
     m_cateActions = getCategoryActions(m_scenePos);
     addActions(m_cateActions);
 
+    m_cates = zenoApp->graphsManager()->getCates();
+
     // init [node, cate] map, [node...] list
-    for (auto& [cate, nodes] : m_cates) {
-        QString catName = QString::fromStdString(cate);
-        for (auto& node : nodes) {
-            QString nodecls = QString::fromStdString(node);
+    for (auto catName : m_cates.keys()) {
+        const QVector<zeno::NodeInfo>& nodes = m_cates[catName];
+        for (const zeno::NodeInfo& node : nodes) {
+            QString nodecls = QString::fromStdString(node.name);
             if (nodecls == "SubInput" || nodecls == "SubOutput")
                 continue;
             m_nodeToCate[nodecls] = catName;
@@ -64,9 +65,18 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cat
         if (!m_pGraphM)
             return;
 
-        QString name = item->result();
+        QString nodecls = item->result();
         QString category = item->category();
-        m_pGraphM->createNode(name, category, m_scenePos);
+        const QVector<zeno::NodeInfo>& nodes = m_cates[m_nodeToCate[nodecls]];
+        for (zeno::NodeInfo node_info : nodes) {
+            if (node_info.name == nodecls.toStdString() &&
+                node_info.status == zeno::ZModule_UnLoaded) {
+                alertUninstallMsg();
+                return;
+            }
+        }
+
+        m_pGraphM->createNode(nodecls, category, m_scenePos);
         this->close();
     });
 }
@@ -78,6 +88,10 @@ ZenoNewnodeMenu::~ZenoNewnodeMenu()
 void ZenoNewnodeMenu::setEditorFocus()
 {
     m_searchEdit->setFocus();
+}
+
+void ZenoNewnodeMenu::alertUninstallMsg() {
+    QMessageBox::warning(this, "Unavailable", "the module has been uninstalled");
 }
 
 bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
@@ -156,9 +170,11 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
     //if (!subgIdx.isValid())
     //    return QList<QAction*>();
 
+    NodeCates cates = zenoApp->graphsManager()->getCates();
+
     QList<QAction*> acts;
     int nodesNum = 0;
-    if (m_cates.empty())
+    if (cates.empty())
     {
         QAction* pAction = new QAction("ERROR: no descriptors loaded!");
         pAction->setEnabled(false);
@@ -166,22 +182,28 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(QPointF scenePos)
         return acts;
     }
 
-    for (auto& [cate, nodes] : m_cates)
+    //for (auto& [cate, nodes] : cates)
+    for (auto category : cates.keys())
     {
-        QString category = QString::fromStdString(cate);
+        const QVector<zeno::NodeInfo>& nodes = cates[category];
         QAction* pAction = new QAction(category, this);
         QMenu* pChildMenu = new QMenu(this);
         pChildMenu->setToolTipsVisible(true);
         for (const auto& node : nodes)
         {
-            QString nodecls = QString::fromStdString(node);
+            QString nodecls = QString::fromStdString(node.name);
             if (nodecls == "SubInput" || nodecls == "SubOutput")
                 continue;
 
             QAction* pChildAction = pChildMenu->addAction(nodecls);
             //todo: tooltip
             connect(pChildAction, &QAction::triggered, [=]() {
-                m_pGraphM->createNode(nodecls, category, m_scenePos);
+                if (node.status == zeno::ZModule_Loaded) {
+                    m_pGraphM->createNode(nodecls, category, m_scenePos);
+                }
+                else {
+                    alertUninstallMsg();
+                }
             });
         }
         pAction->setMenu(pChildMenu);
@@ -205,7 +227,7 @@ void ZenoNewnodeMenu::updateSearchView(const QString& filter)
 
     int deprecatedIndex = searchResult.size();
     for (int i = 0; i < deprecatedIndex;) {
-        auto& [name, matchIndices] = searchResult[i];
+        const auto& [name, matchIndices] = searchResult[i];
         const auto& category = m_nodeToCate[name];
         if (category == "deprecated") {
             deprecatedIndex--;

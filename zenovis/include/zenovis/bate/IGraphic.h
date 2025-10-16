@@ -6,6 +6,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/IObjectXMacro.h>
 #include <zeno/utils/vec.h>
+#include <zeno/types/IGeometryObject.h>
 #include <glm/glm.hpp>
 
 
@@ -39,7 +40,6 @@ enum {
 
 struct IGraphic {
     std::string nameid;
-    std::shared_ptr<zeno::IObject> objholder;
 
     virtual ~IGraphic() = default;
 };
@@ -72,6 +72,7 @@ struct IPicker : IGraphicDraw {
 struct MakeGraphicVisitor {
     Scene *in_scene{};
     std::unique_ptr<IGraphic> out_result;
+    void visit(zeno::GeometryObject_Adapter* object);
 
 #define _ZENO_PER_XMACRO(TypeName, ...) \
     void visit(zeno::TypeName *object);

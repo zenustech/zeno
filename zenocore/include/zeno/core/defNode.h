@@ -4,20 +4,12 @@
 
 namespace zeno {
 
-// deprecated
-//template <class F>
-//auto _defOverloadNodeClassHelper(F const &func, std::string const &name, std::vector<std::string> const &types) {
-    //return [=] (zeno::Descriptor const &desc) -> int {
-        //getSession().defOverloadNodeClass(func, name, types, desc);
-        //return 1;
-    //};
-//}
-
-#define ZENO_DEFNODE2(Class) \
+#define ZENO_CUSTOMUI_NODE(Class, ...) \
+    static zeno::CustomUI ui_##Class(__VA_ARGS__); \
     static struct _Def##Class { \
-        _Def##Class(::zeno::CustomUI const &desc) {\
-            ::zeno::getSession().defNodeClass2([] () -> std::shared_ptr<::zeno::INode> { \
-                return std::make_shared<Class>(); }, #Class, desc); \
+        _Def##Class() { \
+            ::zeno::getSession().defNodeClass2([]() -> zeno::INode* { \
+                return new Class; }, #Class, ui_##Class); \
         } \
     } _def##Class
 
@@ -25,27 +17,20 @@ namespace zeno {
 #define ZENO_DEFNODE(Class) \
     static struct _Def##Class { \
         _Def##Class(::zeno::Descriptor const &desc) { \
-            ::zeno::getSession().defNodeClass([] () -> std::shared_ptr<::zeno::INode> { \
-                return std::make_shared<Class>(); }, #Class, desc); \
+            ::zeno::getSession().defNodeClass([] () -> zeno::INode* { \
+                return new Class; }, #Class, desc); \
         } \
     } _def##Class
 
 // deprecated:
 template <class T>
 [[deprecated("use ZENO_DEFNODE(T)(...)")]]
-inline int defNodeClass(std::string const &id, Descriptor const &desc = {}) {
-    getSession().defNodeClass([] () -> std::shared_ptr<INode> { return std::make_shared<T>(); }, id, desc);
+inline int defNodeClass(std::string const &id, zeno::Descriptor const &desc = {}) {
+    getSession().defNodeClass([] () -> zeno::INode* { return new T; }, id, desc);
     return 1;
 }
 
-#if !defined(ZENO_REFLECT_PROCESSING)
 #define ZENDEFNODE(Class, ...) ZENO_DEFNODE(Class)(__VA_ARGS__);
-#else
-#define ZENDEFNODE(Class, ...)
-#endif
-
-#define ZENDEFINE(Class, ...) \
-    ZENO_DEFNODE2(Class)(__VA_ARGS__);
 
 // deprecated:
 #define ZENO_DEFOVERLOADNODE(Class, PostFix, ...) \

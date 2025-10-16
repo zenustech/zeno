@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 
@@ -9,7 +9,7 @@ namespace {
 
 struct PrimFlattenTris : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         AttrVector<vec3f> new_verts(prim->tris.size());
         for (int i = 0; i < prim->tris.size(); i++) {
             auto ind = prim->tris[i];
@@ -49,7 +49,7 @@ ZENO_DEFNODE(PrimFlattenTris)({
 });
 struct PrimFlattenLines : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     AttrVector<vec3f> new_verts(2 * prim->lines.size());
     for (int i = 0; i < prim->lines.size(); i++) {
       auto ind = prim->lines[i];
@@ -74,7 +74,7 @@ struct PrimFlattenLines : INode {
     prim->quads.clear();
     prim->polys.clear();
     prim->loops.clear();
-    set_output("prim", std::move(prim));
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -91,7 +91,7 @@ ZENO_DEFNODE(PrimFlattenLines)({
 
 struct PrimFlattenPolys : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t vertNum = 0;
     for(size_t i=0; i<prim->polys.size();i++)
     {
@@ -117,7 +117,7 @@ struct PrimFlattenPolys : INode {
     prim->points.clear();
     prim->tris.clear();
     prim->quads.clear();
-    set_output("prim", std::move(prim));
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -133,55 +133,55 @@ ZENO_DEFNODE(PrimFlattenPolys)({
 });
 struct PrimToList : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto type = get_input2<std::string>("type");
-        auto attr = get_input2<std::string>("attr");
-        auto lst = std::make_shared<ListObject>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto attr = ZImpl(get_input2<std::string>("attr"));
+        auto lst = create_ListObject();
 
         if (attr.empty()) {
             if (type == "verts") {
-                lst->resize(prim->verts.size());
+                lst->m_impl->resize(prim->verts.size());
                 for (size_t i = 0; i < prim->verts.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->verts[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->verts[i]));
                 }
             } else if (type == "points") {
-                lst->resize(prim->points.size());
+                lst->m_impl->resize(prim->points.size());
                 for (size_t i = 0; i < prim->points.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->points[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->points[i]));
                 }
             } else if (type == "lines") {
-                lst->resize(prim->lines.size());
+                lst->m_impl->resize(prim->lines.size());
                 for (size_t i = 0; i < prim->lines.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->lines[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->lines[i]));
                 }
             } else if (type == "tris") {
-                lst->resize(prim->tris.size());
+                lst->m_impl->resize(prim->tris.size());
                 for (size_t i = 0; i < prim->tris.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->tris[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->tris[i]));
                 }
             } else if (type == "quads") {
-                lst->resize(prim->quads.size());
+                lst->m_impl->resize(prim->quads.size());
                 for (size_t i = 0; i < prim->quads.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->quads[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->quads[i]));
                 }
             } else if (type == "polys") {
-                lst->resize(prim->polys.size());
+                lst->m_impl->resize(prim->polys.size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->polys[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->polys[i]));
                 }
             } else if (type == "loops") {
-                lst->resize(prim->loops.size());
+                lst->m_impl->resize(prim->loops.size());
                 for (size_t i = 0; i < prim->loops.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(prim->loops[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(prim->loops[i]));
                 }
             } else {
                 throw makeError("invalid type " + type);
             }
         } else {
             auto fun = [&] (auto const &arr) {
-                lst->resize(arr.size());
+                lst->m_impl->resize(arr.size());
                 for (size_t i = 0; i < arr.size(); i++) {
-                    lst->set(i, std::make_shared<NumericObject>(arr[i]));
+                    lst->m_impl->set(i, std::make_unique<NumericObject>(arr[i]));
                 }
             };
             if (type == "verts") {
@@ -203,7 +203,7 @@ struct PrimToList : INode {
             }
         }
 
-        set_output("list", std::move(lst));
+        ZImpl(set_output("list", std::move(lst)));
     }
 };
 
@@ -222,46 +222,46 @@ ZENO_DEFNODE(PrimToList)({
 
 struct PrimUpdateFromList : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto lst = get_input<ListObject>("list");
-        auto type = get_input2<std::string>("type");
-        auto attr = get_input2<std::string>("attr");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto lst = ZImpl(get_input<ListObject>("list"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto attr = ZImpl(get_input2<std::string>("attr"));
 
         if (attr.empty()) {
             if (type == "verts") {
-                prim->verts.resize(lst->size());
+                prim->verts.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->verts.size(); i++) {
-                    prim->verts[i] = objectToLiterial<vec3f>(lst->get(i));
+                    prim->verts[i] = objectToLiterial<vec3f>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "points") {
-                prim->points.resize(lst->size());
+                prim->points.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->points.size(); i++) {
-                    prim->points[i] = objectToLiterial<int>(lst->get(i));
+                    prim->points[i] = objectToLiterial<int>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "lines") {
-                prim->lines.resize(lst->size());
+                prim->lines.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->lines.size(); i++) {
-                    prim->lines[i] = objectToLiterial<vec2i>(lst->get(i));
+                    prim->lines[i] = objectToLiterial<vec2i>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "tris") {
-                prim->tris.resize(lst->size());
+                prim->tris.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->tris.size(); i++) {
-                    prim->tris[i] = objectToLiterial<vec3i>(lst->get(i));
+                    prim->tris[i] = objectToLiterial<vec3i>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "quads") {
-                prim->quads.resize(lst->size());
+                prim->quads.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->quads.size(); i++) {
-                    prim->quads[i] = objectToLiterial<vec4i>(lst->get(i));
+                    prim->quads[i] = objectToLiterial<vec4i>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "polys") {
-                prim->polys.resize(lst->size());
+                prim->polys.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->polys.size(); i++) {
-                    prim->polys[i] = objectToLiterial<vec2i>(lst->get(i));
+                    prim->polys[i] = objectToLiterial<vec2i>(lst->m_impl->get(i)->clone());
                 }
             } else if (type == "loops") {
-                prim->loops.resize(lst->size());
+                prim->loops.resize(lst->m_impl->size());
                 for (size_t i = 0; i < prim->loops.size(); i++) {
-                    prim->loops[i] = objectToLiterial<int>(lst->get(i));
+                    prim->loops[i] = objectToLiterial<int>(lst->m_impl->get(i)->clone());
                 }
             } else {
                 throw makeError("invalid type " + type);
@@ -270,36 +270,36 @@ struct PrimUpdateFromList : INode {
             auto fun = [&] (auto &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
                 for (size_t i = 0; i < arr.size(); i++) {
-                    arr[i] = objectToLiterial<T>(lst->get(i));
+                    arr[i] = objectToLiterial<T>(lst->m_impl->get(i)->clone());
                 }
             };
             if (type == "verts") {
-                prim->verts.resize(lst->size());
+                prim->verts.resize(lst->m_impl->size());
                 prim->verts.attr_visit(attr, fun);
             } else if (type == "points") {
-                prim->points.resize(lst->size());
+                prim->points.resize(lst->m_impl->size());
                 prim->points.attr_visit(attr, fun);
             } else if (type == "lines") {
-                prim->lines.resize(lst->size());
+                prim->lines.resize(lst->m_impl->size());
                 prim->lines.attr_visit(attr, fun);
             } else if (type == "tris") {
-                prim->tris.resize(lst->size());
+                prim->tris.resize(lst->m_impl->size());
                 prim->tris.attr_visit(attr, fun);
             } else if (type == "quads") {
-                prim->quads.resize(lst->size());
+                prim->quads.resize(lst->m_impl->size());
                 prim->quads.attr_visit(attr, fun);
             } else if (type == "polys") {
-                prim->polys.resize(lst->size());
+                prim->polys.resize(lst->m_impl->size());
                 prim->polys.attr_visit(attr, fun);
             } else if (type == "loops") {
-                prim->loops.resize(lst->size());
+                prim->loops.resize(lst->m_impl->size());
                 prim->loops.attr_visit(attr, fun);
             } else {
                 throw makeError("invalid type " + type);
             }
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

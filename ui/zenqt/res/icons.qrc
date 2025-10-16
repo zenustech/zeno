@@ -2,6 +2,9 @@
 <qresource>
     <file>icons/node/box.svg</file>
     <file>icons/node/error.svg</file>
+    <file>icons/node/camera.svg</file>
+    <file>icons/node/fluid.svg</file>
+    <file>icons/time-frame-mark.svg</file>
     <file>icons/adsdock/vsdark/close-button.svg</file>
     <file>icons/adsdock/vsdark/close-button-disabled.svg</file>
     <file>icons/adsdock/vsdark/detach-button.svg</file>
@@ -263,6 +266,8 @@
     <file>icons/nodeEditor_subnetPanel_unselected.svg</file>
     <file>icons/nodeEditor_nodePara_selected.svg</file>
     <file>icons/nodeEditor_nodePara_unselected.svg</file>
+    <file>icons/multithread.svg</file>
+    <file>icons/multithread-on.svg</file>
     <file>icons/timeline_always_off.svg</file>
     <file>icons/timeline_always_on.svg</file>
     <file>icons/timeline_endFrame_idle.svg</file>
@@ -330,6 +335,8 @@
     <file>icons/viewToolbar_smoothshading_light.svg</file>
     <file>icons/viewToolbar_wireframe_idle.svg</file>
     <file>icons/viewToolbar_wireframe_light.svg</file>
+    <file>icons/viewToolbar_pointnum_idle.svg</file>
+    <file>icons/viewToolbar_pointnum_light.svg</file>
     <file>icons/parameter_control_tab.svg</file>
     <file>icons/parameter_control_group.svg</file>
     <file>icons/parameter_control_integer.svg</file>
@@ -349,6 +356,14 @@
     <file>icons/parameter_control_spinbox.svg</file>
     <file>icons/parameter_control_slider.svg</file>
     <file>icons/parameter_control_divider.svg</file>
+    <file>icons/geomsheet_vertex_idle.svg</file>
+    <file>icons/geomsheet_vertex_on.svg</file>
+    <file>icons/geomsheet_point_idle.svg</file>
+    <file>icons/geomsheet_point_on.svg</file>
+    <file>icons/geomsheet_face_idle.svg</file>
+    <file>icons/geomsheet_face_on.svg</file>
+    <file>icons/geomsheet_geometry_idle.svg</file>
+    <file>icons/geomsheet_geometry_on.svg</file>
     <file>icons/file_newfile.svg</file>
     <file>icons/file_openfile.svg</file>
     <file>icons/file_zsgfile.svg</file>
@@ -377,5 +392,24 @@
     <file>icons/checkbox-disable.svg</file>
     <file>icons/lock.svg</file>
     <file>icons/unlock.svg</file>
+    <file>icons/bypass-on.svg</file>
+    <file>icons/bypass-off.svg</file>
+    <file>icons/view-on.svg</file>
+    <file>icons/view-off.svg</file>
+    <file>icons/view-noradius-on.svg</file>
+    <file>icons/view-noradius-off.svg</file>
+    <file>icons/run_stop.svg</file>
+    <file>icons/run_play.svg</file>
+    <file>icons/broom_clear_clean_tool.svg</file>
+    <file>icons/plugin_unselected.svg</file>
+    <file>icons/plugin_selected.svg</file>
+    <file>icons/geo_userdata-idle.svg</file>
+    <file>icons/geo_userdata-on.svg</file>
+
+    <file>icons/node/cube.svg</file>
+    <file>icons/node/switchif.svg</file>
+    <file>icons/node/switch-between.svg</file>
+    <file>icons/node/aw.svg</file>
+    <file>icons/node/subnet.svg</file>
 </qresource>
 </RCC>

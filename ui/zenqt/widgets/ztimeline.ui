@@ -51,7 +51,7 @@
     <number>1</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="timelineHLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0">
+    <layout class="QHBoxLayout" name="timelineHLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0">
      <property name="spacing">
       <number>9</number>
      </property>
@@ -65,6 +65,64 @@
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="lbl_solver">
+       <property name="text">
+        <string>sovler_name</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnStopSolver">
+       <property name="minimumSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">        QPushButton {
+            background-color: red;
+            border: none;
+            border-radius: 4px;
+        }
+        QPushButton:hover:enabled {
+            background-color: #cc0000;
+        }
+        QPushButton:pressed:enabled {
+            background-color: #990000;
+        }
+        QPushButton:disabled {
+            background-color: gray;
+        }</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>

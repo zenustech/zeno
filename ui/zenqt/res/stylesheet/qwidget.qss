@@ -223,7 +223,7 @@ QDialog QTreeView, QDialog QListWidget, QListView
 	show-decoration-selected: 1;
 }
 
-QTreeView, QListWidget
+QTreeView, QListWidget, QListView
 {
     alternate-background-color: #191D21;
 	background-color: rgb(31,31,31);

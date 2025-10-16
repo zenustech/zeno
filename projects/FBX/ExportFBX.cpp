@@ -16,10 +16,10 @@ namespace {
 struct ExportFBX : zeno::INode {
 
     virtual void apply() override {
-        auto abcpath = get_input<zeno::StringObject>("abcpath")->get();
-        auto fbxpath = get_input<zeno::StringObject>("fbxpath")->get();
-        auto outpath = get_input<zeno::StringObject>("outpath")->get();
-        auto extra_param = get_input<zeno::StringObject>("extra_param")->get();
+        auto abcpath = zsString2Std(get_input2_string("abcpath"));
+        auto fbxpath = zsString2Std(get_input2_string("fbxpath"));
+        auto outpath = zsString2Std(get_input2_string("outpath"));
+        auto extra_param = zsString2Std(get_input2_string("extra_param"));
 
         zeno::log_info("----- ABC Path {}", abcpath);
         zeno::log_info("----- FBX Path {}", fbxpath);
@@ -45,12 +45,12 @@ struct ExportFBX : zeno::INode {
         }
 #endif
 
-        has_input("custom_command") ? cmd = get_input<zeno::StringObject>("custom_command")->get().c_str()
+        has_input("custom_command") ? cmd = zsString2Std(get_input2_string("custom_command"))
                                     : cmd;
 
         int er = std::system(cmd.c_str());
 
-        auto result = std::make_shared<zeno::NumericObject>();
+        auto result = std::make_unique<zeno::NumericObject>();
         result->set(er);
 
         zeno::log_info("----- CMD {}", cmd);

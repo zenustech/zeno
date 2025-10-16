@@ -43,7 +43,7 @@ ZENDEFNODE(CalculateResidual2,
         { /* inputs: */ {
             {gParamType_Dict, "args"},
         }, /* outputs: */ {
-            {gParamType_Float, "rets", "", zeno::Socket_WildCard},
+            {gParamType_Float, "rets", ""},
         }, /* params: */ {
         // defl min max; defl min; defl
         }, /* category: */ {

@@ -2,6 +2,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/scope_exit.h>
@@ -90,14 +91,14 @@ static void prim_foreach_faces_edges(PrimitiveObject *prim, Func const &each_fac
 
 struct PrimDualMesh : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        //auto faceType = get_input2<std::string>("faceType");
-        //auto copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
-        auto outprim = std::make_shared<PrimitiveObject>();
-        bool keepBounds = get_input2<bool>("keepBounds");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        //auto faceType = ZImpl(get_input2<std::string>("faceType"));
+        //auto copyFaceAttrs = ZImpl(get_input2<bool>("copyFaceAttrs"));
+        auto outprim = std::make_unique<PrimitiveObject>();
+        bool keepBounds = ZImpl(get_input2<bool>("keepBounds"));
 
-        if (get_input2<bool>("polygonate")/* && (prim->tris.size() || prim->quads.size())*/) {
-            //prim = std::make_shared<PrimitiveObject>(*prim);
+        if (ZImpl(get_input2<bool>("polygonate"))/* && (prim->tris.size() || prim->quads.size())*/) {
+            //prim = std::make_unique<PrimitiveObject>(*prim);
             //prim->lines.clear();
             primPolygonate(prim.get());
         }
@@ -128,7 +129,7 @@ struct PrimDualMesh : INode {
                     bounde2f.erase(nbk);
             }
             auto oldpolysize = prim->polys.size();
-            revertoldpolysize = scope_exit<>([prim, oldpolysize] {
+            revertoldpolysize = scope_exit<>([&] {
                 prim->polys.resize(oldpolysize);
             });
             for (auto const &[ev, f]: bounde2f) {
@@ -215,7 +216,7 @@ struct PrimDualMesh : INode {
             outprim->polys.emplace_back(loopbase, outprim->loops.size() - loopbase);
         });
 
-        set_output("prim", std::move(outprim));
+        ZImpl(set_output("prim", std::move(outprim)));
     }
 };
 

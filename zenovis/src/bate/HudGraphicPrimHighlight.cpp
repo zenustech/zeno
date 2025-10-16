@@ -3,7 +3,6 @@
 #include <zenovis/Scene.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/vao.h>
@@ -72,6 +71,7 @@ struct PrimitiveHighlight : IGraphicDraw {
     }
 
     virtual void draw() override {
+#if 0
         CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
         glDepthFunc(GL_GREATER);
         CHECK_GL(glClearDepth(0.0));
@@ -192,6 +192,7 @@ struct PrimitiveHighlight : IGraphicDraw {
 
         vbo->disable_attribute(0);
         vbo->unbind();
+#endif
     }
 };
 

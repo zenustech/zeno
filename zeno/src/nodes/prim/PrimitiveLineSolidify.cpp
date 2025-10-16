@@ -18,13 +18,13 @@ namespace zeno {
 
 struct PrimitiveLineSolidify : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto count = get_input<zeno::NumericObject>("count")->get<int>();
-        auto radius = get_input<zeno::NumericObject>("radius")->get<float>();
-        auto radiusAttr = get_input<zeno::StringObject>("radiusAttr")->get();
-        bool isTri = get_input2<bool>("isTri");
-        bool sealEnd = get_input2<bool>("sealEnd");
-        bool closeRing = get_input2<bool>("closeRing");
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        auto count = ZImpl(get_input<zeno::NumericObject>("count"))->get<int>();
+        auto radius = ZImpl(get_input<zeno::NumericObject>("radius"))->get<float>();
+        auto radiusAttr = ZImpl(get_input<zeno::StringObject>("radiusAttr"))->get();
+        bool isTri = ZImpl(get_input2<bool>("isTri"));
+        bool sealEnd = ZImpl(get_input2<bool>("sealEnd"));
+        bool closeRing = ZImpl(get_input2<bool>("closeRing"));
         if (closeRing) sealEnd = false;
 
         intptr_t n = prim->verts.size();
@@ -33,7 +33,7 @@ struct PrimitiveLineSolidify : zeno::INode {
         if (n >= 2 && count >= 2) {
 
             //TICK(linesort);
-            if (get_input2<bool>("lineSort"))
+            if (ZImpl(get_input2<bool>("lineSort")))
                 primLineSort(prim.get());
             //TOCK(linesort);
 
@@ -240,7 +240,7 @@ prim->verts.add_attr<zeno::vec3f>("uv");
 
         }
         prim->lines.clear();
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

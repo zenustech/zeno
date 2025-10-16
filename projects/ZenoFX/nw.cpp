@@ -35,14 +35,14 @@ static void numeric_wrangle
 
 struct NumericWrangle : zeno::INode {
     virtual void apply() override {
-        auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        auto code = zsString2Std(get_input2_string("zfxCode"));
 
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
 
         auto params = has_input("params") ?
-            get_input<zeno::DictObject>("params") :
-            std::make_shared<zeno::DictObject>();
+            get_input_DictObject("params") :
+            create_DictObject();
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
@@ -51,6 +51,8 @@ struct NumericWrangle : zeno::INode {
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.getFrameId() + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+
+#if 0
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
         for (auto const &[key, ref]: getThisGraph()->portalIns) {
             if (auto i = code.find('$' + key); i != std::string::npos) {
@@ -65,6 +67,8 @@ struct NumericWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+#endif
+
         // BEGIN伺候心欣伺候懒得extract出变量了
         std::vector<std::string> keys;
         for (auto const &[key, val]: params->lut) {

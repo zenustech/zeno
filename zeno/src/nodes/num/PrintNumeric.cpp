@@ -29,8 +29,8 @@ struct PrintNumeric : zeno::INode {
     };
 
     virtual void apply() override {
-        auto obj = get_input<zeno::NumericObject>("value");
-        auto hint = get_param<std::string>("hint");
+        auto obj = ZImpl(get_input<zeno::NumericObject>("value"));
+        auto hint = ZImpl(get_param<std::string>("hint"));
         std::cout << hint << ": ";
         std::visit([](auto const &val) {
             using T = std::decay_t<decltype(val)>;
@@ -38,12 +38,12 @@ struct PrintNumeric : zeno::INode {
             do_print _(val);
         }, obj->value);
         std::cout << std::endl;
-        set_output("value", std::move(obj));
+        ZImpl(set_output("value", std::move(obj)));
     }
 };
 
 ZENDEFNODE(PrintNumeric, {
-    {{gParamType_Unknown, "value", "0", zeno::Socket_WildCard}},
+    {{gParamType_Unknown, "value", "0"}},
     {{gParamType_Unknown, "value"}},
     {{gParamType_String, "hint", "PrintNumeric"}},
     {"numeric"},
@@ -52,7 +52,7 @@ ZENDEFNODE(PrintNumeric, {
 
 //struct ToVisualize_NumericObject : PrintNumeric {
     //virtual void apply() override {
-        //inputs["hint:"] = std::make_shared<zeno::StringObject>("VIEW of NumericObject");
+        //inputs["hint:"] = std::make_unique<zeno::StringObject>("VIEW of NumericObject");
         //PrintNumeric::apply();
     //}
 //};

@@ -29,7 +29,7 @@ ColumnLayout{
 
             
         Component.onCompleted: {
-            app.tab.page.pagesNest.parent = this
+            nodeseditor.tab.page.pagesNest.parent = this
         }
     }
 }

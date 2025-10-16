@@ -1,9 +1,7 @@
-#include <zenovis/RenderEngine.h>
+ï»¿#include <zenovis/RenderEngine.h>
 #include "cameracontrol.h"
 #include "zenovis.h"
 //#include <zenovis/Camera.h>
-#include <zenovis/ObjectsManager.h>
-#include "widgets/zlineedit.h"
 #include "zenomainwindow.h"
 #include "nodeeditor/gv/zenographseditor.h"
 #include <zeno/types/UserData.h>
@@ -11,10 +9,6 @@
 #include "glm/gtx/quaternion.hpp"
 #include "zeno/core/Session.h"
 #include <cmath>
-#include "viewport/transform.h"
-#include "viewport/picker.h"
-#include "util/log.h"
-#include "model/GraphModel.h"
 
 
 using std::string;
@@ -37,6 +31,9 @@ CameraControl::CameraControl(
 
 void CameraControl::setRes(QVector2D res) {
     m_res = res;
+}
+void CameraControl::setScale(int scale) {
+    m_scale = scale;
 }
 
 glm::vec3 CameraControl::getPos() const {
@@ -103,39 +100,63 @@ void CameraControl::setDisPlane(float disPlane) {
     scene->camera->focalPlaneDistance = disPlane;
 }
 
-void CameraControl::fakeMousePressEvent(QMouseEvent *event)
+void CameraControl::fakeMousePressEvent(ViewMouseInfo info)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
-    if (event->button() == Qt::MiddleButton) {
-        middle_button_pressed = true;
-        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
-            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
-            if (m_hit_posWS.has_value()) {
-                scene->camera->setPivot(m_hit_posWS.value());
-    }
+    if (info.buttons == Qt::LeftButton) {
+        auto &cam = scene->camera;
+        auto ids = scene->renderMan->getEngine()->getClickedId((float)info.pos.x()/(float)cam->m_nx, (float)info.pos.y()/(float)cam->m_ny);
+        if (ids.has_value()) {
+            auto [obj_id, mat_id, prim_id] = ids.value();
+            ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+            mainWin->onPrimitiveSelected({obj_id}, mat_id, true);
         }
     }
 
+    const qreal x = info.pos.x(), y = info.pos.y();
+    if (info.buttons == Qt::MiddleButton) {
+        middle_button_pressed = true;
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            auto &cam = scene->camera;
+            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)x/(float)cam->m_nx, (float)info.pos.y()/(float)cam->m_ny);
+            if (m_hit_posWS.has_value()) {
+                scene->camera->setPivot(m_hit_posWS.value());
+            }
+        }
+    }
+    else if (info.buttons == Qt::RightButton) {
+        if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
+            if (!m_hit_posWS.has_value()) {
+                auto &cam = scene->camera;
+                m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)x/(float)cam->m_nx, (float)y/(float)cam->m_ny);
+                if (m_hit_posWS.has_value()) {
+                    scene->camera->setPivot(m_hit_posWS.value());
+                }
+            }
+        }
+    }
+    auto m_picker = this->m_picker.lock();
+    auto m_transformer = this->m_transformer.lock();
     int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
     auto front = scene->camera->get_lodfront();
-    auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+    auto dir = screenPosToRayWS(x / res().x(), y / res().y());
     if (m_transformer)
     {
-        if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
+        if (info.buttons & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
             m_transformer->clickedAnyHandler(getPos(), dir, front))
         {
             bTransform = true;
         }
     }
-    if (!bTransform && (event->buttons() & button)) {
-        m_lastMidButtonPos = event->pos();
-    } else if (event->buttons() & Qt::LeftButton) {
-        m_boundRectStartPos = event->pos();
+    if (!bTransform && ((info.buttons & button) || (info.buttons & Qt::RightButton))) {
+        m_lastMidButtonPos = info.pos;
+    } else if (info.buttons & Qt::LeftButton) {
+        m_boundRectStartPos = info.pos.toPoint();
         // check if clicked a selected object
         if (bTransform)
         {
@@ -170,6 +191,7 @@ void CameraControl::lookTo(zenovis::CameraLookToDir dir) {
 }
 
 void CameraControl::clearTransformer() {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->clear();
@@ -177,6 +199,7 @@ void CameraControl::clearTransformer() {
 
 void CameraControl::changeTransformOperation(const QString &node)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -186,12 +209,14 @@ void CameraControl::changeTransformOperation(const QString &node)
     ZASSERT_EXIT(m_zenovis);
 
     auto scene = m_zenovis->getSession()->get_scene();
+#if 0
     for (auto const &[key, _] : scene->objectsMan->pairs()) {
         if (key.find(node.toStdString()) != std::string::npos) {
             scene->selected.insert(key);
             m_transformer->addObject(key);
         }
     }
+#endif
     m_transformer->setTransOpt(opt);
     m_transformer->changeTransOpt();
     zenoApp->getMainWindow()->updateViewport();
@@ -199,6 +224,7 @@ void CameraControl::changeTransformOperation(const QString &node)
 
 void CameraControl::changeTransformOperation(int mode)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
 
@@ -213,6 +239,7 @@ void CameraControl::changeTransformOperation(int mode)
 
 void CameraControl::changeTransformCoordSys()
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->changeCoordSys();
@@ -221,17 +248,26 @@ void CameraControl::changeTransformCoordSys()
 
 void CameraControl::resizeTransformHandler(int dir)
 {
+    auto m_transformer = this->m_transformer.lock();
     if (!m_transformer)
         return;
     m_transformer->resizeHandler(dir);
     zenoApp->getMainWindow()->updateViewport();
 }
 
-void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
+void CameraControl::fakeMouseMoveEvent(ViewMouseInfo info)
 {
+    auto &ud = zeno::getSession().userData();
+    if (ud.get2<bool>("viewport-optix-pause", false)) {
+        return;
+    }
+    auto m_transformer = this->m_transformer.lock();
+    bool ctrl_pressed = info.modifiers & Qt::ControlModifier;
+    bool alt_pressed = info.modifiers & Qt::AltModifier;
+
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
-    float xpos = event->x(), ypos = event->y();
+    float x = info.pos.x(), y = info.pos.y();
 
     int moveButton = Qt::NoButton;
     int rotateButton = Qt::NoButton;
@@ -244,16 +280,18 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         bTransform = m_transformer->isTransforming();
         // check if hover a handler
         auto front = scene->camera->get_lodfront();
-        auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
-        if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
+        auto dir = screenPosToRayWS(x / res().x(), y / res().y());
+        if (!scene->selected.empty() && !(info.buttons & Qt::LeftButton)) {
             m_transformer->hoveredAnyHandler(getPos(), dir, front);
         }
     }
 
-    if (!bTransform && alt_pressed && (event->buttons() & Qt::MiddleButton)) {
+    bool use_right_button = info.buttons & Qt::MouseButton::RightButton;
+
+    if (!bTransform && alt_pressed && (info.buttons & Qt::MiddleButton)) {
         // zoom
         if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false) == false) {
-            float dy = ypos - m_lastMidButtonPos.y();
+            float dy = y - m_lastMidButtonPos.y();
             auto step = 0.99f;
             float scale = glm::pow(step, -dy);
             auto pos = getPos();
@@ -261,38 +299,38 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             auto new_pos = (pos - pivot) * scale + pivot;
             setPos(new_pos);
         }
-        m_lastMidButtonPos = QPointF(xpos, ypos);
+        m_lastMidButtonPos = QPointF(x, y);
     }
-    else if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
+    else if (!bTransform && ctrl_pressed && (info.buttons & Qt::MiddleButton)) {
         // rot roll
         float step = 1.0f;
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dy = ypos - m_lastMidButtonPos.y();
+        float ratio = 1.0;// QApplication::desktop()->devicePixelRatio();
+        float dy = y - m_lastMidButtonPos.y();
         dy *= ratio / m_res[1] * step;
         {
             auto rot = getRotation();
             rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
             setRotation(rot);
         }
-        m_lastMidButtonPos = QPointF(xpos, ypos);
+        m_lastMidButtonPos = QPointF(x, y);
     }
-    else if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
+    else if (!bTransform && ((info.buttons & (rotateButton | moveButton)) || (info.buttons & Qt::MouseButton::RightButton))) {
+        float ratio = 1.0;// QApplication::desktop()->devicePixelRatio();
+        float dx = x - m_lastMidButtonPos.x(), dy = y - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
-        //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-        Qt::KeyboardModifiers modifiers = event->modifiers();
-        if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
+        //bool shift_pressed = info.modifiers & Qt::ShiftModifier;
+        Qt::KeyboardModifiers modifiers = info.modifiers;
+        if ((moveKey == modifiers) && ((info.buttons & moveButton) || (info.buttons & Qt::MouseButton::RightButton))) {
             // translate
-            if (m_hit_posWS.has_value()) {
-                auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+            if (!use_right_button && zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
+                auto ray = screenPosToRayWS(x / res().x(), y / res().y());
                 auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
                 if (new_pos.has_value()) {
                     auto diff = new_pos.value() - getPos();
                     setPivot(getPivot() + diff);
                     setPos(new_pos.value());
-            }
+                }
             }
             else {
                 auto left = getRightDir() * -1.0f;
@@ -306,7 +344,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 auto new_pos = getPos() + diff;
                 setPos(new_pos);
             }
-        } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
+        } else if ((rotateKey == modifiers) && (info.buttons & rotateButton)) {
             float step = 4.0f;
             dx *= step;
             if (getUpDir().y < 0) {
@@ -342,15 +380,15 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 }
             }
         }
-        m_lastMidButtonPos = QPointF(xpos, ypos);
-    } else if (event->buttons() & Qt::LeftButton) {
+        m_lastMidButtonPos = QPointF(x, y);
+    } else if (info.buttons & Qt::LeftButton) {
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
-                auto dir = screenPosToRayWS(event->pos().x() / res().x(), event->pos().y() / res().y());
+                auto dir = screenPosToRayWS(x / res().x(), y / res().y());
 
                 // mouse pos
-                auto mouse_pos = glm::vec2(xpos, ypos);
+                auto mouse_pos = glm::vec2(x, y);
                 mouse_pos[0] = (2 * mouse_pos[0] / res().x()) - 1;
                 mouse_pos[1] = 1 - (2 * mouse_pos[1] / res().y());
                 // mouse start
@@ -362,10 +400,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+                float min_x = std::min((float)m_boundRectStartPos.x(), x) / m_res.x();
+                float max_x = std::max((float)m_boundRectStartPos.x(), x) / m_res.x();
+                float min_y = std::min((float)m_boundRectStartPos.y(), y) / m_res.y();
+                float max_y = std::max((float)m_boundRectStartPos.y(), y) / m_res.y();
                 scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
             }
         }
@@ -381,17 +419,22 @@ void CameraControl::updatePerspective() {
     m_zenovis->updatePerspective(m_res);
 }
 
-void CameraControl::fakeWheelEvent(QWheelEvent *event) {
+void CameraControl::fakeWheelEvent(ViewMouseInfo info) {
+    auto &ud = zeno::getSession().userData();
+    if (ud.get2<bool>("viewport-optix-pause", false)) {
+        return;
+    }
     int dy = 0;
-    if (event->modifiers() & Qt::AltModifier)
-        dy = event->angleDelta().x();
+    qreal x = info.pos.x(), y = info.pos.y();
+    if (info.modifiers & Qt::AltModifier)
+        dy = info.angleDelta.x();
     else
-        dy = event->angleDelta().y();
+        dy = info.angleDelta.y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
-    bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
-    bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
+    bool shift_pressed = (info.modifiers & Qt::ShiftModifier) && !(info.modifiers & Qt::ControlModifier);
+    bool aperture_pressed = (info.modifiers & Qt::ControlModifier) && !(info.modifiers & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
-        (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
+        (info.modifiers & Qt::ControlModifier) && (info.modifiers & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
     int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
@@ -412,7 +455,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     } else if (focalPlaneDistance_pressed) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
-    } else if (scaleKey == 0 || event->modifiers() & scaleKey){
+    } else if (scaleKey == 0 || info.modifiers & scaleKey){
         if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {
             auto FPN_move_speed = zeno::getSession().userData().get2<int>("viewport-FPN-move-speed", 0);
             FPN_move_speed += dy > 0? 1: -1;
@@ -420,21 +463,23 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
             auto pMainWindow = zenoApp->getMainWindow();
             if (pMainWindow) {
                 pMainWindow->statusbarShowMessage(zeno::format("First Person Navigation: movement speed level: {}", FPN_move_speed), 10000);
-    }
+            }
         }
         else {
             auto pos = getPos();
             if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
                 auto session = m_zenovis->getSession();
                 auto scene = session->get_scene();
-                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos(event->x(), event->y());
+                auto &cam = scene->camera;
+                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)x/(float)cam->m_nx, (float)y/(float)cam->m_ny);
                 if (hit_posWS.has_value()) {
                     auto pivot = hit_posWS.value();
+                    setPivot(pivot);
                     auto new_pos = (pos - pivot) * scale + pivot;
                     setPos(new_pos);
                 }
                 else {
-                    auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
+                    auto posOnFloorWS = screenHitOnFloorWS(x / res().x(), y / res().y());
                     auto pivot = posOnFloorWS;
                     if (dot((pivot - pos), getViewDir()) > 0) {
                         auto translate = (pivot - pos) * (1 - scale);
@@ -445,7 +490,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
                         setPos(new_pos);
                     }
                     else {
-                        auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
+                        auto translate = screenPosToRayWS(x / res().x(), y / res().y()) * getPos().y * (1 - scale);
                         if (getPos().y < 0) {
                             translate *= -1;
                         }
@@ -462,35 +507,30 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         }
     }
     updatePerspective();
-
-    if (zenoApp->getMainWindow()->lightPanel != nullptr) {
-        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(getAperture()));
-        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(getDisPlane()));
-    }
 }
 
-void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
+void CameraControl::fakeMouseDoubleClickEvent(ViewMouseInfo info)
 {
-    auto pos = event->pos();
+    auto pos = info.pos;
+    auto m_picker = this->m_picker.lock();
     if (!m_picker)
         return;
     auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
+
+    //TODO ZHOUHANG: è‡ªè¡Œæ›´æ–°
     if (!picked_prim.empty()) {
+        /*
         auto primList = scene->objectsMan->pairs();
         QString mtlid;
         for (auto const &[key, ptr]: primList) {
             if (picked_prim == key) {
-                auto &ud = ptr->userData();
-                mtlid = QString::fromStdString(ud.get2<std::string>("mtlid", ""));
-                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                auto ud = ptr->userData();
+                mtlid = QString::fromStdString(zsString2Std(ud->get_string("mtlid", "")));
+                std::cout<<"selected MatId: "<< zsString2Std(ud->get_string("mtlid", "Default"))<<"\n";
             }
         }
 
-        //TODO: the base tree model is GraphsTreeModel, not plain models any more
-        //NEED TO UPDATE THIS.
-
-        /*
         QString subgraph_name;
         QString obj_node_name;
         int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
@@ -502,15 +542,15 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
             const auto& lst = pModel->subgraphsIndice(SUBGRAPH_METERIAL);
             for (const auto& index : lst)
             {
-                if (index.data(ROLE_MTLID).toString() == mtlid)
-                    subgraph_name = index.data(ROLE_CLASS_NAME).toString();
+                if (index.data(QtRole::ROLE_MTLID).toString() == mtlid)
+                    subgraph_name = index.data(QtRole::ROLE_CLASS_NAME).toString();
             }
         }
         if (subgraph_name.isEmpty())
         {
             auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
-            subgraph_name = obj_node_location->subgraph.data(ROLE_CLASS_NAME).toString();
-            obj_node_name = obj_node_location->node.data(ROLE_NODE_NAME).toString();
+            subgraph_name = obj_node_location->subgraph.data(QtRole::ROLE_CLASS_NAME).toString();
+            obj_node_name = obj_node_location->node.data(QtRole::ROLE_NODE_NAME).toString();
         }
 
         ZenoMainWindow *pWin = zenoApp->getMainWindow();
@@ -521,9 +561,55 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         }
         */
     }
+    else {//TODOï¼šåŒå‡»å…‰è¿½çª—å£éœ€è·³è½¬åˆ°èŠ‚ç‚¹ç¼–è¾‘å™¨å¯¹åº”æè´¨å­å›¾æˆ–shaderfinalizeèŠ‚ç‚¹
+        auto scene = m_zenovis->getSession()->get_scene();
+        auto& cam = scene->camera;
+        auto ids = scene->renderMan->getEngine()->getClickedId((float)pos.x() / (float)cam->m_nx, (float)pos.y() / (float)cam->m_ny);
+        
+        /*
+        if (ids.has_value()) {
+            auto [obj_id, mat_id, prim_id] = ids.value();
+            ZASSERT_EXIT(!mat_id.empty());
+            if (IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel())
+            {
+                for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
+                {
+                    auto s = subgIdx.data(ROLE_OBJNAME).toString();
+                    if (subgIdx.data(ROLE_MTLID).toString() == QString::fromStdString(mat_id))
+                    {
+                        if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                            if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+                                pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                                return;
+                            }
+                        }
+                    }
+                }
+                QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
+                for (auto item : resLst)
+                {
+                    INPUT_SOCKETS inputs = item.targetIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                    if (inputs.find("mtlid") != inputs.end()) {
+                        if (inputs["mtlid"].info.defaultValue.toString() == QString::fromStdString(mat_id)) {
+                            if (ZenoMainWindow* pWin = zenoApp->getMainWindow()) {
+                                if (ZenoGraphsEditor* pEditor = pWin->getAnyEditor()) {
+                                    pEditor->activateTab(item.subgIdx.data(ROLE_OBJNAME).toString(), "", item.targetIdx.data(ROLE_OBJID).toString(), false, false);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
+    }
 }
 
 void CameraControl::focus(QVector3D center, float radius) {
+    if (radius == 0) {
+         radius = 1;
+     }
     setPivot({float(center.x()), float(center.y()), float(center.z())});
     if (getFOV() >= 1e-6)
         radius /= (getFOV() / 45.0f);
@@ -537,34 +623,34 @@ QVector3D CameraControl::realPos() const {
     return {p[0], p[1], p[2]};
 }
 
-// ¼ÆËãÉäÏßÓëÆ½ÃæµÄ½»µã
+// è®¡ç®—å°„çº¿ä¸å¹³é¢çš„äº¤ç‚¹
 std::optional<glm::vec3> CameraControl::intersectRayPlane(
         glm::vec3 ray_origin
         , glm::vec3 ray_direction
         , glm::vec3 plane_point
         , glm::vec3 plane_normal
 ) {
-    // ¼ÆËãÉäÏß·½ÏòºÍÆ½Ãæ·¨ÏòÁ¿µÄµã»ı
+    // è®¡ç®—å°„çº¿æ–¹å‘å’Œå¹³é¢æ³•å‘é‡çš„ç‚¹ç§¯
     float denominator = glm::dot(plane_normal, ray_direction);
 
-    // Èç¹ûµã»ı½Ó½üÓÚ0£¬ËµÃ÷ÉäÏßÓëÆ½ÃæÆ½ĞĞ»òÔÚÆ½ÃæÄÚ
+    // å¦‚æœç‚¹ç§¯æ¥è¿‘äº0ï¼Œè¯´æ˜å°„çº¿ä¸å¹³é¢å¹³è¡Œæˆ–åœ¨å¹³é¢å†…
     if (glm::abs(denominator) < 1e-6f) {
-        return std::nullopt; // ·µ»Ø¿Õ£¬±íÊ¾Ã»ÓĞ½»µã
+        return std::nullopt; // è¿”å›ç©ºï¼Œè¡¨ç¤ºæ²¡æœ‰äº¤ç‚¹
     }
 
-    // ¼ÆËãÉäÏßÆğµãµ½Æ½ÃæÉÏÒ»µãµÄÏòÁ¿
+    // è®¡ç®—å°„çº¿èµ·ç‚¹åˆ°å¹³é¢ä¸Šä¸€ç‚¹çš„å‘é‡
     glm::vec3 diff = plane_point - ray_origin;
 
-    // ¼ÆËãtÖµ
+    // è®¡ç®—tå€¼
     float t = glm::dot(diff, plane_normal) / denominator;
 
-    // Èç¹ût < 0£¬ËµÃ÷½»µãÔÚÉäÏßÆğµãÖ®Ç°£¬·µ»Ø¿Õ
+    // å¦‚æœt < 0ï¼Œè¯´æ˜äº¤ç‚¹åœ¨å°„çº¿èµ·ç‚¹ä¹‹å‰ï¼Œè¿”å›ç©º
 
     if (t < 0) {
         return std::nullopt;
     }
 
-    // ¼ÆËã½»µã
+    // è®¡ç®—äº¤ç‚¹
     glm::vec3 intersection = ray_origin + t * ray_direction;
 
     return intersection;
@@ -587,12 +673,13 @@ glm::vec3 CameraControl::screenHitOnFloorWS(float x, float y) {
     return pos + dir * t;
 }
 
-void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
-    if (event->button() == Qt::MiddleButton) {
+void CameraControl::fakeMouseReleaseEvent(ViewMouseInfo info) {
+    if (info.buttons == Qt::MiddleButton) {
         middle_button_pressed = false;
     }
-    if (event->button() == Qt::LeftButton) {
-
+    if (info.buttons == Qt::LeftButton) {
+        auto m_transformer = this->m_transformer.lock();
+        auto m_picker = this->m_picker.lock();
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
         //float x = (float)event->x() / m_res.x();
         //float y = (float)event->y() / m_res.y();
@@ -624,7 +711,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
         if (m_transformer->isTransforming()) {
             bool moved = false;
-            if (m_boundRectStartPos != event->pos()) {
+            if (m_boundRectStartPos != info.pos) {
                 // create/modify transform primitive node
                 moved = true;
             }
@@ -633,7 +720,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
             auto cam_pos = realPos();
 
             scene->select_box = std::nullopt;
-            bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+            bool ctrl_pressed = info.modifiers & Qt::ControlModifier;
+            bool shift_pressed = info.modifiers & Qt::ShiftModifier;
             if (!shift_pressed) {
                 scene->selected.clear();
                 m_transformer->clear();
@@ -650,8 +738,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //                auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
 //                if (!picked_prim.empty()) {
 //                    auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
-//                    auto subgraph_name = obj_node_location->subgraph.data(ROLE_CLASS_NAME).toString();
-//                    auto obj_node_name = obj_node_location->node.data(ROLE_NODE_NAME).toString();
+//                    auto subgraph_name = obj_node_location->subgraph.data(QtRole::ROLE_CLASS_NAME).toString();
+//                    auto obj_node_name = obj_node_location->node.data(QtRole::ROLE_NODE_NAME).toString();
 //                    ZenoMainWindow *pWin = zenoApp->getMainWindow();
 //                    if (pWin) {
 //                        ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
@@ -661,7 +749,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //                }
             };
 
-            QPoint releasePos = event->pos();
+            QPoint releasePos = info.pos.toPoint();
             if (m_boundRectStartPos == releasePos) {
                 if (m_picker->is_draw_mode()) {
                     // zeno::log_info("res_w: {}, res_h: {}", res()[0], res()[1]);
@@ -677,13 +765,16 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
+                        /*
                         auto primList = scene->objectsMan->pairs();
                         for (auto const &[key, ptr]: primList) {
                             if (prim == key) {
-                                auto &ud = ptr->userData();
-                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                                auto ud = ptr->userData();
+                                auto mtlidstr = ud->get_string("mtlid", "Default");
+                                std::cout<<"selected MatId: "<<zsString2Std(mtlidstr)<<"\n";
                             }
                         }
+                        */
                     }
                 }
             } else {
@@ -714,20 +805,23 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
+                        /*
                         auto primList = scene->objectsMan->pairs();
                         for (auto const &[key, ptr]: primList) {
                             if (prim == key) {
-                                auto &ud = ptr->userData();
-                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                                auto ud = ptr->userData();
+                                auto mtlidstr = ud->get_string("mtlid", "Default");
+                                std::cout<<"selected MatId: "<< zsString2Std(mtlidstr) <<"\n";
                             }
                         }
+                        */
                         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
                         if (!obj_node_location)
                         {
                             return;
                         }
                         auto subgraph_name = obj_node_location.value().subgraph->name();
-                        auto obj_node_name = obj_node_location->node.data(ROLE_NODE_NAME).toString();
+                        auto obj_node_name = obj_node_location->node.data(QtRole::ROLE_NODE_NAME).toString();
                         nodes.push_back(obj_node_name);
 //                        ZenoMainWindow *pWin = zenoApp->getMainWindow();
 //                        if (pWin) {
@@ -753,17 +847,8 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool CameraControl::fakeKeyPressEvent(int uKey) {
-    if (uKey & Qt::SHIFT) {
-        shift_pressed = true;
-    }
-    if (uKey & Qt::CTRL) {
-        ctrl_pressed = true;
-    }
-    if (uKey & Qt::ALT) {
-        alt_pressed = true;
-    }
     // viewport focus prim
-    if ((uKey & 0xff) == Qt::Key_F && alt_pressed) {
+    if ((uKey & 0xff) == Qt::Key_F && uKey & Qt::AltModifier) {
         auto *scene = m_zenovis->getSession()->get_scene();
         if (scene->selected.size() == 1) {
             std::string nodeId = *scene->selected.begin();
@@ -820,15 +905,6 @@ bool CameraControl::fakeKeyPressEvent(int uKey) {
 }
 
 bool CameraControl::fakeKeyReleaseEvent(int uKey) {
-    if (uKey == Qt::Key_Shift) {
-        shift_pressed = false;
-    }
-    if (uKey == Qt::Key_Control) {
-        ctrl_pressed = false;
-    }
-    if (uKey == Qt::Key_Alt) {
-        alt_pressed = false;
-    }
     return false;
 }
 //void CameraControl::createPointNode(QPointF pnt) {
@@ -841,5 +917,5 @@ bool CameraControl::fakeKeyReleaseEvent(int uKey) {
 //STATUS_UPDATE_INFO info;
 //info.role = ROLE_OPTIONS;
 //info.newValue = OPT_VIEW;
-//pModel->updateNodeStatus(tmpNodeInfo[ROLE_NODE_NAME].toString(), info, subgIdx, true);
+//pModel->updateNodeStatus(tmpNodeInfo[QtRole::ROLE_NODE_NAME].toString(), info, subgIdx, true);
 //}

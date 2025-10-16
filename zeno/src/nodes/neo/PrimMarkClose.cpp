@@ -13,9 +13,9 @@ namespace {
 
 struct PrimMarkClose : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        float distance = get_input<NumericObject>("distance")->get<float>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+        float distance = ZImpl(get_input<NumericObject>("distance"))->get<float>();
 
         float factor = 1.0f / distance;
         std::unordered_multimap<vec3i, int, tuple_hash, tuple_equal> lut;
@@ -40,7 +40,7 @@ struct PrimMarkClose : INode {
             zeno::log_info("PrimMarkClose: collapse from {} to {}", prim->verts.size(), cnt + 1);
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -61,10 +61,10 @@ ZENDEFNODE(PrimMarkClose, {
 
 struct PrimMarkSameIf : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagValueIs = get_input2<int>("tagValueIs");
-        auto tagAttrIn = get_input2<std::string>("tagAttrIn");
-        auto tagAttrOut = get_input2<std::string>("tagAttrOut");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagValueIs = ZImpl(get_input2<int>("tagValueIs"));
+        auto tagAttrIn = ZImpl(get_input2<std::string>("tagAttrIn"));
+        auto tagAttrOut = ZImpl(get_input2<std::string>("tagAttrOut"));
         auto const &tagArrIn = tagAttrIn != tagAttrOut ?
             prim->verts.attr<int>(tagAttrIn) :
             std::vector<int>(prim->verts.attr<int>(tagAttrIn));
@@ -78,7 +78,7 @@ struct PrimMarkSameIf : INode {
                 tagArrOut[i] = nout++;
             }
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -100,12 +100,12 @@ ZENDEFNODE(PrimMarkSameIf, {
 
 struct PrimMarkIndex : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        int base = get_input<NumericObject>("base")->get<int>();
-        int step = get_input<NumericObject>("step")->get<int>();
-        auto type = get_input<StringObject>("type")->get();
-        auto scope = get_input2<std::string>("scope");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+        int base = ZImpl(get_input<NumericObject>("base"))->get<int>();
+        int step = ZImpl(get_input<NumericObject>("step"))->get<int>();
+        auto type = ZImpl(get_input<StringObject>("type"))->get();
+        auto scope = ZImpl(get_input2<std::string>("scope"));
 
         if (type == "float") {
             if (scope == "vert") {
@@ -172,7 +172,7 @@ struct PrimMarkIndex : INode {
             }
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -196,14 +196,14 @@ ZENDEFNODE(PrimMarkIndex, {
 
 struct PrimCheckTagInRange : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input2<std::string>("tagAttr");
-        int beg = get_input2<int>("beg");
-        int end = get_input2<int>("end");
-        int trueVal = get_input2<int>("trueVal");
-        int falseVal = get_input2<int>("falseVal");
-        int modularBy = get_input2<int>("modularBy");
-        bool endExcluded = get_input2<bool>("endExcluded");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input2<std::string>("tagAttr"));
+        int beg = ZImpl(get_input2<int>("beg"));
+        int end = ZImpl(get_input2<int>("end"));
+        int trueVal = ZImpl(get_input2<int>("trueVal"));
+        int falseVal = ZImpl(get_input2<int>("falseVal"));
+        int modularBy = ZImpl(get_input2<int>("modularBy"));
+        bool endExcluded = ZImpl(get_input2<bool>("endExcluded"));
         if (endExcluded) end -= 1;
 
         auto &tag = prim->verts.attr<int>(tagAttr);
@@ -220,7 +220,7 @@ struct PrimCheckTagInRange : INode {
             });
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

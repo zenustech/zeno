@@ -4,8 +4,6 @@
 #include "widgets/zlineedit.h"
 #include "style/zenostyle.h"
 #include "nodeeditor/gv/zitemfactory.h"
-#include <zeno/core/INode.h>
-#include <zeno/extra/SubnetNode.h>
 #include "model/GraphModel.h"
 #include "variantptr.h"
 
@@ -14,10 +12,10 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent,
     : QTabWidget(parent)
     , m_nodeIdx(idx)
 {
-    int defaultMemSize = m_nodeIdx.data(ROLE_DOPNETWORK_MEM).toInt();
-    int defaultMaxMemSize = m_nodeIdx.data(ROLE_DOPNETWORK_MAXMEM).toInt();
-    bool enableCache = m_nodeIdx.data(ROLE_DOPNETWORK_ENABLECACHE).toBool();
-    bool allowCacheToDisk = m_nodeIdx.data(ROLE_DOPNETWORK_CACHETODISK).toBool();
+    int defaultMemSize = m_nodeIdx.data(QtRole::ROLE_DOPNETWORK_MEM).toInt();
+    int defaultMaxMemSize = m_nodeIdx.data(QtRole::ROLE_DOPNETWORK_MAXMEM).toInt();
+    bool enableCache = m_nodeIdx.data(QtRole::ROLE_DOPNETWORK_ENABLECACHE).toBool();
+    bool allowCacheToDisk = m_nodeIdx.data(QtRole::ROLE_DOPNETWORK_CACHETODISK).toBool();
     this->insertTab(0, inputsWidget, "inputs");
 
     ZScrollArea* scrollArea = new ZScrollArea(this);
@@ -48,9 +46,9 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent,
     pLayout->addWidget(enableCacheCheckBox, 0, 1, Qt::AlignVCenter);
     connect(enableCacheCheckBox, &QCheckBox::stateChanged, [this](int state) {
         bool bChecked = (state == Qt::Checked);
-        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(QtRole::ROLE_GRAPH)))
         {
-            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_ENABLECACHE, bChecked);
+            pModel->setData(m_nodeIdx, QtRole::ROLE_DOPNETWORK_ENABLECACHE, bChecked);
         }
     });
 
@@ -95,16 +93,16 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent,
     pLayout->addWidget(pSlider, 1, 2, Qt::AlignVCenter);
     connect(cacheMemoryLineEdit, &ZLineEdit::returnPressed, [pSlider, cacheMemoryLineEdit, this]() {
         pSlider->setRange(0, cacheMemoryLineEdit->text().toInt());
-        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(QtRole::ROLE_GRAPH)))
         {
-            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_MAXMEM, cacheMemoryLineEdit->text().toInt());
+            pModel->setData(m_nodeIdx, QtRole::ROLE_DOPNETWORK_MAXMEM, cacheMemoryLineEdit->text().toInt());
         }
     });
     connect(pSlider, &QSlider::valueChanged, [cacheMemoryLineEdit, this](int newVal) {
         cacheMemoryLineEdit->setText(QString::number(newVal));
-        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(QtRole::ROLE_GRAPH)))
         {
-            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_MEM, newVal);
+            pModel->setData(m_nodeIdx, QtRole::ROLE_DOPNETWORK_MEM, newVal);
         }
     });
 
@@ -118,9 +116,9 @@ zenoDopNetworkPanel::zenoDopNetworkPanel(QWidget* inputsWidget, QWidget *parent,
     pLayout->addWidget(allowCacheToDiskCheckBox, 2, 1, Qt::AlignVCenter);
     connect(allowCacheToDiskCheckBox, &QCheckBox::stateChanged, [this](int state) {
         bool bChecked = (state == Qt::Checked);
-        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(ROLE_GRAPH)))
+        if (GraphModel* pModel = QVariantPtr<GraphModel>::asPtr(m_nodeIdx.data(QtRole::ROLE_GRAPH)))
         {
-            pModel->setData(m_nodeIdx, ROLE_DOPNETWORK_CACHETODISK, bChecked);
+            pModel->setData(m_nodeIdx, QtRole::ROLE_DOPNETWORK_CACHETODISK, bChecked);
         }
     });
 

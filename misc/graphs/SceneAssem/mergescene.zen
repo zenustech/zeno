@@ -1,0 +1,726 @@
+{
+    "main": {
+        "type": 2,
+        "nodes": {
+            "Cube1": {
+                "name": "Cube1",
+                "class": "Cube",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            4.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Size": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "X Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Y Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Z Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Uniform Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Triangles",
+                                "Quadrilaterals"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Point Normals": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    137.0,
+                    113.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "MakeSceneNode1": {
+                "name": "MakeSceneNode1",
+                "class": "MakeSceneNode",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "SetResourceType1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "prim"
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    },
+                    "xforms": {
+                        "links": null,
+                        "type": "prim",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "static",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "static",
+                                "dynamic"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "matrixMode": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "TotalChange",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "UnChanged",
+                                "TotalChange"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "root_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "/ABC",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "scene": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    92.0,
+                    389.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "MakeSceneNode2": {
+                "name": "MakeSceneNode2",
+                "class": "MakeSceneNode",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "SetResourceType2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "prim"
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    },
+                    "xforms": {
+                        "links": null,
+                        "type": "prim",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "static",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "static",
+                                "dynamic"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "matrixMode": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "TotalChange",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "UnChanged",
+                                "TotalChange"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "root_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "/DEF",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "scene": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    456.0,
+                    285.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "MergeScene1": {
+                "name": "MergeScene1",
+                "class": "MergeScene",
+                "object_inputs": {
+                    "Main Scene": {
+                        "links": [
+                            {
+                                "out-node": "MakeSceneNode1",
+                                "out-socket": "scene",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Main Scene"
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    },
+                    "Second Scene": {
+                        "links": [
+                            {
+                                "out-node": "MakeSceneNode2",
+                                "out-socket": "scene",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Second Scene"
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    },
+                    "xform1": {
+                        "links": null,
+                        "type": "prim",
+                        "socket-type": "clone"
+                    },
+                    "xform2": {
+                        "links": null,
+                        "type": "prim",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "static",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "static",
+                                "dynamic"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "matrixMode": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "TotalChange",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "UnChanged",
+                                "TotalChange"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "insert_path": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "namespace1": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "namespace2": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "namespace2",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "scene": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    282.5,
+                    581.25
+                ],
+                "status": [
+                    "View"
+                ],
+                "collasped": false
+            },
+            "SetResourceType1": {
+                "name": "SetResourceType1",
+                "class": "SetResourceType",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "Cube1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Input"
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "ResourceType": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Mesh",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Mesh",
+                                "Matrixes",
+                                "SceneDescriptor"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "ObjectName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "object1",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "changeHint": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    63.0,
+                    192.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SetResourceType2": {
+                "name": "SetResourceType2",
+                "class": "SetResourceType",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "Sphere1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Input"
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "ResourceType": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Mesh",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Mesh",
+                                "Matrixes",
+                                "SceneDescriptor"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "ObjectName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "object2",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "changeHint": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    442.0,
+                    287.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Sphere1": {
+                "name": "Sphere1",
+                "class": "Sphere",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Radius": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Uniform Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "X Axis",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "X Axis",
+                                "Y Axis",
+                                "Z Axis"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Rows": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 13,
+                        "control": {
+                            "name": "Slider"
+                        },
+                        "controlProps": {
+                            "min": 1,
+                            "max": 100,
+                            "step": 1
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Columns": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 24,
+                        "control": {
+                            "name": "Slider"
+                        },
+                        "controlProps": {
+                            "min": 1,
+                            "max": 100,
+                            "step": 1
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Triangles",
+                                "Quadrilaterals"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    458.0,
+                    103.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "views": {
+        "timeline": {
+            "start-frame": 0,
+            "end-frame": 100,
+            "curr-frame": 0,
+            "always": false,
+            "timeline-fps": 24
+        }
+    },
+    "version": "v3"
+}

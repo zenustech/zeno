@@ -6,9 +6,10 @@
 namespace zeno {
 namespace {
 
+#if 0
 struct INTERN_PreViewVDB : INode {
     virtual void apply() override {
-        auto vdb = get_input<VDBGrid>("arg0");
+        auto vdb = safe_dynamic_cast<VDBGrid>(get_input("arg0"));
         std::shared_ptr<IObject> ret;
         if (dynamic_cast<VDBFloatGrid*>(vdb.get())) {
             ret = this->getThisGraph()->callTempNode("SDFToPrimitive",
@@ -45,7 +46,7 @@ static int defINTERN_PreViewVDB = zeno::defNodeClass<INTERN_PreViewVDB>("INTERN_
 
 struct SDFScatterPoints : INode {
     virtual void apply() override {
-        auto sdf = get_input<VDBFloatGrid>("SDF");
+        auto sdf = safe_dynamic_cast<VDBFloatGrid>(get_input("SDF"));
         auto dx = getThisGraph()->callTempNode("GetVDBVoxelSize", {
             {"vdbGrid", sdf},
         }).at("dx");
@@ -62,7 +63,7 @@ struct SDFScatterPoints : INode {
             {"Particles", data},
             {"ShapeSDF", sdf},
         }).at("Particles");
-        set_output("Points", points);
+        set_output("Points", std::move(points));
     }
 };
 
@@ -75,6 +76,7 @@ static int defSDFScatterPoints = zeno::defNodeClass<SDFScatterPoints>("SDFScatte
     }, /* category: */ {
     "openvdb",
     }});
+#endif
 
 }
 }

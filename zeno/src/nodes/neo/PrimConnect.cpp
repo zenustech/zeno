@@ -3,7 +3,7 @@
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/para/parallel_push_back.h>
 #include <zeno/utils/vec.h>
 #include <algorithm>
@@ -13,12 +13,12 @@ namespace {
 
 struct PrimConnectTape : INode {
     virtual void apply() override {
-        auto prim1 = get_input<PrimitiveObject>("prim1");
-        auto prim2 = get_input<PrimitiveObject>("prim2");
-        auto faceType = get_input2<std::string>("faceType");
-        auto isCloseRing = get_input2<bool>("isCloseRing");
+        auto prim1 = ZImpl(get_input<PrimitiveObject>("prim1"));
+        auto prim2 = ZImpl(get_input<PrimitiveObject>("prim2"));
+        auto faceType = ZImpl(get_input2<std::string>("faceType"));
+        auto isCloseRing = ZImpl(get_input2<bool>("isCloseRing"));
 
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto prim = std::make_unique<PrimitiveObject>();
         prim->verts.resize(prim1->verts.size() + prim2->verts.size());
 
         prim1->verts.forall_attr([&] (auto const &key, auto &arr1) {
@@ -67,7 +67,7 @@ struct PrimConnectTape : INode {
             }
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -89,8 +89,8 @@ ZENDEFNODE(PrimConnectTape, {
 
 struct PrimConnectBridge : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto edgeIndAttr = get_input2<std::string>("edgeIndAttr");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto edgeIndAttr = ZImpl(get_input2<std::string>("edgeIndAttr"));
 
         auto &ind = prim->lines.attr<int>(edgeIndAttr);
 #ifdef ZENO_PARALLEL_STL
@@ -131,10 +131,10 @@ ZENDEFNODE(PrimConnectBridge, {
 
 struct PrimConnectSkin : INode {
     virtual void apply() override {
-        auto primList = get_input<ListObject>("primList")->getRaw<PrimitiveObject>();
-        auto isCloseRing = get_input2<bool>("isCloseRing");
+        auto primList = ZImpl(get_input<ListObject>("primList"))->m_impl->getRaw<PrimitiveObject>();
+        auto isCloseRing = ZImpl(get_input2<bool>("isCloseRing"));
         if (primList.size() == 0) {
-            set_output("prim", std::make_shared<PrimitiveObject>());
+            ZImpl(set_output("prim", std::make_unique<PrimitiveObject>()));
             return;
         }
         auto outprim = primMerge(primList);
@@ -160,7 +160,7 @@ struct PrimConnectSkin : INode {
                 outprim->quads.emplace_back(a[0], a[1], b[1], b[0]);
             }
         }
-        set_output("prim", std::move(outprim));
+        ZImpl(set_output("prim", std::move(outprim)));
     }
 };
 

@@ -85,4 +85,17 @@ private:
     zeno::ParamType m_targetType;
 };
 
+class NotEmptyValidator : public QValidator
+{
+    Q_OBJECT
+public:
+    explicit NotEmptyValidator(ZCoreParamLineEdit* parent = nullptr);
+    State validate(QString& input, int& pos) const;
+    void fixup(QString&) const;
+
+private:
+    ZCoreParamLineEdit* m_lineedit;
+};
+
+
 #endif

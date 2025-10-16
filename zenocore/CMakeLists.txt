@@ -12,6 +12,10 @@ if (ZENO_DEBUG_MSVC)
     zeno_dbg_msvc(zenocore)
 endif()
 
+if(MSVC)
+    target_compile_options(zenocore PRIVATE /MP)
+endif()
+
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)
@@ -31,6 +35,10 @@ if (ZENO_ENABLE_OPENMP)
     else()
         message(WARNING "Not found OpenMP")
     endif()
+endif()
+
+if(UNIX AND NOT APPLE)
+    target_link_libraries(zenocore PRIVATE uuid)
 endif()
 
 if (ZENO_BENCHMARKING)
@@ -62,12 +70,36 @@ if (ZENO_ENABLE_BACKWARD)
     add_backward(zeno)
 endif()
 
+if (ZENO_WITH_PYTHON)
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+    message(STATUS "python3 libraries for zenqt: ${Python3_LIBRARIES}")
+    message(STATUS "python3 include directories for zenqt: ${Python3_INCLUDE_DIRS}")
+    #target_link_libraries(zenocore PUBLIC ${Python3_LIBRARIES})
+    #target_include_directories(zenocore PUBLIC ${Python3_INCLUDE_DIRS})
+    target_compile_definitions(zenocore PRIVATE -DZENO_WITH_PYTHON)
+    target_link_libraries(zenocore PRIVATE ${Python3_LIBRARIES})
+    target_include_directories(zenocore PRIVATE ${Python3_INCLUDE_DIRS})
+    #target_link_options(zenocore PRIVATE /NODEFAULTLIB:python311.lib)
+
+    #add_subdirectory(pybind11)
+    #pybind11_add_module(ze 
+    #    src/core/Session.cpp
+    #    src/core/ObjectManager.cpp
+    #    src/core/Graph.cpp
+    #    src/core/INode.cpp
+    #    src/core/ReflectNodeClass.cpp)
+    #target_link_libraries(ze PRIVATE zenocore)
+    #set_target_properties(ze PROPERTIES SUFFIX ".pyd")
+endif()
+
 if (ZENO_BUILD_SHARED)
     target_compile_definitions(zenocore PRIVATE -DZENO_DLLEXPORT INTERFACE -DZENO_DLLIMPORT)
 endif()
 
 target_include_directories(zenocore PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/pybind11/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tpls/deprecated>
     $<INSTALL_INTERFACE:include/Zeno/zeno/include>
@@ -82,6 +114,19 @@ endif()
 
 if (ZENO_ENABLE_MAGICENUM)
     target_compile_definitions(zenocore PUBLIC -DZENO_ENABLE_MAGICENUM)
+endif()
+
+if (MSVC)  # must use this to make msvc linker happy
+    # 节数超过对象文件格式限制: 请使用 /bigobj 进行编译 
+    target_compile_options(zenocore
+        PRIVATE
+        $<IF:$<COMPILE_LANGUAGE:CXX>, /bigobj, >
+    )
+endif()
+
+if (ZENO_WITH_VLD)
+    target_include_directories(zenocore PRIVATE "C:/vld/src")
+    target_link_libraries(zenocore PRIVATE "C:/vld2/src/bin/x64/Debug-v143/vld.lib")
 endif()
 
 if (ZENO_WITH_REFLECTOR)
@@ -138,8 +183,7 @@ if (ZENO_WITH_REFLECTOR)
     else()
         #手动添加
         set(reflecttypes
-            ../zeno/src/nodes/reflect/zenoreflecttypes.cpp
-            include/zeno/types/HeatmapObject.h
+            ./src/core/zenoreflecttypes.cpp
         )
         make_absolute_paths(REFLECTION_TYPES ${reflecttypes})
         zeno_declare_reflection_support(zenocore "${REFLECTION_TYPES}" zeno_types)
@@ -148,8 +192,9 @@ if (ZENO_WITH_REFLECTOR)
 
 
     # BEGIN - 节点定义的自动扫描，在这里我们把带有ZDEFNODE标识的约定为节点的定义
+    # 为什么要在core里面定义这些东西呢？
     # 生成节点类的反射信息
-    if (1)
+    if (0)
         set(REFLECTION_NODES "dummy")
         #make_absolute_paths(REFLECTION_NODES ${reflectnodes})
         foreach(file_path ${scan_source})
@@ -163,12 +208,12 @@ if (ZENO_WITH_REFLECTOR)
         #送入Generator并生成
         zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
     else()
-        set(reflectnodes
-            ../zeno/src/nodes/reflect/reflectnodes.cpp
-            ../zeno/src/nodes/reflect/reflectnodesexample.cpp
-        )
-        make_absolute_paths(REFLECTION_NODES ${reflectnodes})
-        zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
+        #set(reflectnodes
+        #    ../zeno/src/nodes/reflect/reflectnodes.cpp
+        #    ../zeno/src/nodes/reflect/reflectnodesexample.cpp
+        #)
+        #make_absolute_paths(REFLECTION_NODES ${reflectnodes})
+        #zeno_declare_reflection_support(zenocore "${REFLECTION_NODES}" zeno_nodes)
     endif()
     # END - 节点定义的自动扫描，在这里我们把带有ZDEFNODE标识的约定为节点的定义
 endif()

@@ -105,12 +105,12 @@ void cornerLoopSum(zeno::PrimitiveObject* prim, int nx, int ny, std::string &cha
 
 struct Gather2DFiniteDifference : zeno::INode {
     virtual void apply() override {
-        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
-        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
-        auto grid = get_input<zeno::PrimitiveObject>("grid");
-        auto attrT = get_param<std::string>("attrT");
-        auto type = get_param<std::string>("OpType");
-        auto channel = get_input<zeno::StringObject>("channel")->get();
+        auto nx = get_input2_int("nx");
+        auto ny = get_input2_int("ny");
+        auto grid = get_input_PrimitiveObject("grid");
+        auto attrT = get_param_string("attrT");
+        auto type = get_param_string("OpType");
+        auto channel = zsString2Std(get_param_string("channel"));
 
         if(grid->has_attr(channel))
         {
@@ -156,13 +156,13 @@ ZENDEFNODE(Gather2DFiniteDifference, {
 
 struct MomentumTransfer2DFiniteDifference : zeno::INode {
     virtual void apply() override {
-        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
-        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
-        auto grid = get_input<zeno::PrimitiveObject>("grid");
-        auto attrT = get_param<std::string>("attrT");
-        auto type = get_param<std::string>("OpType");
-        auto channel = get_input<zeno::StringObject>("channel")->get();
-        auto addChannel = get_input<zeno::StringObject>("add_channel")->get();
+        auto nx = get_input2_int("nx");
+        auto ny = get_input2_int("ny");
+        auto grid = get_input_PrimitiveObject("grid");
+        auto attrT = get_param_string("attrT");
+        auto type = get_param_string("OpType");
+        auto channel = zsString2Std(get_input2_string("channel"));
+        auto addChannel = zsString2Std(get_input2_string("add_channel"));
         if(attrT=="float")
         {
             grid->add_attr<float>(addChannel);
@@ -253,15 +253,15 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vecto
 }
 struct Grid2DSample : zeno::INode {
     virtual void apply() override {
-        auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
-        auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
-        auto bmin = get_input2<zeno::vec3f>("bmin");
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto grid = get_input<zeno::PrimitiveObject>("sampleGrid");
-        auto channelList = get_input2<std::string>("channel");
-        auto sampleby = get_input2<std::string>("sampleBy");
-        auto isPeriodic = get_input2<std::string>("sampleType") == "Periodic";
-        auto h = get_input<zeno::NumericObject>("h")->get<float>();
+        auto nx = get_input2_int("nx");
+        auto ny = get_input2_int("ny");
+        auto bmin = toVec3f(get_input2_vec3f("bmin"));
+        auto prim = get_input_PrimitiveObject("prim");
+        auto grid = get_input_PrimitiveObject("sampleGrid");
+        auto channelList = zsString2Std(get_input2_string("channel"));
+        auto sampleby = zsString2Std(get_input2_string("sampleBy"));
+        auto isPeriodic = get_input2_string("sampleType") == "Periodic";
+        auto h = get_input2_float("h");
 
         bool sampleAll = false;
 

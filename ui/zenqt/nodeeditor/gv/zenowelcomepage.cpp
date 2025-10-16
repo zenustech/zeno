@@ -13,7 +13,7 @@
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
 	: QWidget(parent)
 {
-    m_ui = new Ui::WelcomePage;
+    m_ui.reset(new Ui::WelcomePage);
     m_ui->setupUi(this);
 
     //setProperty("cssClass", "zenowelcomepage");
@@ -130,7 +130,7 @@ void ZenoWelcomePage::initRecentFiles()
     {
         const QString& key = lst[i];
         const QString& path = settings.value(key).toString();
-        if (!path.isEmpty())
+        if (!path.isEmpty() && path.endsWith(".zen"))
         {
             QFileInfo info(path);
             const QString& fn = info.fileName();

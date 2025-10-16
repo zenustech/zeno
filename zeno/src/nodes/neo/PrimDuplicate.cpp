@@ -20,8 +20,8 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, bool copyParsAttr, bool copyMeshAttr) {
-    auto prim = std::make_shared<PrimitiveObject>();
+ZENO_API std::unique_ptr<PrimitiveObject> primDuplicate(PrimitiveObject *parsPrim, PrimitiveObject *meshPrim, std::string dirAttr, std::string tanAttr, std::string radAttr, std::string onbType, float radius, bool copyParsAttr, bool copyMeshAttr) {
+    auto prim = std::make_unique<PrimitiveObject>();
     auto hasDirAttr = boolean_variant(!dirAttr.empty());
     auto indOnbType = array_index({"XYZ", "YXZ", "YZX", "ZYX", "ZXY", "XZY"}, onbType);
     auto hasOnbType = boolean_variant(indOnbType != 0);
@@ -170,19 +170,19 @@ namespace {
 
 struct PrimDuplicate : INode {
     virtual void apply() override {
-        auto parsPrim = get_input<PrimitiveObject>("parsPrim");
-        auto meshPrim = get_input<PrimitiveObject>("meshPrim");
-        auto tanAttr = get_input2<std::string>("tanAttr");
-        auto dirAttr = get_input2<std::string>("dirAttr");
-        auto radAttr = get_input2<std::string>("radAttr");
-        auto onbType = get_input2<std::string>("onbType");
-        auto radius = get_input2<float>("radius");
-        auto copyParsAttr = get_input2<bool>("copyParsAttr");
-        auto copyMeshAttr = get_input2<bool>("copyMeshAttr");
+        auto parsPrim = ZImpl(get_input<PrimitiveObject>("parsPrim"));
+        auto meshPrim = ZImpl(get_input<PrimitiveObject>("meshPrim"));
+        auto tanAttr = ZImpl(get_input2<std::string>("tanAttr"));
+        auto dirAttr = ZImpl(get_input2<std::string>("dirAttr"));
+        auto radAttr = ZImpl(get_input2<std::string>("radAttr"));
+        auto onbType = ZImpl(get_input2<std::string>("onbType"));
+        auto radius = ZImpl(get_input2<float>("radius"));
+        auto copyParsAttr = ZImpl(get_input2<bool>("copyParsAttr"));
+        auto copyMeshAttr = ZImpl(get_input2<bool>("copyMeshAttr"));
         auto prim = primDuplicate(parsPrim.get(), meshPrim.get(),
                                   dirAttr, tanAttr, radAttr, onbType,
                                   radius, copyParsAttr, copyMeshAttr);
-        set_output("prim", prim);
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -208,15 +208,15 @@ ZENDEFNODE(PrimDuplicate, {
 
 struct PrimDuplicateConnLines : INode {
     virtual void apply() override {
-        auto profPrim = get_input<PrimitiveObject>("parsPrim");
-        auto prim = get_input<PrimitiveObject>("meshPrim");
-        auto tanAttr = get_input2<std::string>("tanAttr");
-        auto dirAttr = get_input2<std::string>("dirAttr");
-        auto radAttr = get_input2<std::string>("radAttr");
-        auto onbType = get_input2<std::string>("onbType");
-        auto radius = get_input2<float>("radius");
-        auto copyParsAttr = get_input2<bool>("copyParsAttr");
-        auto copyMeshAttr = get_input2<bool>("copyMeshAttr");
+        auto profPrim = ZImpl(get_input<PrimitiveObject>("parsPrim"));
+        auto prim = ZImpl(get_input<PrimitiveObject>("meshPrim"));
+        auto tanAttr = ZImpl(get_input2<std::string>("tanAttr"));
+        auto dirAttr = ZImpl(get_input2<std::string>("dirAttr"));
+        auto radAttr = ZImpl(get_input2<std::string>("radAttr"));
+        auto onbType = ZImpl(get_input2<std::string>("onbType"));
+        auto radius = ZImpl(get_input2<float>("radius"));
+        auto copyParsAttr = ZImpl(get_input2<bool>("copyParsAttr"));
+        auto copyMeshAttr = ZImpl(get_input2<bool>("copyMeshAttr"));
         auto outprim = primDuplicate(profPrim.get(), prim.get(),
                                   dirAttr, tanAttr, radAttr, onbType,
                                   radius, copyParsAttr, copyMeshAttr);
@@ -231,7 +231,7 @@ struct PrimDuplicateConnLines : INode {
             }
         }
         outprim->quads.update();
-        set_output("prim", std::move(outprim));
+        ZImpl(set_output("prim", std::move(outprim)));
     }
 };
 

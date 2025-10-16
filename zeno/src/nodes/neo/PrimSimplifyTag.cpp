@@ -49,12 +49,12 @@ namespace {
 
 struct PrimSimplifyTag : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
 
         primSimplifyTag(prim.get(), tagAttr);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -74,14 +74,14 @@ ZENDEFNODE(PrimSimplifyTag, {
 
 struct PrimColorByTag : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        auto clrAttr = get_input<StringObject>("clrAttr")->get();
-        auto seed = get_input<NumericObject>("seed")->get<int>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+        auto clrAttr = ZImpl(get_input<StringObject>("clrAttr"))->get();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<int>();
 
         primColorByTag(prim.get(), tagAttr, clrAttr, seed);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

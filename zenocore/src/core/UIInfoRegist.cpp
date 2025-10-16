@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 
 
-//基础类型也要写在这里
+//鍩虹绫诲瀷涔熻鍐欏湪杩欓噷
 
 registerObjectTypeUIInfo(Bool, Bool, "#FFFF00")
 registerObjectTypeUIInfo(Int, Int, "#FF0000")
@@ -28,7 +28,8 @@ registerObjectTypeUIInfo(Heatmap, Heatmap, "#FF00FF")
 registerObjectTypeUIInfo(IObject, IObject, "#708090")
 registerObjectTypeUIInfo(DictObject, Dict, "#A28EB9")
 registerObjectTypeUIInfo(ListObject, List, "#802A2A")
-registerObjectTypeUIInfo(PrimitiveObject, Primitive, "#CC7C5A")
+registerObjectTypeUIInfo(PrimitiveObject, Primitive, "#AAAAAA")
+registerObjectTypeUIInfo(GeometryObject, Geometry, "#BF633C")
 registerObjectTypeUIInfo(CameraObject, Camera, "#3D59AB")
 registerObjectTypeUIInfo(LightObject, Light, "#8DAD9B")
 registerObjectTypeUIInfo(MeshObject, Mesh, "#803333")

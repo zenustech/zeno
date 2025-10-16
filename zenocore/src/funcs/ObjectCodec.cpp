@@ -69,7 +69,7 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
     }
 }
 
-std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
+zany decodeObject(const char *buf, size_t len) {
     auto &header = *(ObjectHeader *)buf;
     if (header.magicNumber != ObjectHeader::kMagicNumber) {
         log_error("object header magic number mismatch");
@@ -91,13 +91,15 @@ std::shared_ptr<IObject> decodeObject(const char *buf, size_t len) {
 
         auto decolen = valbufsize > keysize ? valbufsize - keysize : 0;
         auto val = decodeObject(ptr, decolen);
-        if (val)
-            object->userData().set(key, std::move(val));
+        if (val) {
+            UserData* pImpl = dynamic_cast<UserData*>(object->userData());
+            pImpl->set(key, std::move(val));
+        }
 
         ptr = nextptr;
     }
-
-    return object;
+    //TODO:
+    return object->clone();
 }
 
 static bool _encodeObjectImpl(IObject const *object, std::vector<char> &buf) {
@@ -116,18 +118,19 @@ ZENO_XMACRO_IObject(_PER_OBJECT_TYPE)
 #undef _PER_OBJECT_TYPE
 
     } else {
-        log_error("invalid object type to encode `{}`", cppdemangle(typeid(*object)));
+        log_warn("invalid object type to encode `{}`", cppdemangle(typeid(*object)));
         return false;
     }
 }
 
-bool encodeObject(IObject const *object, std::vector<char> &buf) {
+bool encodeObject(IObject *object, std::vector<char> &buf) {
     auto oldsize = buf.size();
     if (!_encodeObjectImpl(object, buf))
         return false;
 
     std::vector<std::vector<char>> valbufs;
-    for (auto const &[key, val]: object->userData()) {
+    UserData* pUserData = dynamic_cast<UserData*>(object->userData());
+    for (auto const &[key, val]: *pUserData) {
         std::vector<char> valbuf;
         size_t keysize = key.size();
         valbuf.insert(valbuf.end(), (char *)&keysize, (char *)(&keysize + 1));

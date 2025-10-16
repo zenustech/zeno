@@ -189,7 +189,7 @@ void ZOptixProcViewport::resizeEvent(QResizeEvent* event)
     int nx = sz.width();
     int ny = sz.height();
 
-    float ratio = devicePixelRatioF();
+    float ratio = 1.0f;// devicePixelRatioF();
     zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
     m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
     m_camera->updatePerspective();
@@ -203,7 +203,8 @@ void ZOptixProcViewport::mousePressEvent(QMouseEvent* event)
         pauseWorkerAndResume();
     }
     _base::mousePressEvent(event);
-    m_camera->fakeMousePressEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMousePressEvent(info);
     update();
 }
 
@@ -214,7 +215,8 @@ void ZOptixProcViewport::mouseReleaseEvent(QMouseEvent* event)
         m_worker->work();
     }
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseReleaseEvent(info);
     update();
 }
 
@@ -227,14 +229,16 @@ void ZOptixProcViewport::mouseMoveEvent(QMouseEvent* event)
     setSimpleRenderOption();
 
     _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseMoveEvent(info);
     update();
 }
 
 void ZOptixProcViewport::mouseDoubleClickEvent(QMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseDoubleClickEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseDoubleClickEvent(info);
     update();
 }
 
@@ -246,7 +250,8 @@ void ZOptixProcViewport::wheelEvent(QWheelEvent* event)
     setSimpleRenderOption();
 
     _base::wheelEvent(event);
-    m_camera->fakeWheelEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos(), event->angleDelta() };
+    m_camera->fakeWheelEvent(info);
     update();
 }
 

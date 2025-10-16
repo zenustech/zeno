@@ -28,9 +28,28 @@
 
 #pragma once
 
+#include <cuda/climits.h>
+#include <cuda/cstdint.h>
+
 #include <vector_types.h>
 #include <sutil/vec_math.h>
 
+#ifndef uint
+using uint = uint32_t;
+#endif
+
+#ifndef int64
+using int64 = int64_t;
+#endif
+
+#ifndef uint64
+using uint64 = uint64_t;
+#endif
+
+template<typename T>
+__forceinline__ __device__ T buffer_read(uint64_t ptr, int offset) {
+    return *(reinterpret_cast<T*>(ptr) + offset);
+}
 
 __forceinline__ __device__ float3 toSRGB( const float3& c, float gamma )
 {

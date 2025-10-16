@@ -7,7 +7,6 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include <zeno/utils/log.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 #include <util/log.h>
@@ -23,6 +22,7 @@
 #include <zeno/types/UserData.h>
 #include "settings/zenosettingsmanager.h"
 #include "cameracontrol.h"
+#include "style/dpiscale.h"
 
 
 using std::string;
@@ -33,7 +33,6 @@ using std::unordered_map;
 ViewportWidget::ViewportWidget(QWidget* parent)
     : QGLWidget(parent)
     , m_camera(nullptr)
-    , updateLightOnce(true)
     , m_pauseRenderDally(new QTimer)
     , m_wheelEventDally(new QTimer)
     , simpleRenderTime(0)
@@ -73,13 +72,14 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         clearTransformer();
     });
 
-    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
-        auto scene = m_zenovis->getSession()->get_scene();
-        scene->drawOptions->simpleRender = false;
-        scene->drawOptions->needRefresh = true;
-        m_pauseRenderDally->stop();
-        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
-    });
+//    connect(m_pauseRenderDally, &QTimer::timeout, [&](){
+//        zeno::log_info("time out\n");
+//        auto scene = m_zenovis->getSession()->get_scene();
+//        scene->drawOptions->simpleRender = false;
+//        scene->drawOptions->needRefresh = true;
+//        m_pauseRenderDally->stop();
+//        //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
+//    });
 
     connect(m_wheelEventDally, &QTimer::timeout, [&](){
         m_wheelEventDally->stop();
@@ -94,7 +94,7 @@ void ViewportWidget::setSimpleRenderOption() {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
     m_pauseRenderDally->stop();
-    m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
+    m_pauseRenderDally->start(3*1000);  // Second to millisecond
 }
 
 void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
@@ -170,7 +170,11 @@ void ViewportWidget::initializeGL()
 
 void ViewportWidget::resizeGL(int nx, int ny)
 {
+#ifdef ENABLE_HIGHDPI_SCALE
+    float ratio = 1.0;
+#else
     float ratio = devicePixelRatioF();
+#endif
     zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
     m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
     m_camera->updatePerspective();
@@ -206,6 +210,10 @@ bool ViewportWidget::isPlaying() const
     return m_zenovis->isPlaying();
 }
 
+bool ViewportWidget::isCameraMoving() const {
+    return m_bMovingCamera;
+}
+
 void ViewportWidget::startPlay(bool bPlaying)
 {
     m_zenovis->startPlay(bPlaying);
@@ -228,23 +236,14 @@ void ViewportWidget::updatePerspective()
     m_camera->updatePerspective();
 }
 
-void ViewportWidget::load_objects()
+void ViewportWidget::reload_objects(const zeno::render_reload_info& info)
 {
-    zeno::RenderObjsInfo objs;
-    zeno::getSession().objsMan->export_loading_objs(objs);
-    m_zenovis->load_objects(objs);
+    m_zenovis->reload(info);
 }
 
 void ViewportWidget::paintGL()
 {
     m_zenovis->paintGL();
-    if(updateLightOnce){
-        auto scene = m_zenovis->getSession()->get_scene();
-        if(scene->objectsMan->lightObjects.size() > 0){
-            zenoApp->getMainWindow()->updateLightList();
-            updateLightOnce = false;
-        }
-    }
 }
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
@@ -258,7 +257,9 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
-    m_camera->fakeMousePressEvent(event);
+
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMousePressEvent(info);
     update();
 }
 
@@ -272,9 +273,10 @@ void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
         m_bMovingCamera = true;
     }
     setSimpleRenderOption();
-
     _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseMoveEvent(info);
     update();
 }
 
@@ -283,9 +285,10 @@ void ViewportWidget::wheelEvent(QWheelEvent* event)
     m_bMovingCamera = true;
     m_wheelEventDally->start(100);
     setSimpleRenderOption();
-
     _base::wheelEvent(event);
-    m_camera->fakeWheelEvent(event);
+
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos(), event->angleDelta() };
+    m_camera->fakeWheelEvent(info);
     update();
 }
 
@@ -293,16 +296,20 @@ void ViewportWidget::mouseReleaseEvent(QMouseEvent *event) {
     if(event->button() == Qt::MidButton){
         m_bMovingCamera = false;
     }
+
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event); 
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseReleaseEvent(info); 
     update();
 }
 
 void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseDoubleClickEvent(event);
+    ViewMouseInfo info = { event->type(), event->modifiers(), event->buttons(), event->pos() };
+    m_camera->fakeMouseDoubleClickEvent(info);
     update();
 }
+
 //void ViewportWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 void ViewportWidget::cameraLookTo(zenovis::CameraLookToDir dir) {
      m_camera->lookTo(dir);

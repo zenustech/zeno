@@ -1,5 +1,6 @@
 #ifdef ZENO_WITH_PYTHON
 #include <Python.h>
+#include <pybind11/pybind11.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 #include "pythonenv.h"
@@ -8,7 +9,9 @@
 #include <Windows.h>
 #endif
 
-PyMODINIT_FUNC PyInit_zeno(void);
+namespace py = pybind11;
+
+PyMODINIT_FUNC PyInit_zen(void);
 
 void initPythonEnv(const char* progName)
 {
@@ -18,7 +21,7 @@ void initPythonEnv(const char* progName)
         exit(1);
     }
 
-    if (PyImport_AppendInittab("zeno", PyInit_zeno) == -1) {
+    if (PyImport_AppendInittab("zen", PyInit_zen) == -1) {
         fprintf(stderr, "Error: could not extend in-built modules table\n");
         exit(1);
     }
@@ -27,15 +30,8 @@ void initPythonEnv(const char* progName)
 
     Py_Initialize();
 
-    PyObject* pmodule = PyImport_ImportModule("zeno");
-    if (!pmodule) {
-        PyErr_Print();
-        fprintf(stderr, "Error: could not import module 'zeno'\n");
-    }
-
     std::string tempCode;
-    tempCode = "import zeno; gra = zeno.graph('main')";
-
+    tempCode = "import zen";
     if (PyRun_SimpleString(tempCode.c_str()) < 0) {
         zeno::log_warn("Failed to initialize Python module");
         return;
@@ -57,7 +53,7 @@ struct _SGlobal_initPythonEnv
     }
 };
 
-static _SGlobal_initPythonEnv _inst;
+//static _SGlobal_initPythonEnv _inst;
 
 
 #endif

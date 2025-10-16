@@ -4,24 +4,101 @@
 #include <zeno/utils/log.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/GenericObject.h>
+#ifdef ZENO_WITH_PYTHON
+#include <Python.h>
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+#endif
+
 #include "zstartup.h"
 #include <QApplication>
 #include <QSettings>
 #include <algorithm>
 #include "settings/zsettings.h"
 #include "exceptionhandle.h"
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include "uicommon.h"
+#include "model/LinkModel.h"
+#include "model/parammodel.h"
+#include "model/customuimodel.h"
+#include "zenoapplication.h"
+#include "model/graphsmanager.h"
+#include "model/nodecatemodel.h"
+#include "ScintillaEditBase.h"
+#include "Scintilla.h"
+#include <QuickQanava>
+#include <QQuickStyle>
 
+
+void initQml()
+{
+    qRegisterMetaType<LinkModel*>("LinkModel*");
+    qRegisterMetaType<GraphModel*>("GraphModel*");
+    qRegisterMetaType<ParamsModel*>("ParamsModel*");
+    qRegisterMetaType<ParamFilterModel*>("ParamFilterModel*");
+    qRegisterMetaType<CustomUIModel*>("CustomUIModel*");
+    qRegisterMetaType<ParamTabModel*>("ParamTabModel*");
+    qRegisterMetaType<ParamGroupModel*>("ParamGroupModel*");
+    qRegisterMetaType<ParamPlainModel*>("ParamPlainModel*");
+    qRegisterMetaType<PrimParamOutputModel*>("ParamOutputModel*");
+    qRegisterMetaType<objParamInputModel*>("objParamInputModel*");
+    qRegisterMetaType<objParamOutputModel*>("objParamOutputModel*");
+    qRegisterMetaType<ControlItemListModel*>("ControlItemListModel*");
+    qRegisterMetaType<NodeCateModel*>("NodeCateModel*");
+    qRegisterMetaType<QStandardItemModel*>("QStandardItemModel*");
+
+    qmlRegisterUncreatableType<QmlNodeType>("zeno.enum", 1, 0, "NodeType", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<QmlParamControl>("zeno.enum", 1, 0, "ParamControl", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<QmlParamGroup>("zeno.enum", 1, 0, "ParamGroup", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<RunStatus>("zeno.enum", 1, 0, "RunStatus", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<QtRole>("zeno.enum", 1, 0, "Model", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<QmlNodeCateRole>("zeno.enum", 1, 0, "NodeCate", "Not creatable as it is an enum type");
+    qmlRegisterUncreatableType<QmlNodeRunStatus>("zeno.enum", 1, 0, "NodeStatus", "");
+
+    qRegisterMetaType<QmlParamType::Value>("QmlParamType::Value");
+    qmlRegisterUncreatableType<QmlParamType>("zeno.enum", 1, 0, "ParamType", "");
+
+    qmlRegisterUncreatableType<QmlCUIRole>("zeno.enum", 1, 0, "CustomuiModelType", "Not creatable as it is an enum type");
+    qmlRegisterType<GraphsManager>("Zeno", 1, 0, "GraphsManager");
+    qmlRegisterType<GraphsTotalView>("Zeno", 1, 0, "GraphsTotalView");
+    qmlRegisterType<MenuEventFilter>("Zeno", 1, 0, "MenuEventFilter");
+
+    qRegisterMetaType<SCNotification>("SCNotification");
+    qmlRegisterType<ScintillaEditBase>("Scintilla", 1, 0, "ScintillaEditBase");
+
+    //qRegisterMetaType<GraphsManager*>("GraphsManager*");
+    //qRegisterMetaType<GraphsTotalView*>("GraphsTotalView*");
+    zenoApp->initQuickQanavas();
+}
+
+#ifdef ZENO_WITH_PYTHON
+PyMODINIT_FUNC PyInit_zen(void);
+
+void initPyzenModule() {
+    zeno::getSession().initPyzen([]() {
+        if (PyImport_AppendInittab("zen", PyInit_zen) == -1) {
+            fprintf(stderr, "Error: could not extend in-built modules table\n");
+            exit(1);
+        }
+    });
+}
+#endif
 
 void startUp(bool bEnableCrashReport)
 {
 #ifdef Q_OS_WIN
+#ifndef ZENO_WITH_VLD
     if (bEnableCrashReport)
         registerExceptionFilter();
+#endif
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
     zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
+
+    initQml();
 
     QSettings settings(zsCompanyName, zsEditor);
 
@@ -31,6 +108,10 @@ void startUp(bool bEnableCrashReport)
 
     QDir docDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
     docDir.mkpath("Zeno/assets");
+
+#ifdef ZENO_WITH_PYTHON
+    initPyzenModule();
+#endif
 }
 
 std::string getZenoVersion() {
@@ -139,6 +220,7 @@ void verifyVersion()
     zeno::log_info("zeno {} {} {} {}", plat, ver, __TIME__, feat);
 }
 
+#if 0
 int invoke_main(int argc, char *argv[]);
 int invoke_main(int argc, char *argv[]) {
     if (argc < 1) {
@@ -158,3 +240,4 @@ int invoke_main(int argc, char *argv[]) {
     auto alterMain = ud.get<zeno::GenericObject<int(*)(int, char **)>>("subprogram_" + prog)->get();
     return alterMain(newArgv.size(), newArgv.data());
 }
+#endif

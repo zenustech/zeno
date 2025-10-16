@@ -1,4 +1,4 @@
-#include "zeditparamlayoutdlg.h"
+Ôªø#include "zeditparamlayoutdlg.h"
 #include "ui_zeditparamlayoutdlg.h"
 #include "zassert.h"
 #include "util/uihelper.h"
@@ -7,6 +7,7 @@
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
 #include "model/parammodel.h"
+#include "model/customuimodel.h"
 #include "widgets/zwidgetfactory.h"
 #include "util/globalcontrolmgr.h"
 #include "variantptr.h"
@@ -14,6 +15,8 @@
 #include "style/zenostyle.h"
 #include "widgets/zspinboxslider.h"
 #include <zeno/utils/helper.h>
+#include <zeno/core/typeinfo.h>
+#include "declmetatype.h"
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -35,7 +38,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Integer Vector 4",    zeno::Vec4edit,     zeno::types::gParamType_Vec4i,  ":/icons/parameter_control_integerVector4.svg"},
     {"Integer Vector 3",    zeno::Vec3edit,     zeno::types::gParamType_Vec3i,  ":/icons/parameter_control_integerVector3.svg"},
     {"Integer Vector 2",    zeno::Vec2edit,     zeno::types::gParamType_Vec2i,  ":/icons/parameter_control_integerVector2.svg"},
-    {"Color",               zeno::Heatmap,      zeno::types::gParamType_Heatmap,":/icons/parameter_control_color.svg"},
+    {"Color",               zeno::Heatmap,      gParamType_Heatmap,             ":/icons/parameter_control_color.svg"},
     {"Color Vec3f",         zeno::ColorVec,     zeno::types::gParamType_Vec3f,  ":/icons/parameter_control_color.svg"},
     {"Curve",               zeno::CurveEditor,  zeno::types::gParamType_Curve,  ":/icons/parameter_control_curve.svg"},
     {"SpinBox",             zeno::SpinBox,      zeno::types::gParamType_Int,    ":/icons/parameter_control_spinbox.svg"},
@@ -101,17 +104,20 @@ QWidget* ParamTreeItemDelegate::createEditor(QWidget* parent, const QStyleOption
     bool bEditable = pItem->isEditable();
     if (!bEditable)
         return nullptr;
-    return QStyledItemDelegate::createEditor(parent, option, index);
+    QLineEdit* lineedit = new QLineEdit(parent);
+    lineedit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    return lineedit;
+    //return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
-void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const 
+void ParamTreeItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const
 {
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
-        if (m_isGlobalUniqueFunc(newName)) {
+        if (m_isGlobalUniqueFunc(true, newName)) {
             QStyledItemDelegate::setModelData(editor, model, index);
-            model->setData(index, newName, ROLE_PARAM_NAME);
+            model->setData(index, newName, QtRole::ROLE_PARAM_NAME);
         }
         else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
@@ -119,14 +125,26 @@ void ParamTreeItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
     }
 }
 
-void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
-                                  const QModelIndex &index) const {
-    QStyledItemDelegate::paint(painter, option, index);
+void ParamTreeItemDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
+{
+	QString value = index.model()->data(index, Qt::EditRole).toString();
+	QLineEdit* lineedit = qobject_cast<QLineEdit*>(editor);
+	if (lineedit) {
+		lineedit->setText(value);
+	}
 }
 
-outputListItemDelegate::outputListItemDelegate(QStandardItemModel* model, QObject* parent)
+void ParamTreeItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+                                  const QModelIndex &index) const {
+    QStyleOptionViewItem opt(option);
+    opt.displayAlignment = Qt::AlignVCenter;
+    QStyledItemDelegate::paint(painter, opt, index);
+}
+
+outputListItemDelegate::outputListItemDelegate(QStandardItemModel* model, zeno::NodeDataGroup group, QObject* parent)
     : QStyledItemDelegate(parent)
     , m_model(model)
+    , m_group(group)
 {
 }
 
@@ -143,7 +161,11 @@ QWidget* outputListItemDelegate::createEditor(QWidget* parent, const QStyleOptio
     bool bEditable = pItem->isEditable();
     if (!bEditable)
         return nullptr;
-    return QStyledItemDelegate::createEditor(parent, option, index);
+	QLineEdit* lineedit = new QLineEdit(parent);
+	lineedit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    lineedit->setStyleSheet("QLineEdit { padding: 0px;}");
+    return lineedit;
+    //return QStyledItemDelegate::createEditor(parent, option, index);
 }
 
 void outputListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const
@@ -151,9 +173,9 @@ void outputListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* m
     QString oldName = index.data().toString();
     QString newName = editor->property(editor->metaObject()->userProperty().name()).toString();
     if (oldName != newName) {
-        if (m_isGlobalUniqueFunc(newName)) {
+        if (m_isGlobalUniqueFunc(m_group == zeno::Role_InputObject || m_group == zeno::Role_InputPrimitive, newName)) {
             QStyledItemDelegate::setModelData(editor, model, index);
-            model->setData(index, newName, ROLE_PARAM_NAME);
+            model->setData(index, newName, QtRole::ROLE_PARAM_NAME);
         }
         else {
             QMessageBox::information(nullptr, tr("Info"), tr("The param name already exists"));
@@ -161,13 +183,24 @@ void outputListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* m
     }
 }
 
+void outputListItemDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const
+{
+	QString value = index.model()->data(index, Qt::EditRole).toString();
+	QLineEdit* lineedit = qobject_cast<QLineEdit*>(editor);
+	if (lineedit) {
+		lineedit->setText(value);
+	}
+}
+
 void outputListItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     const QModelIndex& index) const {
-    QStyledItemDelegate::paint(painter, option, index);
+    QStyleOptionViewItem opt(option);
+    opt.displayAlignment = Qt::AlignVCenter;
+    QStyledItemDelegate::paint(painter, opt, index);
 }
 
 
-ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent)
+ZEditParamLayoutDlg::ZEditParamLayoutDlg(CustomUIModel* pModel, QWidget* parent)
     : QDialog(parent)
     , m_isGlobalUniqueFunc(nullptr)
     , m_paramsLayoutM_inputs(new QStandardItemModel(this))
@@ -196,6 +229,8 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     m_ui->cbControl->setMinimumWidth(cbControlMetrics.horizontalAdvance(maxControlName) + 60);
     m_ui->cbSocketType->setMinimumWidth(cbControlMetrics.horizontalAdvance(maxControlName) + 60);
     m_ui->cbSocketType->setEnabled(false);
+    m_ui->cbSocketType->setVisible(false);
+    m_ui->socketpropertyLbl->setVisible(false);
 
     initModel(pModel);
     initIcon(m_paramsLayoutM_inputs->invisibleRootItem());
@@ -206,46 +241,89 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     m_ui->objInputsView->setModel(m_paramsLayoutM_objInputs);
     m_ui->objOutputsView->setModel(m_paramsLayoutM_objOutputs);
     ParamTreeItemDelegate* treeDelegate = new ParamTreeItemDelegate(m_paramsLayoutM_inputs, m_ui->paramsView);
-    outputListItemDelegate* listDelegate = new outputListItemDelegate(m_paramsLayoutM_outputs, m_ui->outputsView);
-    outputListItemDelegate* listDelegate_objInput = new outputListItemDelegate(m_paramsLayoutM_objInputs, m_ui->objInputsView);
-    outputListItemDelegate* listDelegate_objOutput = new outputListItemDelegate(m_paramsLayoutM_objOutputs, m_ui->objOutputsView);
+    outputListItemDelegate* listDelegate = new outputListItemDelegate(m_paramsLayoutM_outputs, zeno::Role_OutputPrimitive, m_ui->outputsView);
+    outputListItemDelegate* listDelegate_objInput = new outputListItemDelegate(m_paramsLayoutM_objInputs, zeno::Role_InputObject, m_ui->objInputsView);
+    outputListItemDelegate* listDelegate_objOutput = new outputListItemDelegate(m_paramsLayoutM_objOutputs, zeno::Role_OutputObject, m_ui->objOutputsView);
     m_ui->paramsView->setItemDelegate(treeDelegate);
     m_ui->outputsView->setItemDelegate(listDelegate);
     m_ui->objInputsView->setItemDelegate(listDelegate_objInput);
     m_ui->objOutputsView->setItemDelegate(listDelegate_objOutput);
 
-    m_isGlobalUniqueFunc = [&](QString name) -> bool {
+    m_isGlobalUniqueFunc = [&](bool bInput, QString name) -> bool {
         QStandardItem* pParamsViewRoot = m_paramsLayoutM_inputs->item(0);
-        auto paramsResLst = m_paramsLayoutM_inputs->match(pParamsViewRoot->index(), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
-        auto outputResLst = m_paramsLayoutM_outputs->match(m_paramsLayoutM_outputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
-        auto objectInResLst = m_paramsLayoutM_objInputs->match(m_paramsLayoutM_objInputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
-        auto objOutResLst = m_paramsLayoutM_objOutputs->match(m_paramsLayoutM_objOutputs->index(0, 0), ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        auto paramsResLst = m_paramsLayoutM_inputs->match(pParamsViewRoot->index(), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        auto outputResLst = m_paramsLayoutM_outputs->match(m_paramsLayoutM_outputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        auto objectInResLst = m_paramsLayoutM_objInputs->match(m_paramsLayoutM_objInputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+        auto objOutResLst = m_paramsLayoutM_objOutputs->match(m_paramsLayoutM_objOutputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
         return paramsResLst.empty() && outputResLst.empty() && objectInResLst.empty() && objOutResLst.empty();
+        /* Áî±‰∫éSubInputÂíåSubOutputÊòØÂçïÁã¨ËäÇÁÇπÔºåÂêçÁß∞‰Ωú‰∏∫ÂèÇÊï∞ÂêçÔºå‰∏çËÉΩÂú®‰∏ÄÂº†ÂõæÈáåÈáçÂ§çÔºåÊâÄ‰ª•Áé∞Èò∂ÊÆµÂè™ËÉΩÈôêÂà∂ËæìÂÖ•ËæìÂá∫‰∏çËÉΩÈáçÂêç
+        if (bInput) {
+            auto paramsResLst = m_paramsLayoutM_inputs->match(pParamsViewRoot->index(), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+            auto objectInResLst = m_paramsLayoutM_objInputs->match(m_paramsLayoutM_objInputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+            return paramsResLst.empty() && objectInResLst.empty();
+        }
+        else {
+            auto outputResLst = m_paramsLayoutM_outputs->match(m_paramsLayoutM_outputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+            auto objOutResLst = m_paramsLayoutM_objOutputs->match(m_paramsLayoutM_objOutputs->index(0, 0), QtRole::ROLE_PARAM_NAME, name, 1, Qt::MatchRecursive);
+            return outputResLst.empty() && objOutResLst.empty();
+        }
+        */
     };
     treeDelegate->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
     listDelegate->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
     listDelegate_objInput->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
     listDelegate_objOutput->m_isGlobalUniqueFunc = m_isGlobalUniqueFunc;
 
-    QItemSelectionModel* selModel = m_ui->paramsView->selectionModel();
-    connect(selModel, SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)), this,
-            SLOT(onTreeCurrentChanged(const QModelIndex &, const QModelIndex &)));
-    QModelIndex selIdx = selModel->currentIndex();
-    const QModelIndex& wtfIdx = m_paramsLayoutM_inputs->index(0, 0);
-    selModel->setCurrentIndex(wtfIdx, QItemSelectionModel::SelectCurrent);
-    m_ui->paramsView->expandAll();
-
-    QItemSelectionModel* selModelOutputs = m_ui->outputsView->selectionModel();
-    connect(selModelOutputs, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
-        SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
-
+    QItemSelectionModel* selModelInputPrims = m_ui->paramsView->selectionModel();
+    QItemSelectionModel* selModelOutPrims = m_ui->outputsView->selectionModel();
     QItemSelectionModel* selModelInputs_obj = m_ui->objInputsView->selectionModel();
-    connect(selModelInputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
-        SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
-
     QItemSelectionModel* selModelOutputs_obj = m_ui->objOutputsView->selectionModel();
-    connect(selModelOutputs_obj, SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
-        SLOT(onOutputsListCurrentChanged(const QModelIndex&, const QModelIndex&)));
+
+    QModelIndex selIdx = selModelInputPrims->currentIndex();
+    const QModelIndex& wtfIdx = m_paramsLayoutM_inputs->index(0, 0);
+    selModelInputPrims->setCurrentIndex(wtfIdx, QItemSelectionModel::SelectCurrent);
+    m_ui->paramsView->expandAll();
+    m_ui->paramsView->setDragEnabled(false);    //ÊãñÂä®‰ºöÂ¥©Ê∫ÉÔºåÂÖàÁ¶ÅÁî®
+
+    connect(selModelInputPrims, &QItemSelectionModel::currentChanged,
+        [&](const QModelIndex& current, const QModelIndex& previous) {
+            if (current.isValid()) {
+                m_ui->outputsView->selectionModel()->clearSelection();
+                m_ui->objInputsView->selectionModel()->clearSelection();
+                m_ui->objOutputsView->selectionModel()->clearSelection();
+                onTreeCurrentChanged(current, previous);
+            }
+        });
+
+    connect(selModelOutPrims, &QItemSelectionModel::currentChanged,
+        [&](const QModelIndex& current, const QModelIndex& previous) {
+            if (current.isValid()) {
+                m_ui->paramsView->selectionModel()->clearSelection();
+                m_ui->objInputsView->selectionModel()->clearSelection();
+                m_ui->objOutputsView->selectionModel()->clearSelection();
+                onOutputsListCurrentChanged(zeno::Role_OutputPrimitive, current, previous);
+            }
+        });
+
+    connect(selModelInputs_obj, &QItemSelectionModel::currentChanged,
+        [&](const QModelIndex& current, const QModelIndex& previous) {
+            if (current.isValid()) {
+                m_ui->paramsView->selectionModel()->clearSelection();
+                m_ui->outputsView->selectionModel()->clearSelection();
+                m_ui->objOutputsView->selectionModel()->clearSelection();
+                onOutputsListCurrentChanged(zeno::Role_InputObject, current, previous);
+            }
+        });
+
+    connect(selModelOutputs_obj, &QItemSelectionModel::currentChanged,
+        [&](const QModelIndex& current, const QModelIndex& previous) {
+            if (current.isValid()) {
+                m_ui->paramsView->selectionModel()->clearSelection();
+                m_ui->outputsView->selectionModel()->clearSelection();
+                m_ui->objInputsView->selectionModel()->clearSelection();
+                onOutputsListCurrentChanged(zeno::Role_OutputObject, current, previous);
+            }
+        });
 
     connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
     connect(m_ui->editLabel, SIGNAL(editingFinished()), this, SLOT(onLabelEditFinished()));
@@ -264,8 +342,54 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     m_ui->objInputsView->installEventFilter(this);
     m_ui->objOutputsView->installEventFilter(this);
 
+    QFontMetrics fm(m_ui->outputsView->font());
+    auto itemHeightStyle = "QListView::item { height: " + QString::number(ZenoStyle::dpiScaled(fm.height() + 4)) + "px; }";
+	m_ui->outputsView->setStyleSheet(itemHeightStyle);
+	m_ui->objInputsView->setStyleSheet(itemHeightStyle);
+	m_ui->objOutputsView->setStyleSheet(itemHeightStyle);
+
+    connect(m_ui->editMin, SIGNAL(editingFinished()), this, SLOT(onMinEditFinished()));
+    connect(m_ui->editMax, SIGNAL(editingFinished()), this, SLOT(onMaxEditFinished()));
+    connect(m_ui->editStep, SIGNAL(editingFinished()), this, SLOT(onStepEditFinished()));
     connect(m_ui->cbControl, SIGNAL(currentIndexChanged(int)), this, SLOT(onControlItemChanged(int)));
     connect(m_ui->cbSocketType, SIGNAL(currentIndexChanged(int)), this, SLOT(onSocketTypeChanged(int)));
+    connect(m_ui->cbObjectType, SIGNAL(currentIndexChanged(int)), this, SLOT(onObjTypeChanged(int)));
+    connect(m_ui->cbOutputPrim, SIGNAL(currentIndexChanged(int)), this, SLOT(onOutputPrimTypeChanged(int)));
+
+    m_ui->itemsTable->setHorizontalHeaderLabels({ tr("Item Name") });
+    connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+
+    m_ui->m_pUpButton->setFixedWidth(32);
+    m_ui->m_pUpButton->setEnabled(false);
+    m_ui->m_pUpButton->setIcon(QIcon(":/icons/moveUp.svg"));
+    connect(m_ui->itemsTable, &QTableWidget::itemSelectionChanged, this, [=]() {
+        m_ui->m_pUpButton->setEnabled(true);
+        auto item = m_ui->itemsTable->currentItem();
+        if (item) {
+            int row = item->row();
+            if (row == 0) {
+                m_ui->m_pUpButton->setEnabled(false);
+            }
+        }
+        else {
+            m_ui->m_pUpButton->setEnabled(false);
+        }
+        });
+
+    connect(m_ui->m_pUpButton, &QPushButton::clicked, this, [=]() {
+        auto item = m_ui->itemsTable->currentItem();
+        if (item) {
+            int row = item->row() - 1;
+            disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
+                SLOT(onComboTableItemsCellChanged(int, int)));
+            QString text = item->text();
+            item->setText(m_ui->itemsTable->item(row, 0)->text());
+            connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this,
+                SLOT(onComboTableItemsCellChanged(int, int)));
+            m_ui->itemsTable->item(row, 0)->setText(text);
+            m_ui->itemsTable->setCurrentItem(m_ui->itemsTable->item(row, 0));
+        }
+        });
 
     connect(m_paramsLayoutM_inputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onParamsViewParamDataChanged);
     connect(m_paramsLayoutM_outputs, &QStandardItemModel::dataChanged, this, &ZEditParamLayoutDlg::onOutputsViewParamDataChanged);
@@ -294,7 +418,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* pa
     });
 }
 
-void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
+void ZEditParamLayoutDlg::initModel(CustomUIModel* pModel)
 {
     auto cloneItem = [](auto const& cloneItem, QStandardItem* pItem)->QStandardItem* {
         QStandardItem* newItem = pItem->clone();
@@ -306,37 +430,10 @@ void ZEditParamLayoutDlg::initModel(const QStandardItemModel* pModel)
         return newItem;
     };
     //prim params
-    if (QStandardItem* inputsItem = pModel->item(0, 0))
-    {
-        m_paramsLayoutM_inputs->appendRow(cloneItem(cloneItem, inputsItem));
-    }
-
-    if (QStandardItem* outputsItem = pModel->item(1, 0))
-    {
-        for (int r = 0; r < outputsItem->rowCount(); r++)
-        {
-            QStandardItem* newItem = outputsItem->child(r);
-            m_paramsLayoutM_outputs->appendRow(cloneItem(cloneItem, newItem));
-        }
-    }
-    //object params
-    if (QStandardItem* inputsItem = pModel->item(2, 0))
-    {
-        for (int r = 0; r < inputsItem->rowCount(); r++)
-        {
-            QStandardItem* newItem = inputsItem->child(r);
-            m_paramsLayoutM_objInputs->appendRow(cloneItem(cloneItem, newItem));
-        }
-    }
-
-    if (QStandardItem* outputsItem = pModel->item(3, 0))
-    {
-        for (int r = 0; r < outputsItem->rowCount(); r++)
-        {
-            QStandardItem* newItem = outputsItem->child(r);
-            m_paramsLayoutM_objOutputs->appendRow(cloneItem(cloneItem, newItem));
-        }
-    }
+    m_paramsLayoutM_inputs = pModel->tabModel()->toStandardModel();
+    m_paramsLayoutM_outputs = pModel->primOutputModel()->toStandardModel();
+    m_paramsLayoutM_objInputs = pModel->objInputModel()->toStandardModel();
+    m_paramsLayoutM_objOutputs = pModel->objOutputModel()->toStandardModel();
 }
 
 void ZEditParamLayoutDlg::initUI() 
@@ -372,6 +469,28 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->objInputsView->setAlternatingRowColors(true);
     m_ui->objOutputsView->setAlternatingRowColors(true);
     m_ui->listConctrl->setFocusPolicy(Qt::NoFocus);
+
+    m_ui->cbObjectType->addItem(tr("Geometry"), (quint64)gParamType_Geometry);
+    m_ui->cbObjectType->addItem(tr("List"), (quint64)gParamType_List);
+    m_ui->cbObjectType->addItem(tr("Material"), (quint64)gParamType_Material);
+    m_ui->cbObjectType->addItem(tr("Object"), (quint64)gParamType_IObject);
+    m_ui->cbObjectType->hide();
+
+    m_ui->cbOutputPrim->addItem(tr("Integer"), (quint64)gParamType_Int);
+    m_ui->cbOutputPrim->addItem(tr("Float"), (quint64)gParamType_Float);
+    m_ui->cbOutputPrim->addItem(tr("vec3f"), (quint64)gParamType_Vec3f);
+    m_ui->cbOutputPrim->addItem(tr("vec3i"), (quint64)gParamType_Vec3i);
+    m_ui->cbOutputPrim->addItem(tr("vec2f"), (quint64)gParamType_Vec2f);
+    m_ui->cbOutputPrim->addItem(tr("vec2i"), (quint64)gParamType_Vec2i);
+    m_ui->cbOutputPrim->addItem(tr("vec4f"), (quint64)gParamType_Vec4f);
+    m_ui->cbOutputPrim->addItem(tr("vec4i"), (quint64)gParamType_Vec4i);
+    m_ui->cbOutputPrim->addItem(tr("string"), (quint64)gParamType_String);
+    m_ui->cbOutputPrim->addItem(tr("curve"), (quint64)gParamType_Curve);
+    m_ui->cbOutputPrim->addItem(tr("heatmap"), (quint64)gParamType_Heatmap);
+    m_ui->cbOutputPrim->addItem(tr("shader"), (quint64)gParamType_Shader);
+    m_ui->lblPrimOutput->hide();
+    m_ui->cbOutputPrim->hide();
+
     //m_ui->paramsView->setFocusPolicy(Qt::NoFocus);
     resize(ZenoStyle::dpiScaled(900), ZenoStyle::dpiScaled(620));
     setFocusPolicy(Qt::ClickFocus);
@@ -392,8 +511,8 @@ void ZEditParamLayoutDlg::initIcon(QStandardItem *pItem)
 
 QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem) 
 {
-    zeno::ParamControl control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
-    zeno::ParamType type = (zeno::ParamType)pItem->data(ROLE_PARAM_TYPE).toLongLong();
+    zeno::ParamControl control = (zeno::ParamControl)pItem->data(QtRole::ROLE_PARAM_CONTROL).toInt();
+    zeno::ParamType type = (zeno::ParamType)pItem->data(QtRole::ROLE_PARAM_TYPE).toLongLong();
     int elemtype = pItem->data(ROLE_ELEMENT_TYPE).toInt();
     if (elemtype == VPARAM_TAB)
     {
@@ -418,10 +537,69 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
     return QIcon();
 }
 
+void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
+{
+    //dump to item.
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    QString value = layerIdx.data(QtRole::ROLE_PARAM_VALUE).toString();
+    if (!layerIdx.isValid() && layerIdx.data(QtRole::ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    QStringList lst;
+    for (int r = 0; r < m_ui->itemsTable->rowCount(); r++)
+    {
+        QTableWidgetItem* pItem = m_ui->itemsTable->item(r, 0);
+        if (pItem && !pItem->text().isEmpty()) {
+            if (lst.contains(pItem->text()))
+            {
+                QMessageBox::information(this, tr("Info"), tr("The %1 item already exists").arg(pItem->text()));
+                disconnect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+                pItem->setText("");
+                connect(m_ui->itemsTable, SIGNAL(cellChanged(int, int)), this, SLOT(onComboTableItemsCellChanged(int, int)));
+                return;
+            }
+            lst.append(pItem->text());
+        }
+    }
+    if (lst.isEmpty())
+        return;
+
+    //zeno::reflect::Any properties = layerIdx.data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    std::vector<std::string> items;
+    for (const auto& item : lst)
+    {
+        items.push_back(item.toStdString());
+    }
+
+    proxyModelSetData(layerIdx, items, QtRole::ROLE_PARAM_CTRL_PROPERTIES);
+
+    if (row == m_ui->itemsTable->rowCount() - 1)
+    {
+        m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
+        m_ui->m_pUpButton->setEnabled(true);
+    }
+
+    //update control.
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem) {
+        QComboBox* pControl = qobject_cast<QComboBox*>(pLayoutItem->widget());
+        if (pControl) {
+            pControl->clear();
+            pControl->addItems(lst);
+            if (lst.contains(value)) {
+                pControl->setCurrentText(value);
+            }
+            else {
+                proxyModelSetData(layerIdx, lst[0].toStdString(), QtRole::ROLE_PARAM_VALUE);
+            }
+        }
+    }
+}
+
 void ZEditParamLayoutDlg::proxyModelSetData(const QModelIndex& index, const zeno::reflect::Any& newValue, int role)
 {
     //TODO: ?
-    //const QString& objPath = index.data(ROLE_OBJPATH).toString();
+    //const QString& objPath = index.data(QtRole::ROLE_OBJPATH).toString();
     m_paramsLayoutM_inputs->setData(index, QVariant::fromValue(newValue), role);
 }
 
@@ -432,7 +610,7 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
     if (!idx.isValid() || !idx.parent().isValid() || !bEditable)
         return;
 
-    //TODO: √ª”–≤ª‘ –Ì…æ≥˝µƒ◊È£¨÷ª « £œ¬◊Ó∫Û“ª∏ˆµƒ ±∫Ú≤ªƒ‹…æ°£
+    //TODO: Ê≤°Êúâ‰∏çÂÖÅËÆ∏Âà†Èô§ÁöÑÁªÑÔºåÂè™ÊòØÂâ©‰∏ãÊúÄÂêé‰∏Ä‰∏™ÁöÑÊó∂ÂÄô‰∏çËÉΩÂà†„ÄÇ
     VPARAM_TYPE type = (VPARAM_TYPE)idx.data(ROLE_ELEMENT_TYPE).toInt();
     if (type == VPARAM_ROOT ||
         type == VPARAM_TAB && idx.data(Qt::DisplayRole).toString() == "Default" ||
@@ -472,11 +650,15 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     if (!pCurrentItem)
         return;
 
-    const QString& name = pCurrentItem->data(ROLE_PARAM_NAME).toString();
+    const QString& name = pCurrentItem->data(QtRole::ROLE_PARAM_NAME).toString();
     m_ui->editName->setText(name);
     bool bEditable = true;// m_proxyModel->isEditable(current);
     m_ui->editName->setEnabled(bEditable);
-    m_ui->editLabel->setText(pCurrentItem->data(ROLE_PARAM_TOOLTIP).toString());
+    m_ui->editLabel->setText(pCurrentItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString());
+    m_ui->cbObjectType->hide();
+    m_ui->lblObjType->hide();
+    m_ui->cbOutputPrim->hide();
+    m_ui->lblPrimOutput->hide();
 
     //delete old control.
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
@@ -494,34 +676,35 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
         m_ui->hintLbl->hide();
         m_ui->cbSocketType->clear();
         m_ui->cbSocketType->setEnabled(false);
+        m_ui->stackProperties->setCurrentIndex(0);
     }
     else if (type == VPARAM_PARAM)
     {
         QStandardItem* parentItem = pCurrentItem->parent();
-        zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(ROLE_PARAM_CONTROL).toInt();
-        const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(ROLE_PARAM_TYPE).toLongLong();
-        const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(ROLE_SOCKET_TYPE).toInt();
+        zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(QtRole::ROLE_PARAM_CONTROL).toInt();
+        const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(QtRole::ROLE_PARAM_TYPE).toLongLong();
+        const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
 
         const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
-        zeno::reflect::Any controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+        zeno::reflect::Any controlProperties = pCurrentItem->data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
 
         const QString &parentName = parentItem->text();
 
-        QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
+        QVariant deflVal = pCurrentItem->data(QtRole::ROLE_PARAM_VALUE);
         const zeno::reflect::Any& anyVal = deflVal.value<zeno::reflect::Any>();
 
         CallbackCollection cbSets;
         cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
-            proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
+            proxyModelSetData(pCurrentItem->index(), newValue, QtRole::ROLE_PARAM_VALUE);
         };
         if (!deflVal.isValid())
             deflVal = UiHelper::initDefaultValue(paramType);
 
         cbSets.cbGetIndexData = [=]() -> QVariant {
-            if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
+            if (!pCurrentItem->data(QtRole::ROLE_PARAM_VALUE).isValid()) {
                 return UiHelper::initDefaultValue(paramType);
             }
-            return pCurrentItem->data(ROLE_PARAM_VALUE);
+            return pCurrentItem->data(QtRole::ROLE_PARAM_VALUE);
         };
 
         QWidget *valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, paramType, cbSets, controlProperties);
@@ -554,7 +737,7 @@ void ZEditParamLayoutDlg::onTreeCurrentChanged(const QModelIndex& current, const
     }
 }
 
-void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
+void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const zeno::NodeDataGroup group, const QModelIndex& current, const QModelIndex& previous)
 {
     const QStandardItemModel* pModel = qobject_cast<const QStandardItemModel*>(current.model());
     if (!pModel)
@@ -563,73 +746,86 @@ void ZEditParamLayoutDlg::onOutputsListCurrentChanged(const QModelIndex& current
     if (!pCurrentItem)
         return;
 
-    const QString& name = pCurrentItem->data(ROLE_PARAM_NAME).toString();
-    m_ui->editName->setText(name);
-    bool bEditable = true;// m_proxyModel->isEditable(current);
-    m_ui->editName->setEnabled(bEditable);
-    m_ui->editLabel->setText(pCurrentItem->data(ROLE_PARAM_TOOLTIP).toString());
+    const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(QtRole::ROLE_PARAM_TYPE).toLongLong();
+    zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(QtRole::ROLE_PARAM_CONTROL).toInt();
 
-    //delete old control.
-    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
-    if (pLayoutItem)
-    {
-        QWidget* pControlWidget = pLayoutItem->widget();
-        delete pControlWidget;
-    }
+    if (zeno::Role_OutputPrimitive == group) {
+        const QString& name = pCurrentItem->data(QtRole::ROLE_PARAM_NAME).toString();
+        m_ui->editName->setText(name);
+        bool bEditable = true;// m_proxyModel->isEditable(current);
+        m_ui->editName->setEnabled(bEditable);
+        m_ui->editLabel->setText(pCurrentItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString());
 
-    zeno::ParamControl ctrl = (zeno::ParamControl)pCurrentItem->data(ROLE_PARAM_CONTROL).toInt();
-    const zeno::ParamType paramType = (zeno::ParamType)pCurrentItem->data(ROLE_PARAM_TYPE).toLongLong();
-    const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(ROLE_SOCKET_TYPE).toInt();
-
-    const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
-    zeno::reflect::Any controlProperties = pCurrentItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
-
-    QVariant deflVal = pCurrentItem->data(ROLE_PARAM_VALUE);
-    zeno::reflect::Any anyVal = deflVal.value<zeno::reflect::Any>();
-
-    CallbackCollection cbSets;
-    cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
-        proxyModelSetData(pCurrentItem->index(), newValue, ROLE_PARAM_VALUE);
-    };
-    if (!deflVal.isValid()) {
-        anyVal = zeno::initAnyDeflValue(paramType);
-        zeno::convertToEditVar(anyVal, paramType);
-    }
-
-    cbSets.cbGetIndexData = [=]() -> QVariant {
-        if (!pCurrentItem->data(ROLE_PARAM_VALUE).isValid()) {
-            return UiHelper::initDefaultValue(paramType);
+        //delete old control.
+        QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+        if (pLayoutItem)
+        {
+            QWidget* pControlWidget = pLayoutItem->widget();
+            delete pControlWidget;
         }
-        return pCurrentItem->data(ROLE_PARAM_VALUE);
-    };
 
-    QWidget* valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, paramType, cbSets, controlProperties);
-    if (valueControl) {
-        valueControl->setEnabled(bEditable);
-        m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+        const zeno::SocketType socketType = (zeno::SocketType)pCurrentItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
+
+        const QString& ctrlName = ctrl != zeno::NullControl ? getControl(ctrl, paramType).name : "";
+        zeno::reflect::Any controlProperties = pCurrentItem->data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+
+        QVariant deflVal = pCurrentItem->data(QtRole::ROLE_PARAM_VALUE);
+        zeno::reflect::Any anyVal = deflVal.value<zeno::reflect::Any>();
+
+        CallbackCollection cbSets;
+        cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
+            proxyModelSetData(pCurrentItem->index(), newValue, QtRole::ROLE_PARAM_VALUE);
+        };
+        if (!deflVal.isValid()) {
+            anyVal = zeno::initAnyDeflValue(paramType);
+            zeno::convertToEditVar(anyVal, paramType);
+        }
+
+        cbSets.cbGetIndexData = [=]() -> QVariant {
+            if (!pCurrentItem->data(QtRole::ROLE_PARAM_VALUE).isValid()) {
+                return UiHelper::initDefaultValue(paramType);
+            }
+            return pCurrentItem->data(QtRole::ROLE_PARAM_VALUE);
+        };
+
+        QWidget* valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, paramType, cbSets, controlProperties);
+        if (valueControl) {
+            valueControl->setEnabled(bEditable);
+            m_ui->gridLayout->addWidget(valueControl, rowValueControl, 1);
+        }
     }
-    m_ui->controlLbl->hide();
-    m_ui->cbControl->hide();
+
     m_ui->hintLbl->hide();
-    if (pModel != m_paramsLayoutM_objInputs) {
-        m_ui->cbSocketType->clear();
-        m_ui->cbSocketType->setEnabled(false);
-    }
-    else {
-        m_ui->cbSocketType->setEnabled(true);
-        BlockSignalScope scope(m_ui->cbSocketType);
-        m_ui->cbSocketType->clear();
-        m_ui->cbSocketType->addItem("Socket_ReadOnly", zeno::Socket_ReadOnly);
-        m_ui->cbSocketType->addItem("Socket_Clone", zeno::Socket_Clone);
-        m_ui->cbSocketType->addItem("Socket_Owning", zeno::Socket_Owning);
-        if (socketType == zeno::Socket_ReadOnly) {
-            m_ui->cbSocketType->setCurrentText("Socket_ReadOnly");
-        } else if (socketType == zeno::Socket_Clone) {
-            m_ui->cbSocketType->setCurrentText("Socket_Clone");
-        } else if (socketType == zeno::Socket_Owning) {
-            m_ui->cbSocketType->setCurrentText("Socket_Owning");
+
+    if (group == zeno::Role_InputObject || group == zeno::Role_OutputObject) {
+        m_ui->controlLbl->hide();
+        m_ui->cbControl->hide();
+        m_ui->lblPrimOutput->hide();
+        m_ui->cbOutputPrim->hide();
+        m_ui->cbObjectType->show();
+        m_ui->lblObjType->show();
+        for (int i = 0; i < m_ui->cbObjectType->count(); i++) {
+            if (m_ui->cbObjectType->itemData(i).value<zeno::ParamType>() == paramType) {
+                m_ui->cbObjectType->setCurrentIndex(i);
+                break;
+            }
         }
     }
+    else if (group == zeno::Role_OutputPrimitive) {
+        m_ui->controlLbl->hide();
+        m_ui->cbControl->hide();
+        m_ui->cbObjectType->hide();
+        m_ui->lblObjType->hide();
+        m_ui->lblPrimOutput->show();
+        m_ui->cbOutputPrim->show();
+        for (int i = 0; i < m_ui->cbOutputPrim->count(); i++) {
+            if (m_ui->cbOutputPrim->itemData(i).value<zeno::ParamType>() == paramType) {
+                m_ui->cbOutputPrim->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
     switchStackProperties(ctrl, pCurrentItem);
 }
 
@@ -659,7 +855,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         QString newTabName = UiHelper::getUniqueName(existNames, "Tab");
         auto pNewItem = new QStandardItem(newTabName);
         pNewItem->setData(VPARAM_TAB, ROLE_ELEMENT_TYPE);
-        pNewItem->setData(newTabName, ROLE_PARAM_NAME);
+        pNewItem->setData(newTabName, QtRole::ROLE_PARAM_NAME);
         pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
         pItem->appendRow(pNewItem);
     }
@@ -674,7 +870,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         QString newGroupName = UiHelper::getUniqueName(existNames, "Group");
         auto pNewItem = new QStandardItem(newGroupName);
         pNewItem->setData(VPARAM_GROUP, ROLE_ELEMENT_TYPE);
-        pNewItem->setData(newGroupName, ROLE_PARAM_NAME);
+        pNewItem->setData(newGroupName, QtRole::ROLE_PARAM_NAME);
         pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
         pItem->appendRow(pNewItem);
     }
@@ -693,11 +889,11 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         CONTROL_ITEM_INFO ctrl = getControlByName(ctrlName);
         QStringList existNames = getExistingNames(true, VPARAM_PARAM);
         QString newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
-        if (layerIdx.data(Qt::DisplayRole).toString() == "inputs")  //»Áπ˚ «‘ˆº” ‰»Î≤Œ ˝£¨≈–∂œ «∑Ò∫Õ“—”– ‰≥ˆ÷ÿ√˚
+        if (layerIdx.data(Qt::DisplayRole).toString() == "inputs")  //Â¶ÇÊûúÊòØÂ¢ûÂä†ËæìÂÖ•ÂèÇÊï∞ÔºåÂà§Êñ≠ÊòØÂê¶ÂíåÂ∑≤ÊúâËæìÂá∫ÈáçÂêç
         {
             for (int r = 0; r < m_paramsLayoutM_outputs->rowCount(); r++) {
                 if (QStandardItem* pChildItem = m_paramsLayoutM_outputs->invisibleRootItem()->child(r)) {
-                    if (newParamName == pChildItem->data(ROLE_PARAM_NAME).toString()) {
+                    if (newParamName == pChildItem->data(QtRole::ROLE_PARAM_NAME).toString()) {
                         existNames.append(newParamName);
                         newParamName = UiHelper::getUniqueName(existNames, ctrl.name);
                     }
@@ -706,14 +902,14 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
         }
 
         auto pNewItem = new QStandardItem(newParamName);
-        pNewItem->setData(newParamName, ROLE_PARAM_NAME);
-        pNewItem->setData(ctrl.ctrl, ROLE_PARAM_CONTROL);
-        pNewItem->setData(ctrl.type, ROLE_PARAM_TYPE);
-        pNewItem->setData(zeno::Socket_Primitve, ROLE_SOCKET_TYPE);
+        pNewItem->setData(newParamName, QtRole::ROLE_PARAM_NAME);
+        pNewItem->setData(ctrl.ctrl, QtRole::ROLE_PARAM_CONTROL);
+        pNewItem->setData((quint64)ctrl.type, QtRole::ROLE_PARAM_TYPE);
+        pNewItem->setData(zeno::Socket_Primitve, QtRole::ROLE_SOCKET_TYPE);
         pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
         zeno::reflect::Any defAnyVal = zeno::initAnyDeflValue(ctrl.type);
         zeno::convertToEditVar(defAnyVal, ctrl.type);
-        pNewItem->setData(QVariant::fromValue(defAnyVal), ROLE_PARAM_VALUE);
+        pNewItem->setData(QVariant::fromValue(defAnyVal), QtRole::ROLE_PARAM_VALUE);
 
         //init properties.
         switch (ctrl.ctrl)
@@ -725,7 +921,7 @@ void ZEditParamLayoutDlg::onBtnAddInputs()
             {
                 std::vector<float> ranges = { 0.0, 100.0,1.0 };
                 zeno::reflect::Any pros = ranges;
-                pNewItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
+                pNewItem->setData(QVariant::fromValue(pros), QtRole::ROLE_PARAM_CTRL_PROPERTIES);
                 break;
             }
         }
@@ -747,12 +943,12 @@ void ZEditParamLayoutDlg::onBtnAddObjInputs()
     QString newParamName = UiHelper::getUniqueName(existNames, "object_input");
 
     auto pNewItem = new QStandardItem(newParamName);
-    pNewItem->setData(newParamName, ROLE_PARAM_NAME);
-    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Obj_Wildcard, ROLE_PARAM_TYPE);
+    pNewItem->setData(newParamName, QtRole::ROLE_PARAM_NAME);
+    pNewItem->setData(zeno::NullControl, QtRole::ROLE_PARAM_CONTROL);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
+    pNewItem->setData(QVariant(), QtRole::ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::Socket_Clone, QtRole::ROLE_SOCKET_TYPE);
+    pNewItem->setData(gParamType_Geometry, QtRole::ROLE_PARAM_TYPE);
 
     m_paramsLayoutM_objInputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -765,12 +961,12 @@ void ZEditParamLayoutDlg::onBtnAddObjOutputs()
     QString newParamName = UiHelper::getUniqueName(existNames, "object_output");
 
     auto pNewItem = new QStandardItem(newParamName);
-    pNewItem->setData(newParamName, ROLE_PARAM_NAME);
-    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Obj_Wildcard, ROLE_PARAM_TYPE);
+    pNewItem->setData(newParamName, QtRole::ROLE_PARAM_NAME);
+    pNewItem->setData(zeno::NullControl, QtRole::ROLE_PARAM_CONTROL);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
+    pNewItem->setData(QVariant(), QtRole::ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::Socket_Clone, QtRole::ROLE_SOCKET_TYPE);
+    pNewItem->setData(gParamType_Geometry, QtRole::ROLE_PARAM_TYPE);
 
     m_paramsLayoutM_objOutputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
@@ -783,50 +979,145 @@ void ZEditParamLayoutDlg::onBtnAddOutputs()
     QString newParamName = UiHelper::getUniqueName(existNames, "output");
 
     auto pNewItem = new QStandardItem(newParamName);
-    pNewItem->setData(newParamName, ROLE_PARAM_NAME);
-    pNewItem->setData(zeno::NullControl, ROLE_PARAM_CONTROL);
-    pNewItem->setData(Param_Wildcard, ROLE_PARAM_TYPE);
+    pNewItem->setData(newParamName, QtRole::ROLE_PARAM_NAME);
+    pNewItem->setData(zeno::NullControl, QtRole::ROLE_PARAM_CONTROL);
     pNewItem->setData(VPARAM_PARAM, ROLE_ELEMENT_TYPE);
-    pNewItem->setData(QVariant(), ROLE_PARAM_VALUE);
-    pNewItem->setData(zeno::Socket_WildCard, ROLE_SOCKET_TYPE);
+    pNewItem->setData(QVariant(), QtRole::ROLE_PARAM_VALUE);
+    pNewItem->setData(zeno::Socket_Clone, QtRole::ROLE_SOCKET_TYPE);
+    pNewItem->setData(gParamType_Float, QtRole::ROLE_PARAM_TYPE);
+    zeno::reflect::Any anyVal = zeno::initAnyDeflValue(gParamType_Float);
+    pNewItem->setData(QVariant::fromValue(anyVal), QtRole::ROLE_PARAM_VALUE);
 
     m_paramsLayoutM_outputs->appendRow(pNewItem);
     pNewItem->setData(getIcon(pNewItem), Qt::DecorationRole);
 }
 void ZEditParamLayoutDlg::switchStackProperties(int ctrl, QStandardItem* pItem)
 {
-    zeno::reflect::Any pros = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    zeno::reflect::Any pros = pItem->data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
     if (ctrl == zeno::Combobox) {
         if (pros.has_value()) {
                 QStringList items;
 
-                auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(pros);
+                const auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(pros);
                 for (auto item : vec)
                     items.push_back(QString::fromStdString(item));
 
-                QString value = pItem->data(ROLE_PARAM_VALUE).toString();
+                m_ui->itemsTable->setRowCount(items.size() + 1);
+
+                QString value = pItem->data(QtRole::ROLE_PARAM_VALUE).toString();
                 for (int r = 0; r < items.size(); r++) {
                     QTableWidgetItem *newItem = new QTableWidgetItem(items[r]);
+                    m_ui->itemsTable->setItem(r, 0, newItem);
                     QLayoutItem *pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
                     if (pLayoutItem) {
                         QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
                         if (pControl) {
                             pControl->setCurrentText(value);
-                            proxyModelSetData(pItem->index(), value.toStdString(), ROLE_PARAM_VALUE);
+                            proxyModelSetData(pItem->index(), value.toStdString(), QtRole::ROLE_PARAM_VALUE);
                         }
                     }
                 }
         }
+        else {
+            m_ui->itemsTable->setRowCount(1);
+        }
+        m_ui->stackProperties->setCurrentIndex(1);
     } 
     else if (ctrl == zeno::Slider ||
              ctrl == zeno::SpinBox ||
              ctrl == zeno::SpinBoxSlider ||
              ctrl == zeno::DoubleSpinBox)
     {
+        m_ui->stackProperties->setCurrentIndex(2);
         if (!pros.has_value()) {
             std::vector<float> ranges = { 0.0, 100.0,1.0 };;
             pros = ranges;
-            pItem->setData(QVariant::fromValue(pros), ROLE_PARAM_CTRL_PROPERTIES);
+            pItem->setData(QVariant::fromValue(pros), QtRole::ROLE_PARAM_CTRL_PROPERTIES);
+        }
+
+        std::vector<float> ranges = zeno::reflect::any_cast<std::vector<float>>(pros);
+        m_ui->editStep->setText(QString::number(ranges[2]));
+        m_ui->editMin->setText(QString::number(ranges[0]));
+        m_ui->editMax->setText(QString::number(ranges[1]));
+    }
+    else {
+        m_ui->stackProperties->setCurrentIndex(0);
+    }
+}
+
+void ZEditParamLayoutDlg::onMinEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(QtRole::ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    auto properties = layerIdx.data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    qreal from = m_ui->editMin->text().toDouble();
+    auto ranges = zeno::reflect::any_cast<std::vector<float>>(properties);
+    ranges[0] = from;
+    proxyModelSetData(layerIdx, ranges, QtRole::ROLE_PARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
+}
+
+void ZEditParamLayoutDlg::onMaxEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(QtRole::ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    auto properties = layerIdx.data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    qreal to = m_ui->editMax->text().toDouble();
+    auto ranges = zeno::reflect::any_cast<std::vector<float>>(properties);
+    ranges[1] = to;
+    proxyModelSetData(layerIdx, ranges, QtRole::ROLE_PARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
+}
+
+void ZEditParamLayoutDlg::onStepEditFinished()
+{
+    QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    if (!layerIdx.isValid() && layerIdx.data(QtRole::ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+        return;
+
+    auto properties = layerIdx.data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+    qreal step = m_ui->editStep->text().toDouble();
+    auto ranges = zeno::reflect::any_cast<std::vector<float>>(properties);
+    ranges[0] = step;
+
+    QStandardItem* item = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
+    zeno::reflect::Any anyVal(ranges);
+    item->setData(QVariant::fromValue(anyVal), QtRole::ROLE_PARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
+}
+
+void ZEditParamLayoutDlg::updateSliderInfo()
+{
+    SLIDER_INFO info;
+    info.step = m_ui->editStep->text().toDouble();
+    info.min = m_ui->editMin->text().toDouble();
+    info.max = m_ui->editMax->text().toDouble();
+    //update control.
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem) {
+        if (QDoubleSpinBox* pControl = qobject_cast<QDoubleSpinBox*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (ZSpinBoxSlider* pControl = qobject_cast<ZSpinBoxSlider*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (QSpinBox* pControl = qobject_cast<QSpinBox*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (QSlider* pControl = qobject_cast<QSlider*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
         }
     }
 }
@@ -836,18 +1127,18 @@ void ZEditParamLayoutDlg::onParamsViewParamDataChanged(const QModelIndex &topLef
     if (roles.isEmpty())
         return;
     int role = roles[0];
-    if (role == ROLE_PARAM_CONTROL) 
+    if (role == QtRole::ROLE_PARAM_CONTROL) 
     {
         QStandardItem *item = m_paramsLayoutM_inputs->itemFromIndex(topLeft);
         QIcon icon = getIcon(item);
         item->setData(icon, Qt::DecorationRole);
     }
-    if (role == ROLE_PARAM_NAME)
+    if (role == QtRole::ROLE_PARAM_NAME)
     {
         const QModelIndex& paramsViewCurrIdx = m_ui->paramsView->currentIndex();
         if (paramsViewCurrIdx.isValid() && paramsViewCurrIdx == topLeft) {
 
-            QString newName = m_paramsLayoutM_inputs->data(topLeft, ROLE_PARAM_NAME).toString();
+            QString newName = m_paramsLayoutM_inputs->data(topLeft, QtRole::ROLE_PARAM_NAME).toString();
             disconnect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
             m_ui->editName->setText(newName);
             connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
@@ -860,11 +1151,11 @@ void ZEditParamLayoutDlg::onOutputsViewParamDataChanged(const QModelIndex& topLe
     if (roles.isEmpty())
         return;
     int role = roles[0];
-    if (role == ROLE_PARAM_NAME)
+    if (role == QtRole::ROLE_PARAM_NAME)
     {
         //const QModelIndex& outputsViewCurrIdx = m_ui->outputsView->currentIndex();
         if (topLeft.isValid()) {
-            QString newName = topLeft.data(ROLE_PARAM_NAME).toString();
+            QString newName = topLeft.data(QtRole::ROLE_PARAM_NAME).toString();
             disconnect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
             m_ui->editName->setText(newName);
             connect(m_ui->editName, SIGNAL(editingFinished()), this, SLOT(onNameEditFinished()));
@@ -898,22 +1189,27 @@ void ZEditParamLayoutDlg::onNameEditFinished()
 
     QStandardItem* currentItem = nullptr;
     QString oldName;
-    if (paramsViewCurrIdx.isValid()) {          //–ﬁ∏ƒµƒ≤Œ ˝¿¥◊‘paramsView
+    bool bInput = true;
+    if (paramsViewCurrIdx.isValid()) {          //‰øÆÊîπÁöÑÂèÇÊï∞Êù•Ëá™paramsView
+        bInput = true;
         currentItem = m_paramsLayoutM_inputs->itemFromIndex(paramsViewCurrIdx);
-    }else if (outputsViewCurrIdx.isValid()) {   //–ﬁ∏ƒµƒ≤Œ ˝¿¥◊‘outputView
+    }else if (outputsViewCurrIdx.isValid()) {   //‰øÆÊîπÁöÑÂèÇÊï∞Êù•Ëá™outputView
+        bInput = false;
         currentItem = m_paramsLayoutM_outputs->itemFromIndex(outputsViewCurrIdx);
-    } else if (objInputsViewCurrIdx.isValid()) {   //–ﬁ∏ƒµƒ≤Œ ˝¿¥◊‘objInputsView
+    } else if (objInputsViewCurrIdx.isValid()) {   //‰øÆÊîπÁöÑÂèÇÊï∞Êù•Ëá™objInputsView
+        bInput = true;
         currentItem = m_paramsLayoutM_objInputs->itemFromIndex(objInputsViewCurrIdx);
-    } else if (objOutputsViewCurrIdx.isValid()) {   //–ﬁ∏ƒµƒ≤Œ ˝¿¥◊‘objOutputsView
+    } else if (objOutputsViewCurrIdx.isValid()) {   //‰øÆÊîπÁöÑÂèÇÊï∞Êù•Ëá™objOutputsView
+        bInput = false;
         currentItem = m_paramsLayoutM_objOutputs->itemFromIndex(objOutputsViewCurrIdx);
     }
     if (!currentItem)
         return;
-    oldName = currentItem->data(ROLE_PARAM_NAME).toString();
+    oldName = currentItem->data(QtRole::ROLE_PARAM_NAME).toString();
     if (oldName != newName) {
-        if (currentItem && m_isGlobalUniqueFunc(newName))
+        if (currentItem && m_isGlobalUniqueFunc(bInput, newName))
         {
-            currentItem->setData(newName, ROLE_PARAM_NAME);
+            currentItem->setData(newName, QtRole::ROLE_PARAM_NAME);
             currentItem->setText(newName);
         }
         else
@@ -935,11 +1231,11 @@ void ZEditParamLayoutDlg::onLabelEditFinished()
     QStandardItem *pItem = m_paramsLayoutM_inputs->itemFromIndex(currIdx);
 
     ZASSERT_EXIT(pItem);
-    QString oldText = pItem->data(ROLE_PARAM_NAME).toString();
+    QString oldText = pItem->data(QtRole::ROLE_PARAM_NAME).toString();
     QString newText = m_ui->editLabel->text();
     if (oldText == newText)
         return;
-    pItem->setData(newText, ROLE_PARAM_TOOLTIP);
+    pItem->setData(newText, QtRole::ROLE_PARAM_TOOLTIP);
 }
 
 void ZEditParamLayoutDlg::onHintEditFinished()
@@ -956,7 +1252,35 @@ void ZEditParamLayoutDlg::onSocketTypeChanged(int idx)
     QStandardItem* pItem = m_paramsLayoutM_objInputs->itemFromIndex(currIdx);
     const QString& socketType = m_ui->cbSocketType->itemText(idx);
     auto type = m_ui->cbSocketType->itemData(idx);
-    pItem->setData(type, ROLE_SOCKET_TYPE);
+    pItem->setData(type, QtRole::ROLE_SOCKET_TYPE);
+}
+
+void ZEditParamLayoutDlg::onOutputPrimTypeChanged(int idx) {
+    const QModelIndex& currIdx = m_ui->outputsView->currentIndex();
+    if (!currIdx.isValid())
+        return;
+    QStandardItem* pItem = m_paramsLayoutM_outputs->itemFromIndex(currIdx);
+    auto type = m_ui->cbOutputPrim->itemData(idx);
+    pItem->setData(type, QtRole::ROLE_PARAM_TYPE);
+}
+
+void ZEditParamLayoutDlg::onObjTypeChanged(int idx)
+{
+    QModelIndex currIdx = m_ui->objInputsView->currentIndex();
+    if (currIdx.isValid())
+    {
+        QStandardItem* pItem = m_paramsLayoutM_objInputs->itemFromIndex(currIdx);
+        auto objtype = m_ui->cbObjectType->itemData(idx);
+        pItem->setData(objtype, QtRole::ROLE_PARAM_TYPE);
+    }
+    else {
+        currIdx = m_ui->objOutputsView->currentIndex();
+        if (currIdx.isValid()) {
+            QStandardItem* pItem = m_paramsLayoutM_objOutputs->itemFromIndex(currIdx);
+            auto objtype = m_ui->cbObjectType->itemData(idx);
+            pItem->setData(objtype, QtRole::ROLE_PARAM_TYPE);
+        }
+    }
 }
 
 void ZEditParamLayoutDlg::onControlItemChanged(int idx)
@@ -964,13 +1288,13 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
     const QString& controlName = m_ui->cbControl->itemText(idx);
     zeno::ParamControl ctrl = UiHelper::getControlByDesc(controlName);
     QModelIndex layerIdx = m_ui->paramsView->currentIndex();
-    if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
+    if (!layerIdx.isValid() && layerIdx.data(QtRole::ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
     auto pItem = m_paramsLayoutM_inputs->itemFromIndex(layerIdx);
-    pItem->setData(ctrl, ROLE_PARAM_CONTROL);
+    pItem->setData(ctrl, QtRole::ROLE_PARAM_CONTROL);
     zeno::ParamType type = getTypeByControlName(controlName);
-    pItem->setData(type, ROLE_PARAM_TYPE);
+    pItem->setData((quint64)type, QtRole::ROLE_PARAM_TYPE);
 
     QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
     if (pLayoutItem)
@@ -981,14 +1305,14 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
 
     CallbackCollection cbSets;
     cbSets.cbEditFinished = [=](zeno::reflect::Any newValue) {
-        proxyModelSetData(layerIdx, newValue, ROLE_PARAM_VALUE);
+        proxyModelSetData(layerIdx, newValue, QtRole::ROLE_PARAM_VALUE);
     };
 
-    QVariant value = layerIdx.data(ROLE_PARAM_VALUE);
+    QVariant value = layerIdx.data(QtRole::ROLE_PARAM_VALUE);
     zeno::reflect::Any anyVal = zeno::initAnyDeflValue(type);
     zeno::convertToEditVar(anyVal, type);
 
-    zeno::reflect::Any controlProperties = layerIdx.data(ROLE_PARAM_CTRL_PROPERTIES).value< zeno::reflect::Any>();
+    zeno::reflect::Any controlProperties = layerIdx.data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value< zeno::reflect::Any>();
     cbSets.cbGetIndexData = [=]() -> QVariant { return UiHelper::initDefaultValue(type); };
     QWidget *valueControl = zenoui::createWidget(QModelIndex(), anyVal, ctrl, type, cbSets, controlProperties);
     if (valueControl) {
@@ -997,7 +1321,7 @@ void ZEditParamLayoutDlg::onControlItemChanged(int idx)
         
         switchStackProperties(ctrl, pItem);
         pItem->setData(getIcon(pItem), Qt::DecorationRole);
-        pItem->setData(QVariant::fromValue(anyVal), ROLE_PARAM_VALUE);
+        pItem->setData(QVariant::fromValue(anyVal), QtRole::ROLE_PARAM_VALUE);
     }
 }
 
@@ -1075,7 +1399,7 @@ QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type)
             {
                 auto paramItem = groupItem->child(k);
                 if (type == VPARAM_PARAM) {
-                    existNames.append(paramItem->data(ROLE_PARAM_NAME).toString());
+                    existNames.append(paramItem->data(QtRole::ROLE_PARAM_NAME).toString());
                 }
             }
         }
@@ -1084,17 +1408,17 @@ QStringList ZEditParamLayoutDlg::getExistingNames(bool bInput, VPARAM_TYPE type)
         for (int i = 0; i < m_paramsLayoutM_objInputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_objInputs->item(i);
-            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+            existNames.append(pItem->data(QtRole::ROLE_PARAM_NAME).toString());
         }
         for (int i = 0; i < m_paramsLayoutM_outputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_outputs->item(i);
-            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+            existNames.append(pItem->data(QtRole::ROLE_PARAM_NAME).toString());
         }
         for (int i = 0; i < m_paramsLayoutM_objOutputs->rowCount(); i++)
         {
             QStandardItem* pItem = m_paramsLayoutM_objOutputs->item(i);
-            existNames.append(pItem->data(ROLE_PARAM_NAME).toString());
+            existNames.append(pItem->data(QtRole::ROLE_PARAM_NAME).toString());
         }
     }
 
@@ -1114,14 +1438,14 @@ void ZEditParamLayoutDlg::onApply()
         zeno::ParamPrimitive param;
 
         param.bInput = false;
-        param.control = (zeno::ParamControl)pItem->data(ROLE_PARAM_CONTROL).toInt();
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
-        param.defl = pItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
-        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
-        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
-        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
-        param.ctrlProps = pItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
-        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+        param.control = (zeno::ParamControl)pItem->data(QtRole::ROLE_PARAM_CONTROL).toInt();
+        param.type = pItem->data(QtRole::ROLE_PARAM_TYPE).value<zeno::ParamType>();
+        param.defl = pItem->data(QtRole::ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+        param.name = pItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
+        param.ctrlProps = pItem->data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+        const QString& existName = pItem->data(QtRole::ROLE_PARAM_NAME_EXIST).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
         outputs.push_back(param);
@@ -1134,27 +1458,27 @@ void ZEditParamLayoutDlg::onApply()
     {
         auto tabItem = pRoot->child(i);
         zeno::ParamTab tabInfo;
-        tabInfo.name = tabItem->data(ROLE_PARAM_NAME).toString().toStdString();
+        tabInfo.name = tabItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
         for (int j = 0; j < tabItem->rowCount(); j++)
         {
             auto groupItem = tabItem->child(j);
             zeno::ParamGroup groupInfo;
-            groupInfo.name = groupItem->data(ROLE_PARAM_NAME).toString().toStdString();
+            groupInfo.name = groupItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
             for (int k = 0; k < groupItem->rowCount(); k++)
             {
                 auto paramItem = groupItem->child(k);
                 zeno::ParamPrimitive paramInfo;
-                paramInfo.name = paramItem->data(ROLE_PARAM_NAME).toString().toStdString();
-                paramInfo.defl = paramItem->data(ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
-                paramInfo.control = (zeno::ParamControl)paramItem->data(ROLE_PARAM_CONTROL).toInt();
-                paramInfo.type = paramItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
-                paramInfo.socketType = (zeno::SocketType)paramItem->data(ROLE_SOCKET_TYPE).toInt();
-                paramInfo.ctrlProps = paramItem->data(ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
-                paramInfo.tooltip = paramItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
+                paramInfo.name = paramItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
+                paramInfo.defl = paramItem->data(QtRole::ROLE_PARAM_VALUE).value<zeno::reflect::Any>();
+                paramInfo.control = (zeno::ParamControl)paramItem->data(QtRole::ROLE_PARAM_CONTROL).toInt();
+                paramInfo.type = paramItem->data(QtRole::ROLE_PARAM_TYPE).value<zeno::ParamType>();
+                paramInfo.socketType = (zeno::SocketType)paramItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
+                paramInfo.ctrlProps = paramItem->data(QtRole::ROLE_PARAM_CTRL_PROPERTIES).value<zeno::reflect::Any>();
+                paramInfo.tooltip = paramItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString().toStdString();
 
                 groupInfo.params.push_back(paramInfo);
 
-                const QString& existName = paramItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+                const QString& existName = paramItem->data(QtRole::ROLE_PARAM_NAME_EXIST).toString();
                 m_paramsUpdate.push_back({ paramInfo, existName.toStdString() });
             }
             tabInfo.groups.push_back(groupInfo);
@@ -1170,11 +1494,11 @@ void ZEditParamLayoutDlg::onApply()
         zeno::ParamObject param;
 
         param.bInput = true;
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
-        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
-        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
-        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
-        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+        param.type = pItem->data(QtRole::ROLE_PARAM_TYPE).value<zeno::ParamType>();
+        param.name = pItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
+        const QString& existName = pItem->data(QtRole::ROLE_PARAM_NAME_EXIST).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
         obj_inputs.push_back(param);
@@ -1188,11 +1512,11 @@ void ZEditParamLayoutDlg::onApply()
         zeno::ParamObject param;
 
         param.bInput = false;
-        param.type = pItem->data(ROLE_PARAM_TYPE).value<zeno::ParamType>();
-        param.name = pItem->data(ROLE_PARAM_NAME).toString().toStdString();
-        param.tooltip = pItem->data(ROLE_PARAM_TOOLTIP).toString().toStdString();
-        param.socketType = (zeno::SocketType)pItem->data(ROLE_SOCKET_TYPE).toInt();
-        const QString& existName = pItem->data(ROLE_MAP_TO_PARAMNAME).toString();
+        param.type = pItem->data(QtRole::ROLE_PARAM_TYPE).value<zeno::ParamType>();
+        param.name = pItem->data(QtRole::ROLE_PARAM_NAME).toString().toStdString();
+        param.tooltip = pItem->data(QtRole::ROLE_PARAM_TOOLTIP).toString().toStdString();
+        param.socketType = (zeno::SocketType)pItem->data(QtRole::ROLE_SOCKET_TYPE).toInt();
+        const QString& existName = pItem->data(QtRole::ROLE_PARAM_NAME_EXIST).toString();
 
         m_paramsUpdate.push_back({ param, existName.toStdString() });
         obj_outputs.push_back(param);

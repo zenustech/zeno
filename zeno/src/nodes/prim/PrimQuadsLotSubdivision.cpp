@@ -2,7 +2,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 
 #include <unordered_set>
 #include <random>
@@ -12,25 +12,25 @@ namespace {
 
 struct PrimQuadsLotSubdivision : zeno::INode {
     virtual void apply() override {
-        auto inprim = get_input<zeno::PrimitiveObject>("input_quads_model"); //输入的多边形物体
-        size_t num = get_input2<int>("num");
-        auto outprim = std::make_shared<zeno::PrimitiveObject>(); //新生成的多边形物体
-        auto roworcolumns = get_input2<bool>("row_or_columns");     //横着连线or竖着连线
-        auto rcrc = get_input2<bool>("rcrc");
-        auto random_rc = get_input2<bool>("random_rc");
-        auto first_second_same = get_input2<bool>("first_second_same");
-        float minoffset = get_input2<float>("min_offset");
-        float maxoffset = get_input2<float>("max_offset");
-        float first_edge_minoffset = get_input2<float>("first_edge_minoffset");
-        float first_edge_maxoffset = get_input2<float>("first_edge_maxoffset");
-        float second_edge_minoffset = get_input2<float>("second_edge_minoffset");
-        float second_edge_maxoffset = get_input2<float>("second_edge_maxoffset");
-        int same_seed = get_input2<int>("same_seed");
-        int random_seed = get_input2<int>("random_seed");
-        int first_seed = get_input2<int>("first_seed");
-        int second_seed = get_input2<int>("second_seed");
-        auto addattr = get_input2<bool>("add_attr");
-        auto tagAttr = get_input2<std::string>("tag_attr");
+        auto inprim = ZImpl(get_input<zeno::PrimitiveObject>("input_quads_model")); //输入的多边形物体
+        size_t num = ZImpl(get_input2<int>("num"));
+        auto outprim = std::make_unique<zeno::PrimitiveObject>(); //新生成的多边形物体
+        auto roworcolumns = ZImpl(get_input2<bool>("row_or_columns"));     //横着连线or竖着连线
+        auto rcrc = ZImpl(get_input2<bool>("rcrc"));
+        auto random_rc = ZImpl(get_input2<bool>("random_rc"));
+        auto first_second_same = ZImpl(get_input2<bool>("first_second_same"));
+        float minoffset = ZImpl(get_input2<float>("min_offset"));
+        float maxoffset = ZImpl(get_input2<float>("max_offset"));
+        float first_edge_minoffset = ZImpl(get_input2<float>("first_edge_minoffset"));
+        float first_edge_maxoffset = ZImpl(get_input2<float>("first_edge_maxoffset"));
+        float second_edge_minoffset = ZImpl(get_input2<float>("second_edge_minoffset"));
+        float second_edge_maxoffset = ZImpl(get_input2<float>("second_edge_maxoffset"));
+        int same_seed = ZImpl(get_input2<int>("same_seed"));
+        int random_seed = ZImpl(get_input2<int>("random_seed"));
+        int first_seed = ZImpl(get_input2<int>("first_seed"));
+        int second_seed = ZImpl(get_input2<int>("second_seed"));
+        auto addattr = ZImpl(get_input2<bool>("add_attr"));
+        auto tagAttr = ZImpl(get_input2<std::string>("tag_attr"));
 
         if (random_rc) {
             for (size_t rc_num = 0; rc_num < num; ++rc_num) {
@@ -368,9 +368,8 @@ struct PrimQuadsLotSubdivision : zeno::INode {
                     }
                 }
 
-                //*inprim = *outprim;
-
-                inprim->assign(outprim.get());
+                *inprim = *outprim;
+                //inprim->assign(outprim.get());
 
                 if (rc_num < (num - 1)) {
                     outprim->verts.clear();
@@ -709,7 +708,8 @@ struct PrimQuadsLotSubdivision : zeno::INode {
                         }
                     }
 
-                    inprim->assign(outprim.get());
+                    *inprim = *outprim;
+                    //inprim->assign(outprim.get());
 
                     if (rc_num < (num - 1)) {
                         outprim->verts.clear();
@@ -1046,7 +1046,8 @@ struct PrimQuadsLotSubdivision : zeno::INode {
                         }
                     }
 
-                    inprim->assign(outprim.get());
+                    *inprim = *outprim;
+                    //inprim->assign(outprim.get());
 
                     if (rc_num < (num - 1)) {
                         outprim->verts.clear();
@@ -1072,7 +1073,7 @@ struct PrimQuadsLotSubdivision : zeno::INode {
                 tag[n3] = n;
             }
         }
-        set_output("output", std::move(outprim));
+        ZImpl(set_output("output", std::move(outprim)));
     }
 };
 ZENDEFNODE(PrimQuadsLotSubdivision, {{

@@ -6,6 +6,7 @@
 #include <openvdb/points/PointCount.h>
 #include <openvdb/points/PointAdvect.h>
 #include <openvdb/tools/Interpolation.h>
+#include <zeno/utils/interfaceutil.h>
 
 namespace {
 
@@ -107,14 +108,14 @@ float operator()(float x, float y, float z) {  // https://www.shadertoy.com/view
 
 struct VDBExplosiveTurbulentNoise : INode {
   virtual void apply() override {
-    auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
-    auto strength = get_input<NumericObject>("strength")->get<float>();
-    auto scale = get_input<NumericObject>("scale")->get<float>();
+    auto inoutSDF = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("inoutSDF"));
+    auto strength = get_input2_float("strength");
+    auto scale = get_input2_float("scale");
     auto scaling = has_input("scaling") ?
-        get_input<NumericObject>("scaling")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("scaling"))
         : zeno::vec3f(1);
     auto translation = has_input("translation") ?
-        get_input<NumericObject>("translation")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("translation"))
         : zeno::vec3f(0);
     auto inv_scale = 1.f / (scale * scaling);
 
@@ -123,15 +124,15 @@ struct VDBExplosiveTurbulentNoise : INode {
     strength *= dx;
 
     FBMTurbulent turbulent;
-    turbulent.UVScale=get_param<float>("UVScale");
-    turbulent.Speed=get_param<float>("Speed");
-    turbulent.FBM_WarpPrimary=get_param<float>("FBM_WarpPrimary");
-    turbulent.FBM_WarpSecond=get_param<float>("FBM_WarpSecond");
-    turbulent.FBM_WarpPersist=get_param<float>("FBM_WarpPersist");
-    turbulent.FBM_EvalPersist=get_param<float>("FBM_EvalPersist");
-    turbulent.FBM_Persistence=get_param<float>("FBM_Persistence");
-    turbulent.FBM_Lacunarity=get_param<float>("FBM_Lacunarity");
-    turbulent.FBM_Octaves=get_param<int>("FBM_Octaves");
+    turbulent.UVScale=get_param_float("UVScale");
+    turbulent.Speed=get_param_float("Speed");
+    turbulent.FBM_WarpPrimary=get_param_float("FBM_WarpPrimary");
+    turbulent.FBM_WarpSecond=get_param_float("FBM_WarpSecond");
+    turbulent.FBM_WarpPersist=get_param_float("FBM_WarpPersist");
+    turbulent.FBM_EvalPersist=get_param_float("FBM_EvalPersist");
+    turbulent.FBM_Persistence=get_param_float("FBM_Persistence");
+    turbulent.FBM_Lacunarity=get_param_float("FBM_Lacunarity");
+    turbulent.FBM_Octaves=get_param_int("FBM_Octaves");
 
     auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
         for (auto iter = leaf.beginValueOn(); iter != leaf.endValueOn(); ++iter) {
@@ -146,7 +147,7 @@ struct VDBExplosiveTurbulentNoise : INode {
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
 
-    set_output("inoutSDF", get_input("inoutSDF"));
+    set_output("inoutSDF", std::move(inoutSDF));
   }
 };
 

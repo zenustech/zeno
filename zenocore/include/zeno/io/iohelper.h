@@ -16,9 +16,10 @@ namespace zenoio {
 
     void writeZVariant(zeno::zvariant var, zeno::ParamType type, RAPIDJSON_WRITER& writer);
     void writeAny(const zeno::reflect::Any& any, zeno::ParamType type, RAPIDJSON_WRITER& writer);
-    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::reflect::Any& props);
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl);
+    bool importControlProps(const rapidjson::Value& controlPropsObj, zeno::reflect::Any& props);
     void dumpControl(zeno::ParamType type, zeno::ParamControl ctrl, const zeno::reflect::Any& ctrlProps, RAPIDJSON_WRITER& writer);
-    ZENO_API zeno::ZSG_VERSION getVersion(const std::string& fn);
+    ZENO_API zeno::ZSG_VERSION getVersion(const std::wstring& fn);
     zeno::SocketType getSocketTypeByDesc(const std::string& desc);
 }
 

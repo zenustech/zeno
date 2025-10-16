@@ -4,9 +4,10 @@
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/parallel_reduce.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/utils/log.h>
 #include <random>
 #include <vector>
@@ -51,21 +52,21 @@ struct erode_value2cond : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto value = get_input<NumericObject>("value")->get<float>();
-        auto seed  = get_input<NumericObject>("seed")->get<float>();
+        auto value = ZImpl(get_input<NumericObject>("value"))->get<float>();
+        auto seed  = ZImpl(get_input<NumericObject>("seed"))->get<float>();
 
         // 初始化网格属性
         if (!terrain->verts.has_attr("cond")) {
@@ -101,7 +102,7 @@ struct erode_value2cond : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_value2cond,
@@ -126,8 +127,8 @@ ZENDEFNODE(erode_value2cond,
 struct erode_rand_color : INode {
     void apply() override {
         std::uniform_real_distribution<float> distr(0.0, 1.0);
-        auto iterations = get_input<NumericObject>("iterations")->get<int>();
-        auto iter       = get_input<NumericObject>("iter")->get<int>();
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>();
+        auto iter       = ZImpl(get_input<NumericObject>("iter"))->get<int>();
 
         int perm[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
         for (int i = 0; i < 8; i++)
@@ -147,14 +148,14 @@ struct erode_rand_color : INode {
             perm[idx2] = temp;
         }
 
-        auto list = std::make_shared<zeno::ListObject>();
+        auto list = std::make_unique<zeno::ListObject>();
         for (int i = 0; i < 8; i++)
         {
-            auto num = std::make_shared<zeno::NumericObject>();
+            auto num = std::make_unique<zeno::NumericObject>();
             num->set<int>(perm[i]);
-            list->push_back(num);
+            list->m_impl->push_back(std::move(num));
         }
-        set_output("list", std::move(list));
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 ZENDEFNODE(erode_rand_color,
@@ -179,8 +180,8 @@ struct erode_rand_dir : INode {
     void apply() override {
 
         std::uniform_real_distribution<float> distr(0.0, 1.0);
-        auto iterations = get_input<NumericObject>("iterations")->get<int>();
-        auto iter       = get_input<NumericObject>("iter")->get<int>();
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>();
+        auto iter       = ZImpl(get_input<NumericObject>("iter"))->get<int>();
 
         int dirs[] = { -1, -1 };
         for (int i = 0; i < 2; i++)
@@ -197,14 +198,14 @@ struct erode_rand_dir : INode {
             }
         }
 
-        auto list = std::make_shared<zeno::ListObject>();
+        auto list = std::make_unique<zeno::ListObject>();
         for (int i = 0; i < 2; i++)
         {
-            auto num = std::make_shared<zeno::NumericObject>();
+            auto num = std::make_unique<zeno::NumericObject>();
             num->set<int>(dirs[i]);
-            list->push_back(num);
+            list->m_impl->push_back(std::move(num));
         }
-        set_output("list", std::move(list));
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 ZENDEFNODE(erode_rand_dir,
@@ -231,41 +232,41 @@ struct erode_tumble_material_erosion : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto cut_angle = get_input<NumericObject>("cutangle")->get<float>();
-        auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>();
-        auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();
-        auto erodability = get_input<NumericObject>("erodability")->get<float>();
-        auto removalrate = get_input<NumericObject>("removalrate")->get<float>();
-        auto maxdepth = get_input<NumericObject>("maxdepth")->get<float>();
+        auto gridbias = ZImpl(get_input<NumericObject>("gridbias"))->get<float>();
+        auto cut_angle = ZImpl(get_input<NumericObject>("cutangle"))->get<float>();
+        auto global_erosionrate = ZImpl(get_input<NumericObject>("global_erosionrate"))->get<float>();
+        auto erosionrate = ZImpl(get_input<NumericObject>("erosionrate"))->get<float>();
+        auto erodability = ZImpl(get_input<NumericObject>("erodability"))->get<float>();
+        auto removalrate = ZImpl(get_input<NumericObject>("removalrate"))->get<float>();
+        auto maxdepth = ZImpl(get_input<NumericObject>("maxdepth"))->get<float>();
 
         std::uniform_real_distribution<float> distr(0.0, 1.0); // 设置随机分布
-        auto seed = get_input<NumericObject>("seed")->get<float>();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<float>();
 
-        auto iterations = get_input<NumericObject>("iterations")->get<int>(); // 外部迭代总次数      10
-        auto iter = get_input<NumericObject>("iter")->get<int>();             // 外部迭代当前次数    1~10
-        auto i = get_input<NumericObject>("i")->get<int>();                   // 内部迭代当前次数    0~7
-        auto openborder = get_input<NumericObject>("openborder")->get<int>(); // 获取边界标记
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>(); // 外部迭代总次数      10
+        auto iter = ZImpl(get_input<NumericObject>("iter"))->get<int>();             // 外部迭代当前次数    1~10
+        auto i = ZImpl(get_input<NumericObject>("i"))->get<int>();                   // 内部迭代当前次数    0~7
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>(); // 获取边界标记
 
-        auto perm = get_input<ListObject>("perm")->get2<int>();
-        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = ZImpl(get_input<ListObject>("perm"))->m_impl->get2<int>();
+        auto p_dirs = ZImpl(get_input<ListObject>("p_dirs"))->m_impl->get2<int>();
+        auto x_dirs = ZImpl(get_input<ListObject>("x_dirs"))->m_impl->get2<int>();
 
         // 初始化网格属性
-        auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+        auto erodabilitymask_name = ZImpl(get_input2<std::string>("erodability_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(erodabilitymask_name))
         {
@@ -274,7 +275,7 @@ struct erode_tumble_material_erosion : INode {
         }
         auto &_erodabilitymask = terrain->verts.attr<float>(erodabilitymask_name);
 
-        auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+        auto removalratemask_name = ZImpl(get_input2<std::string>("removalrate_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(removalratemask_name))
         {
@@ -283,7 +284,7 @@ struct erode_tumble_material_erosion : INode {
         }
         auto &_removalratemask = terrain->verts.attr<float>(removalratemask_name);
 
-        auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+        auto cutanglemask_name = ZImpl(get_input2<std::string>("cutangle_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(cutanglemask_name))
         {
@@ -292,7 +293,7 @@ struct erode_tumble_material_erosion : INode {
         }
         auto &_cutanglemask = terrain->verts.attr<float>(cutanglemask_name);
 
-        auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+        auto gridbiasmask_name = ZImpl(get_input2<std::string>("gridbias_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(gridbiasmask_name))
         {
@@ -498,7 +499,7 @@ struct erode_tumble_material_erosion : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_erosion,
@@ -554,41 +555,41 @@ struct erode_tumble_material_v0 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto cut_angle = get_input<NumericObject>("cutangle")->get<float>();
-        auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>();
-        auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();
-        auto erodability = get_input<NumericObject>("erodability")->get<float>();
-        auto removalrate = get_input<NumericObject>("removalrate")->get<float>();
-        auto maxdepth = get_input<NumericObject>("maxdepth")->get<float>();
+        auto gridbias = ZImpl(get_input<NumericObject>("gridbias"))->get<float>();
+        auto cut_angle = ZImpl(get_input<NumericObject>("cutangle"))->get<float>();
+        auto global_erosionrate = ZImpl(get_input<NumericObject>("global_erosionrate"))->get<float>();
+        auto erosionrate = ZImpl(get_input<NumericObject>("erosionrate"))->get<float>();
+        auto erodability = ZImpl(get_input<NumericObject>("erodability"))->get<float>();
+        auto removalrate = ZImpl(get_input<NumericObject>("removalrate"))->get<float>();
+        auto maxdepth = ZImpl(get_input<NumericObject>("maxdepth"))->get<float>();
 
         std::uniform_real_distribution<float> distr(0.0, 1.0); // 设置随机分布
-        auto seed = get_input<NumericObject>("seed")->get<float>();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<float>();
 
-        auto iterations = get_input<NumericObject>("iterations")->get<int>(); // 外部迭代总次数      10
-        auto iter = get_input<NumericObject>("iter")->get<int>();             // 外部迭代当前次数    1~10
-        auto i = get_input<NumericObject>("i")->get<int>();                   // 内部迭代当前次数    0~7
-        auto openborder = get_input<NumericObject>("openborder")->get<int>(); // 获取边界标记
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>(); // 外部迭代总次数      10
+        auto iter = ZImpl(get_input<NumericObject>("iter"))->get<int>();             // 外部迭代当前次数    1~10
+        auto i = ZImpl(get_input<NumericObject>("i"))->get<int>();                   // 内部迭代当前次数    0~7
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>(); // 获取边界标记
 
-        auto perm = get_input<ListObject>("perm")->get2<int>();
-        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = ZImpl(get_input<ListObject>("perm"))->m_impl->get2<int>();
+        auto p_dirs = ZImpl(get_input<ListObject>("p_dirs"))->m_impl->get2<int>();
+        auto x_dirs = ZImpl(get_input<ListObject>("x_dirs"))->m_impl->get2<int>();
 
         // 初始化网格属性
-        auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+        auto erodabilitymask_name = ZImpl(get_input2<std::string>("erodability_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(erodabilitymask_name))
         {
@@ -597,7 +598,7 @@ struct erode_tumble_material_v0 : INode {
         }
         auto &_erodabilitymask = terrain->verts.attr<float>(erodabilitymask_name);
 
-        auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+        auto removalratemask_name = ZImpl(get_input2<std::string>("removalrate_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(removalratemask_name))
         {
@@ -606,7 +607,7 @@ struct erode_tumble_material_v0 : INode {
         }
         auto &_removalratemask = terrain->verts.attr<float>(removalratemask_name);
 
-        auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+        auto cutanglemask_name = ZImpl(get_input2<std::string>("cutangle_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(cutanglemask_name))
         {
@@ -615,7 +616,7 @@ struct erode_tumble_material_v0 : INode {
         }
         auto &_cutanglemask = terrain->verts.attr<float>(cutanglemask_name);
 
-        auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+        auto gridbiasmask_name = ZImpl(get_input2<std::string>("gridbias_mask_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(gridbiasmask_name))
         {
@@ -821,7 +822,7 @@ struct erode_tumble_material_v0 : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_v0,
@@ -877,27 +878,27 @@ struct erode_tumble_material_v1 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("HeightField");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("HeightField"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto openborder = get_input<NumericObject>("openborder")->get<int>();
-        auto repose_angle = get_input<NumericObject>("repose_angle")->get<float>();
-        auto flow_rate = get_input<NumericObject>("flow_rate")->get<float>();
-        auto height_factor = get_input<NumericObject>("height_factor")->get<float>();
-        auto entrainmentrate = get_input<NumericObject>("entrainmentrate")->get<float>();
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>();
+        auto repose_angle = ZImpl(get_input<NumericObject>("repose_angle"))->get<float>();
+        auto flow_rate = ZImpl(get_input<NumericObject>("flow_rate"))->get<float>();
+        auto height_factor = ZImpl(get_input<NumericObject>("height_factor"))->get<float>();
+        auto entrainmentrate = ZImpl(get_input<NumericObject>("entrainmentrate"))->get<float>();
 
         // 初始化网格属性
-        auto write_back_material_layer = get_input2<std::string>("write_back_material_layer");
+        auto write_back_material_layer = ZImpl(get_input2<std::string>("write_back_material_layer"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(write_back_material_layer))
         {
@@ -1031,7 +1032,7 @@ struct erode_tumble_material_v1 : INode {
             }
         }
 
-        set_output("HeightField", std::move(terrain));
+        ZImpl(set_output("HeightField", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_v1,
@@ -1066,37 +1067,37 @@ struct erode_tumble_material_v2 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("HeightField");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("HeightField"));
         int nx, nz;
-        auto& ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz"))) zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz"))) zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto& pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto repose_angle = get_input<NumericObject>("repose_angle")->get<float>();
-        auto quant_amt = get_input<NumericObject>("quant_amt")->get<float>();
-        auto flow_rate = get_input<NumericObject>("flow_rate")->get<float>();
+        auto gridbias = ZImpl(get_input<NumericObject>("gridbias"))->get<float>();
+        auto repose_angle = ZImpl(get_input<NumericObject>("repose_angle"))->get<float>();
+        auto quant_amt = ZImpl(get_input<NumericObject>("quant_amt"))->get<float>();
+        auto flow_rate = ZImpl(get_input<NumericObject>("flow_rate"))->get<float>();
 
         std::uniform_real_distribution<float> distr(0.0, 1.0);
-        auto seed = get_input<NumericObject>("seed")->get<float>();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<float>();
 
-        auto iterations = get_input<NumericObject>("iterations")->get<int>();
-        auto iter = get_input<NumericObject>("iter")->get<int>();
-        auto i = get_input<NumericObject>("i")->get<int>();
-        auto openborder = get_input<NumericObject>("openborder")->get<int>();
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>();
+        auto iter = ZImpl(get_input<NumericObject>("iter"))->get<int>();
+        auto i = ZImpl(get_input<NumericObject>("i"))->get<int>();
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>();
 
-        auto perm = get_input<ListObject>("perm")->get2<int>();
-        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = ZImpl(get_input<ListObject>("perm"))->m_impl->get2<int>();
+        auto p_dirs = ZImpl(get_input<ListObject>("p_dirs"))->m_impl->get2<int>();
+        auto x_dirs = ZImpl(get_input<ListObject>("x_dirs"))->m_impl->get2<int>();
 
         // 初始化网格属性
-        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        auto stablilityMaskName = ZImpl(get_input2<std::string>("stabilitymask"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName)) {
             auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
@@ -1307,7 +1308,7 @@ struct erode_tumble_material_v2 : INode {
             }
         }
 
-        set_output("HeightField", std::move(terrain));
+        ZImpl(set_output("HeightField", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_v2,
@@ -1355,38 +1356,38 @@ struct erode_tumble_material_v3 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto repose_angle = get_input<NumericObject>("repose_angle")->get<float>();
-        auto quant_amt = get_input<NumericObject>("quant_amt")->get<float>();
-        auto flow_rate = get_input<NumericObject>("flow_rate")->get<float>();
+        auto gridbias = ZImpl(get_input<NumericObject>("gridbias"))->get<float>();
+        auto repose_angle = ZImpl(get_input<NumericObject>("repose_angle"))->get<float>();
+        auto quant_amt = ZImpl(get_input<NumericObject>("quant_amt"))->get<float>();
+        auto flow_rate = ZImpl(get_input<NumericObject>("flow_rate"))->get<float>();
 
         std::uniform_real_distribution<float> distr(0.0, 1.0);
-        auto seed = get_input<NumericObject>("seed")->get<float>();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<float>();
 
-        auto iterations = get_input<NumericObject>("iterations")->get<int>();
-        auto iter = get_input<NumericObject>("iter")->get<int>();
-        auto i = get_input<NumericObject>("i")->get<int>();
-        auto openborder = get_input<NumericObject>("openborder")->get<int>();
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>();
+        auto iter = ZImpl(get_input<NumericObject>("iter"))->get<int>();
+        auto i = ZImpl(get_input<NumericObject>("i"))->get<int>();
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>();
 
-        auto perm = get_input<ListObject>("perm")->get2<int>();
-        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = ZImpl(get_input<ListObject>("perm"))->m_impl->get2<int>();
+        auto p_dirs = ZImpl(get_input<ListObject>("p_dirs"))->m_impl->get2<int>();
+        auto x_dirs = ZImpl(get_input<ListObject>("x_dirs"))->m_impl->get2<int>();
 
         // 初始化网格属性
-        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        auto stablilityMaskName = ZImpl(get_input2<std::string>("stabilitymask"));
         // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName))
         {
@@ -1617,7 +1618,7 @@ struct erode_tumble_material_v3 : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_v3,
@@ -1665,13 +1666,13 @@ struct erode_tumble_material_v4 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
@@ -1679,48 +1680,48 @@ struct erode_tumble_material_v4 : INode {
 
         // 获取面板参数
         // 侵蚀主参数
-        auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>(); // 1 全局侵蚀率
-        auto erodability = get_input<NumericObject>("erodability")->get<float>();               // 1.0 侵蚀能力
-        auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();               // 0.4 侵蚀率
-        auto bank_angle = get_input<NumericObject>("bank_angle")->get<float>(); // 70.0 河堤侵蚀角度
-        auto seed = get_input<NumericObject>("seed")->get<float>();             // 12.34
+        auto global_erosionrate = ZImpl(get_input<NumericObject>("global_erosionrate"))->get<float>(); // 1 全局侵蚀率
+        auto erodability = ZImpl(get_input<NumericObject>("erodability"))->get<float>();               // 1.0 侵蚀能力
+        auto erosionrate = ZImpl(get_input<NumericObject>("erosionrate"))->get<float>();               // 0.4 侵蚀率
+        auto bank_angle = ZImpl(get_input<NumericObject>("bank_angle"))->get<float>(); // 70.0 河堤侵蚀角度
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<float>();             // 12.34
 
         // 高级参数
-        auto removalrate = get_input<NumericObject>("removalrate")->get<float>(); // 0.0 风化率/水吸收率
-        auto max_debris_depth = get_input<NumericObject>("max_debris_depth")->get<float>(); // 5	碎屑最大深度
-        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();                 // 0.0
+        auto removalrate = ZImpl(get_input<NumericObject>("removalrate"))->get<float>(); // 0.0 风化率/水吸收率
+        auto max_debris_depth = ZImpl(get_input<NumericObject>("max_debris_depth"))->get<float>(); // 5	碎屑最大深度
+        auto gridbias = ZImpl(get_input<NumericObject>("gridbias"))->get<float>();                 // 0.0
 
         // 侵蚀能力调整
-        auto max_erodability_iteration = get_input<NumericObject>("max_erodability_iteration")->get<int>();     // 5
-        auto initial_erodability_factor = get_input<NumericObject>("initial_erodability_factor")->get<float>(); // 0.5
-        auto slope_contribution_factor = get_input<NumericObject>("slope_contribution_factor")->get<float>();   // 0.8
+        auto max_erodability_iteration = ZImpl(get_input<NumericObject>("max_erodability_iteration"))->get<int>();     // 5
+        auto initial_erodability_factor = ZImpl(get_input<NumericObject>("initial_erodability_factor"))->get<float>(); // 0.5
+        auto slope_contribution_factor = ZImpl(get_input<NumericObject>("slope_contribution_factor"))->get<float>();   // 0.8
 
         // 河床参数
         auto bed_erosionrate_factor =
-            get_input<NumericObject>("bed_erosionrate_factor")->get<float>();           // 1 河床侵蚀率因子
-        auto depositionrate = get_input<NumericObject>("depositionrate")->get<float>(); // 0.01 沉积率
-        auto sedimentcap = get_input<NumericObject>("sedimentcap")
+            ZImpl(get_input<NumericObject>("bed_erosionrate_factor"))->get<float>();           // 1 河床侵蚀率因子
+        auto depositionrate = ZImpl(get_input<NumericObject>("depositionrate"))->get<float>(); // 0.01 沉积率
+        auto sedimentcap = ZImpl(get_input<NumericObject>("sedimentcap"))
             ->get<float>(); // 10.0 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
         // 河堤参数
         auto bank_erosionrate_factor =
-            get_input<NumericObject>("bank_erosionrate_factor")->get<float>(); // 1.0 河堤侵蚀率因子
-        auto max_bank_bed_ratio = get_input<NumericObject>("max_bank_bed_ratio")
+            ZImpl(get_input<NumericObject>("bank_erosionrate_factor"))->get<float>(); // 1.0 河堤侵蚀率因子
+        auto max_bank_bed_ratio = ZImpl(get_input<NumericObject>("max_bank_bed_ratio"))
             ->get<float>(); // 0.5 The maximum of bank to bed water column height ratio
         // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
         // 河流控制
-        auto quant_amt = get_input<NumericObject>("quant_amt")->get<float>(); // 0.05 流量维持率，越高流量越稳定
-        auto iterations = get_input<NumericObject>("iterations")->get<int>(); // 流淌的总迭代次数
+        auto quant_amt = ZImpl(get_input<NumericObject>("quant_amt"))->get<float>(); // 0.05 流量维持率，越高流量越稳定
+        auto iterations = ZImpl(get_input<NumericObject>("iterations"))->get<int>(); // 流淌的总迭代次数
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         std::uniform_real_distribution<float> distr(0.0, 1.0);
-        auto iter = get_input<NumericObject>("iter")->get<int>();
-        auto i = get_input<NumericObject>("i")->get<int>();
-        auto openborder = get_input<NumericObject>("openborder")->get<int>();
+        auto iter = ZImpl(get_input<NumericObject>("iter"))->get<int>();
+        auto i = ZImpl(get_input<NumericObject>("i"))->get<int>();
+        auto openborder = ZImpl(get_input<NumericObject>("openborder"))->get<int>();
 
-        auto perm = get_input<ListObject>("perm")->get2<int>();
-        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
-        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+        auto perm = ZImpl(get_input<ListObject>("perm"))->m_impl->get2<int>();
+        auto p_dirs = ZImpl(get_input<ListObject>("p_dirs"))->m_impl->get2<int>();
+        auto x_dirs = ZImpl(get_input<ListObject>("x_dirs"))->m_impl->get2<int>();
 
         // 初始化网格属性
         if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_temp_height") ||
@@ -2087,7 +2088,7 @@ struct erode_tumble_material_v4 : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_tumble_material_v4,
@@ -2158,21 +2159,21 @@ struct erode_smooth_flow : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
-        auto flowName = get_input2<std::string>("flowName");
+        auto smooth_rate = ZImpl(get_input<NumericObject>("smoothRate"))->get<float>();
+        auto flowName = ZImpl(get_input2<std::string>("flowName"));
 
         // 初始化网格属性
         auto &flow = terrain->verts.attr<float>(flowName);
@@ -2226,7 +2227,7 @@ struct erode_smooth_flow : INode {
 
         terrain->verts.erase_attr("_lap");
 
-        set_output("prim_2DGrid", std::move(terrain));
+        ZImpl(set_output("prim_2DGrid", std::move(terrain)));
     }
 };
 ZENDEFNODE(erode_smooth_flow,
@@ -2255,17 +2256,17 @@ ZENDEFNODE(erode_smooth_flow,
 
 struct erode_terrainHiMeLo : INode {
     void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
 
-        auto& ud = terrain->userData();
-        if ((!ud.has<float>("hi")) ||
-            (!ud.has<float>("me")) ||
-            (!ud.has<float>("lo")))
+        auto ud = terrain->userData();
+        if ((!ud->has("hi")) ||
+            (!ud->has("me")) ||
+            (!ud->has("lo")))
         {
             zeno::log_error("no such UserData named '{}' or '{}' or '{}'.", "hi", "me", "lo");
         }
 
-        auto attrName = get_input<StringObject>("attrName")->get();
+        auto attrName = ZImpl(get_input<StringObject>("attrName"))->get();
         if (!terrain->verts.has_attr(attrName))
         {
             zeno::log_error("no such data named '{}'.", attrName);
@@ -2293,11 +2294,11 @@ struct erode_terrainHiMeLo : INode {
             all += attr[i];
         }
 
-        ud.set2("hi", hi);
-        ud.set2("lo", lo);
-        ud.set2("me", all / attr.size());
+        ud->set_float("hi", hi);
+        ud->set_float("lo", lo);
+        ud->set_float("me", all / attr.size());
 
-        set_output("prim_2DGrid", get_input("prim_2DGrid"));
+        ZImpl(set_output("prim_2DGrid", ZImpl(clone_input("prim_2DGrid"))));
     }
 };
 ZENDEFNODE(erode_terrainHiMeLo,
@@ -2343,48 +2344,52 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("HeightField");
+        auto terrain = clone_input_Geometry("HeightField");
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
+
+        const auto &pos = terrain->points_pos();
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
         // 获取面板参数
-        auto heightLayer = get_input2<std::string>("height_layer");
-        auto maskLayer = get_input2<std::string>("mask_layer");
-        auto smoothRadius = get_input2<int>("smooth_radius");
-        auto invertMask = get_input2<bool>("invert_mask");
+        auto heightLayer = get_input2_string("height_layer");
+        auto maskLayer = get_input2_string("mask_layer");
+        auto smoothRadius = ZImpl(get_input2<int>("smooth_radius"));
+        auto invertMask = ZImpl(get_input2<bool>("invert_mask"));
 
-        auto useSlope = get_input2<bool>("use_slope");
-        auto minSlope = get_input2<float>("min_slopeangle");
-        auto maxSlope = get_input2<float>("max_slopeangle");
-        auto curve_slope = get_input_prim<CurvesData>("slope_ramp");
+        auto useSlope = ZImpl(get_input2<bool>("use_slope"));
+        auto minSlope = ZImpl(get_input2<float>("min_slopeangle"));
+        auto maxSlope = ZImpl(get_input2<float>("max_slopeangle"));
+        auto curve_slope = ZImpl(get_input_prim<CurvesData>("slope_ramp"));
 
-        auto useDir = get_input2<bool>("use_direction");
-        auto goalAngle = get_input2<float>("goal_angle");
-        auto angleSpread = get_input2<float>("angle_spread");
-        auto curve_dir = get_input_prim<CurvesData>("dir_ramp");
+        auto useDir = ZImpl(get_input2<bool>("use_direction"));
+        auto goalAngle = ZImpl(get_input2<float>("goal_angle"));
+        auto angleSpread = ZImpl(get_input2<float>("angle_spread"));
+        auto curve_dir = ZImpl(get_input_prim<CurvesData>("dir_ramp"));
 
-        auto useHeight = get_input2<bool>("use_height");
-        auto minHeight = get_input2<float>("min_height");
-        auto maxHeight = get_input2<float>("max_height");
-        auto curve_height = get_input_prim<CurvesData>("height_ramp");
+        auto useHeight = ZImpl(get_input2<bool>("use_height"));
+        auto minHeight = ZImpl(get_input2<float>("min_height"));
+        auto maxHeight = ZImpl(get_input2<float>("max_height"));
+        auto curve_height = zeno::reflect::any_cast<CurvesData>(ZImpl(get_param_result("height_ramp")));
 
         // 初始化网格属性
-        if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
-            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.",
-                            heightLayer, maskLayer);
+        if (!terrain->has_point_attr(heightLayer) || !terrain->has_point_attr(maskLayer)) {
+            throw makeError<UnimplError>("Node [HF_maskByFeature], no such data layer named '" + 
+                zsString2Std(heightLayer) + "' or '" + zsString2Std(maskLayer));
         }
-        auto &height = terrain->verts.attr<float>(heightLayer);
-        auto &mask = terrain->verts.attr<float>(maskLayer);
+        const auto& height = terrain->get_float_attr(ATTR_POINT, heightLayer);
+        auto mask = terrain->get_float_attr(ATTR_POINT, maskLayer);
 
-        auto &_grad = terrain->verts.add_attr<zeno::vec3f>("_grad");
+        assert(!terrain->has_point_attr("_grad"));
+
+        std::vector<vec3f> _grad(terrain->npoints());
+        //auto &_grad = terrain->verts.add_attr<zeno::vec3f>("_grad");
         std::fill(_grad.begin(), _grad.end(), vec3f(0,0,0));
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -2466,7 +2471,7 @@ struct HF_maskByFeature : INode {
                     float slope = 180 * acos(n[2]) / M_PI;
                     slope = fit(slope, minSlope, maxSlope, 0, 1);
 //                    slope = chramp(slope);
-                    slope = curve_slope->eval(slope);
+                    slope = curve_slope.eval(slope);
                     mask[idx] *= slope;
                 }
 
@@ -2477,7 +2482,7 @@ struct HF_maskByFeature : INode {
                     direction -= 180;
                     direction = fit(direction, -angleSpread, angleSpread, 0, 1);
 //                    direction = chramp(direction);
-                    direction = curve_dir->eval(direction);
+                    direction = curve_dir.eval(direction);
                     mask[idx] *= direction;
                 }
 
@@ -2485,7 +2490,7 @@ struct HF_maskByFeature : INode {
                 {
                     float h = fit(height[idx], minHeight, maxHeight, 0, 1);
 //                    mask[idx] *= chramp(h);
-                    mask[idx] *= curve_height->eval(h);
+                    mask[idx] *= curve_height.eval(h);
                 }
 
                 if(invertMask)
@@ -2495,13 +2500,14 @@ struct HF_maskByFeature : INode {
                 }
             }
         }
-        terrain->verts.erase_attr("_grad");
+
+        terrain->set_point_attr(maskLayer, mask);
         set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(HF_maskByFeature,
            {/* inputs: */ {
-                   {gParamType_Primitive, "HeightField", "", zeno::Socket_ReadOnly},
+                   {gParamType_Geometry, "HeightField"},
                    {gParamType_Bool, "invert_mask", "0"},
                    {gParamType_String, "height_layer", "height"},
                    {gParamType_String, "mask_layer", "mask"},
@@ -2523,7 +2529,7 @@ ZENDEFNODE(HF_maskByFeature,
                },
                /* outputs: */
                {
-                   {gParamType_Primitive, "HeightField"},
+                   {gParamType_Geometry, "HeightField"},
                },
                /* params: */
                {
@@ -2535,12 +2541,12 @@ ZENDEFNODE(HF_maskByFeature,
 
 struct HF_rotate_displacement_2d : INode {
     void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim_2DGrid"));
 
         auto& var = terrain->verts.attr<zeno::vec3f>("var"); // hardcode
         auto& pos = terrain->verts.attr<zeno::vec3f>("tempPos"); // hardcode
 
-        auto angle = get_input<NumericObject>("Rotate Displacement")->get<float>();
+        auto angle = ZImpl(get_input<NumericObject>("Rotate Displacement"))->get<float>();
         float gl_angle = glm::radians(angle);
         glm::vec3 gl_axis(0.0, 1.0, 0.0); // hardcode
         glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
@@ -2556,7 +2562,7 @@ struct HF_rotate_displacement_2d : INode {
             pos[i] -= vec3f(ret.x, ret.y, ret.z);
         }
 
-        set_output("prim_2DGrid", get_input("prim_2DGrid"));
+        ZImpl(set_output("prim_2DGrid", ZImpl(clone_input("prim_2DGrid"))));
     }
 };
 ZENDEFNODE(HF_rotate_displacement_2d,
@@ -2572,21 +2578,20 @@ ZENDEFNODE(HF_rotate_displacement_2d,
 
 struct HF_remap : INode {
     void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim");
-        auto remapLayer = get_input2<std::string>("remap layer");
-        if (!terrain->verts.has_attr(remapLayer)) {
-            zeno::log_error("Node [HF_remap], no such data layer named '{}'.",
-                            remapLayer);
+        auto terrain = clone_input_Geometry("prim");
+        auto remapLayer = get_input2_string("remap layer");
+        if (!terrain->has_point_attr(remapLayer)) {
+            throw makeError<UnimplError>("Node [HF_remap], no such data layer named '" + zsString2Std(remapLayer) + "'");
         }
-        auto& var = terrain->verts.attr<float>(remapLayer);
-        auto autoCompute = get_input2<bool>("Auto Compute input range");
-        auto inMin = get_input2<float>("input min");
-        auto inMax = get_input2<float>("input max");
-        auto outMin = get_input2<float>("output min");
-        auto outMax = get_input2<float>("output max");
-        auto curve = get_input_prim<CurvesData>("remap ramp");
-        auto clampMin = get_input2<bool>("clamp min");
-        auto clampMax = get_input2<bool>("clamp max");
+        const auto& var = terrain->get_float_attr(ATTR_POINT, remapLayer);
+        auto autoCompute = ZImpl(get_input2<bool>("Auto Compute input range"));
+        auto inMin = ZImpl(get_input2<float>("input min"));
+        auto inMax = ZImpl(get_input2<float>("input max"));
+        auto outMin = ZImpl(get_input2<float>("output min"));
+        auto outMax = ZImpl(get_input2<float>("output max"));
+        auto curve = zeno::reflect::any_cast<CurvesData>(ZImpl(get_param_result("remap ramp")));
+        auto clampMin = ZImpl(get_input2<bool>("clamp min"));
+        auto clampMax = ZImpl(get_input2<bool>("clamp max"));
 
         if (autoCompute) {
             inMin = zeno::parallel_reduce_array<float>(var.size(), var[0], [&] (size_t i) -> float { return var[i]; },
@@ -2594,50 +2599,47 @@ struct HF_remap : INode {
             inMax = zeno::parallel_reduce_array<float>(var.size(), var[0], [&] (size_t i) -> float { return var[i]; },
             [&] (float i, float j) -> float { return zeno::max(i, j); });
         }
-#pragma omp parallel for
-        for (int i = 0; i < terrain->verts.size(); i++)
-        {
-            if (var[i] < inMin)
-            {
-                if (clampMin)
-                {
-                    var[i] = outMin;
+
+        terrain->foreach_float_attr_update(ATTR_POINT, remapLayer, 0, [&](int i, float old_val)->float {
+            float new_val = old_val;
+            if (old_val < inMin) {
+                if (clampMin) {
+                    new_val = outMin;
+                }
+                else {
+                    new_val -= inMin;
+                    new_val += outMin;
+                }
+            }
+            else if (old_val > inMax) {
+                if (clampMax) {
+                    new_val = outMax;
                 }
                 else
                 {
-                    var[i] -= inMin;
-                    var[i] += outMin;
+                    new_val -= inMax;
+                    new_val += outMax;
                 }
             }
-            else if (var[i] > inMax)
-            {
-                if (clampMax)
-                {
-                    var[i] = outMax;
-                }
-                else
-                {
-                    var[i] -= inMax;
-                    var[i] += outMax;
-                }
+            else {
+                new_val = fit(new_val, inMin, inMax, 0, 1);
+                new_val = curve.eval(new_val);
+                new_val = fit(new_val, 0, 1, outMin, outMax);
             }
-            else
-            {
-                var[i] = fit(var[i], inMin, inMax, 0, 1);
-                var[i] = curve->eval(var[i]);
-                var[i] = fit(var[i], 0, 1, outMin, outMax);
-            }
-            if (remapLayer == "height"){
+            /* TODO
+            if (remapLayer == "height") {
                 terrain->verts.attr<zeno::vec3f>("pos")[i][1] = var[i];
             }
-        }
+            */
+            return new_val;
+            });
 
-        set_output("prim", get_input("prim"));
+        set_output("prim", std::move(terrain));
     }
 };
 ZENDEFNODE(HF_remap,
            { /* inputs: */ {
-               {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+               {gParamType_Geometry, "prim"},
                {gParamType_String, "remap layer", "height"},
                {gParamType_Bool, "Auto Compute input range", "0"},
                {gParamType_Float, "input min", "0"},
@@ -2648,34 +2650,34 @@ ZENDEFNODE(HF_remap,
                {gParamType_Bool, "clamp min", "0"},
                {gParamType_Bool, "clamp max", "0"}
            }, /* outputs: */ {
-{gParamType_Primitive, "prim"},
-}, /* params: */ {
+               {gParamType_Geometry, "prim"},
+           }, /* params: */ {
            }, /* category: */ {
                "deprecated",
            } });
 
 struct HF_maskbyOcclusion : INode {
     void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim");
+        auto terrain = ZImpl(get_input<PrimitiveObject>("prim"));
 
-        auto invert_mask = get_input2<bool>("invert mask");
-        auto view_radius = get_input2<int>("view distance");
-        auto step_scale = get_input2<float>("step scale");
-        auto axis_count = get_input2<int>("num of searches");
-        auto dohemisphere = get_input2<bool>("dohemisphere");
+        auto invert_mask = ZImpl(get_input2<bool>("invert mask"));
+        auto view_radius = ZImpl(get_input2<int>("view distance"));
+        auto step_scale = ZImpl(get_input2<float>("step scale"));
+        auto axis_count = ZImpl(get_input2<int>("num of searches"));
+        auto dohemisphere = ZImpl(get_input2<bool>("dohemisphere"));
 
         int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+        auto ud = terrain->userData();
+        if ((!ud->has("nx")) || (!ud->has("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
+        nx = ud->get_int("nx");
+        nz = ud->get_int("nz");
         auto &pos = terrain->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
-//        auto heightLayer = get_input2<std::string>("height_layer");
+//        auto heightLayer = ZImpl(get_input2<std::string>("height_layer"));
 //        if (!terrain->verts.has_attr(heightLayer)) {
 //            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
 //                            heightLayer);
@@ -2818,10 +2820,7 @@ struct HF_maskbyOcclusion : INode {
                 ao[idx] = invert_mask ? 1-total_fov : total_fov;
             }
         }
-
-
-
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 ZENDEFNODE(HF_maskbyOcclusion,

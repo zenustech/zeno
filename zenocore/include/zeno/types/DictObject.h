@@ -1,42 +1,41 @@
 #pragma once
 
-#include <zeno/core/IObject.h>
-#include <zeno/funcs/LiterialConverter.h>
 #include <memory>
 #include <string>
 #include <map>
+#include <set>
+
+#include <zeno/core/IObject.h>
+#include <zeno/funcs/LiterialConverter.h>
 
 namespace zeno {
 
-struct DictObject : IObjectClone<DictObject> {
-  std::map<std::string, zany> lut;
+struct ZENO_API DictObject : IObjectClone<DictObject> {
+    DictObject();
+    DictObject(const DictObject& dictObj);
 
-  template <class T = IObject>
-  std::map<std::string, std::shared_ptr<T>> get() const {
-      std::map<std::string, std::shared_ptr<T>> res;
-      for (auto const &[key, val]: lut) {
-          res.emplace(key, safe_dynamic_cast<T>(val));
-      }
-      return res;
-  }
+    ~DictObject();
+    void Delete() override;
 
-  template <class T>
-  std::map<std::string, T> getLiterial() const {
-      std::map<std::string, T> res;
-      for (auto const &[key, val]: lut) {
-          res.emplace(key, objectToLiterial<T>(val));
-      }
-      return res;
-  }
+    std::map<std::string, IObject*> get() const {
+        std::map<std::string, IObject*> res;
+        for (auto const &[key, val]: lut) {
+            res.emplace(key, val.get());
+        }
+        return res;
+    }
 
-  bool update_key(const std::string& key) override {
-      m_key = key;
-      for (auto& [key, spObject] : lut) {
-          std::string itemKey = m_key + "/" + key;
-          spObject->update_key(itemKey);
-      }
-      return true;
-  }
+    DictObject& operator=(const DictObject&);
+
+    //TODO: 目前还没有自开发的map和set，所以这里没法保证abi兼容
+    std::map<std::string, zany> lut;     //TMD全暴露出去了，想改都不好改
+    //一次计算中发生变化的元素记录，如果内部元素是dict/list，不记录嵌套的情况，只标记modify，详细信息通过访问子元素对象的这三个便可知。
+    std::set<std::string> m_modify, m_new_added, m_new_removed;
+
+private:
+    void clear_children();
 };
+
+ZENO_API std::unique_ptr<DictObject> create_DictObject();
 
 }

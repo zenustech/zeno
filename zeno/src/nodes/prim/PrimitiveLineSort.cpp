@@ -112,9 +112,9 @@ ZENO_API void primLineSort(PrimitiveObject *prim, bool reversed) {
 
 struct PrimitiveLineSort : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        primLineSort(prim.get(), get_param<bool>("reversed"));
-        set_output("prim", std::move(prim));
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        primLineSort(prim.get(), ZImpl(get_param<bool>("reversed")));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

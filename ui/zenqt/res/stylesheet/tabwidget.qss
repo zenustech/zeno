@@ -75,11 +75,6 @@ QTabBar[cssClass = "propanel"]::tab:selected {
     padding: 0px 16px 3px 16px;
 }
 
-QTabBar[cssClass = "graphicsediter"] {
-    background-color: #1F1F1F;
-    font-weight: bold;
-}
-
 QTabWidget[cssClass = "graphicsediter"]::pane {
     border: 0px;
 }

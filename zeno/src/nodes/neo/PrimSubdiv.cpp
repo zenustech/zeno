@@ -86,16 +86,16 @@ namespace {
 
 struct PrimSubdiv : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto type = get_input2<std::string>("type");
-        auto method = get_input2<std::string>("method");
-        auto iterations = get_input2<int>("iterations");
-        auto interpAttrs = get_input2<bool>("interpAttrs");
-        auto resFaceType = get_input2<std::string>("resFaceType");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto method = ZImpl(get_input2<std::string>("method"));
+        auto iterations = ZImpl(get_input2<int>("iterations"));
+        auto interpAttrs = ZImpl(get_input2<bool>("interpAttrs"));
+        auto resFaceType = ZImpl(get_input2<std::string>("resFaceType"));
         primSubdiv(prim.get(), type, method, iterations, interpAttrs);
         if (resFaceType == "tris") primTriangulate(prim.get());
         else if (resFaceType == "polys") primPolygonate(prim.get());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

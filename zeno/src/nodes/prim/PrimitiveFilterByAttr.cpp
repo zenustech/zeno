@@ -1,6 +1,7 @@
 #include "zeno/types/StringObject.h"
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
@@ -82,15 +83,15 @@ static std::variant
 
 struct PrimitiveFilterByAttr : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto attrName = get_param<std::string>("attrName");
-    auto acceptIf = get_param<std::string>("acceptIf");
-    auto vecSelType = get_param<std::string>("vecSelType");
-    auto valueObj = get_input<NumericObject>("value");
+    auto prim = get_input_Geometry("prim")->toPrimitiveObject();
+    auto attrName = ZImpl(get_param<std::string>("attrName"));
+    auto acceptIf = ZImpl(get_param<std::string>("acceptIf"));
+    auto vecSelType = ZImpl(get_param<std::string>("vecSelType"));
+    auto valueObj = ZImpl(get_input<NumericObject>("value"));
     
     std::vector<int> revamp;
     revamp.reserve(prim->size());
-    prim->attr_visit(attrName, [&] (auto const &attr) {
+    prim->attr_visit<std::variant<vec3f, float, int>>(attrName, [&] (auto const &attr) {
         using T = std::decay_t<decltype(attr[0])>;
         auto value = valueObj->get<T>();
         std::visit([&] (auto op, auto aop) {
@@ -113,7 +114,7 @@ struct PrimitiveFilterByAttr : INode {
     auto old_prim_size = prim->size();
     prim->resize(revamp.size());
 
-    if (get_param<bool>("mockTopos") && (0
+    if (ZImpl(get_param<bool>("mockTopos")) && (0
             || prim->tris.size()
             || prim->quads.size()
             || prim->lines.size()
@@ -235,35 +236,37 @@ struct PrimitiveFilterByAttr : INode {
         }
 
     }
-    
-    set_output("prim", get_input("prim"));
+
+    auto geom = create_GeometryObject(prim.get());
+    set_output("prim", std::move(geom));
   }
 };
 
-ZENDEFNODE(PrimitiveFilterByAttr,
-    { /* inputs: */ {
-    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-    {gParamType_Float, "value", "0", zeno::Socket_WildCard},
-    }, /* outputs: */ {
-{gParamType_Primitive, "prim"},
-}, /* params: */ {
-    {gParamType_String, "attrName", "rad"},
-    {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
-    {"enum any all", "vecSelType", "all"},
-    {gParamType_Bool, "mockTopos", "1"},
-    }, /* category: */ {
-    "primitive",
-    }});
+ZENDEFNODE(PrimitiveFilterByAttr, {
+    {
+        {gParamType_Geometry, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Float, "value", "0"},
+        {gParamType_String, "attrName", "rad"},
+        {"enum cmpgt cmplt cmpge cmple cmpeq cmpne", "acceptIf", "cmpgt"},
+        {"enum any all", "vecSelType", "all"},
+        {gParamType_Bool, "mockTopos", "1"},
+    },
+    {
+        {gParamType_Geometry, "prim"}
+    },
+    {},
+    {"primitive"}
+});
 
 
 
 struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already auto-mock lines!
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("line");
-    auto attrName = get_param<std::string>("attrName");
-    auto acceptIf = get_param<std::string>("acceptIf");
-    auto vecSelType = get_param<std::string>("vecSelType");
-    auto valueObj = get_input<NumericObject>("value");
+    auto prim = ZImpl(get_input<PrimitiveObject>("line"));
+    auto attrName = ZImpl(get_param<std::string>("attrName"));
+    auto acceptIf = ZImpl(get_param<std::string>("acceptIf"));
+    auto vecSelType = ZImpl(get_param<std::string>("vecSelType"));
+    auto valueObj = ZImpl(get_input<NumericObject>("value"));
     
     std::vector<int> revamp;
     prim->attr_visit(attrName, [&] (auto const &attr) {
@@ -294,13 +297,13 @@ struct SubLine : INode { // deprecated zhxx-happy-node, FilterByAttr already aut
     }
     prim->lines.resize(i);
     
-    set_output("prim", get_input("line"));
+    ZImpl(set_output("prim", ZImpl(clone_input("line"))));
   }
 };
 ZENDEFNODE(SubLine,
     { /* inputs: */ {
     {gParamType_Primitive, "line", "", zeno::Socket_ReadOnly},
-    {gParamType_Float, "value", "0", zeno::Socket_WildCard},
+    {gParamType_Float, "value", "0"},
     }, /* outputs: */ {
 {gParamType_Primitive, "prim"},
 }, /* params: */ {

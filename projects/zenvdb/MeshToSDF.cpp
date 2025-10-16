@@ -2,6 +2,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/MeshObject.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <openvdb/tools/Morphology.h>
 #include <openvdb/tools/MeshToVolume.h>
 #include <zeno/VDBGrid.h>
@@ -18,13 +19,13 @@ namespace zeno {
 
 struct MeshToSDF : zeno::INode{
     virtual void apply() override {
-    auto h = get_param<float>(("voxel_size"));
+    auto h = get_param_float("voxel_size");
     if(has_input("Dx"))
     {
-      h = get_input("Dx")->as<NumericObject>()->get<float>();
+        h = get_input2_float("Dx");
     }
-    auto mesh = get_input("mesh")->as<MeshObject>();
-    auto result = zeno::IObject::make<VDBFloatGrid>();
+    auto mesh = safe_dynamic_cast<MeshObject>(get_input("mesh"));
+    auto result = std::make_unique<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
@@ -42,13 +43,13 @@ struct MeshToSDF : zeno::INode{
         triangles[i] = openvdb::Vec3I(i*3, i*3+1, i*3+2);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
-    if(get_param<std::string>(("type"))==std::string("vertex"))
+    if (zsString2Std(get_param_string("type")) == "vertex")
     {
         vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
     }
     result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4, 4);
     openvdb::tools::signedFloodFill(result->m_grid->tree());
-    set_output("sdf", result);
+    set_output("sdf", std::move(result));
   }
 };
 
@@ -65,23 +66,78 @@ static int defMeshToSDF = zeno::defNodeClass<MeshToSDF>("MeshToSDF",
     "deprecated",
     }});
 
+struct GeometryToSDF : zeno::INode {
+    virtual void apply() override {
+        auto h = get_input2_float("Dx");
+        auto mesh = safe_dynamic_cast<GeometryObject_Adapter>(get_input("Mesh"));
+        auto result = std::make_unique<VDBFloatGrid>();
+        int nfaces = mesh->nfaces();
+        const auto& pos = mesh->points_pos();
+        std::vector<openvdb::Vec3s> points(mesh->npoints());
+        std::vector<openvdb::Vec3I> triangles;
+        std::vector<openvdb::Vec4I> quads;
+
+        for (int i = 0; i < pos.size(); i++) {
+            points[i] = openvdb::Vec3s(pos[i][0], pos[i][1], pos[i][2]);
+        }
+
+        if (mesh->is_base_triangle()) {
+            //triangles
+        }
+        else {
+            quads.resize(nfaces);
+            for (int iFace = 0; iFace < nfaces; iFace++) {
+                const zeno::Vector<int>& indice = mesh->face_points(iFace);
+                if (indice.size() != 4) {
+                    throw makeError<UnimplError>("there is a face which is a not a Quadrilateral");
+                }
+                quads[iFace] = openvdb::Vec4I(indice[0], indice[1], indice[2], indice[3]);
+            }
+        }
+
+        auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
+        if (zsString2Std(get_param_string("type")) == "vertex")
+        {
+            vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
+        }
+        result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*vdbtransform, points, triangles, quads, 4, 4);
+        openvdb::tools::signedFloodFill(result->m_grid->tree());
+        set_output("sdf", std::move(result));
+    }
+};
+
+static int defGeomToSDF = zeno::defNodeClass<GeometryToSDF>("GeometryToSDF",
+    { /* inputs: */
+        {
+            {gParamType_Geometry, "Mesh"},
+            {gParamType_Float,    "Dx","0.08"},
+        }, /* outputs: */
+    {
+        {gParamType_VDBGrid, "sdf"},
+    }, /* params: */ {
+        //{"float", "voxel_size", "0.08 0"},
+        {"enum vertex cell", "type", "vertex"},
+    }, /* category: */ {
+    "openvdb",
+    } });
+
 
 
 struct PrimitiveToSDF : zeno::INode{
     virtual void apply() override {
-    //auto h = get_param<float>(("voxel_size"));
+    //auto h = get_param_float("voxel_size");
     //if(has_input("Dx"))
     //{
-      //h = get_input<NumericObject>("Dx")->get<float>();
+      //h = get_input2_float("Dx");
     //}
-    auto h = get_input2<float>("Dx");
-    //auto h = get_input("Dx")->as<NumericObject>()->get<float>();
-    if (auto p = dynamic_cast<VDBFloatGrid *>(get_input("PrimitiveMesh").get())) {
-        set_output("sdf", get_input("PrimitiveMesh"));
+    auto h = get_input2_float("Dx");
+    //auto h = get_input2_float("Dx")();
+    if (auto p = dynamic_cast<VDBFloatGrid *>(get_input("PrimitiveMesh"))) {
+        set_output("sdf", clone_input("PrimitiveMesh"));
         return;
     }
-    auto mesh = get_input("PrimitiveMesh")->as<PrimitiveObject>();
-    auto result = zeno::IObject::make<VDBFloatGrid>();
+    auto mesh = safe_dynamic_cast<PrimitiveObject>(get_input("PrimitiveMesh"));
+    auto result = std::make_unique<VDBFloatGrid>();
     std::vector<openvdb::Vec3s> points;
     std::vector<openvdb::Vec3I> triangles;
     std::vector<openvdb::Vec4I> quads;
@@ -104,13 +160,13 @@ struct PrimitiveToSDF : zeno::INode{
         quads[i] = openvdb::Vec4I(mesh->quads[i][0], mesh->quads[i][1], mesh->quads[i][2], mesh->quads[i][3]);
     }
     auto vdbtransform = openvdb::math::Transform::createLinearTransform(h);
-    if(get_param<std::string>(("type"))==std::string("vertex"))
+    if (get_param_string("type") == "vertex")
     {
         vdbtransform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(h));
     }
     result->m_grid = openvdb::tools::meshToSignedDistanceField<openvdb::FloatGrid>(*vdbtransform,points, triangles, quads, 4, 4);
     openvdb::tools::signedFloodFill(result->m_grid->tree());
-    set_output("sdf", result);
+    set_output("sdf", std::move(result));
   }
 };
 
@@ -130,9 +186,9 @@ static int defPrimitiveToSDF = zeno::defNodeClass<PrimitiveToSDF>("PrimitiveToSD
 struct SDFToFog : INode 
 {
     virtual void apply() override {
-        auto sdf = get_input<VDBFloatGrid>("SDF");
-        if (!has_input("inplace") || !get_input2<bool>("inplace")) {
-            sdf = std::make_shared<VDBFloatGrid>(sdf->m_grid->deepCopy());
+        auto sdf = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("SDF"));
+        if (!has_input("inplace") || !get_input2_bool("inplace")) {
+            sdf = std::make_unique<VDBFloatGrid>(sdf->m_grid->deepCopy());
         }
         //auto dx = sdf->m_grid->voxelSize()[0];
         openvdb::tools::sdfToFogVolume(*(sdf->m_grid));

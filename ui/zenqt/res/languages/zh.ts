@@ -216,6 +216,14 @@
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>
+	<message>
+        <source>RunMatrix</source>
+        <translation>运行矩阵</translation>
+    </message>
+	<message>
+        <source>LoadAsset</source>
+        <translation>运行资产</translation>
+    </message>
     <message>
         <source>This function can only be used in cache mode.</source>
         <translation>该功能仅支持在缓存模式下运行。</translation>
@@ -829,6 +837,14 @@
     <message>
         <source>Option</source>
         <translation type="unfinished">选项</translation>
+    </message>
+	<message>
+        <source>Tools</source>
+        <translation type="finished">工具</translation>
+    </message>
+	<message>
+        <source>Compose video</source>
+        <translation type="finished">合成视频</translation>
     </message>
     <message>
         <source>Undo</source>
@@ -1985,6 +2001,64 @@
     </message>
 </context>
 <context>
+    <name>ZComposeVideoDlg</name>
+    <message>
+        <source>File to Load</source>
+        <translation type="finished">文件加载路径</translation>
+    </message>
+	<message>
+        <source>Invalid input path</source>
+        <translation type="finished">输入路径无效</translation>
+    </message>
+	<message>
+        <source>Export success</source>
+        <translation type="finished">导出成功</translation>
+    </message>
+	<message>
+        <source>Export faild</source>
+        <translation type="finished">导出失败</translation>
+    </message>
+	<message>
+        <source>Output file exists</source>
+        <translation type="finished">输出文件已存在</translation>
+    </message>
+	<message>
+        <source>Jpg file not exist</source>
+        <translation type="finished">Jpg文件不存在</translation>
+    </message>
+</context>
+<context>
+    <name>ZComposeVideoDlgClass</name>
+	<message>
+		<source>ZComposeVideoDlgClass</source>
+		<translation>视频合成</translation>
+	</message>
+	<message>
+		<source>FPS:</source>
+		<translation>帧率：</translation>
+	</message>
+	<message>
+		<source>Bit Rate:</source>
+		<translation>比特率：</translation>
+	</message>
+	<message>
+		<source>(Option)</source>
+		<translation>（选项）</translation>
+	</message>
+	<message>
+		<source>Path:</source>
+		<translation>路径：</translation>
+	</message>
+	<message>
+		<source>File Name:</source>
+		<translation>文件名：</translation>
+	</message>
+	<message>
+		<source>Start frame:</source>
+		<translation>起始帧号：</translation>
+	</message>
+</context>
+<context>
     <name>ZRestartDlg</name>
     <message>
         <source>Check Update</source>
@@ -3124,6 +3198,25 @@ All Files (*)</source>
     </message>
 </context>
 <context>
+    <name>BaseAttributeView</name>
+    <message>
+        <source>vertex</source>
+        <translation>顶点</translation>
+    </message>
+	    <message>
+        <source>point</source>
+        <translation>点</translation>
+    </message>
+	    <message>
+        <source>face</source>
+        <translation>面</translation>
+    </message>
+	    <message>
+        <source>geo</source>
+        <translation>几何</translation>
+    </message>
+</context>
+<context>
     <name>ZenoSubGraphScene</name>
     <message>
         <source>Error</source>
@@ -3136,6 +3229,18 @@ All Files (*)</source>
     <message>
         <source>add Link</source>
         <translation>添加连接</translation>
+    </message>
+	<message>
+        <source>add to list as a child element?</source>
+        <translation>是否作为子元素加入List？</translation>
+    </message>
+	<message>
+        <source>as a child element</source>
+        <translation>作为子元素</translation>
+    </message>
+	<message>
+        <source>as a whole</source>
+        <translation>作为整体</translation>
     </message>
 </context>
 <context>

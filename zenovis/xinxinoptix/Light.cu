@@ -7,23 +7,18 @@
 #include "zeno/types/LightObject.h"
 #include "zxxglslvec.h"
 #include "DisneyBRDF.h"
-#include "DisneyBSDF.h"
 
 #include "Shape.h"
 #include "Light.h"
 #include "Sampling.h"
 #include "LightTree.h"
 
-static __inline__ __device__ bool checkLightGAS(uint instanceId) {
-    return ( instanceId >= params.maxInstanceID-2 );
-}
-
 static __inline__ __device__ bool isPlaneLightGAS(uint instanceId) {
-    return ( instanceId == params.maxInstanceID-1 );
+    return ( instanceId == 1 );
 }
 
 static __inline__ __device__ bool isTriangleLightGAS(uint instanceId) {
-    return ( instanceId == params.maxInstanceID-2 );
+    return ( instanceId == 0 );
 }
 
 extern "C" __global__ void __closesthit__radiance()
@@ -42,9 +37,8 @@ extern "C" __global__ void __closesthit__radiance()
     // auto zenotex = rt_data->textures;
 
     auto instanceId = optixGetInstanceId();
-    auto isLightGAS = checkLightGAS(instanceId);
 
-    if (params.num_lights == 0 || !isLightGAS) {
+    if (params.num_lights == 0) {
         prd->depth += 1;
         prd->done = true;
         return;
@@ -124,26 +118,27 @@ extern "C" __global__ void __closesthit__radiance()
     const auto lightShape = light.shape;
     const auto shadingP = ray_orig + params.cam.eye;
 
-    const auto insideEllipse = [&]() -> bool {
+	const auto rectUV = [&]() -> float2 {
+		float2 uv0, uv1, uv2;
+		if (primitiveIndex % 2 == 0) {
+			uv0 = float2{0, 0};
+			uv1 = float2{1, 0};
+			uv2 = float2{1, 1};
+		} else {
+			uv0 = float2{0, 0};
+			uv1 = float2{1, 1};
+			uv2 = float2{0, 1};
+		}
 
-        float3 _vertices_[3];
-        optixGetTriangleVertexData( gas, optixGetPrimitiveIndex(), sbtGASIndex, 0, _vertices_ );
-    
-        const float3& v0 = _vertices_[0];
-        const float3& v1 = _vertices_[1];
-        const float3& v2 = _vertices_[2];
+		float2 barys = optixGetTriangleBarycentrics();
+		return interp(barys, uv0, uv1, uv2);
+	};
 
-        float2 barys = optixGetTriangleBarycentrics();
-        float3 P_Local = interp(barys, v0, v1, v2);
-
-        auto delta = P_Local - light.rect.v;
-            
-        float2 uv = { dot(delta, light.rect.axisX) / light.rect.lenX,
-                      dot(delta, light.rect.axisY) / light.rect.lenY };
-
-        auto uvd = uv - 0.5f;
-        return length(uvd) <= 0.5f;
-    };
+	const auto insideEllipse = [&]() -> bool {
+		float2 uv = rectUV();
+		auto uvd = uv - 0.5f;
+		return length(uvd) <= 0.5f;
+	};
 
     if (prd->test_distance) {
             
@@ -164,46 +159,44 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    switch (lightShape) {
-    case zeno::LightShape::Plane:
-    case zeno::LightShape::Ellipse: {
+	switch (lightShape) {
+	case zeno::LightShape::Ellipse: {
+		
+		if (light.rect.isEllipse && !insideEllipse()) {
+			prd->done = false;
+			prd->_tmin_ = optixGetRayTmax();
+			return;
+		}
+	}
+	case zeno::LightShape::Plane: {
+    
+		lsr.uv = rectUV();
 
-        auto valid = true; 
-        if (light.rect.isEllipse && !insideEllipse()) {
-            valid &= false;
-            prd->done = false;
-            prd->_tmin_ = optixGetRayTmax();
-        }
-        // valid = light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, shadingP);
-        // if (!valid) {
-        //     prd->done = false;
-        //     prd->_tmin_ = optixGetRayTmax();
-        //     return;
-        // };
-        if (!valid) { return; }
+		if (prd->depth > 0) {
 
-        auto rect = light.rect;
-        float2 uvScale, uvOffset;
-        valid &= SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
-                            rect.normal, shadingP, 
-                            light.spreadMajor, uvScale, uvOffset);  
+			auto rect = light.rect;
+			float2 uvScale, uvOffset;
+			bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, rect.normal, 
+											shadingP, light.spreadMajor, uvScale, uvOffset);
+			// if (!valid) { return; }
 
-        //if (!valid) { return; }
+			SphericalRect squad;
+			SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
+			lsr.PDF = 1.0f / squad.S;
+			if (!isfinite(lsr.PDF)) {
+				return;
+			}
+			lsr.uv = uvOffset + lsr.uv * uvScale;
+		}
 
-        SphericalRect squad;
-        SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
-        lsr.PDF = 1.0f / squad.S;  
-        if ( !isfinite(lsr.PDF) ) { return; }
-        
-        lsr.n = light.N;
-        lsr.NoL = dot(light.N, -ray_dir);
-        lsr.uv = uvOffset + lsr.uv * uvScale;
+		lsr.n = light.N;
+		lsr.NoL = dot(light.N, -ray_dir);
 
-        lsr.dir = lightDirection;
-        lsr.dist = lightDistance;
-        lsr.p = ray_orig + ray_dir * lightDistance;
-        break;
-    }
+		lsr.dir = lightDirection;
+		lsr.dist = lightDistance;
+		lsr.p = ray_orig + ray_dir * lightDistance;
+		break;
+	}
     case zeno::LightShape::Sphere: {
         light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, shadingP);
         cihouSphereLightUV(lsr, light); break;
@@ -266,7 +259,6 @@ extern "C" __global__ void __closesthit__radiance()
             }
             prd->depth = 1;
             prd->attenuation = vec3(1.0f); 
-            prd->attenuation2 = vec3(1.0f);
             return;
         }
         
@@ -299,11 +291,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     // const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     auto instanceId = optixGetInstanceId();
-    auto isLightGAS = checkLightGAS(instanceId);
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
 
-    if (params.num_lights == 0 || !isLightGAS) {
+    if (params.num_lights == 0) {
         optixIgnoreIntersection();
         return;
     }
@@ -326,7 +317,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
 
     if (light_index == prd->lightIdx) {
-        //printf("maxDistance = %f tmax = %f \n", prd->maxDistance, optixGetRayTmax());
         ignore = true;
     }
 
@@ -353,9 +343,4 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     optixIgnoreIntersection();
     return;
-}
-
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
 }

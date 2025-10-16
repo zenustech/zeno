@@ -1,6 +1,7 @@
 //
 // Created by zh on 2023/4/21.
 //
+#if 0
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -148,3 +149,4 @@ ZENDEFNODE(ReadTiffFile, {
 }
 
 
+#endif

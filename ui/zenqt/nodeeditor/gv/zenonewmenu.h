@@ -14,7 +14,7 @@ class ZenoNewnodeMenu : public QMenu
 {
     Q_OBJECT
 public:
-    ZenoNewnodeMenu(GraphModel* pGraphM, const zeno::NodeCates& cates, const QPointF& scenePos, QWidget* parent = nullptr);
+    ZenoNewnodeMenu(GraphModel* pGraphM, const QPointF& scenePos, QWidget* parent = nullptr);
     ~ZenoNewnodeMenu();
     void setEditorFocus();
 
@@ -27,9 +27,10 @@ public slots:
 private:
     QList<QAction*> getCategoryActions(QPointF scenePos);
     void updateSearchView(const QString& filter);
+    void alertUninstallMsg();
 
     bool m_preSearchMode;
-    const zeno::NodeCates m_cates;
+    NodeCates m_cates;
     //const QModelIndex m_subgIdx;
     GraphModel* m_pGraphM;
     const QPointF m_scenePos;

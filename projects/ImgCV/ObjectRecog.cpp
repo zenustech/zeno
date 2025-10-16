@@ -1,3 +1,4 @@
+#if 0
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core.hpp>
@@ -9,8 +10,8 @@
 #include <zeno/utils/log.h>
 #include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/stitching.hpp>
+//#include <opencv2/calib3d.hpp>
+//#include <opencv2/stitching.hpp>
 #include <zeno/types/ListObject.h>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
@@ -74,8 +75,7 @@ struct ImageEdgeDetect : INode {
                     float gradient = std::sqrt(pow(dx[i * w + j], 2) + pow(dy[i * w + j], 2));
                     image->verts[i * w + j] = {gradient, gradient, gradient};
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }
 
         if (mode == "zeno_threshold") {
@@ -92,8 +92,7 @@ struct ImageEdgeDetect : INode {
                         image->verts[i * w + j] = {0, 0, 0};
                     }
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }*/
         if (mode == "Sobel") {
             cv::Mat imagecvin(h, w, CV_32F);
@@ -115,8 +114,7 @@ struct ImageEdgeDetect : INode {
                     float magnitude = abs(gradX.at<float>(i, j)) + abs(gradY.at<float>(i, j));//manhattan distance？ not euclidean distance
                     image->verts[i * w + j] = {magnitude, magnitude, magnitude};
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }
         else if (mode == "Roberts") {
             cv::Mat imagecvin(h, w, CV_32F);
@@ -143,8 +141,7 @@ struct ImageEdgeDetect : INode {
                 for (int j = 0; j < w; j++) {
                     image->verts[i * w + j] = vec3f(imagecvout.at<float>(i, j));
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }
         /*if (mode == "roberts_threshold") {
             cv::Mat imagecvin(h, w, CV_32F);
@@ -169,8 +166,7 @@ struct ImageEdgeDetect : INode {
                     float r = float(imagecvout.at<float>(i, j)) / 255.f;
                     image->verts[i * w + j] = {r, r, r};
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }*/
         else if (mode == "Prewitt") {
             cv::Mat imagecvin(h, w, CV_32F);
@@ -197,8 +193,7 @@ struct ImageEdgeDetect : INode {
                 for (int j = 0; j < w; j++) {
                     image->verts[i * w + j] = vec3f(imagecvout.at<float>(i, j));
                 }
-            }
-            set_output("image", image);
+            }set_output("image", std::move(image)));
         }
         /*if (mode == "Canny") {//TODO：： Canny opencv only accept 8bit image
             cv::Mat thresholdImage;
@@ -210,8 +205,7 @@ struct ImageEdgeDetect : INode {
 
             int apertureSize = 3;  // 孔径大小，默认为 3
             bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
-            cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
-            set_output("image", image);
+            cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);set_output("image", std::move(image)));
         }
         if (mode == "canny_threshold") {
             cv::Canny(imagecvin, imagecvout, threshold, maxThreshold);
@@ -294,11 +288,7 @@ struct ImageEdgeDetectMarr : INode {//TODO::not finished?
                     image->verts[i * w + j] = {0, 0, 0};
                 }
             }
-        }
-
-
-
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -371,8 +361,7 @@ struct ImageStitching : INode {
             }
         } else {
             zeno::log_info("stitching failed");
-        }
-        set_output("image", image1);
+        }set_output("image", std::move(image1)));
     }
 };
 
@@ -453,8 +442,7 @@ struct ImageFeatureDetectORB : INode {
                     image->verts[i * w + j][2] = zeno::min(static_cast<float>(pixel[2])/255,1.0f);
                 }
             }
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -539,8 +527,7 @@ struct ImageFeatureDetectSIFT : INode {
                     image->verts[i * w + j][2] = zeno::min(static_cast<float>(pixel[2])/255,1.0f);
                 }
             }
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -940,8 +927,7 @@ struct ImageFeatureMatch : INode {
         }
 //        CVImageObject CVMatrix1(OMatrix);
 //        auto CVMatrix = std::make_shared<CVImageObject>(CVMatrix1);
-//        set_output("matrix",std::move(CVMatrix));
-        set_output("image", image3);
+//        set_output("matrix",std::move(CVMatrix));set_output("image", std::move(image3)));
     }
 };
 
@@ -1277,8 +1263,7 @@ struct Image3DAnalyze : INode {
                 image3->verts[i][1] = zeno::min(static_cast<float>(pixel[1])/255,1.0f);
                 image3->verts[i][2] = zeno::min(static_cast<float>(pixel[2])/255,1.0f);
             }
-        }
-        set_output("image", image3);
+        }set_output("image", std::move(image3)));
     }
 };
 
@@ -1334,7 +1319,7 @@ ZENDEFNODE(CreateCameraMatrix, {
     {},
     { "image" },
 });
-
+#if 0
 struct EstimateCameraMatrix : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
@@ -1457,8 +1442,7 @@ struct EstimateCameraMatrix : INode {
         int css2 = cs2.width * cs2.height;
         for (int i = 0; i < css2; i++) {
             cm2[i] = static_cast<float>(cameraMatrix2.at<float>(i));
-        }
-        set_output("image", image2);
+        }set_output("image", std::move(image2)));
     }
 };
 
@@ -1474,6 +1458,7 @@ ZENDEFNODE(EstimateCameraMatrix, {
     {},
     { "deprecated" },
 });
-
+#endif
 }
 }
+#endif

@@ -36,6 +36,11 @@ struct CameraData {
 };
 
 struct CameraObject : IObjectClone<CameraObject>, CameraData {
+
+    void Delete() override {
+        //delete this;
+    }
+
     void set(CameraData const &src) {
         static_cast<CameraData &>(*this) = src;
     }

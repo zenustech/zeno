@@ -40,8 +40,8 @@
 %option prefix="ZFX_"
 
 /*正则式的各种简写，使程序有层次感而显得明晰 */
-string  \"[^\n"]+\"
-singlequote '[^\n']+'
+string  \"[^\n"]*\"
+singlequote '[^\n']*'
 uncompstring \"[^\n"]*
 ws      [ \t]+
 alpha   [A-Za-z]
@@ -53,7 +53,7 @@ number  {num1}|{num2}
 frame   \$F
 fps     \$FPS
 pi      \$PI
-varname [A-Za-z][A-Za-z_0-9]*
+varname [A-Za-z_][A-Za-z_0-9]*
 dollar \$
 zenvarname \$[A-Za-z_]+
 compareop (<|<=|>=|>)
@@ -116,6 +116,8 @@ equalto \=
             return zeno::ZfxParser::make_CONTINUE(yytext, loc);
         } else if (strcmp(yytext, "if") == 0) {
             return zeno::ZfxParser::make_IF(yytext, loc);
+        } else if (strcmp(yytext, "else") == 0) {
+            return zeno::ZfxParser::make_ELSE(yytext, loc);
         } else if (strcmp(yytext, "while") == 0) {
             return zeno::ZfxParser::make_WHILE(yytext, loc);
         } else if (strcmp(yytext, "for") == 0) {
@@ -131,6 +133,7 @@ equalto \=
                    strcmp(yytext, "string") == 0 ||
                    strcmp(yytext, "vector2") == 0 ||
                    strcmp(yytext, "vector3") == 0 ||
+                   strcmp(yytext, "vector") == 0 ||
                    strcmp(yytext, "vector4") == 0 ||
                    strcmp(yytext, "matrix2") == 0 ||
                    strcmp(yytext, "matrix3") == 0 ||
@@ -160,6 +163,7 @@ equalto \=
 "!="        { return zeno::ZfxParser::make_NOTEQUAL(yytext, loc); }
 "||"        { return zeno::ZfxParser::make_OR(yytext, loc); }
 "&&"        { return zeno::ZfxParser::make_AND(yytext, loc); }
+"!"         { return zeno::ZfxParser::make_NOT(yytext, loc); }
 <<EOF>>   { return yyterminate(); }
 .         {
              cout << "ZfxScanner: unknown character [" << yytext << "]" << endl;

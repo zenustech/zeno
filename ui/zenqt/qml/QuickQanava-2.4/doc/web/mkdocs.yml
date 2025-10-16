@@ -1,0 +1,79 @@
+site_name: 'QuickQanava C++ graph visualization library'
+site_url: 'http://cneben.github.io/QuickQanava/'
+site_author: 'Destrat.io'
+site_description: 'Graph topology library for C++14'
+repo_name: 'GitHub'
+repo_url: 'https://github.com/cneben/QuickQanava'
+edit_uri: ""
+
+copyright: 'Copyright &copy; 2023 BA'
+use_directory_urls: false
+
+theme: 
+  name: material
+  icon:
+    logo: material/graph-outline
+  palette:
+    primary: indigo
+    accent: amber
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+    
+extra:
+  version: '2.0.0'
+  author:
+    github: 'cneben'    
+  social:
+    - icon: fontawesome/brands/twitter
+      link: 'https://twitter.com/QuickQanava'
+    - icon: fontawesome/brands/github
+      link: https://github.com/cneben
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - codehilite:
+      linenums: true
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      options:
+        custom_icons:
+          - material/.icons
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.keys
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.snippets
+  - fontawesome_markdown
+  - abbr
+
+nav:
+  - 'QuickQanava':  'index.md'
+  - 'Installation': 'installation.md'
+  - 'Graph':        'graph.md'
+  - 'Nodes/Groups': 'nodes.md'
+  - 'Edges':        'edges.md'
+  - 'Styles':       'styles.md'
+  - 'Utilities':    'utilities.md'
+  - 'Advanced use (C++)': 'advanced.md'
+  - 'Samples':      'samples.md'
+  - 'API Reference': 'reference.md'
+  - 'Licence':      'licence.md'
+  - 'Internals/Contributors': 'internals.md'

@@ -102,9 +102,9 @@ void ThumbnailScene::initScene(ZenoSubGraphScene* pScene)
 
     m_navigator = nullptr;
     m_nodes.clear();
-    //case1: Ô´sceneÀïÃæÓÐÔöÉ¾²é¸Ä£¬Èç¹ûÕûÌåboudingrectÃ»±ä»¯£¬ÔòÖ»Ðè¸üÐÂ¸ö±ð½ÚµãËõÂÔÍ¼µÄÎ»ÖÃ¡£
+    //case1: æºsceneé‡Œé¢æœ‰å¢žåˆ æŸ¥æ”¹ï¼Œå¦‚æžœæ•´ä½“boudingrectæ²¡å˜åŒ–ï¼Œåˆ™åªéœ€æ›´æ–°ä¸ªåˆ«èŠ‚ç‚¹ç¼©ç•¥å›¾çš„ä½ç½®ã€‚
     connect(pScene, &ZenoSubGraphScene::nodePosChanged, this, &ThumbnailScene::onNodePosChanged);
-    //case2: Èç¹ûÕû¸ösceneRectÓÐ±ä»¯£¨±ÈÈçÍùÍâÍÏ¶¯µ¼ÖÂsceneRectÀ©´ó£©£¬ÐèÒª¸üÐÂËùÓÐ½Úµã
+    //case2: å¦‚æžœæ•´ä¸ªsceneRectæœ‰å˜åŒ–ï¼ˆæ¯”å¦‚å¾€å¤–æ‹–åŠ¨å¯¼è‡´sceneRectæ‰©å¤§ï¼‰ï¼Œéœ€è¦æ›´æ–°æ‰€æœ‰èŠ‚ç‚¹
     connect(pScene, &ZenoSubGraphScene::sceneRectChanged, this, &ThumbnailScene::onSceneRectChanged);
 
     connect(pScene, &ZenoSubGraphScene::nodeInserted, this, &ThumbnailScene::onNodeInserted);
@@ -157,7 +157,7 @@ void ThumbnailScene::onSceneRectChanged(const QRectF& rcNew)
         }
 
         QGraphicsRectItem* pThumbNode = nullptr;
-        const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
+        const zeno::ObjPath& path = pNode->index().data(QtRole::ROLE_NODE_UUID_PATH).toString().toStdString();
         auto iter = m_nodes.find(path);
         if (iter == m_nodes.end())
         {
@@ -192,7 +192,7 @@ QGraphicsRectItem* ThumbnailScene::onNewThumbNode(const ZenoNodeBase* pNode, con
 
 void ThumbnailScene::onNodePosChanged(const ZenoNodeBase* pNode)
 {
-    const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
+    const zeno::ObjPath& path = pNode->index().data(QtRole::ROLE_NODE_UUID_PATH).toString().toStdString();
     auto iter = m_nodes.find(path);
     ZASSERT_EXIT(iter != m_nodes.end());
     QGraphicsRectItem* pThumbNode = iter.value();
@@ -203,7 +203,7 @@ void ThumbnailScene::onNodePosChanged(const ZenoNodeBase* pNode)
 
 void ThumbnailScene::onNodeInserted(const ZenoNodeBase* pNode)
 {
-    const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
+    const zeno::ObjPath& path = pNode->index().data(QtRole::ROLE_NODE_UUID_PATH).toString().toStdString();
     QGraphicsRectItem* pThumbNode = onNewThumbNode(pNode, path);
     QPointF pt = m_trans.map(pNode->pos());
     pThumbNode->setPos(pt);
@@ -211,7 +211,7 @@ void ThumbnailScene::onNodeInserted(const ZenoNodeBase* pNode)
 
 void ThumbnailScene::onNodeAboutToRemoved(const ZenoNodeBase* pNode)
 {
-    const zeno::ObjPath& path = pNode->index().data(ROLE_NODE_UUID_PATH).value<zeno::ObjPath>();
+    const zeno::ObjPath& path = pNode->index().data(QtRole::ROLE_NODE_UUID_PATH).toString().toStdString();
     auto iter = m_nodes.find(path);
     ZASSERT_EXIT(iter != m_nodes.end());
     QGraphicsRectItem* pThumbNode = iter.value();

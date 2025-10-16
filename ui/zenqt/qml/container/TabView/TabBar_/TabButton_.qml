@@ -42,7 +42,7 @@ Button {
         // 关闭按钮
         Button {
             // 未锁定，且主按钮悬停或选中时才显示
-            visible: !app.tab.barIsLock & (parent.parent.hovered | parent.parent.checked)
+            visible: !nodeseditor.tab.barIsLock & (parent.parent.hovered | parent.parent.checked)
             Layout.alignment: Qt.AlignRight
             implicitWidth: 24
             implicitHeight: 24
@@ -59,7 +59,7 @@ Button {
                 )
             }
             onClicked: {
-                app.tab.delTabPage(index)
+                nodeseditor.tab.delTabPage(index)
             }
         }
     }
@@ -79,7 +79,7 @@ Button {
             acceptedButtons: Qt.LeftButton | Qt.MiddleButton
 
             // 拖拽
-            drag.target: app.tab.barIsLock ? null : parent.parent // 动态启用、禁用拖拽
+            drag.target: nodeseditor.tab.barIsLock ? null : parent.parent // 动态启用、禁用拖拽
             drag.axis: Drag.XAxis // 只能沿X轴
             drag.threshold: 50 // 起始阈值
             property bool dragActive: drag.active // 动态记录拖拽状态
@@ -87,12 +87,12 @@ Button {
             
             onPressed: { // 左键按下，切换焦点
                 if(mouse.button === Qt.LeftButton) {
-                    app.tab.showTabPage(index)
+                    nodeseditor.tab.showTabPage(index)
                 }
             }
             onClicked: { // 中键点击，删除标签
-                if(mouse.button === Qt.MiddleButton && !app.tab.barIsLock) {
-                    app.tab.delTabPage(index)
+                if(mouse.button === Qt.MiddleButton && !nodeseditor.tab.barIsLock) {
+                    nodeseditor.tab.delTabPage(index)
                 }
             }
             onDragActiveChanged: {

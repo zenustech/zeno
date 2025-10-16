@@ -2,7 +2,7 @@
 #define __ZNEW_ASSET_DLG_H__
 
 #include <QtWidgets>
-#include <zeno/core/Assets.h>
+#include <zeno/core/data.h>
 
 namespace Ui
 {

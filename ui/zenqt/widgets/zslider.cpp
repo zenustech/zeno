@@ -3,6 +3,7 @@
 #include "zenoapplication.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include "calculation/calculationmgr.h"
 #include "zassert.h"
 
 
@@ -50,6 +51,10 @@ static void drawText(QPainter* painter, qreal x, qreal y, Qt::Alignment flags,
 
 void ZSlider::setSliderValue(int value)
 {
+    RunStatus::Value val = zenoApp->calculationMgr()->getRunStatus();
+    if (val == RunStatus::Running)
+        return;
+
     int newVal = qMin(qMax(m_from, value), m_to);
     if (newVal == m_value)
         return;
@@ -254,16 +259,16 @@ void ZSlider::paintEvent(QPaintEvent* event)
     //return;
     auto& pGlobalComm = zeno::getSession().globalComm;
     int lastStateFrame = -1;
-    zeno::GlobalComm::FRAME_STATE lastState = zeno::GlobalComm::FRAME_UNFINISH;
+    //zeno::GlobalComm::FRAME_STATE lastState = zeno::GlobalComm::FRAME_UNFINISH;
     for (int frame = m_from; frame <= m_to; frame++)
     {
         if (frame == m_from) {
-            lastState = pGlobalComm->getFrameState(frame);
+            //lastState = pGlobalComm->getFrameState(frame);
             lastStateFrame = m_from;
         }
 
-        zeno::GlobalComm::FRAME_STATE currState = pGlobalComm->getFrameState(frame);
-        if (currState != lastState || frame == m_to)
+        //zeno::GlobalComm::FRAME_STATE currState = pGlobalComm->getFrameState(frame);
+        if (/*currState != lastState || */frame == m_to)
         {
             //draw lastState from lastStateFrame to frame.
             int startFrame = lastStateFrame - m_from;
@@ -280,7 +285,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
 
             QRect rec(x1, y, x2 - x1 + 1, scaleH);
             painter.setPen(Qt::NoPen);
-
+            /*
             if (lastState == zeno::GlobalComm::FRAME_COMPLETED)
             {
                 painter.fillRect(rec, QColor(169, 169, 169, 100));
@@ -290,6 +295,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
                 painter.fillRect(rec, QColor(255, 0, 0, 100));
             }
             lastState = currState;
+            */
             lastStateFrame = frame;
         }
     }

@@ -10,27 +10,27 @@ struct ShaderPackVector : ShaderNodeClone<ShaderPackVector> {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
-        auto _type = get_param<std::string>("type");
+        auto _type = ZImpl(get_param<std::string>("type"));
         if (_type == "float") {
-            em->determineType(get_input("x").get());
+            em->determineType(ZImpl(get_input_shader("x")));
             ty = 1;
         }
         else if (_type == "vec2") {
-            em->determineType(get_input("x").get());
-            em->determineType(get_input("y").get());
+            em->determineType(ZImpl(get_input_shader("x")));
+            em->determineType(ZImpl(get_input_shader("y")));
             ty = 2;
         }
         else if (_type == "vec3") {
-            em->determineType(get_input("x").get());
-            em->determineType(get_input("y").get());
-            em->determineType(get_input("z").get());
+            em->determineType(ZImpl(get_input_shader("x")));
+            em->determineType(ZImpl(get_input_shader("y")));
+            em->determineType(ZImpl(get_input_shader("z")));
             ty = 3;
         }
         else if (_type == "vec4") {
-            em->determineType(get_input("x").get());
-            em->determineType(get_input("y").get());
-            em->determineType(get_input("z").get());
-            em->determineType(get_input("w").get());
+            em->determineType(ZImpl(get_input_shader("x")));
+            em->determineType(ZImpl(get_input_shader("y")));
+            em->determineType(ZImpl(get_input_shader("z")));
+            em->determineType(ZImpl(get_input_shader("w")));
             ty = 4;
         }
         return ty;
@@ -40,19 +40,19 @@ struct ShaderPackVector : ShaderNodeClone<ShaderPackVector> {
         std::string exp;
         if (ty >= 1) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("x").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("x")));
         }
         if (ty >= 2) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("y").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("y")));
         }
         if (ty >= 3) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("z").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("z")));
         }
         if (ty >= 4) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("w").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("w")));
         }
 
         em->emitCode(em->typeNameOf(ty) + "(" + exp + ")");
@@ -66,7 +66,7 @@ ZENDEFNODE(ShaderPackVector, {
         {gParamType_Float, "z", "0"},
         {gParamType_Float, "w", "0"},
     },
-    {{"NumericObject","out"}},
+    {{gParamType_Shader,"out"}},
     {
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
@@ -77,10 +77,10 @@ struct ShaderPackVec : ShaderNodeClone<ShaderPackVec> {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
-        auto t1 = has_input("x") ? em->determineType(get_input("x").get()) : 0;
-        auto t2 = has_input("y") ? em->determineType(get_input("y").get()) : 0;
-        auto t3 = has_input("z") ? em->determineType(get_input("z").get()) : 0;
-        auto t4 = has_input("w") ? em->determineType(get_input("w").get()) : 0;
+        auto t1 = ZImpl(has_input("x")) ? em->determineType(ZImpl(get_input_shader("x"))) : 0;
+        auto t2 = ZImpl(has_input("y")) ? em->determineType(ZImpl(get_input_shader("y"))) : 0;
+        auto t3 = ZImpl(has_input("z")) ? em->determineType(ZImpl(get_input_shader("z"))) : 0;
+        auto t4 = ZImpl(has_input("w")) ? em->determineType(ZImpl(get_input_shader("w"))) : 0;
         ty = t1 + t2 + t3 + t4;
         if (ty > 4)
             throw zeno::Exception("ShaderPackVec expect sum of dimension to no more than 4");
@@ -89,21 +89,21 @@ struct ShaderPackVec : ShaderNodeClone<ShaderPackVec> {
 
     virtual void emitCode(EmissionPass *em) override {
         std::string exp;
-        if (has_input("x")) {
+        if (ZImpl(has_input("x"))) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("x").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("x")));
         }
-        if (has_input("y")) {
+        if (ZImpl(has_input("y"))) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("y").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("y")));
         }
-        if (has_input("z")) {
+        if (ZImpl(has_input("z"))) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("z").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("z")));
         }
-        if (has_input("w")) {
+        if (ZImpl(has_input("w"))) {
             if (!exp.empty()) exp += ", ";
-            exp += em->determineExpr(get_input("w").get());
+            exp += em->determineExpr(ZImpl(get_input_shader("w")));
         }
 
         em->emitCode(em->typeNameOf(ty) + "(" + exp + ")");
@@ -146,11 +146,11 @@ ZENDEFNODE(ShaderMakeVec, {
 
 struct ShaderFillVec : ShaderNodeClone<ShaderFillVec> {
     virtual int determineType(EmissionPass *em) override {
-        auto tin = em->determineType(get_input("in").get());
+        auto tin = em->determineType(ZImpl(get_input_shader("in")));
         if (tin != 1)
             throw zeno::Exception("ShaderFillVec expect scalar as input");
 
-        auto type = get_input2<std::string>("type");
+        auto type = ZImpl(get_input2<std::string>("type"));
         if (type == "float")
             return 1;
         else if (type == "vec2")
@@ -164,8 +164,8 @@ struct ShaderFillVec : ShaderNodeClone<ShaderFillVec> {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto in = em->determineExpr(get_input("in").get());
-        auto type = get_input2<std::string>("type");
+        auto in = em->determineExpr(ZImpl(get_input_shader("in")));
+        auto type = ZImpl(get_input2<std::string>("type"));
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         auto ty = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab) + 1;
         em->duplicateIfHlsl(ty, in);

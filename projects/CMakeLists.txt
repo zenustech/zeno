@@ -48,7 +48,7 @@ set(ZENO_EXTENSIONS
     )
 
 #test custom module
-add_subdirectory(customPlugin1)
+#add_subdirectory(customPlugin1)
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
     option(ZENO_WITH_${name} "Build ZENO with extension: ${name}" OFF)

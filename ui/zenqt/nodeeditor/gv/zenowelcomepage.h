@@ -27,7 +27,7 @@ private:
 
 private:
 	void initSignals();
-	Ui::WelcomePage* m_ui;
+	QScopedPointer<Ui::WelcomePage> m_ui;
 };
 
 

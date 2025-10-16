@@ -63,12 +63,12 @@ namespace {
 
 struct PrimMarkIsland : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
 
         primMarkIsland(prim.get(), tagAttr);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

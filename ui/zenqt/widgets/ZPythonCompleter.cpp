@@ -27,7 +27,8 @@ ZPythonCompleter::ZPythonCompleter(QObject *parent) :
     if (QStringListModel* pModel = qobject_cast<QStringListModel*>(this->model()))
     {
 
-        auto list = pModel->stringList();
+        //auto list = pModel->stringList();
+        QStringList list;
         auto keys = language.keys();
         for (auto&& key : keys)
         {

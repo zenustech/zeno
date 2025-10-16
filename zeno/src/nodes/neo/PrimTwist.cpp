@@ -16,20 +16,20 @@ namespace zeno {
 
 struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and PrimitiveTaper
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
-        auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
-        auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        auto angle = ZImpl(get_input<zeno::NumericObject>("angle"))->get<float>();
+        auto limitMin = ZImpl(get_input<zeno::NumericObject>("limitMin"))->get<float>();
+        auto limitMax = ZImpl(get_input<zeno::NumericObject>("limitMax"))->get<float>();
         limitMin = std::min(1.f, std::max(0.f, limitMin));
         limitMax = std::min(1.f, std::max(0.f, limitMax));
         limitMin -= 0.5f;
         limitMax -= 0.5f;
 
-        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
-        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto origin = ZImpl(has_input("origin")) ? ZImpl(get_input<zeno::NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto direction = ZImpl(has_input("direction")) ? ZImpl(get_input<zeno::NumericObject>("direction"))->get<zeno::vec3f>() : vec3f(0, 1, 0);
 
-        auto orb = has_input("tangent")
-            ? orthonormal(direction, get_input<zeno::NumericObject>("tangent")->get<zeno::vec3f>())
+        auto orb = ZImpl(has_input("tangent"))
+            ? orthonormal(direction, ZImpl(get_input<zeno::NumericObject>("tangent"))->get<zeno::vec3f>())
             : orthonormal(direction);
         direction = orb.normal;
         auto tangent = orb.tangent;
@@ -71,7 +71,7 @@ struct PrimTwist : zeno::INode { // todo: also add PrimitiveStretch and Primitiv
                 prim->verts[i] = pos + origin;
             });
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

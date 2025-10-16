@@ -6,22 +6,63 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
+#include <magic_enum.hpp>
 #include <algorithm>
 
 namespace zeno {
 
+enum struct SurfaceAttr {
+    pos, clr, nrm, uv, tang, bitang, NoL, LoV, N, T, L, V, H, reflectance, fresnel,
+    worldNrm, worldTan, worldBTn, 
+    camFront, camUp, camRight
+};
+
+enum struct InstAttr {
+    priIdx, instId, instIdx
+};
+
+enum struct VolumeAttr {};
+
+enum struct RayAttr {
+    rayLength, isBackFace, isShadowRay,
+};
+
+static std::string shaderAttrDefaultString() {
+    auto name = magic_enum::enum_name(SurfaceAttr::pos);
+    return std::string(name);
+}
+
+static std::string shaderAttrListString() {
+    auto list0 = magic_enum::enum_names<SurfaceAttr>();
+    auto list1 = magic_enum::enum_names<InstAttr>();
+    auto list2 = magic_enum::enum_names<RayAttr>();
+
+    std::string result;
+
+    auto concat = [&](const auto &list) {
+        for (auto& ele : list) {
+            result += " ";
+            result += ele;
+        }
+    };
+
+    concat(list0); concat(list1); concat(list2);    
+    
+    result += " attrs.area() attrs.barys() attrs.eLength()";
+    result += " prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy()";
+
+    return result;
+}
 
 struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual int determineType(EmissionPass *em) override {
-        auto type = get_input2<std::string>("type");
-        const char *tab[] = {"float", "vec2", "vec3", "vec4"};
-        auto idx = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
-        return idx + 1;
+        auto type = ZImpl(get_input2<std::string>("type"));
+        return TypeHint.at(type);
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto attr = get_input2<std::string>("attr");
-        auto type = get_input2<std::string>("type");
+        auto attr = ZImpl(get_input2<std::string>("attr"));
+        auto type = ZImpl(get_input2<std::string>("type"));
 
         if (attr.back() == ')') {
             return em->emitCode(type + "(" + attr + ")");
@@ -33,11 +74,11 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv tang bitang NoL LoV N T L V H reflectance fresnel instPos instNrm instUv instClr instTang prd.rndf() attrs.localPosLazy() attrs.uniformPosLazy() rayLength isShadowRay worldNrm worldTan worldBTn camFront camUp camRight", "attr", "pos"},
-        {"enum float vec2 vec3 vec4 bool", "type", "vec3"},
+        {"enum" + shaderAttrListString(), "attr", shaderAttrDefaultString()},
+        {"enum " + ShaderDataTypeNamesString, "type", "float"},
     },
     {
-        {gParamType_Unknown, "out"},
+        {gParamType_Shader, "out"},
     },
     {},
     {"shader"},
@@ -45,11 +86,11 @@ ZENDEFNODE(ShaderInputAttr, {
 
 struct MakeShaderUniform : zeno::INode {
     virtual void apply() override {
-        auto prim = std::make_shared<PrimitiveObject>();
-        auto size = get_input2<int>("size");
+        auto prim = std::make_unique<PrimitiveObject>();
+        auto size = ZImpl(get_input2<int>("size"));
         prim->resize(size);
-        if (has_input("uniformDict")) {
-            auto uniformDict = get_input<zeno::DictObject>("uniformDict");
+        if (ZImpl(has_input("uniformDict"))) {
+            auto uniformDict = ZImpl(get_input<zeno::DictObject>("uniformDict"));
             for (const auto& [key, value] : uniformDict->lut) {
                 auto index = std::stoi(key);
                 if (auto num = dynamic_cast<const zeno::NumericObject*>(value.get())) {
@@ -64,15 +105,15 @@ struct MakeShaderUniform : zeno::INode {
                 }
             }
         }
-        prim->userData().set2("ShaderUniforms", 1);
-        set_output("prim", std::move(prim));
+        prim->userData()->set_int("ShaderUniforms", 1);
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
 ZENDEFNODE(MakeShaderUniform, {
     {
         {gParamType_Int, "size", "512"},
-        {"dict", "uniformDict"},
+        {gParamType_Dict, "uniformDict"},
     },
     {
         {gParamType_Primitive, "prim"},
@@ -84,15 +125,15 @@ ZENDEFNODE(MakeShaderUniform, {
 
 struct ShaderUniformAttr : ShaderNodeClone<ShaderUniformAttr> {
     virtual int determineType(EmissionPass *em) override {
-        auto type = get_input2<std::string>("type");
+        auto type = ZImpl(get_input2<std::string>("type"));
         const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         auto idx = std::find(std::begin(tab), std::end(tab), type) - std::begin(tab);
         return idx + 1;
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto idx = get_input2<int>("idx");
-        auto type = get_input2<std::string>("type");
+        auto idx = ZImpl(get_input2<int>("idx"));
+        auto type = ZImpl(get_input2<std::string>("type"));
         return em->emitCode(type + "(vec4(uniforms[" + std::to_string(idx) + "]))");
     }
 };
@@ -103,10 +144,11 @@ ZENDEFNODE(ShaderUniformAttr, {
                                     {"enum float vec2 vec3 vec4", "type", "vec3"},
                                 },
                                 {
-                                    {gParamType_Unknown, "out"},
+                                    {gParamType_Shader, "out"},
                                 },
                                 {},
                                 {"shader"},
                             });
 
 }
+

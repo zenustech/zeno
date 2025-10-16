@@ -2,7 +2,7 @@
 #include "variantptr.h"
 #include "model/curvemodel.h"
 #include "zeno/utils/logger.h"
-#include <zeno/funcs/ParseObjectFromUi.h>
+#include <rapidjson/document.h>
 #include "uihelper.h"
 #include "zassert.h"
 #include "util/curveutil.h"
@@ -220,7 +220,7 @@ namespace JsonHelper
     }
 #endif
 
-    bool JsonHelper::parseHeatmap(const QString& json, int& nres, QString& grad)
+    bool parseHeatmap(const QString& json, int& nres, QString& grad)
     {
         rapidjson::Document doc;
         doc.Parse(json.toStdString().c_str());
@@ -232,7 +232,7 @@ namespace JsonHelper
         return true;
     }
 
-    QString JsonHelper::dumpHeatmap(int nres, const QString& grad)
+    QString dumpHeatmap(int nres, const QString& grad)
     {
         rapidjson::StringBuffer s;
         RAPIDJSON_WRITER writer(s);

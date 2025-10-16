@@ -9,31 +9,31 @@ namespace zeno {
 
 struct VDBCreateLevelsetSphere : zeno::INode {
   virtual void apply() override {
-    //auto dx = get_param<float>(("dx"));
+    //auto dx = get_param_float("dx");
     float dx=0.08f;
     if(has_input("Dx"))
     {
-      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+      dx = get_input2_float("Dx");
     }
     float radius=1.0f;
     if(has_input("radius"))
     {
-      radius = get_input("radius")->as<NumericObject>()->get<float>();
+      radius = get_input2_float("radius");
     }
     vec3f center(0);
     if(has_input("center"))
     {
-      center = get_input("center")->as<NumericObject>()->get<zeno::vec3f>();
+      center = toVec3f(get_input2_vec3f("center"));
     }
     float half_width=(float)openvdb::LEVEL_SET_HALF_WIDTH;
     if(has_input("half_width"))
     {
-      if (auto t = get_input("half_width")->as<NumericObject>()->get<float>(); t > 0)
+      if (auto t = get_input2_float("half_width"); t > 0)
         half_width=t;
     }
-    auto data = std::make_shared<VDBFloatGrid>(openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
+    auto data = std::make_unique<VDBFloatGrid>(openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
         radius, openvdb::Vec3f(center[0], center[1], center[2]), dx, half_width));
-    set_output("data", data);
+    set_output("data", std::move(data));
   }
 };
 

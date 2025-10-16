@@ -29,6 +29,9 @@ namespace zenoio
                     dumpNode(node_, writer);
                 }
             }
+
+            writer.Key("version");
+            writer.String("v3");
         }
         std::string strJson = s.GetString();
         return strJson;

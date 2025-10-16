@@ -7,16 +7,16 @@ namespace zeno {
 
 struct PrimitiveDuplicate : zeno::INode {
     virtual void apply() override {
-        auto mesh = get_input<PrimitiveObject>("meshPrim");
-        auto pars = get_input<PrimitiveObject>("particlesPrim");
+        auto mesh = ZImpl(get_input<PrimitiveObject>("meshPrim"));
+        auto pars = ZImpl(get_input<PrimitiveObject>("particlesPrim"));
 
-        auto outm = std::make_shared<PrimitiveObject>();
+        auto outm = std::make_unique<PrimitiveObject>();
         outm->resize(pars->size() * mesh->size());
 
-        float uniScale = has_input("uniScale") ?
-            get_input<NumericObject>("uniScale")->get<float>() : 1.0f;
+        float uniScale = ZImpl(has_input("uniScale")) ?
+            ZImpl(get_input<NumericObject>("uniScale"))->get<float>() : 1.0f;
 
-        auto scaleByAttr = get_param<std::string>("scaleByAttr");
+        auto scaleByAttr = ZImpl(get_param<std::string>("scaleByAttr"));
 
         auto const &parspos = pars->attr<zeno::vec3f>("pos");
         auto const &meshpos = mesh->attr<zeno::vec3f>("pos");
@@ -41,7 +41,7 @@ struct PrimitiveDuplicate : zeno::INode {
             }
         }
 
-        if (get_param<bool>("attrFromMesh")) {
+        if (ZImpl(get_param<bool>("attrFromMesh"))) {
             mesh->verts.foreach_attr([&] (auto const &key, auto const &attr) {
                 using T = std::decay_t<decltype(attr[0])>;
                 auto &outattr = outm->add_attr<T>(key);
@@ -54,7 +54,7 @@ struct PrimitiveDuplicate : zeno::INode {
             });
         }
 
-        if (get_param<bool>("attrFromParticles")) {
+        if (ZImpl(get_param<bool>("attrFromParticles"))) {
             pars->verts.foreach_attr([&] (auto const &key, auto const &attr) {
                 using T = std::decay_t<decltype(attr[0])>;
                 auto &outattr = outm->add_attr<T>(key);
@@ -103,7 +103,7 @@ struct PrimitiveDuplicate : zeno::INode {
             }
         }
 
-        set_output("outPrim", std::move(outm));
+        ZImpl(set_output("outPrim", std::move(outm)));
     }
 };
 

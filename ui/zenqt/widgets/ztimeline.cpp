@@ -2,20 +2,14 @@
 #include "zslider.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
-#include "viewport/viewportwidget.h"
-#include "widgets/zlabel.h"
 #include "style/zenostyle.h"
-#include "effect/innershadoweffect.h"
-#include <zeno/utils/envconfig.h>
-#include "util/uihelper.h"
-#include "widgets/zwidgetfactory.h"
-#include "../viewport/zenovis.h"
-#include "ui_ztimeline.h"
-#include "widgets/zcomboboxitemdelegate.h"
-#include "viewport/zenovis.h"
-#include <zenovis/DrawOptions.h>
-#include <iostream>
 #include "viewport/displaywidget.h"
+#include <zeno/utils/envconfig.h>
+#include "ui_ztimeline.h"
+#include "util/uihelper.h"
+#include "widgets/zcomboboxitemdelegate.h"
+#include <iostream>
+#include <zeno/core/Session.h>
 #include "zassert.h"
 
 
@@ -23,7 +17,7 @@
 ZTimeline::ZTimeline(QWidget* parent)
     : QWidget(parent)
 {
-    m_ui = new Ui::Timeline;
+    m_ui.reset(new Ui::Timeline);
     m_ui->setupUi(this);
 
     QStringList items = { "23.5 fps", "24 fps", "25 fps", "30 fps", "60 fps" };
@@ -34,6 +28,9 @@ ZTimeline::ZTimeline(QWidget* parent)
     setFocusPolicy(Qt::ClickFocus);
 
     int deflFrom = 0, deflTo = 100;
+
+    m_ui->btnStopSolver->setEnabled(false);
+    m_ui->lbl_solver->setEnabled(false);
 
     m_ui->editFrom->setProperty("cssClass", "FCurve-lineedit");
     m_ui->editTo->setProperty("cssClass", "FCurve-lineedit");
@@ -49,10 +46,10 @@ ZTimeline::ZTimeline(QWidget* parent)
     initSignals();
     initButtons();
     initSize();
-    m_ui->fpsEdit->setValidator(new QIntValidator);
-    m_ui->editFrom->setValidator(new QIntValidator);
-    m_ui->editTo->setValidator(new QIntValidator);
-    m_ui->editFrame->setValidator(new QIntValidator);
+    m_ui->fpsEdit->setValidator(new QIntValidator(this));
+    m_ui->editFrom->setValidator(new QIntValidator(this));
+    m_ui->editTo->setValidator(new QIntValidator(this));
+    m_ui->editFrame->setValidator(new QIntValidator(this));
     m_ui->comboBox->hide();
 }
 
@@ -64,6 +61,7 @@ void ZTimeline::initSignals()
     connect(m_ui->editFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
+    connect(m_ui->btnStopSolver, SIGNAL(clicked()), this, SLOT(stopSolver()));
 
 //merge from master.
 #if 0
@@ -367,6 +365,33 @@ void ZTimeline::updateDopnetworkFrameRemoved(int frame)
 void ZTimeline::updateCachedFrame()
 {
     m_ui->timeliner->update();
+}
+
+void ZTimeline::stopSolver()
+{
+    zeno::getSession().terminate_solve();
+}
+
+void ZTimeline::onSolverUpdate(zeno::SOLVER_MSG msg, int startFrame, int EndFrame)
+{
+    if (msg == zeno::SOVLER_START) {
+        m_ui->btnStopSolver->setEnabled(true);
+        std::string path = zeno::getSession().get_solver();
+        m_ui->lbl_solver->setText(QString::fromStdString(path));
+    }
+    else if (msg == zeno::SOLVER_UPDATE_FRAME) {
+        updateDopnetworkFrameCached(startFrame);
+    }
+    else if (msg == zeno::SOLVER_STOPPED) {
+        m_ui->btnStopSolver->setEnabled(false);
+    }
+    else if (msg == zeno::SOLVER_CLEANUP) {
+        int frameFrom = m_ui->editFrom->text().toInt();
+        int frameTo = m_ui->editTo->text().toInt();
+        for (int frame = frameFrom; frame <= frameTo; frame++) {
+            updateDopnetworkFrameRemoved(frame);
+        }
+    }
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)

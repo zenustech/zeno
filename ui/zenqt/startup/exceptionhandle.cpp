@@ -1,5 +1,7 @@
-#include "exceptionhandle.h"
+﻿#include "exceptionhandle.h"
+#include "zenoapplication.h"
 
+#ifndef ZENO_WITH_VLD
 #if defined(Q_OS_WIN)
 
 #include <windows.h>
@@ -9,6 +11,7 @@ QTemporaryDir sTempDir;
 
 LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
 {
+    //清理缓存
     QMessageBox::information(nullptr, "Crash", "Zeno has crashed, recording dump info right now...");
 
     QDateTime dateTime = QDateTime::currentDateTime();
@@ -39,10 +42,29 @@ LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
+// 控制台事件处理：处理关闭命令窗口等强制退出事件
+BOOL WINAPI ConsoleHandler(DWORD ctrlType) {
+	switch (ctrlType) {
+	case CTRL_CLOSE_EVENT:  // 关闭命令窗口
+	case CTRL_C_EVENT:      // Ctrl+C强制终止
+    case CTRL_BREAK_EVENT:  // Ctrl+Break强制终止
+    case CTRL_SHUTDOWN_EVENT:
+    {
+		// 给清理操作留一定时间，然后允许进程退出
+		//Sleep(300); // 调整等待时间（根据清理逻辑耗时）
+		return TRUE;
+    }
+	default:
+		return FALSE;
+	}
+}
+
 void registerExceptionFilter()
 {
     SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+    SetConsoleCtrlHandler(ConsoleHandler, TRUE);
     sTempDir.setAutoRemove(false);
 }
 
+#endif
 #endif

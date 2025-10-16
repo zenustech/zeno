@@ -410,6 +410,7 @@ struct TriangleShape {
 
 struct PointShape {
     float3 p;
+    float r;
 
     inline float PDF() {return 0.25f / M_PIf;}
 
@@ -426,8 +427,9 @@ struct PointShape {
 
         lsr->PDF = 1.0f; //PDF();
         lsr->NoL = 1.0f;
-        lsr->intensity = M_PIf / dist2;
         lsr->isDelta = true;
+
+        lsr->intensity = PointIntensity(dist2, dist, r * r);
     }
 
     pbrt::LightBounds BoundAsLight(float phi, bool doubleSided) {
@@ -796,11 +798,8 @@ struct ConeShape {
         lsr->p = p;
         lsr->PDF = 1.0f;
 
-        #ifdef __CUDACC_RTC__
         lsr->intensity = smoothstep(cosFalloffEnd, cosFalloffStart, lsr->NoL);
-        #endif
-
-        lsr->intensity *= M_PIf / dist2;
+        lsr->intensity *= PointIntensity(dist2, dist, 1.0f);
     }
 
     inline float Phi() {

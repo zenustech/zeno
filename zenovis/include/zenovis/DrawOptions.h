@@ -20,12 +20,15 @@ struct DrawOptions {
     bool needRefresh = false;
     bool updateMatlOnly = false;
     bool updateLightCameraOnly = false;
+    bool updateMatrixOnly = false;
     int num_samples = 1;
+    int renderRatio = 1;
     int msaa_samples = 0;
     bool denoise = false;
     float viewportPointSizeScale = 1;
 
     std::shared_ptr<IGraphicHandler> handler;
+    std::shared_ptr<IGraphicDraw> indicators;
 
     glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
 };

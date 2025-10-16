@@ -1,18 +1,18 @@
 #include <zeno/zeno.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 
 namespace zeno {
 namespace {
-
+#if 0
 struct ObjTimeShift : INode {
-    std::vector<std::shared_ptr<IObject>> m_objseq;
+    std::vector<zany> m_objseq;
 
     virtual void apply() override {
-        auto obj = get_input<IObject>("obj");
-        auto offset = get_input2<int>("offset");
-        std::shared_ptr<IObject> prevObj;
-        auto &objseq = has_input("customList") ?
-            get_input<ListObject>("customList")->get() : m_objseq;
+        auto obj = ZImpl(get_input<IObject>("obj"));
+        auto offset = ZImpl(get_input2<int>("offset"));
+        zany prevObj;
+        auto objseq = ZImpl(has_input("customList")) ?
+            ZImpl(get_input<ListObject>("customList"))->m_impl->get() : m_objseq;
         if (offset < 0) {
             objseq.resize(1);
             prevObj = std::move(objseq[0]);
@@ -24,8 +24,8 @@ struct ObjTimeShift : INode {
             else
                 prevObj = objseq[0];
         }
-        set_output("obj", std::move(obj));
-        set_output("prevObj", std::move(prevObj));
+        ZImpl(set_output("obj", std::move(obj)));
+        ZImpl(set_output("prevObj", std::move(prevObj)));
     }
 };
 
@@ -43,6 +43,7 @@ ZENDEFNODE(ObjTimeShift, {
     },
     {"primitive"},
 });
+#endif
 
 //struct ObjCacheToDisk : INode {
 //};

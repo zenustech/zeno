@@ -41,19 +41,15 @@
 #include <zeno/utils/fileio.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/UserData.h>
-#include "optixSphere.h"
 #include "optixVolume.h"
 #include "zeno/core/Session.h"
 
 #include <algorithm>
-#include <thread>
 #include <array>
 #include <optional>
 #include <cstring>
-#include <fstream>
-#include <iomanip>
+
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -78,14 +74,16 @@
 #include "LightBounds.h"
 #include "LightTree.h"
 
+#include "ShaderBuffer.h"
 #include "TypeCaster.h"
 
 #include "LightBounds.h"
 #include "LightTree.h"
 #include "Portal.h"
+#include "Scene.h"
 
-#include <hair/Hair.h>
-#include <hair/optixHair.h>
+#include <curve/Hair.h>
+#include <curve/optixCurve.h>
 
 #include "ChiefDesignerEXR.h"
 using namespace zeno::ChiefDesignerEXR;
@@ -134,19 +132,6 @@ sutil::Trackball trackball;
 // Mouse state
 int32_t mouse_button = -1;
 
-//int32_t samples_per_launch = 16;
-//int32_t samples_per_launch = 16;
-
-std::vector<std::shared_ptr<VolumeWrapper>> list_volume;
-std::vector<uint> list_volume_index_in_shader_list;
-
-//------------------------------------------------------------------------------
-//
-// Local types
-// TODO: some of these should move to sutil or optix util header
-//
-//------------------------------------------------------------------------------
-
 template <typename T>
 struct Record
 {
@@ -167,27 +152,14 @@ using Vertex = float3;
 
 struct PathTracerState
 {
-    raii<CUdeviceptr> auxHairBuffer;
-    raii<CUdeviceptr> volumeBoundsBuffer;
-
     OptixTraversableHandle         rootHandleIAS;
     raii<CUdeviceptr>              rootBufferIAS;
-
-    OptixTraversableHandle         meshHandleIAS;
-    raii<CUdeviceptr>              meshBufferIAS;
     
-    raii<CUdeviceptr>              _meshAux;
-    raii<CUdeviceptr>              _instToMesh;
-    
-    raii<CUdeviceptr>              d_instPos;
-    raii<CUdeviceptr>              d_instNrm;
-    raii<CUdeviceptr>              d_instUv;
-    raii<CUdeviceptr>              d_instClr;
-    raii<CUdeviceptr>              d_instTang;
     raii<CUdeviceptr>              d_uniforms;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+    //raii<CUdeviceptr> seed_buffer_p;
     raii<CUdeviceptr> albedo_buffer_p;
     raii<CUdeviceptr> normal_buffer_p;
 
@@ -195,8 +167,9 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
-    raii<CUdeviceptr> frame_buffer_p;
     raii<CUdeviceptr> accum_buffer_m;
+    
+    raii<CUdeviceptr> pick_buffer;
 
     raii<CUdeviceptr> finite_lights_ptr;
 
@@ -209,95 +182,12 @@ struct PathTracerState
     raii<CUdeviceptr> sky_start;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
-    CUdeviceptr                              d_params2=0;
 
     OptixShaderBindingTable sbt {};
 };
 
+
 PathTracerState state;
-
-struct smallMesh{
-
-    std::vector<Vertex> vertices {};
-    std::vector<uint3>  indices {};
-    std::vector<uint>   mat_idx {};
-
-    std::vector<ushort2>      g_uv;
-    std::vector<ushort3>     g_clr;
-    std::vector<ushort3>     g_nrm;
-    std::vector<ushort3>     g_tan;
-
-    raii<CUdeviceptr>         d_uv;
-    raii<CUdeviceptr>        d_clr;
-    raii<CUdeviceptr>        d_nrm;
-    raii<CUdeviceptr>        d_tan;
-
-    raii<CUdeviceptr>        d_idx;
-
-    OptixTraversableHandle       gas_handle {};
-    CUdeviceptr                  gas_buffer {};
-
-    smallMesh() = default;
-    //smallMesh(smallMesh&& m) = default;
-
-    void resize(size_t tri_num, size_t vert_num) {
-
-        indices.resize(tri_num);
-        mat_idx.resize(tri_num);
-
-        vertices.resize(vert_num);
-        g_nrm.resize(vert_num);
-        g_tan.resize(vert_num);
-        g_clr.resize(vert_num);
-        g_uv.resize(vert_num);
-    }
-
-    void upload() {
-
-        if (!g_uv.empty()) {
-            auto byte_size = sizeof(g_uv[0]) * g_uv.size();
-            d_uv.resize(byte_size);
-            cudaMemcpy((void*)d_uv.handle, g_uv.data(), byte_size, cudaMemcpyHostToDevice);
-        } else { d_uv.reset(); }
-
-        if (!g_clr.empty()) {
-            auto byte_size = sizeof(g_clr[0]) * g_clr.size();
-            d_clr.resize(byte_size);
-            cudaMemcpy((void*)d_clr.handle, g_clr.data(), byte_size, cudaMemcpyHostToDevice);
-        } else { d_clr.reset(); }
-
-        if (!g_nrm.empty()) {
-            auto byte_size = sizeof(g_nrm[0]) * g_nrm.size();
-            d_nrm.resize(byte_size);
-            cudaMemcpy((void*)d_nrm.handle, g_nrm.data(), byte_size, cudaMemcpyHostToDevice);
-        } else { d_nrm.reset(); }
-
-        if (!g_tan.empty()) {
-            auto byte_size = sizeof(g_tan[0]) * g_tan.size();
-            d_tan.resize(byte_size);
-            cudaMemcpy((void*)d_tan.handle, g_tan.data(), byte_size, cudaMemcpyHostToDevice);
-        } else { d_tan.reset(); }
-    }
-
-    std::vector<CUdeviceptr> aux() {
-        return std::vector { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
-    }
-
-    static const uint auxCout = 5;
-
-    ~smallMesh() {
-
-        if (gas_buffer != 0) {
-            cudaFree((void*)gas_buffer);
-        }
-
-        gas_buffer = 0u;
-        gas_handle = 0u;
-    }
-};
-
-std::shared_ptr<smallMesh> StaticMeshes {};
-std::vector<std::shared_ptr<smallMesh>> g_meshPieces;
 
 static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
     using id_t = unsigned int;
@@ -345,53 +235,6 @@ static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib,
     }
 }
 
-struct LightsWrapper {
-    std::vector<float3> _planeLightGeo;
-    std::vector<float4> _sphereLightGeo;
-    std::vector<float3> _triangleLightGeo;
-    std::vector<GenericLight> g_lights;
-
-    OptixTraversableHandle   lightPlanesGas{};
-    raii<CUdeviceptr>  lightPlanesGasBuffer{};
-
-    OptixTraversableHandle  lightSpheresGas{};
-    raii<CUdeviceptr> lightSpheresGasBuffer{};
-
-    OptixTraversableHandle  lightTrianglesGas{};
-    raii<CUdeviceptr> lightTrianglesGasBuffer{};
-
-    raii<CUdeviceptr> lightBitTrailsPtr;
-    raii<CUdeviceptr> lightTreeNodesPtr;
-    raii<CUdeviceptr> lightTreeDummyPtr;
-
-    raii<CUdeviceptr> triangleLightCoords;
-    raii<CUdeviceptr> triangleLightNormals;
-
-    void reset() { *this = {}; }
-
-} lightsWrapper;
-
-std::map<std::string, int> g_mtlidlut; // MAT_COUNT
-
-struct InstData
-{
-    std::shared_ptr<smallMesh> mesh{};
-};
-
-static std::map<std::string, InstData> g_instLUT;
-
-std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatsLUT;
-std::unordered_map<std::string, std::vector<float>> g_instScaleLUT;
-struct InstAttr
-{
-    std::vector<float3> pos;
-    std::vector<float3> nrm;
-    std::vector<float3> uv;
-    std::vector<float3> clr;
-    std::vector<float3> tang;
-};
-std::unordered_map<std::string, InstAttr> g_instAttrsLUT;
-
 
 //------------------------------------------------------------------------------
 //
@@ -414,30 +257,18 @@ static void printUsageAndExit( const char* argv0 )
 
 static void initLaunchParams( PathTracerState& state )
 {
-    state.params.handle = state.rootHandleIAS;
-
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
-                state.params.width * state.params.height * sizeof( float3 )
-                ) );
-    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-
     auto& params = state.params;
-
-    CUDA_CHECK( cudaMallocManaged(
-            reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
-            ) );
-    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    params.handle = state.rootHandleIAS;
     
-    CUDA_CHECK( cudaMallocManaged(
-            reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-            params.width * params.height * sizeof( float3 )
-            ) );
-    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    auto byte_size = params.width * params.height * sizeof( float3 );
+
+    state.accum_buffer_p.resize(byte_size);
+    params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
+
+    //state.seed_buffer_p.resize(byte_size);
+    //params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
-
     //state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
 }
@@ -453,132 +284,85 @@ static void handleCameraUpdate( Params& params )
     //params.vp3 = cam_vp3;
     //params.vp4 = cam_vp4;
 
-    camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
+    camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
 
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
 }
 
 
-static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
-    
     if( !resize_dirty )
         return;
     resize_dirty = false;
 
+
     output_buffer.resize( params.width, params.height );
 
-    // Realloc accumulation buffer
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_d .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_s .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
-        params.width * params.height * sizeof( float3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_m .reset()),
-        params.width * params.height * sizeof( ushort3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.frame_buffer_p .reset()),
-        params.width * params.height * sizeof( ushort3 )
-            ) );
-    CUDA_CHECK( cudaMalloc(
-        reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
-        params.width * params.height * sizeof( ushort1 )
-            ) );
-    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
+    auto count = params.width * params.height;
+    state.accum_buffer_p.resize( sizeof(float3) * count );
+    //state.seed_buffer_p.resize(sizeof(uint3)*count);
 
-    CUDA_CHECK( cudaMallocManaged(
-                reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
-                ) );
-    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    if (!enable_aov) { count = 0; }
+
+    state.accum_buffer_d.resize( sizeof(float3) * count );
+    state.accum_buffer_s.resize( sizeof(float3) * count );
+    state.accum_buffer_t.resize( sizeof(float3) * count );
     
-    CUDA_CHECK( cudaMallocManaged(
-                reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
-                params.width * params.height * sizeof( float3 )
-                ) );
-    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
-    
+    state.accum_buffer_m.resize( sizeof(ushort3) * count );
+    state.accum_buffer_b.resize( sizeof(ushort1) * count );
+
+    state.pick_buffer.resize(sizeof(PickInfo));
+
+    state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
+    //state.params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
     state.params.frame_buffer_M = (ushort3*)(CUdeviceptr)state.accum_buffer_m;
-    state.params.frame_buffer_P = (ushort3*)(CUdeviceptr)state.frame_buffer_p;
     state.params.accum_buffer_B = (ushort1*)(CUdeviceptr)state.accum_buffer_b;
+
+    state.params.pick_buffer    = (PickInfo*)state.pick_buffer.handle;
     state.params.subframe_index = 0;
 }
 
-
-static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params )
+static void updateState(sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
     // Update params on device
     if( camera_changed || resize_dirty )
         params.subframe_index = 0;
 
-
-
     handleCameraUpdate( params );
-    handleResize( output_buffer, params );
-
+    handleResize( output_buffer, params, enable_aov);
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
+static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
     // Launch
-    uchar4* result_buffer_data = output_buffer.map();
+    //uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
-    state.params.num_lights = lightsWrapper.g_lights.size();
+    state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
-    for(int j=0;j<1;j++){
-      for(int i=0;i<1;i++){
-        state.params.tile_i = i;
-        state.params.tile_j = j;
-        state.params.tile_w = state.params.windowSpace.x;
-        state.params.tile_h = state.params.windowSpace.y;
 
-        //CUDA_SYNC_CHECK();
-        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
                     ) );
-
-        //CUDA_SYNC_CHECK();
-        
-        OPTIX_CHECK( optixLaunch(
+                    
+        //timer.tick();
+                optixLaunch(
                     OptixUtil::pipeline,
                     0,
-                    (CUdeviceptr)state.d_params2,
+                    (CUdeviceptr)state.d_params.handle,
                     sizeof( Params ),
                     &state.sbt,
-                    state.params.tile_w,   // launch width
-                    state.params.tile_h,  // launch height
-                    1                     // launch depth
-                    ) );
-      }
-    }
-    output_buffer.unmap();
-
-    try {
-        CUDA_SYNC_CHECK();
-    } 
-    catch(std::exception const& e)
-    {
-        std::cout << "Exception: " << e.what() << "\n";
-    } 
+                    state.params.width,
+                    state.params.height,
+                    1);
+        //timer.tock("frame time");
+        //output_buffer.unmap();
 }
 
 
@@ -601,96 +385,6 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
     //output_buffer_o.getHostPointer();
 }
 
-void updateCurves() {
-    prepareHairs(OptixUtil::context);
-    prepareCurveGroup(OptixUtil::context);
-}
-
-void updateSphereXAS() {
-    timer.tick();
-    //cleanupSpheresGPU();
-
-    buildInstancedSpheresGAS(OptixUtil::context, sphereInstanceGroupAgentList);
-
-    if (uniformed_sphere_gas_handle == 0 && !xinxinoptix::SphereTransformedTable.empty()) { 
-        buildUniformedSphereGAS(OptixUtil::context, uniformed_sphere_gas_handle, uniformed_sphere_gas_buffer);
-    }
-
-    std::vector<OptixInstance> optix_instances; 
-    optix_instances.reserve(sphereInstanceGroupAgentList.size() + SphereTransformedTable.size());
-    const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
-
-	std::vector<CUdeviceptr> aux_lut;
-	aux_lut.reserve(sphereInstanceGroupAgentList.size());
-
-    for (auto& sphereAgent : sphereInstanceGroupAgentList) {
-
-        if (sphereAgent->inst_sphere_gas_handle == 0) continue;
-
-		sphereAgent->updateAux();
-		aux_lut.push_back(sphereAgent->aux_buffer.handle);
-
-        OptixInstance inst{};
-
-        auto combinedID = sphereAgent->base.materialID + ":" + std::to_string(ShaderMark::Sphere);
-        auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-        auto sbt_offset = shader_index * RAY_TYPE_COUNT;
-
-        inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-        inst.sbtOffset = sbt_offset;
-        inst.instanceId = optix_instances.size();
-        inst.visibilityMask = DefaultMatMask; 
-        inst.traversableHandle = sphereAgent->inst_sphere_gas_handle;
-
-        memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
-        optix_instances.push_back( inst );
-    }
-
-	if (aux_lut.size() > 0) {
-
-		auto data_size = sizeof(CUdeviceptr) * aux_lut.size();
-		sphereInstanceAuxLutBuffer.resize(data_size);
-		cudaMemcpy((void*)sphereInstanceAuxLutBuffer.handle, aux_lut.data(), data_size, cudaMemcpyHostToDevice);
-
-	} else {
-		sphereInstanceAuxLutBuffer.reset();
-	}
-
-	state.params.firstSoloSphereOffset = optix_instances.size();
-	state.params.sphereInstAuxLutBuffer = (void*)sphereInstanceAuxLutBuffer.handle;
-
-	if (uniformed_sphere_gas_handle != 0) {
-
-        for(auto& [key, dsphere] : SphereTransformedTable) {
-
-            auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMark::Sphere);
-            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-            auto sbt_offset = shader_index * RAY_TYPE_COUNT;
-            
-            OptixInstance inst{};
-            
-            inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-            inst.sbtOffset = sbt_offset;
-            inst.instanceId = optix_instances.size();
-            inst.visibilityMask = DefaultMatMask;
-            inst.traversableHandle = uniformed_sphere_gas_handle;
-
-            auto transform_ptr = glm::value_ptr( dsphere.optix_transform );
-            memcpy(inst.transform, transform_ptr, sizeof(float) * 12);
-            optix_instances.push_back( inst );
-        }
-    }
-
-    OptixAccelBuildOptions accel_options{};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-    buildIAS(OptixUtil::context, accel_options, optix_instances, sphereBufferXAS,  sphereHandleXAS);
-    timer.tock("Build Sphere IAS");
-}
-
 static void initCameraState()
 {
     camera.setEye( make_float3( 278.0f, 273.0f, -900.0f ) );
@@ -709,554 +403,22 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
-static void buildMeshAccel( PathTracerState& state, std::shared_ptr<smallMesh> mesh )
-{
-    if (mesh == nullptr || mesh->vertices.empty()) { return; }
-
-    raii<CUdeviceptr> dverts {};
-    raii<CUdeviceptr> dmats {};
-    auto& didx = mesh->d_idx;
-    didx.reset();
-
-    const size_t vertices_size_in_bytes = mesh->vertices.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dverts ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)dverts ),
-                mesh->vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-
-    const size_t mat_indices_size_in_bytes = mesh->mat_idx.size() * sizeof( uint );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &dmats ), mat_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)dmats ),
-                mesh->mat_idx.data(),
-                mat_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-
-    const size_t idx_indices_size_in_bytes = mesh->indices.size() * sizeof(uint3);
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &didx ), idx_indices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)didx ),
-                mesh->indices.data(),
-                idx_indices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
-
-    // // Build triangle GAS // // One per SBT record for this build input
-    auto numSbtRecords = g_mtlidlut.empty() ? 1 : g_mtlidlut.size();
-
-    std::vector<uint32_t> triangle_input_flags(//MAT_COUNT
-        numSbtRecords,
-        OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
-
-    OptixBuildInput triangle_input                           = {};
-    triangle_input.type                                      = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-    triangle_input.triangleArray.vertexFormat                = OPTIX_VERTEX_FORMAT_FLOAT3;
-    triangle_input.triangleArray.vertexStrideInBytes         = sizeof( Vertex );
-    triangle_input.triangleArray.numVertices                 = static_cast<uint32_t>( mesh->vertices.size() );
-    triangle_input.triangleArray.vertexBuffers               = mesh->vertices.empty() ? nullptr : &dverts;
-    triangle_input.triangleArray.flags                       = triangle_input_flags.data();
-    triangle_input.triangleArray.numSbtRecords               = numSbtRecords;
-    triangle_input.triangleArray.sbtIndexOffsetBuffer        = dmats;
-    triangle_input.triangleArray.sbtIndexOffsetSizeInBytes   = sizeof( uint32_t );
-    triangle_input.triangleArray.sbtIndexOffsetStrideInBytes = sizeof( uint32_t );
-    
-    triangle_input.triangleArray.indexBuffer                 = didx;
-    triangle_input.triangleArray.indexFormat                 = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-    triangle_input.triangleArray.indexStrideInBytes          = sizeof(unsigned int)*3;
-    triangle_input.triangleArray.numIndexTriplets            = mesh->indices.size();
-
-    OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-    accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
-
-    buildXAS(OptixUtil::context, accel_options, triangle_input, mesh->gas_buffer, mesh->gas_handle);
-
-    mesh->upload();
-}
-
-static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>>& m_meshes) {
-
-    timer.tick();
-
-    const float mat3r4c[12] = {1,0,0,0,
-                               0,1,0,0,
-                               0,0,1,0};
-
-    float3 defaultInstPos = {0, 0, 0};
-    float3 defaultInstNrm = {0, 1, 0};
-    float3 defaultInstUv = {0, 0, 0};
-    float3 defaultInstClr = {1, 1, 1};
-    float3 defaultInstTang = {1, 0, 0};
-
-    std::size_t num_meshes = g_meshPieces.size() + (StaticMeshes != nullptr? 1:0);
-    std::size_t num_instances = num_meshes;
-
-    for (const auto &[instID, instData] : g_instLUT)
-    {
-        auto it = g_instMatsLUT.find(instID);
-        size_t count = it != g_instMatsLUT.end()? it->second.size() : 1;
-
-        if (instData.mesh != nullptr) {
-            num_meshes += 1;
-            num_instances += it->second.size();
-        }
-    }
-
-    std::vector<OptixInstance> optix_instances( num_instances );
-    memset( optix_instances.data(), 0, sizeof( OptixInstance ) * num_instances );
-    
-#ifdef USE_SHORT
-    using AuxType = ushort3; 
-#else
-    using AuxType = float3; 
-#endif
-    std::vector<AuxType> instPos(num_instances);
-    std::vector<AuxType> instNrm(num_instances);
-    std::vector<AuxType> instUv(num_instances);
-    std::vector<AuxType> instClr(num_instances);
-    std::vector<AuxType> instTang(num_instances);
-
-    size_t sbt_offset = 0;
-    size_t instanceID = 0;
-    size_t meshID = 0;
-
-    std::vector<void*> meshAux(smallMesh::auxCout * num_meshes, 0);
-    std::vector<uint> instanceLut(num_instances, 0);
-
-    auto appendMeshAux = [&meshAux](std::shared_ptr<smallMesh> mesh, uint meshID){
-        auto tmpAux = mesh->aux();
-        auto src_ptr = (void*)tmpAux.data();
-        auto dst_ptr = (void*)(meshAux.data() + meshID * smallMesh::auxCout);
-
-        memcpy(dst_ptr, src_ptr, sizeof(void*)*tmpAux.size() );
-    };
-
-    auto appendInstAux = [&instanceLut](uint instanceID, uint meshID){
-        instanceLut[instanceID] = meshID;
-    };
-
-    if ( StaticMeshes != nullptr ) {
-
-        auto& mesh = StaticMeshes;
-        auto& instance = optix_instances[instanceID];
-        memset( &instance, 0, sizeof( OptixInstance ) );
-
-        appendInstAux(instanceID, meshID);
-        appendMeshAux(mesh, meshID++);
-
-        instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
-        instance.instanceId        = instanceID++;
-        instance.sbtOffset         = 0;
-        instance.visibilityMask    = DefaultMatMask;
-        instance.traversableHandle = mesh->gas_handle;
-        memcpy( instance.transform, mat3r4c, sizeof( float ) * 12 );
-    }
-
-    for( size_t i=0; i<g_meshPieces.size(); ++i )
-    {
-        auto& mesh = g_meshPieces[i];
-        auto& instance = optix_instances[instanceID];
-        memset( &instance, 0, sizeof( OptixInstance ) );
-
-        appendInstAux(instanceID, meshID);
-        appendMeshAux(mesh, meshID++);
-
-        instance.flags             = OPTIX_INSTANCE_FLAG_NONE;
-        instance.instanceId        = instanceID++;
-        instance.sbtOffset         = 0;
-        instance.visibilityMask    = DefaultMatMask;
-        instance.traversableHandle = mesh->gas_handle;
-        memcpy( instance.transform, mat3r4c, sizeof( float ) * 12 );
-    }
-
-    for (auto &[instID, instData] : g_instLUT)
-    {
-            auto& matrix_list = g_instMatsLUT[instID]; // has matrix
-
-            const auto &instMats = matrix_list.empty()? 
-            [](){
-                return std::vector{ glm::mat4(1.0) };
-            }() : matrix_list;
-
-            const auto &instScales = g_instScaleLUT[instID];
-            const auto &instAttrs = g_instAttrsLUT[instID];
-
-            for (auto& mesh : {instData.mesh}) 
-            {
-                if (mesh == nullptr) { continue; }
-
-                if (mesh->gas_handle == 0) {
-                    buildMeshAccel(state, mesh);
-                }
-
-
-                for (std::size_t k = 0; k < instMats.size(); ++k)
-                {
-                    const auto &instMat = instMats[k];
-                    float scale = instScales[k];
-                    float instMat3r4c[12] = {
-                        instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
-                        instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
-                        instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
-                    auto& instance = optix_instances[instanceID];
-                    instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-                    instance.instanceId = instanceID;
-                    instance.visibilityMask = DefaultMatMask;
-                    instance.traversableHandle = mesh->gas_handle;
-                    memcpy(instance.transform, instMat3r4c, sizeof(float) * 12);
-                    
-                    instPos[instanceID] = toHalf(instAttrs.pos[k]);
-                    instNrm[instanceID] = toHalf(instAttrs.nrm[k]);
-                    instUv[instanceID] = toHalf(instAttrs.uv[k]);
-                    instClr[instanceID] = toHalf(instAttrs.clr[k]);
-                    instTang[instanceID] = toHalf(instAttrs.tang[k]);
-
-                    appendInstAux(instanceID, meshID);
-                    instanceID++;
-                }
-                appendMeshAux(mesh, meshID++);
-            }
-    }
-
-    state._meshAux.resize(sizeof(void*) * meshAux.size());
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state._meshAux.handle ),
-                meshAux.data(),
-                sizeof(meshAux[0]) * meshAux.size(),
-                cudaMemcpyHostToDevice
-                ) );
-    state.params.meshAux = (void*)state._meshAux.handle;
-
-    state._instToMesh.resize(sizeof(instanceLut[0]) * instanceLut.size());
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state._instToMesh.handle ),
-                instanceLut.data(),
-                sizeof(instanceLut[0]) * instanceLut.size(),
-                cudaMemcpyHostToDevice
-                ) );
-
-    state.params.instToMesh = (void*)state._instToMesh.handle;
-
-    state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_instPos ),
-                instPos.data(),
-                sizeof(instPos[0]) * instPos.size(),
-                cudaMemcpyHostToDevice
-                ) );
-    state.d_instNrm.resize(sizeof(instNrm[0]) * instNrm.size(), 0);
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_instNrm ),
-                instNrm.data(),
-                sizeof(instNrm[0]) * instNrm.size(),
-                cudaMemcpyHostToDevice
-                ) );
-    state.d_instUv.resize(sizeof(instUv[0]) * instUv.size(), 0);
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_instUv ),
-                instUv.data(),
-                sizeof(instUv[0]) * instUv.size(),
-                cudaMemcpyHostToDevice
-                ) );
-    state.d_instClr.resize(sizeof(instClr[0]) * instClr.size(), 0);
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_instClr ),
-                instClr.data(),
-                sizeof(instClr[0]) * instClr.size(),
-                cudaMemcpyHostToDevice
-                ) );
-    state.d_instTang.resize(sizeof(instTang[0]) * instTang.size(), 0);
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_instTang ),
-                instTang.data(),
-                sizeof(instTang[0]) * instTang.size(),
-                cudaMemcpyHostToDevice
-                ) );
-
-    OptixAccelBuildOptions accel_options{};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-    buildIAS(OptixUtil::context, accel_options, optix_instances, state.meshBufferIAS, state.meshHandleIAS);
-    timer.tock("Build Mesh IAS");    
-}
-
 void updateRootIAS()
 {
-    timer.tick();
-    const auto campos = state.params.cam.eye;
-    const float mat3r4c[12] = {1,0,0,-campos.x,   
-                               0,1,0,-campos.y,   
-                               0,0,1,-campos.z};
-
-    std::vector<OptixInstance> optix_instances{};
-    uint optix_instance_idx = 0u;
-    uint sbt_offset = 0u;
-
-    if (state.meshHandleIAS != 0u) {
-        OptixInstance inst{};
-
-        inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-        inst.sbtOffset = 0;
-        inst.instanceId = optix_instance_idx;
-        inst.visibilityMask = DefaultMatMask;
-        inst.traversableHandle = state.meshHandleIAS;
-
-        memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
-        optix_instances.push_back( inst );
-    }
-
-    if (sphereHandleXAS != 0u) {
-        OptixInstance opinstance {};
-        ++optix_instance_idx;
-        sbt_offset = 0u;
-
-        opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-        opinstance.instanceId = optix_instance_idx;
-        opinstance.sbtOffset = sbt_offset;
-        opinstance.visibilityMask = DefaultMatMask;
-        opinstance.traversableHandle = sphereHandleXAS;
-        memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-        optix_instances.push_back( opinstance );
-    }
-
-    auto firstVolumeInstance = optix_instance_idx+1;
-    std::vector<uint8_t> volumeBounds(OptixUtil::volumeBoxs.size());
-    // process volume
-	for (uint i=0; i<OptixUtil::volumeBoxs.size(); ++i) {
-        
-		OptixInstance optix_instance {};
-    	++optix_instance_idx;
-
-		auto& [key, val] = OptixUtil::volumeBoxs.at(i);
-
-		auto combinedID = key + ":" + std::to_string(ShaderMark::Volume);
-    	auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-    	sbt_offset = shader_index * RAY_TYPE_COUNT;
-
-		optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		optix_instance.instanceId = optix_instance_idx;
-		optix_instance.sbtOffset = sbt_offset;
-		optix_instance.visibilityMask = VolumeMatMask; //VOLUME_OBJECT;
-		optix_instance.traversableHandle = val->accel.handle;
-
-        volumeBounds[i] = val->bounds;
-
-		getOptixTransform( *(val), optix_instance.transform );
-        
-        if ( OptixUtil::g_vdb_list_for_each_shader.count(shader_index) > 0 ) {
-
-            auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(shader_index);
-
-            if (vdb_list.size() > 0)
-            {
-                auto vdb_key = vdb_list.front();
-                auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
-
-                auto volume_index_offset = list_volume_index_in_shader_list[0];
-                optix_instance.traversableHandle = list_volume[shader_index-volume_index_offset]->accel.handle;
-
-                auto ibox = vdb_ptr->grids.front()->indexedBox();
-
-                auto imax = glm::vec3(ibox.max().x(), ibox.max().y(), ibox.max().z()); 
-                auto imin = glm::vec3(ibox.min().x(), ibox.min().y(), ibox.min().z()); 
-
-                auto diff = imax + 1.0f - imin;
-                auto center = imin + diff / 2.0f;
-
-                glm::mat4 dirtyMatrix(1.0f);
-                dirtyMatrix = glm::scale(dirtyMatrix, 1.0f/diff);
-                dirtyMatrix = glm::translate(dirtyMatrix, -center);
-                
-                dirtyMatrix = val->transform * dirtyMatrix;
-
-                auto dummy = glm::transpose(dirtyMatrix);
-                auto dummy_ptr = glm::value_ptr( dummy );
-                memcpy(optix_instance.transform, dummy_ptr, sizeof(float)*12);
-            }
-        } // count  
-
-		optix_instance.transform[3] -= campos.x;
-		optix_instance.transform[7] -= campos.y;
-		optix_instance.transform[11] -= campos.z;
-
-		optix_instances.push_back( optix_instance );
-	}
-
-    state.volumeBoundsBuffer.reset();
-
-    if (!volumeBounds.empty()) {
-        size_t byte_size = sizeof(volumeBounds[0]) * volumeBounds.size();
-        state.volumeBoundsBuffer.resize(byte_size);
-        cudaMemcpy((void*)state.volumeBoundsBuffer.handle, volumeBounds.data(), byte_size, cudaMemcpyHostToDevice);
-
-        state.params.volumeBounds = (void*)state.volumeBoundsBuffer.handle;
-        state.params.firstVolumeOffset = firstVolumeInstance;
-    }
-
-    auto op_index = optix_instances.size();
+    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS, state.params.cam.eye);
+    state.params.handle = state.rootHandleIAS;
+    return;
 
     uint32_t MAX_INSTANCE_ID;
     optixDeviceContextGetProperty( OptixUtil::context, OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID, &MAX_INSTANCE_ID, sizeof(MAX_INSTANCE_ID) );
     state.params.maxInstanceID = MAX_INSTANCE_ID;
-
-  	//process light
-	if (lightsWrapper.lightTrianglesGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Mesh);
-		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID-2;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightTrianglesGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
-
-	if (lightsWrapper.lightPlanesGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Mesh);
-		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID-1;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightPlanesGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
-
-	if (lightsWrapper.lightSpheresGas != 0)
-	{
-		OptixInstance opinstance {};
-
-		auto combinedID = std::string("Light") + ":" + std::to_string(ShaderMark::Sphere);
-		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = MAX_INSTANCE_ID;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = LightMatMask;
-		opinstance.traversableHandle = lightsWrapper.lightSpheresGas;
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-
-		optix_instances.push_back( opinstance );
-	}
-
-    std::vector<CurveGroupAux> auxHair;
-    state.params.hairInstOffset = op_index;
-
-    for (auto& [key, val] : hair_yyy_cache) {
-
-        OptixInstance opinstance {};
-        auto& [filePath, mode, mtlid] = key;
-        
-        auto shader_mark = mode + 3;
-
-		auto combinedID = mtlid + ":" + std::to_string(shader_mark);
-		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-        auto& hair_state = geo_hair_cache[ std::tuple(filePath, mode) ];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		//opinstance.instanceId = op_index++;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = DefaultMatMask;
-		opinstance.traversableHandle = hair_state->gasHandle;
-
-        // sutil::Matrix3x4 yUpTransform = {
-        //     0.0f, 1.0f, 0.0f, -campos.x,
-        //     0.0f, 0.0f, 1.0f, -campos.y,
-        //     1.0f, 0.0f, 0.0f, -campos.z,
-        // };
-
-        for (auto& trans : val) {
-
-            auto dummy = glm::transpose(trans);
-            auto dummy_ptr = glm::value_ptr( dummy );
-
-		    memcpy(opinstance.transform, dummy_ptr, sizeof(float) * 12);
-            opinstance.transform[3]  += -campos.x;
-            opinstance.transform[7]  += -campos.y;
-            opinstance.transform[11] += -campos.z;
-
-            opinstance.instanceId = op_index++;
-		    optix_instances.push_back( opinstance );
-
-            auxHair.push_back(hair_state->aux); 
-        }
-    }
-
-    for (size_t i=0; i<curveGroupStateCache.size(); ++i) {
-
-        auto& ele = curveGroupStateCache[i];
-
-        OptixInstance opinstance {};
-        
-        auto shader_mark = (uint)ele->curveType + 3;
-
-		auto combinedID = ele->mtid + ":" + std::to_string(shader_mark);
-		auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-		opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
-		opinstance.instanceId = op_index++;
-		opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;
-		opinstance.visibilityMask = DefaultMatMask;
-		opinstance.traversableHandle = ele->gasHandle;
-
-		memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
-		optix_instances.push_back( opinstance );
-
-        auxHair.push_back(ele->aux);
-    }
-
-    state.auxHairBuffer.reset();
-
-    {
-        size_t byte_size = sizeof(CurveGroupAux) * auxHair.size();
-        state.auxHairBuffer.resize(byte_size);
-        cudaMemcpy((void*)state.auxHairBuffer.handle, auxHair.data(), byte_size, cudaMemcpyHostToDevice);
-
-        state.params.hairAux = (void*)state.auxHairBuffer.handle;
-    }
-
-	OptixAccelBuildOptions accel_options{};
-	accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-	accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-	buildIAS(OptixUtil::context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);  
-
-	timer.tock("update Root IAS");
-	state.params.handle = state.rootHandleIAS;
 }
 
-static void createSBT( PathTracerState& state )
+static void createSBT( PathTracerState& state, bool raygen=false)
 {
-        OptixUtil::d_raygen_record.reset();
-        OptixUtil::d_miss_records.reset();
-        OptixUtil::d_hitgroup_records.reset();
-        OptixUtil::d_callable_records.reset();
-
-        state.accum_buffer_p.reset();
-        state.albedo_buffer_p.reset();
-        state.normal_buffer_p.reset();
-
     raii<CUdeviceptr>  &d_raygen_record = OptixUtil::d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
-    CUDA_CHECK(cudaMalloc((void**)&d_raygen_record.reset(), raygen_record_size));
+    d_raygen_record.resize(raygen_record_size);
 
     RayGenRecord rg_sbt = {};
     OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::raygen_prog_group, &rg_sbt ) );
@@ -1270,20 +432,27 @@ static void createSBT( PathTracerState& state )
 
     raii<CUdeviceptr>  &d_miss_records = OptixUtil::d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
-    CUDA_CHECK(cudaMalloc((void**)&d_miss_records.reset(), miss_record_size * RAY_TYPE_COUNT )) ;
+    d_miss_records.resize(miss_record_size * RAY_TYPE_COUNT);
 
     MissRecord ms_sbt[2];
-    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::radiance_miss_group,  &ms_sbt[0] ) );
+    OPTIX_CHECK_LOG( optixSbtRecordPackHeader( OptixUtil::radiance_miss_group,  &ms_sbt[0] ) );
     ms_sbt[0].data.bg_color = make_float4( 0.0f );
-    OPTIX_CHECK( optixSbtRecordPackHeader( OptixUtil::occlusion_miss_group, &ms_sbt[1] ) );
+    OPTIX_CHECK_LOG( optixSbtRecordPackHeader( OptixUtil::occlusion_miss_group, &ms_sbt[1] ) );
     ms_sbt[1].data.bg_color = make_float4( 0.0f );
 
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_miss_records ),
                 ms_sbt,
-                miss_record_size*RAY_TYPE_COUNT,
+                miss_record_size * RAY_TYPE_COUNT,
                 cudaMemcpyHostToDevice
                 ) );
+
+    state.sbt.raygenRecord                = d_raygen_record;
+    state.sbt.missRecordBase              = d_miss_records;
+    state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
+    state.sbt.missRecordCount             = RAY_TYPE_COUNT;
+    //state.sbt.exceptionRecord;
+    if (raygen) return;
 
     const auto shader_count = OptixUtil::rtMaterialShaders.size();
 
@@ -1291,10 +460,7 @@ static void createSBT( PathTracerState& state )
     const size_t hitgroup_record_count = shader_count * RAY_TYPE_COUNT;
 
     raii<CUdeviceptr>  &d_hitgroup_records = OptixUtil::d_hitgroup_records;
-    
-    CUDA_CHECK(cudaMalloc((void**)&d_hitgroup_records.reset(),
-                hitgroup_record_size * hitgroup_record_count
-                ));
+    d_hitgroup_records.resize(hitgroup_record_size * hitgroup_record_count);
 
     std::vector<HitGroupRecord> hitgroup_records(hitgroup_record_count);
     std::vector<CallablesRecord> callable_records(shader_count);
@@ -1302,34 +468,41 @@ static void createSBT( PathTracerState& state )
     for( int j = 0; j < shader_count; ++j ) {
 
         auto& shader_ref = OptixUtil::rtMaterialShaders[j];
-        const auto has_vdb = shader_ref.has_vdb;
-
         const uint sbt_idx = RAY_TYPE_COUNT * j;
 
         OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prog_group, &callable_records[j] ) );
 
-        if (!has_vdb) {
+        if (!shader_ref.isVol()) {
 
-            hitgroup_records[sbt_idx] = {};
-            hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+            HitGroupRecord rec = {};
+            if (!shader_ref.parameters.empty()) {
 
-#ifdef USE_SHORT
-            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instPos );
-            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instNrm );
-            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instUv );
-            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instClr );
-            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<ushort3*>( (CUdeviceptr)state.d_instTang );
-#else
-            hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
-            hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
-            hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
-            hitgroup_records[sbt_idx].data.instClr         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instClr );
-            hitgroup_records[sbt_idx].data.instTang        = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instTang );
-#endif
+                const auto& json = shader_ref.parameters;
+
+                if (json.contains("opacity")) {
+                    rec.data.opacity = json["opacity"].template get<float>();
+                } else {
+                    rec.data.opacity = FLT_MAX;
+                }
+
+                auto hasomm = json.contains("omm");
+                auto& jomm = hasomm? json["omm"] : nlohmann::json();
+                if(!jomm.is_null() && !jomm.is_primitive()) {
+                    rec.data.opacity = -1;
+                    rec.data.binaryShadowTestDirectRay   = jomm["binaryShadowTestDirectRay"].template get<bool>();
+                    rec.data.binaryShadowTestIndirectRay = jomm["binaryShadowTestIndirectRay"].template get<bool>();
+                }
+            } else {
+                rec.data.opacity = FLT_MAX;
+            }
+
+            hitgroup_records[sbt_idx] = rec;
 
             for(int t=0;t<32;t++)
             {
-                hitgroup_records[sbt_idx].data.textures[t] = shader_ref.getTexture(t);
+                cudaTextureObject_t wtf = shader_ref.getTexture(t);
+                //TEMPCODE: test texture idx.
+                hitgroup_records[sbt_idx].data.textures[t] = wtf;
             }
 
             hitgroup_records[sbt_idx+1] = hitgroup_records[sbt_idx]; // SBT for occlusion ray-type for ith material
@@ -1341,46 +514,39 @@ static void createSBT( PathTracerState& state )
 
             HitGroupRecord rec = {};
 
-            rec.data.uniforms = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
-
-            if (OptixUtil::g_vdb_list_for_each_shader.count(j) != 0) {
-
-                auto& vdb_list = OptixUtil::g_vdb_list_for_each_shader.at(j);
-				//if (OptixUtil::g_cached_vdb_map.count(key_vdb) == 0) continue;
-				//auto& volumeWrapper = OptixUtil::g_vdb[key_vdb];
-
-				for(uint t=0; t<min(vdb_list.size(), 8ull); ++t)
+                const auto& vdbs = shader_ref.vbds;
+				for(uint t=0; t<min(vdbs.size(), 8ull); ++t)
 				{
-					auto vdb_key = vdb_list[t];
-					auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
+					auto vdb_key = vdbs[t];
+                    if (defaultScene._vdb_grids_cached.count(vdb_key)==0) continue;
 
+					auto vdb_ptr = defaultScene._vdb_grids_cached.at(vdb_key);
 					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
 					rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
 				}
-            }
 
             for(uint t=0;t<32;t++)
             {
                 rec.data.textures[t] = shader_ref.getTexture(t);
             }
-
+            if (!shader_ref.parameters.empty())
             {
-                auto j = nlohmann::json::parse(shader_ref.parameters);
+                const auto json = shader_ref.parameters;
 
-                if (!j["vol_depth"].is_null()) {
-                    rec.data.vol_depth = j["vol_depth"];
+                if (json.contains("vol_depth")) {
+                    rec.data.vol_depth = json["vol_depth"];
                 }
 
-                if (!j["vol_extinction"].is_null()) {
-                    rec.data.vol_extinction = j["vol_extinction"];
+                if (json.contains("vol_extinction")) {
+                    rec.data.vol_extinction = json["vol_extinction"];
                 }
 
-                if (!j["equiangular"].is_null()) {
-                    rec.data.equiangular = j["equiangular"];
+                if (json.contains("equiangular")) {
+                    rec.data.equiangular = json["equiangular"];
                 }
 
-                if (!j["multiscatter"].is_null()) {
-                    rec.data.multiscatter = j["multiscatter"];
+                if (json.contains("multiscatter")) {
+                    rec.data.multiscatter = json["multiscatter"];
                 }
             }
 
@@ -1389,10 +555,8 @@ static void createSBT( PathTracerState& state )
 
             OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.core->m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
             OPTIX_CHECK(optixSbtRecordPackHeader( shader_ref.core->m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
-            
         }
         
-
         hitgroup_records[sbt_idx].data.dc_index = j;
         hitgroup_records[sbt_idx+1].data.dc_index = j;
     }
@@ -1404,19 +568,16 @@ static void createSBT( PathTracerState& state )
                 cudaMemcpyHostToDevice
                 ) );
 
-    state.sbt.raygenRecord                = d_raygen_record;
-    state.sbt.missRecordBase              = d_miss_records;
-    state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
-    state.sbt.missRecordCount             = RAY_TYPE_COUNT;
     state.sbt.hitgroupRecordBase          = d_hitgroup_records;
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
     state.sbt.hitgroupRecordCount         = hitgroup_records.size();
-    //state.sbt.exceptionRecord;
 
     {
         raii<CUdeviceptr>& d_callable_records = OptixUtil::d_callable_records;
         size_t      sizeof_callable_record = sizeof( CallablesRecord );
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_callable_records ), sizeof_callable_record * shader_count ) );
+
+        d_callable_records.resize( sizeof_callable_record * shader_count );
+
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_callable_records ), callable_records.data(),
                                 sizeof_callable_record * shader_count, cudaMemcpyHostToDevice ) );
 
@@ -1518,8 +679,7 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
 
     //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
-    if(state.d_params2==0)
-        CUDA_CHECK(cudaMalloc((void**)&state.d_params2, sizeof( Params )));
+    state.d_params.resize( sizeof( Params ) );
 
     if (!output_buffer_o) {
       output_buffer_o.emplace(
@@ -1551,95 +711,8 @@ void optixinit( int argc, char* argv[] )
     OptixUtil::default_sky_tex = cur_path + "/hdr/Panorama.hdr";
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 
-    OptixUtil::addSkyTexture(OptixUtil::sky_tex.value());
+    OptixUtil::setSkyTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
-}
-
-
-void updateVolume(uint volume_shader_offset) {
-
-    if (OptixUtil::g_vdb_cached_map.empty()) { return; }
-
-    OptixUtil::logInfoVRAM("Before update Volume");
-
-    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
-
-        if (OptixUtil::g_vdb_indice_visible.count(key) > 0) {
-            // UPLOAD to GPU
-            for (auto& task : val->tasks) {
-                task();
-            } //val->uploadTasks.clear();
-        } else {      
-            cleanupVolume(*val); // Remove from GPU-RAM, but keep in SYS-RAM 
-        }
-    }
-
-    OptixUtil::logInfoVRAM("After update Volume");
-
-    list_volume.clear();
-    list_volume_index_in_shader_list.clear();
-
-    OptixUtil::logInfoVRAM("Before Volume GAS");
-
-    std::map<uint, std::vector<std::string>> tmp_map{};
-
-    for (auto const& [index, val] : OptixUtil::g_vdb_list_for_each_shader) {
-        auto base_key = val.front();
-
-        if (OptixUtil::g_vdb_indice_visible.count(base_key) == 0) continue;
-
-        list_volume.push_back( OptixUtil::g_vdb_cached_map[base_key] );
-        list_volume_index_in_shader_list.push_back(index + volume_shader_offset);
-
-        tmp_map[index + volume_shader_offset] = val;
-   }
-
-   OptixUtil::g_vdb_list_for_each_shader = tmp_map;
-
-    for (uint i=0; i<list_volume.size(); ++i) {
-        //VolumeAccel accel;
-        buildVolumeAccel( list_volume[i]->accel, *(list_volume[i]), OptixUtil::context );
-    }
-
-    OptixUtil::logInfoVRAM("After Volume GAS");
-}
-
-
-void splitMesh(std::vector<Vertex> & verts, 
-std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStart);
-
-static void updateDynamicDrawObjects();
-static void updateStaticDrawObjects();
-static void updateInstObjects();
-static void updateDynamicDrawInstObjects();
-
-void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
-    camera_changed = true;
-    g_mtlidlut = mtlidlut;
-    updateStaticDrawObjects();
-}
-
-void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
-    camera_changed = true;
-    g_mtlidlut = mtlidlut;
-    updateDynamicDrawObjects();
-}
-
-void UpdateInstMesh(const std::map<std::string, int> &mtlidlut)
-{
-    camera_changed = true;
-    g_mtlidlut = mtlidlut;
-    updateInstObjects();
-}
-
-void UpdateMeshGasAndIas(bool staticNeedUpdate)
-{
-    tbb::parallel_for(static_cast<size_t>(0), g_meshPieces.size(), [](size_t i){
-        buildMeshAccel(state, g_meshPieces[i]);
-    });
-
-    buildMeshIAS(state, 2, g_meshPieces);
 }
 
 static std::map<std::string, LightDat> lightdats;
@@ -1664,7 +737,7 @@ void unload_light(){
 
     OptixUtil::portal_delayed.reset();
 
-    std::cout << "Lights unload done. \n"<< std::endl;
+//    std::cout << "Lights unload done. \n"<< std::endl;
 }
 
 void load_triangle_light(std::string const &key, LightDat& ld,
@@ -1702,11 +775,22 @@ void load_light(std::string const &key, LightDat& ld, float const*v0, float cons
     lightdats[key] = ld;
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
-    state.params.sky_rot = sky_rot;
-    state.params.sky_rot_x = sky_rot3d[0];
-    state.params.sky_rot_y = sky_rot3d[1];
-    state.params.sky_rot_z = sky_rot3d[2];
+
     state.params.sky_strength = sky_strength;
+
+    glm::mat4 rotation(1.0f);
+    rotation = glm::rotate(rotation, glm::radians(sky_rot)     , glm::vec3(0,1,0));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[2]), glm::vec3(0,0,1));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[0]), glm::vec3(1,0,0));
+    rotation = glm::rotate(rotation, glm::radians(sky_rot3d[1]), glm::vec3(0,1,0));
+
+    auto tmp = glm::transpose(rotation);
+    auto ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
+    
+    tmp = glm::transpose(glm::inverse(rotation));
+    ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
 }
 
 void using_hdr_sky(bool enable) {
@@ -1722,18 +806,17 @@ void show_background(bool enable) {
 
 void updatePortalLights(const std::vector<Portal>& portals) {
 
-    auto &tex = OptixUtil::tex_lut[ { OptixUtil::sky_tex.value(), false } ];
+    auto find = OptixUtil::tex_lut.find({OptixUtil::sky_tex.value(), false});
+    auto &tex = find->second;
 
     auto& pll = state.plights;
     auto& pls = pll.list;
     pls.clear();
     pls.reserve(std::max(portals.size(), size_t(0)) );
 
-    glm::mat4 rotation = glm::mat4(1.0f);
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_y), glm::vec3(0,1,0));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_x), glm::vec3(1,0,0));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot_z), glm::vec3(0,0,1));
-    rotation = glm::rotate(rotation, glm::radians(state.params.sky_rot), glm::vec3(0,1,0));
+    glm::mat4 rotation(1.0); 
+    memcpy(glm::value_ptr(rotation), state.params.sky_rotation, sizeof(float)*12);
+    rotation = glm::transpose(rotation);
     
     glm::mat4* rotation_ptr = nullptr;
     if ( glm::mat4(1.0f) != rotation ) {
@@ -1806,7 +889,7 @@ void update_procedural_sky(
 }
 
 static void addTriangleLightGeo(float3 p0, float3 p1, float3 p2) {
-    auto& geo = lightsWrapper._triangleLightGeo;
+    auto& geo = defaultScene.lightsWrapper._triangleLightGeo;
     geo.push_back(p0); geo.push_back(p1); geo.push_back(p2);
 }
 
@@ -1814,7 +897,7 @@ static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 {
     float3 vert0 = p0, vert1 = p0 + v1, vert2 = p0 + v2, vert3 = p0 + v1 + v2;
 
-    auto& geo = lightsWrapper._planeLightGeo;
+    auto& geo = defaultScene.lightsWrapper._planeLightGeo;
 
     geo.push_back(make_float3(vert0.x, vert0.y, vert0.z));
     geo.push_back(make_float3(vert1.x, vert1.y, vert1.z));
@@ -1828,7 +911,7 @@ static void addLightPlane(float3 p0, float3 v1, float3 v2, float3 normal)
 static void addLightSphere(float3 center, float radius) 
 {
     float4 vt {center.x, center.y, center.z, radius};
-    lightsWrapper._sphereLightGeo.push_back(vt);
+    defaultScene.lightsWrapper._sphereLightGeo.push_back(vt);
 }
 
 static int uniformBufferInitialized = false;
@@ -1840,9 +923,9 @@ void optixUpdateUniforms(void *inConstants, std::size_t size) {
     CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
                           sizeof(float4)*size, cudaMemcpyHostToDevice));
-
+    
+    state.params.d_uniforms = (float4*)state.d_uniforms.handle;
     uniformBufferInitialized = true;
-
 }
 
 static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& lightMesh, raii<CUdeviceptr>& bufferGas, OptixTraversableHandle& handleGas)
@@ -1857,7 +940,7 @@ static void buildLightPlanesGAS( PathTracerState& state, std::vector<Vertex>& li
 
     raii<CUdeviceptr> d_lightMesh;
     
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes, 0 ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
                 lightMesh.data(), vertices_size_in_bytes,
@@ -1904,7 +987,7 @@ static void buildLightSpheresGAS( PathTracerState& state, std::vector<float4>& l
     {
         auto data_length = sizeof( float4 ) * sphere_count;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), lightSpheres.data(),
                                 data_length, cudaMemcpyHostToDevice ) );
     }
@@ -1944,7 +1027,7 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
 
     raii<CUdeviceptr> d_lightMesh;
     
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes ) );
+    CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_lightMesh ), vertices_size_in_bytes, 0 ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)d_lightMesh ),
                 lightMesh.data(), vertices_size_in_bytes,
@@ -1987,6 +1070,7 @@ void buildLightTree() {
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
 
+    auto& lightsWrapper = defaultScene.lightsWrapper;
     lightsWrapper.reset();
 
     std::vector<LightDat*> sortedLights; 
@@ -2005,7 +1089,7 @@ void buildLightTree() {
     {
         auto byte_size = triangleLightNormals.size() * sizeof(float3);
 
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightsWrapper.triangleLightNormals.reset() ), byte_size, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightNormals ),
                                 triangleLightNormals.data(), byte_size, cudaMemcpyHostToDevice) );
         state.params.triangleLightNormalBuffer = lightsWrapper.triangleLightNormals.handle;
@@ -2014,7 +1098,7 @@ void buildLightTree() {
     {
         auto byte_size = triangleLightCoords.size() * sizeof(float2);
 
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightsWrapper.triangleLightCoords.reset() ), byte_size, 0) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)lightsWrapper.triangleLightCoords ),
                                 triangleLightCoords.data(), byte_size, cudaMemcpyHostToDevice) );
         state.params.triangleLightCoordsBuffer = lightsWrapper.triangleLightCoords.handle;
@@ -2097,7 +1181,7 @@ void buildLightTree() {
             }
 
         } else if (light.shape == zeno::LightShape::Point) {
-            light.point = {center};
+            light.point = {center, radius};
             if (dat.fluxFixed > 0) {
                 auto intensity = dat.fluxFixed / (4 * M_PIf);
                 light.intensity = intensity;
@@ -2144,8 +1228,10 @@ void buildLightTree() {
         OptixUtil::TexKey tex_key {dat.textureKey, false};
         
         if ( OptixUtil::tex_lut.count( tex_key ) > 0 ) {
+            
+            auto& val = OptixUtil::tex_lut[tex_key];
+            lightsWrapper.texs.push_back(val);
 
-            auto& val = OptixUtil::tex_lut.at(tex_key);
             light.tex = val->texture;
             light.texGamma = dat.textureGamma;
         }
@@ -2161,10 +1247,9 @@ void buildLightTree() {
     buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
     buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
-    CUDA_CHECK( cudaMalloc(
+    CUDA_CHECK( cudaMallocAsync(
         reinterpret_cast<void**>( &state.finite_lights_ptr.reset() ),
-        sizeof( GenericLight ) * std::max(lightsWrapper.g_lights.size(),(size_t)1)
-        ) );
+        sizeof( GenericLight ) * std::max(lightsWrapper.g_lights.size(),(size_t)1), 0 ) );
 
     state.params.lights = (GenericLight*)(CUdeviceptr)state.finite_lights_ptr;
     CUDA_CHECK( cudaMemcpy(
@@ -2191,12 +1276,14 @@ void buildLightTree() {
     Dummy dummy = { lightBitTrailsPtr.handle, lightTreeNodesPtr.handle, lsampler.bounds() };
 
     {
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightTreeDummyPtr.reset() ), sizeof( dummy )) );
+        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightTreeDummyPtr.reset() ), sizeof( dummy ), 0) );
         CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)lightTreeDummyPtr ),
                 &dummy, sizeof( dummy ), cudaMemcpyHostToDevice) );
         state.params.lightTreeSampler = lightTreeDummyPtr.handle;
     }
+
+    defaultScene.prepare_light_ias(OptixUtil::context);
 }
 
 inline std::map<std::tuple<std::string, ShaderMark>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
@@ -2208,8 +1295,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 {
     camera_changed = true;
 
-    CppTimer theTimer;
-    theTimer.tick();
+    timer.tick();
     
     if (refresh) {
 
@@ -2222,6 +1308,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
 
+            OptixUtil::raygen_config = std::tuple {false, false};
             OptixUtil::createRenderGroups(OptixUtil::context, OptixUtil::raygen_module);
         });
 
@@ -2313,10 +1400,14 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
     OptixUtil::_compile_group.wait();
 
-    OptixUtil::rtMaterialShaders.clear();
+    //OptixUtil::rtMaterialShaders.clear();
     OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
+        if (!shaders[i]->dirty) continue;
+
+        shaders[i]->dirty = false;
+        OptixUtil::rtMaterialShaders[i].dirty = true;
 
 OptixUtil::_compile_group.run([&shaders, i] () {
 
@@ -2340,21 +1431,38 @@ OptixUtil::_compile_group.run([&shaders, i] () {
             shaderCore = shaderCoreLUT.at(key);
         }
 
-        OptixUtil::rtMaterialShaders[i].core = shaderCore;
-        OptixUtil::rtMaterialShaders[i].parameters = shaders[i]->parameters;  
-        OptixUtil::rtMaterialShaders[i].callable = shaders[i]->callable;
+        auto& rtShader = OptixUtil::rtMaterialShaders[i];
+
+        rtShader.core = shaderCore;
+        rtShader.callable = shaders[i]->callable;
+        if (shaders[i]->parameters != "") {
+            rtShader.parameters = nlohmann::json::parse(shaders[i]->parameters);
+        }
+        auto macro = globalShaderBufferGroup.code(callable_string);
+        rtShader.macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
-            OptixUtil::rtMaterialShaders[i].has_vdb = true; 
+            rtShader.macros["_volu_"] = true;
+
+            if (rtShader.parameters.contains("vol_depth")) {
+                auto vol_depth = rtShader.parameters["vol_depth"];
+                rtShader.macros["_homo_"] = vol_depth == 0;
+            }
         }
 
-        auto& texs = shaders[i]->tex_keys;
-        std::cout<<"texSize:"<<texs.size()<<std::endl;
-
-        for(int j=0;j<texs.size();j++)
+        auto& texs = shaders[i]->texs;
+        rtShader.texs = {};
+        rtShader.texs.reserve(texs.size());
+        for(int j=0; j<texs.size(); j++) {
+            auto tid = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
+            rtShader.texs.push_back(tid);
+        }
+        
+        const auto& vdbs = shaders[i]->vdb_keys;
+        rtShader.vbds.resize(vdbs.size());
+        for (int j=0; j<vdbs.size(); ++j)
         {
-            std::cout<< "texPath:" << texs[j].path <<std::endl;
-            OptixUtil::rtMaterialShaders[i].addTexture(j, texs[j]);
+            rtShader.vbds[j] = vdbs[j];
         }
 }); //_compile_group
     } //for
@@ -2365,10 +1473,17 @@ OptixUtil::_compile_group.wait();
     //std::vector<tbb::task_group> task_groups(task_count);
     for(int i=0; i<task_count; ++i)
     {
+        auto& shader_ref = OptixUtil::rtMaterialShaders[i];
+        if (!refresh && !shader_ref.dirty) continue;
+        shader_ref.dirty = false;
+
         OptixUtil::_compile_group.run([&shaders, i] () {
+
+            auto fallback = shaders[i]->matid == "";
+            fallback |= shaders[i]->matid == "Light";
             
-            printf("now compiling %d'th shader \n", i);
-            if(OptixUtil::rtMaterialShaders[i].loadProgram(i)==false)
+            //("now compiling %d'th shader \n", i);
+            if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
             {
                 std::cout<<"shader compiling failed, using fallback shader instead"<<std::endl;
                 OptixUtil::rtMaterialShaders[i].loadProgram(i, true);
@@ -2378,15 +1493,11 @@ OptixUtil::_compile_group.wait();
     }
 
     OptixUtil::_compile_group.wait();
-    theTimer.tock("Done Optix Shader Compile:");
+//    theTimer.tock("Done Optix Shader Compile:");
 
-    if (OptixUtil::sky_tex.has_value()) {
+    if (OptixUtil::sky_tex.has_value() && OptixUtil::sky_tex_ptr!=nullptr) {
 
-        auto &tex = OptixUtil::tex_lut[ {OptixUtil::sky_tex.value(), false} ];
-        if (tex.get() == 0) {
-            tex = OptixUtil::tex_lut[ {OptixUtil::default_sky_tex, false} ];
-        }
-        
+        auto& tex = OptixUtil::sky_tex_ptr;
         if (tex->texture == state.params.sky_texture) return;
 
         state.params.sky_texture = tex->texture;
@@ -2394,10 +1505,10 @@ OptixUtil::_compile_group.wait();
         state.params.skyny = tex->height;
         state.params.envavg = tex->average;
 
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
-                            sizeof(float)*tex->cdf.size() ) );
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
-                              sizeof(int)*tex->start.size() ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
+                            sizeof(float)*tex->cdf.size(), 0 ) );
+        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &state.sky_start.reset() ),
+                              sizeof(int)*tex->start.size(), 0 ) );
 
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
                    tex->cdf.data(),
@@ -2419,430 +1530,32 @@ OptixUtil::_compile_group.wait();
 
 }
 
-void optixupdateend() {
+void configPipeline(bool shaderDirty) {
     camera_changed = true;
 
-    createSBT( state );
-    printf("SBT created \n");
+    auto buffers = globalShaderBufferGroup.upload();
+    state.params.global_buffers = (void**)buffers;
 
-    OptixUtil::createPipeline();
-    printf("Pipeline created \n");
+    if (shaderDirty) {
+        timer.tick();
+        createSBT( state );
+        timer.tock("SBT created \n");
+    }
 
+    timer.tick();
+    OptixUtil::createPipeline(defaultScene.maxNodeDepth, shaderDirty);
+    timer.tock("Pipeline created \n");
+
+    timer.tick();
     initLaunchParams( state );
-    printf("init params created \n");
+    timer.tock("init params created \n");
 }
 
-struct DrawDat {
-    std::vector<std::string>  mtlidList;
-    std::string mtlid;
-    std::string instID;
-    std::vector<float> verts;
-    std::vector<uint> tris;
-    std::vector<int> triMats;
-
-    std::map<std::string, std::vector<float>> vertattrs;
-    auto const &getAttr(std::string const &s) const
-    {
-        //if(vertattrs.find(s)!=vertattrs.end())
-        //{
-            return vertattrs.at(s);//->second;
-        //}
-        
-    }
-};
-static std::map<std::string, DrawDat> drawdats;
-
-std::set<std::string> uniqueMatsForMesh() {
-
-    std::set<std::string> result;
-    for (auto const &[key, dat]: drawdats) {
-        result.insert(dat.mtlid);
-        for(auto& s : dat.mtlidList) {
-            result.insert(s);
-        }
-    }
-
-    return result;
-}
-
-void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 
-std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStart)
+void prepareScene()
 {
-    size_t num_tri = (verts.size()-vertsStart)/3;
-    oMeshes.resize(meshesStart);
-    size_t tris_per_mesh = TRI_PER_MESH;
-    size_t num_iter = num_tri/tris_per_mesh + 1;
-    for(int i=0; i<num_iter;i++)
-    {
-        auto m = std::make_shared<smallMesh>();
-        for(int j=0;j<tris_per_mesh;j++)
-        {
-            size_t idx = i*tris_per_mesh + j;
-            if(idx<num_tri){
-                m->vertices.emplace_back(verts[vertsStart + idx*3+0]);
-                m->vertices.emplace_back(verts[vertsStart + idx*3+1]);
-                m->vertices.emplace_back(verts[vertsStart + idx*3+2]);
-                m->mat_idx.emplace_back(mat_idx[vertsStart/3 + idx]);
-                m->indices.emplace_back(make_uint3(j*3+0,j*3+1,j*3+2));
-            }
-        }
-        if(m->vertices.size()>0)
-            oMeshes.push_back(std::move(m));
-    }
-}
-static void updateStaticDrawObjects() {
-    
-    size_t tri_num = 0;
-    size_t ver_num = 0;
-
-    std::vector<const DrawDat*> candidates;
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")!=key.npos && dat.instID == "Default") {
-            candidates.push_back(&dat);
-
-            tri_num += dat.tris.size()/3;
-            ver_num += dat.verts.size()/3;
-        }
-    }
-
-    if ( tri_num > 0 ) {
-        StaticMeshes = std::make_shared<smallMesh>();
-        StaticMeshes->resize(tri_num, ver_num);
-    } else {
-        StaticMeshes = nullptr;
-        return;
-    }
-
-    size_t tri_offset = 0;
-    size_t ver_offset = 0;
-
-    for (const auto* dat_ptr : candidates) {
-
-        auto& dat = *dat_ptr;
-
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
-
-        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-            auto matName = dat.mtlidList[j];
-            auto it = g_mtlidlut.find(matName);
-            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
-        }
-
-        tbb::parallel_for(size_t(0), dat.tris.size()/3, [&](size_t i) {
-            int mtidx = dat.triMats[i];
-            StaticMeshes->mat_idx[tri_offset + i] = global_matidx[mtidx];
-
-            StaticMeshes->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
-        });
-
-        memcpy(StaticMeshes->vertices.data()+ver_offset, dat.verts.data(), sizeof(float)*dat.verts.size() );
-
-        auto& uvAttr = dat.getAttr("uv");
-        auto& clrAttr = dat.getAttr("clr");
-        auto& nrmAttr = dat.getAttr("nrm");
-        auto& tangAttr = dat.getAttr("atang");
-
-        tbb::parallel_for(size_t(0), dat.verts.size()/3, [&](size_t i) {
-
-            StaticMeshes->g_uv[ver_offset + i] = toHalf( *(float2*)&uvAttr[i * 3] );
-            StaticMeshes->g_clr[ver_offset + i] = toHalf( *(float3*)&clrAttr[i * 3] );
-
-            StaticMeshes->g_nrm[ver_offset + i] = toHalf( *(float3*)&nrmAttr[i * 3] );
-            StaticMeshes->g_tan[ver_offset + i] = toHalf( *(float3*)&tangAttr[i * 3] );
-        });
-
-        tri_offset += dat.tris.size() / 3;
-        ver_offset += dat.verts.size() / 3;
-    }
-
-    buildMeshAccel(state, StaticMeshes);
+    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS);
 }
 
-static void updateDynamicDrawObjects() {
-
-    std::vector<const DrawDat*> candidates;
-
-    for (auto const &[key, dat]: drawdats) {
-        if(key.find(":static:")==key.npos && dat.instID == "Default") {
-            candidates.push_back(&dat);
-        }
-    }
-
-    g_meshPieces = {};
-    g_meshPieces.resize(candidates.size());
-
-    for (size_t i=0; i<candidates.size(); ++i) {
-
-        auto& mesh = g_meshPieces[i];
-        auto& dat = *candidates[i];
-
-        mesh = std::make_shared<smallMesh>();
-        mesh->resize(dat.tris.size()/3, dat.verts.size()/3);
-
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
-
-        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-            auto matName = dat.mtlidList[j];
-            auto it = g_mtlidlut.find(matName);
-            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
-        }
-
-        for (size_t i=0; i<dat.tris.size()/3; ++i) {
-
-            int mtidx = max(0, dat.triMats[i]);
-            mesh->mat_idx[i] = global_matidx[mtidx];
-        }
-
-        memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
-        memcpy(mesh->vertices.data(), dat.verts.data(), sizeof(float)*dat.verts.size() );
-
-        auto ver_count = dat.verts.size()/3;
-
-        auto& uvAttr = dat.getAttr("uv");
-        auto& clrAttr = dat.getAttr("clr");
-        auto& nrmAttr = dat.getAttr("nrm");
-        auto& tangAttr = dat.getAttr("atang");
-
-        tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
-            
-            mesh->g_uv[i] = toHalf( *(float2*)&(uvAttr[i * 3]) );
-            mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
-
-            mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
-            mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
-        });
-    }
-
-}
-static void updateInstObjects()
-{
-    g_instLUT.clear();
-
-    std::vector<const DrawDat*> candidates;
-
-    std::unordered_map<std::string, size_t> numIndicesInstID {};
-    std::unordered_map<std::string, size_t> numVerticesInstID {};
-
-    for (const auto &[key, dat] : drawdats)
-    {
-        if ("Default" == dat.instID) { continue; }
-        
-        //auto findStatic = key.find(":static:") != key.npos;
-        //if (needStatic != findStatic) { continue; }
-
-        candidates.push_back(&dat);
-
-        numIndicesInstID[dat.instID] += dat.tris.size() / 3;
-        numVerticesInstID[dat.instID] += dat.verts.size() / 3;   
-    }
-
-    for (auto& [key, val] : numVerticesInstID) {
-    
-        auto& instData = g_instLUT[key];
-
-        auto& mesh_ref = instData.mesh;
-        if (mesh_ref == nullptr) { mesh_ref = std::make_shared<smallMesh>(); }
-
-        auto ver_num = numVerticesInstID[key];
-        auto tri_num = numIndicesInstID[key];
-
-        mesh_ref->resize(tri_num, ver_num);  
-    }
-
-    std::map<std::string, size_t> ver_offsets;
-    std::map<std::string, size_t> tri_offsets;
-
-    for (size_t k=0; k<candidates.size(); ++k) {
-
-        auto &dat = *candidates[k];
-        
-        auto &instData = g_instLUT[dat.instID];
-        auto &mesh_ref = instData.mesh;
-
-        std::vector<uint32_t> global_matidx(max(dat.mtlidList.size(), 1ull));
-
-        for (size_t j=0; j<dat.mtlidList.size(); ++j) {
-            auto matName = dat.mtlidList[j];
-            auto it = g_mtlidlut.find(matName);
-            global_matidx[j] = it != g_mtlidlut.end() ? it->second : 0;
-        }
-
-        auto tri_num = dat.tris.size() / 3;
-        auto ver_num = dat.verts.size() / 3;
-
-        auto& tri_offset = tri_offsets[dat.instID];
-        auto& ver_offset = ver_offsets[dat.instID];
-
-        memcpy(mesh_ref->vertices.data()+ver_offset, dat.verts.data(), sizeof(dat.verts[0])*dat.verts.size() );
-
-        tbb::parallel_for(size_t(0), tri_num, [&](size_t i) {
-
-            int mtidx = dat.triMats[i];
-            mesh_ref->mat_idx[tri_offset+i] = global_matidx[mtidx];
-            mesh_ref->indices[tri_offset+i] = (*(uint3*)&dat.tris[i*3]) + make_uint3(ver_offset);
-        });
-
-        auto& uvAttr = dat.getAttr("uv");
-        auto& clrAttr = dat.getAttr("clr");
-        auto& nrmAttr = dat.getAttr("nrm");
-        auto& tangAttr = dat.getAttr("atang");
-
-        tbb::parallel_for(size_t(0), ver_num, [&](size_t i) {
-
-            auto offset = ver_offset + i;
-
-            mesh_ref->g_uv[offset] = toHalf( *(float2*)&uvAttr[i * 3] );
-            mesh_ref->g_clr[offset] = toHalf( *(float3*)&clrAttr[i * 3] );
-            mesh_ref->g_nrm[offset] = toHalf( *(float3*)&nrmAttr[i * 3] );
-            mesh_ref->g_tan[offset] = toHalf( *(float3*)&tangAttr[i * 3] );
-        });
-
-        tri_offset += tri_num;
-        ver_offset += ver_num;
-    }
-
-    for (auto& [key, instData] : g_instLUT) {
-        buildMeshAccel(state, instData.mesh);
-    }
-}
-
-void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
-                 float const *verts, size_t numverts, uint const *tris, size_t numtris,
-                 std::map<std::string, std::pair<float const *, size_t>> const &vtab,
-                 int const *matids, std::vector<std::string> const &matNameList) {
-    DrawDat &dat = drawdats[key];
-    //ZENO_P(mtlid);
-    dat.triMats.assign(matids, matids + numtris);
-    dat.mtlidList = matNameList;
-    dat.mtlid = mtlid;
-    dat.instID = instID;
-    dat.verts.assign(verts, verts + numverts * 3);
-    dat.tris.assign(tris, tris + numtris * 3);
-    //TODO: flatten just here... or in renderengineoptx.cpp
-    for (auto const &[key, fptr]: vtab) {
-        dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
-    }
-}
-
-void unload_object(std::string const &key) {
-    drawdats.erase(key);
-}
-
-struct InstTrs
-{
-    std::string instID;
-    std::string onbType;
-
-    std::vector<float> pos;
-    std::vector<float> uv;
-    std::vector<float> nrm;
-    std::vector<float> clr;
-    std::vector<float> tang;
-};
-
-static std::unordered_map<std::string, InstTrs> instTrsLUT;
-
-void load_inst(const std::string &key, const std::string &instID, const std::string &onbType, std::size_t numInsts, const float *pos, const float *nrm, const float *uv, const float *clr, const float *tang)
-{
-    InstTrs &instTrs = instTrsLUT[key];
-    instTrs.instID = instID;
-    instTrs.onbType = onbType;
-
-    instTrs.pos.assign(pos, pos + numInsts * 3);
-    instTrs.nrm.assign(nrm, nrm + numInsts * 3);
-    instTrs.uv.assign(uv, uv + numInsts * 3);
-    instTrs.clr.assign(clr, clr + numInsts * 3);
-    instTrs.tang.assign(tang, tang + numInsts * 3);
-}
-
-void unload_inst(const std::string &key)
-{
-    instTrsLUT.erase(key);
-}
-
-void UpdateInst()
-{
-    sphereInstanceGroupAgentList.clear();
-    sphereInstanceGroupAgentList.reserve(SpheresInstanceGroupMap.size());
-
-    for (auto &[key, instTrs] : instTrsLUT)
-    {
-        if ( SpheresInstanceGroupMap.count(instTrs.instID) > 0 ) {
-
-            auto& sphereInstanceBase = SpheresInstanceGroupMap[instTrs.instID];
-
-            auto float_count = instTrs.pos.size();
-            auto element_count = float_count/3u;
-
-            auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
-
-            sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
-			sia->aux_list = std::vector<float>(element_count * 3, 0);
-
-            for (size_t i=0; i<element_count; ++i) {
-                sia->radius_list[i] *= instTrs.tang[3*i +0];
-
-				sia->aux_list[i*3+0] = instTrs.clr[3*i +0];
-				sia->aux_list[i*3+1] = instTrs.clr[3*i +1];
-				sia->aux_list[i*3+2] = instTrs.clr[3*i +2];
-
-            }
-
-            sia->center_list.resize(element_count);
-            memcpy(sia->center_list.data(), instTrs.pos.data(), sizeof(float) * float_count);
-
-            sphereInstanceGroupAgentList.push_back(sia);
-            continue;
-        } // only for sphere
-
-        const auto& instID = instTrs.instID;
-        auto& instMat = g_instMatsLUT[instID];
-        auto& instAttr = g_instAttrsLUT[instID];
-        auto& instScale = g_instScaleLUT[instID];
-
-        const auto& numInstMats = instTrs.pos.size() / 3;
-        instMat.resize(numInstMats);
-        instScale.resize(numInstMats);
-        instAttr.pos.resize(numInstMats);
-        instAttr.nrm.resize(numInstMats);
-        instAttr.uv.resize(numInstMats);
-        instAttr.clr.resize(numInstMats);
-        instAttr.tang.resize(numInstMats);
-        
-        tbb::parallel_for(static_cast<std::size_t>(0), numInstMats, [&, &instTrs=instTrs](std::size_t i) {
-
-            auto translateMat = glm::translate(glm::vec3(instTrs.pos[3 * i + 0], instTrs.pos[3 * i + 1], instTrs.pos[3 * i + 2]));
-
-            zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
-            zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
-            float pScale = instTrs.tang[3*i +0];
-            t0 = normalizeSafe(t0);
-            zeno::vec3f t2;
-            zeno::guidedPixarONB(t0, t1, t2);
-            glm::mat4x4 rotateMat(1);
-
-            const auto ABC = std::vector{t2, t1, t0};
-
-            for (int c=0; c<3; ++c) {
-                auto ci = instTrs.onbType[c] - 'X'; // X, Y, Z
-                auto ve = ABC[ci];
-
-                rotateMat[c] = glm::vec4(ve[0], ve[1], ve[2], 0.0);
-            }
-
-            auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
-            instMat[i] = translateMat * rotateMat * scaleMat;
-            instScale[i] = pScale;
-
-            instAttr.pos[i] = *(float3*)&instTrs.pos[3 * i];
-            instAttr.nrm[i] = *(float3*)&instTrs.nrm[3 * i];
-            
-            instAttr.uv[i]   = *(float3*)&instTrs.uv[3 * i];
-            instAttr.clr[i]  = *(float3*)&instTrs.clr[3 * i];
-            instAttr.tang[i] = *(float3*)&instTrs.tang[3 * i];
-        });
-    }
-}
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
   zeno::vec2i t;
   t[0] = target[0]; t[1] = target[1];
@@ -2856,26 +1569,25 @@ void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno
   state.params.height = t[1];
   float sx = (float)t[0]/(float)dx;
   float sy = (float)t[1]/(float)dy;
-
-  state.params.windowSpace = make_int2(sx * (float)nx, sy * (float)ny);
-  state.params.windowCrop_min = make_int2(sx * (float)bmin[0], sy * (float)bmin[1]);
-  state.params.windowCrop_max = make_int2(sx * (float)bmax[0], sy * (float)bmax[1]);
 }
 void set_window_size(int nx, int ny) {
+    camera_changed = true;
+
+    if (nx == state.params.width && ny == state.params.height) return;
     state.params.width = nx;
     state.params.height = ny;
-    state.params.windowSpace = make_int2(nx, ny);
-    state.params.windowCrop_min = make_int2(0,0);
-    state.params.windowCrop_max = make_int2(nx, ny);
-    camera_changed = true;
     resize_dirty = true;
 }
-void set_physical_camera_param(float aperture, float shutter_speed, float iso, bool aces, bool exposure) {
+
+void set_physical_camera_param(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
     state.params.physical_camera_aperture = aperture;
     state.params.physical_camera_shutter_speed = shutter_speed;
     state.params.physical_camera_iso = iso;
     state.params.physical_camera_aces = aces;
     state.params.physical_camera_exposure = exposure;
+    state.params.physical_camera_panorama_camera = panorama_camera;
+    state.params.physical_camera_panorama_vr180 = panorama_vr180;
+    state.params.physical_camera_pupillary_distance = pupillary_distance;
 }
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture) {
     set_perspective_by_fov(U,V,W,E,aspect,fov,0,0.024f,fpd,aperture,0.0f,0.0f,0.0f,0.0f);
@@ -2937,7 +1649,7 @@ void set_perspective_by_focal_length(float const *U, float const *V, float const
     camera_changed = true;
 }
 
-void set_outside_random_number(int32_t outside_random_number) {
+void set_outside_random_number(unsigned int outside_random_number) {
     state.params.outside_random_number = outside_random_number;
 }
 
@@ -2972,16 +1684,6 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
             tex_data[i * 3 + 2] = v.z;
         }
     }
-    else if (name == "pos") {
-        std::vector<ushort3> temp_buffer(w * h);
-        cudaMemcpy(temp_buffer.data(), (void*)state.frame_buffer_p.handle, sizeof(ushort3) * temp_buffer.size(), cudaMemcpyDeviceToHost);
-        for (auto i = 0; i < temp_buffer.size(); i++) {
-            float3 v = toFloat(temp_buffer[i]);
-            tex_data[i * 3 + 0] = v.x;
-            tex_data[i * 3 + 1] = v.y;
-            tex_data[i * 3 + 2] = v.z;
-        }
-    }
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
@@ -2991,8 +1693,8 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
     return tex_data;
 }
 
-std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
-    std::vector<half> tex_data(w * h * 3);
+std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
+    std::vector<Imath::half> tex_data(w * h * 3);
     if (name == "diffuse") {
         std::vector<float> temp_buffer(w * h * 3);
         cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_d.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
@@ -3015,7 +1717,7 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
         }
     }
     else if (name == "background") {
-        std::vector<half> temp_buffer(w * h);
+        std::vector<Imath::half> temp_buffer(w * h);
         cudaMemcpy(temp_buffer.data(), (void*)state.accum_buffer_b.handle, sizeof(temp_buffer[0]) * temp_buffer.size(), cudaMemcpyDeviceToHost);
         for (auto i = 0; i < temp_buffer.size(); i++) {
             tex_data[i * 3 + 0] = temp_buffer[i];
@@ -3025,9 +1727,6 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
     }
     else if (name == "mask") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_m.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
-    }
-    else if (name == "pos") {
-        cudaMemcpy(tex_data.data(), (void*)state.frame_buffer_p.handle, sizeof(half) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
     else if (name == "color") {
         std::vector<float> temp_buffer(w * h * 3);
@@ -3043,13 +1742,50 @@ std::vector<half> optixgetimg_extra3(std::string name, int w, int h) {
     return tex_data;
 }
 
-glm::vec3 get_click_pos(int x, int y) {
+#include <mutex>
+#include <condition_variable>
+
+std::mutex click_mutex;
+std::condition_variable click_cv;
+
+glm::vec3 get_click_pos(float xf, float yf) {
     int w = state.params.width;
     int h = state.params.height;
-    auto frame_buffer_pos = optixgetimg_extra2("pos", w, h);
-    auto index = x + (h - 1 - y) * w;
-    auto posWS = ((glm::vec3*)frame_buffer_pos.data())[index];
-    return posWS;
+    int x = xf * w;
+    int y = yf * h;
+
+    std::unique_lock<std::mutex> lock(click_mutex);
+    state.params.click_dirty = true;
+    state.params.click_coord = make_uint2(x, h - 1 - y);
+
+    click_cv.wait(lock, []{
+        return !state.params.click_dirty; 
+    });
+
+    float3 click_result;
+    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
+    cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
+    return glm::vec3(click_result.x, click_result.y, click_result.z);
+}
+
+glm::uvec4 get_click_id(float xf, float yf) {
+    int w = state.params.width;
+    int h = state.params.height;
+    int x = xf * w;
+    int y = yf * h;
+    
+    std::unique_lock<std::mutex> lock(click_mutex);
+    state.params.click_dirty = true;
+    state.params.click_coord = make_uint2(x, h - 1 - y);
+
+    click_cv.wait(lock, []{
+        return !state.params.click_dirty; 
+    });
+
+    uint4 click_meta;
+    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
+    cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
+    return glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
 }
 
 static void save_exr(float3* ptr, int w, int h, std::string path) {
@@ -3085,48 +1821,103 @@ static void save_png_color(std::string path, int w, int h, float* ptr) {
     stbi_flip_vertically_on_write(1);
     stbi_write_png(native_path.c_str(), w, h, 3, data.data(),0);
 }
+
+static void updateRayGen(bool aov, bool denoise) {
+    using namespace OptixUtil;
+
+    auto new_config = std::tuple {aov, denoise};
+    if (new_config == raygen_config) return;
+    raygen_config = new_config;
+
+    auto source = sutil::lookupIncFile("PTKernel.cu");
+    std::vector<std::string> macros {
+        "--define-macro=__AOV__="+std::to_string(aov),
+        "--define-macro=DENOISE="+std::to_string(denoise)
+    };
+
+    createModule(raygen_module.reset(), context, source, "PTKernel.cu", macros);
+    createRenderGroups(context, raygen_module);
+
+    createSBT(state, true);
+    createPipeline(defaultScene.maxNodeDepth, true);
+}
+
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
-    state.params.simpleRender = false;//simpleRender;
+
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
 #ifdef OPTIX_BASE_GL
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
 #endif
-    updateState( *output_buffer_o, state.params );
-//    updateState( *output_buffer_diffuse, state.params);
-//    updateState( *output_buffer_specular, state.params);
-//    updateState( *output_buffer_transmit, state.params);
-//    updateState( *output_buffer_background, state.params);
+    
+    bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
+    state.params.needAOV = enable_output_aov;
+    updateRayGen(enable_output_aov, denoise);
+    updateState( *output_buffer_o, state.params, enable_output_aov );
+
+    if (denoise) {
+        auto w = state.params.width;
+        auto h = state.params.height;
+        size_t byte_size = sizeof(float3) * w * h;
+        state.albedo_buffer_p.resize(byte_size);
+        state.normal_buffer_p.resize(byte_size);
+    } else {
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
+    }
+    state.params.albedo_buffer = (float3*)state.albedo_buffer_p.handle;
+    state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
+
+    auto &ud = zeno::getSession().userData();
+    auto pause = ud.get2<bool>("viewport-optix-pause", false);
 
     const int max_samples_once = 1;
+    uchar4* result_buffer_data = output_buffer_o->map();
+
+    bool should_notify = false;
+    {
+        std::lock_guard<std::mutex> lock(click_mutex);
+        should_notify = state.params.click_dirty;
+    }
+
+    if (pause && !should_notify) {
+        return;
+    }
+    state.params.pause = pause;
+
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state, denoise);
+        launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
+    }
+    output_buffer_o->unmap();
+
+    if (should_notify) {
+        state.params.click_dirty = false;
+        click_cv.notify_all();
     }
 
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
-    auto &ud = zeno::getSession().userData();
     if (ud.has("optix_image_path")) {
         auto path = ud.get2<std::string>("optix_image_path");
         auto p = (*output_buffer_o).getHostPointer();
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", true);
+
         bool enable_output_exr = zeno::getSession().userData().get2<bool>("output_exr", true);
         bool enable_output_mask = zeno::getSession().userData().get2<bool>("output_mask", false);
         auto exr_path = path.substr(0, path.size() - 4) + ".exr";
         if (enable_output_mask) {
-            path = path.substr(0, path.size() - 4);
-            save_png_data(path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
+            auto mask_path = path.substr(0, path.size() - 4);
+            save_png_data(mask_path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
         // AOV
         if (enable_output_aov) {
@@ -3173,17 +1964,22 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 std::string jpg_native_path = zeno::create_directories_when_write_file(path);
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
                 if (denoise) {
+                    auto byte_size = state.albedo_buffer_p.size;
+                    std::vector<std::byte> temp; temp.resize(byte_size); 
+
                     const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                    //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                    cudaMemcpy(temp.data(), _albedo_buffer, byte_size, cudaMemcpyDeviceToHost);
+                    
                     auto a_path = path + ".albedo.pfm";
                     std::string native_a_path = zeno::create_directories_when_write_file(a_path);
-                    zeno::write_pfm(native_a_path.c_str(), w, h, _albedo_buffer);
+                    zeno::write_pfm(native_a_path.c_str(), w, h, (float*)temp.data());
 
                     const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                    //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                    cudaMemcpy(temp.data(), _normal_buffer, byte_size, cudaMemcpyDeviceToHost);
+
                     auto n_path = path + ".normal.pfm";
                     std::string native_n_path = zeno::create_directories_when_write_file(n_path);
-                    zeno::write_pfm(native_n_path.c_str(), w, h, _normal_buffer);
+                    zeno::write_pfm(native_n_path.c_str(), w, h, (float*)temp.data());
                 }
             }
         }
@@ -3218,11 +2014,10 @@ void optixCleanup() {
     state.plights = {};
     state.params.plights_ptr = 0u;
 
-    lightsWrapper.reset();
+    defaultScene.lightsWrapper.reset();
     state.finite_lights_ptr.reset();
     
     state.params.sky_strength = 1.0f;
-    state.params.sky_texture;
 
     std::vector<OptixUtil::TexKey> keys;
 
@@ -3238,24 +2033,26 @@ void optixCleanup() {
    
     OptixUtil::sky_tex = OptixUtil::default_sky_tex;
 
-    cleanupSpheresGPU();
-    lightsWrapper.reset();
-    
-    for (auto& ele : list_volume) {
-        cleanupVolume(*ele);
-    }
-    list_volume.clear();
-
-    for (auto const& [key, val] : OptixUtil::g_vdb_cached_map) {
+    for (auto const& [key, val] : defaultScene._vdb_grids_cached) {
         cleanupVolume(*val);
     }
-    OptixUtil::g_vdb_cached_map.clear();
+    
+    defaultScene = {};
     OptixUtil::g_ies.clear();
 
-    StaticMeshes = {};
-    g_meshPieces.clear();
+    globalShaderBufferGroup.reset();
 
-    cleanupHairs();
+    using namespace OptixUtil;
+
+    pipelineMark = {};
+
+    try {
+        CUDA_SYNC_CHECK();
+    }
+    catch(std::exception const& e)
+    {
+        std::cout << "Exception: " << e.what() << "\n";
+    }
 }
 
 void optixDestroy() {
@@ -3282,7 +2079,7 @@ void optixDestroy() {
 
     output_buffer_o           .reset();
     state = {};
-    isPipelineCreated = false;         
+    pipelineMark = {};         
 }
 
 #if 0

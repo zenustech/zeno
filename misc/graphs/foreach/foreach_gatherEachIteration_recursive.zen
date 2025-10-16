@@ -2,12 +2,12 @@
     "main": {
         "type": 2,
         "nodes": {
-            "Cube2": {
-                "name": "Cube2",
-                "class": "CreateCube",
+            "Cube1": {
+                "name": "Cube1",
+                "class": "Cube",
                 "object_inputs": {},
                 "primitive_inputs": {
-                    "position": {
+                    "Center": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -18,10 +18,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "scaleSize": {
+                    "Size": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -32,10 +32,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "rotate": {
+                    "Rotate": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -46,40 +46,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "hasNormal": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "hasVertUV": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "isFlipFace": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "div_w": {
+                    "X Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -89,7 +59,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "div_h": {
+                    "Y Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -99,7 +69,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "div_d": {
+                    "Z Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -109,7 +79,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "size": {
+                    "Uniform Scale": {
                         "links": null,
                         "type": "float",
                         "default-value": 1.0,
@@ -119,7 +89,17 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "quads": {
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Point Normals": {
                         "links": null,
                         "type": "bool",
                         "default-value": false,
@@ -132,14 +112,14 @@
                 },
                 "primitive_outputs": {},
                 "object_outputs": {
-                    "prim": {
-                        "type": "prim",
+                    "Output": {
+                        "type": "geometry",
                         "socket-type": "output"
                     }
                 },
                 "uipos": [
-                    910.0,
-                    93.0
+                    1047.0,
+                    7.0
                 ],
                 "status": [],
                 "collasped": false
@@ -151,29 +131,18 @@
                     "Initial Object": {
                         "links": [
                             {
-                                "out-node": "Cube2",
-                                "out-socket": "prim",
+                                "out-node": "Cube1",
+                                "out-socket": "Output",
                                 "out-key": "",
                                 "in-key": "",
                                 "target-socket": "Initial Object"
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Current Iteration": {
-                        "property": "normal",
-                        "links": null,
-                        "type": "int",
-                        "default-value": 4,
-                        "control": {
-                            "name": ""
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "Fetch Method": {
                         "links": null,
                         "type": "string",
@@ -193,12 +162,23 @@
                         },
                         "socket-type": "primitive",
                         "visible": false
+                    },
+                    "Current Iteration": {
+                        "property": "normal",
+                        "links": null,
+                        "type": "int",
+                        "default-value": 4,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
                     }
                 },
                 "primitive_outputs": {
                     "Current Iteration": {
                         "type": "int",
-                        "socket-type": "primitive",
+                        "socket-type": "clone",
                         "visible": false
                     }
                 },
@@ -230,21 +210,10 @@
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Current Iteration": {
-                        "property": "normal",
-                        "links": null,
-                        "type": "int",
-                        "default-value": 2,
-                        "control": {
-                            "name": ""
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "Fetch Method": {
                         "links": null,
                         "type": "string",
@@ -264,12 +233,23 @@
                         },
                         "socket-type": "primitive",
                         "visible": false
+                    },
+                    "Current Iteration": {
+                        "property": "normal",
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
                     }
                 },
                 "primitive_outputs": {
                     "Current Iteration": {
                         "type": "int",
-                        "socket-type": "primitive",
+                        "socket-type": "clone",
                         "visible": false
                     }
                 },
@@ -301,20 +281,10 @@
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Collect Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "Gather Each Iteration",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "ForEachBegin Path": {
                         "links": null,
                         "type": "string",
@@ -325,30 +295,20 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "Increment": {
+                    "Iterations": {
                         "links": null,
                         "type": "int",
-                        "default-value": 1,
+                        "default-value": 4,
                         "control": {
                             "name": "Integer"
                         },
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "Iterate Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "By Count",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Iterations": {
+                    "Increment": {
                         "links": null,
                         "type": "int",
-                        "default-value": 4,
+                        "default-value": 1,
                         "control": {
                             "name": "Integer"
                         },
@@ -371,6 +331,26 @@
                         "default-value": 6,
                         "control": {
                             "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Iterate Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "By Count",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Collect Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Gather Each Iteration",
+                        "control": {
+                            "name": "Enum"
                         },
                         "socket-type": "primitive",
                         "visible": false
@@ -399,28 +379,18 @@
                     "Iterate Object": {
                         "links": [
                             {
-                                "out-node": "Transform2",
-                                "out-socket": "outPrim",
+                                "out-node": "Transform1",
+                                "out-socket": "Output",
                                 "out-key": "",
                                 "in-key": "",
-                                "target-socket": "outPrim"
+                                "target-socket": "Iterate Object"
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Collect Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "Gather Each Iteration",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "ForEachBegin Path": {
                         "links": null,
                         "type": "string",
@@ -431,30 +401,20 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "Increment": {
+                    "Iterations": {
                         "links": null,
                         "type": "int",
-                        "default-value": 1,
+                        "default-value": 2,
                         "control": {
                             "name": "Integer"
                         },
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "Iterate Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "By Count",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Iterations": {
+                    "Increment": {
                         "links": null,
                         "type": "int",
-                        "default-value": 2,
+                        "default-value": 1,
                         "control": {
                             "name": "Integer"
                         },
@@ -477,6 +437,26 @@
                         "default-value": 10,
                         "control": {
                             "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Iterate Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "By Count",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Collect Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Gather Each Iteration",
+                        "control": {
+                            "name": "Enum"
                         },
                         "socket-type": "primitive",
                         "visible": false
@@ -511,7 +491,7 @@
                             }
                         ],
                         "type": "list",
-                        "socket-type": "readonly"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {},
@@ -529,62 +509,37 @@
                 "status": [],
                 "collasped": false
             },
-            "Transform2": {
-                "name": "Transform2",
-                "class": "PrimitiveTransform",
+            "Transform1": {
+                "name": "Transform1",
+                "class": "Transform",
                 "object_inputs": {
-                    "Matrix": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "local": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "preTransform": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "prim": {
+                    "Input Geometry": {
                         "links": [
                             {
                                 "out-node": "ForEachBegin3",
                                 "out-socket": "Output Object",
                                 "out-key": "",
                                 "in-key": "",
-                                "target-socket": "prim"
+                                "target-socket": "Output Object"
                             }
                         ],
-                        "type": "prim",
+                        "type": "",
                         "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "path": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "",
-                        "control": {
-                            "name": "String"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "translation": {
+                    "Translation": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
-                            1.0,
+                            2.0,
                             0.0,
                             0.0
                         ],
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "eulerXYZ": {
@@ -598,7 +553,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "quatRotation": {
@@ -613,10 +568,10 @@
                         "control": {
                             "name": "Float Vector 4"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "scaling": {
+                    "Scaling": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -627,7 +582,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "shear": {
@@ -641,7 +596,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "pivot": {
@@ -665,7 +620,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "localX": {
@@ -679,7 +634,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "localY": {
@@ -693,40 +648,145 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "EulerRotationOrder": {
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
                         "links": null,
                         "type": "string",
                         "default-value": "YXZ",
                         "control": {
-                            "name": "Enum"
+                            "name": "String"
                         },
-                        "socket-type": "none",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "EulerAngleMeasure": {
+                    "measure": {
                         "links": null,
                         "type": "string",
                         "default-value": "Degree",
                         "control": {
-                            "name": "Enum"
+                            "name": "String"
                         },
-                        "socket-type": "none",
+                        "socket-type": "primitive",
                         "visible": false
                     }
                 },
                 "primitive_outputs": {},
                 "object_outputs": {
-                    "outPrim": {
-                        "type": "prim",
+                    "Output": {
+                        "type": "",
                         "socket-type": "output"
                     }
                 },
                 "uipos": [
-                    797.0,
-                    548.0
+                    932.0,
+                    565.0
                 ],
                 "status": [],
                 "collasped": false

@@ -11,12 +11,12 @@ namespace {
 
 struct PrimMatchUVLine : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto prim2 = get_input<PrimitiveObject>("prim2");
-        auto uvAttr = get_input2<std::string>("uvAttr");
-        auto uvAttr2 = get_input2<std::string>("uvAttr2");
-        auto copyOtherAttrs = get_input2<bool>("copyOtherAttrs");
-        //auto dirAttrOut = get_input2<std::string>("dirAttrOut");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto prim2 = ZImpl(get_input<PrimitiveObject>("prim2"));
+        auto uvAttr = ZImpl(get_input2<std::string>("uvAttr"));
+        auto uvAttr2 = ZImpl(get_input2<std::string>("uvAttr2"));
+        auto copyOtherAttrs = ZImpl(get_input2<bool>("copyOtherAttrs"));
+        //auto dirAttrOut = ZImpl(get_input2<std::string>("dirAttrOut"));
 
         if (!prim2->lines.size() || !prim2->verts.size())
             throw makeError("no lines connectivity found in prim2");
@@ -68,7 +68,7 @@ struct PrimMatchUVLine : INode {
             }
         });
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

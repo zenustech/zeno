@@ -41,7 +41,7 @@ namespace zeno
                 },
                 _ObjectGroup {
                     {
-                        //¿Õ×Ö·û´®Ä¬ÈÏmappingµ½ applyµÄÊä³öÖµ
+                        //ç©ºå­—ç¬¦ä¸²é»˜è®¤mappingåˆ° applyçš„è¾“å‡ºå€¼
                         _ObjectParam {"output_obj", "Output Object", Socket_Output},
                     }
                },
@@ -76,7 +76,7 @@ namespace zeno
             bConverted = std::is_convertible<std::shared_ptr<PrimitiveObject>, std::shared_ptr<LightObject>>::value;
 
             return resObj;
-            //return input_obj;     //TODO: Ö±½Ó·µ»ØÕâ¸ö£¬Íâ²¿µÄres»á¿Õ£¨INode.cpp: iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);)
+            //return input_obj;     //TODO: ç›´æŽ¥è¿”å›žè¿™ä¸ªï¼Œå¤–éƒ¨çš„resä¼šç©ºï¼ˆINode.cpp: iter->second.spObject = zeno::reflect::any_cast<std::shared_ptr<zeno::IObject>>(res);)
         }
     };
 

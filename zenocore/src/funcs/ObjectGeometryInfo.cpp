@@ -13,16 +13,19 @@ ZENO_API std::pair<vec3f, vec3f> primBoundingBox(PrimitiveObject* prim) {
 }
 
 ZENO_API bool objectGetBoundingBox(IObject *ptr, vec3f &bmin, vec3f &bmax) {
-    auto &ud = ptr->userData();
-    if (ud.has("_bboxMin") && ud.has("_bboxMax")) {
-        bmin = ud.getLiterial<vec3f>("_bboxMin");
-        bmax = ud.getLiterial<vec3f>("_bboxMax");
+    auto ud = ptr->userData();
+    if (ud->has("_bboxMin") && ud->has("_bboxMax")) {
+        bmin = toVec3f(ud->get_vec3f("_bboxMin"));
+        bmax = toVec3f(ud->get_vec3f("_bboxMax"));
         return true;
     } else {
         if (auto obj = dynamic_cast<PrimitiveObject *>(ptr)) {
+            if (obj->verts.size() == 0) {
+                 return false;
+             }
             std::tie(bmin, bmax) = primBoundingBox(obj);
-            ud.setLiterial("_bboxMin", bmin);
-            ud.setLiterial("_bboxMax", bmax);
+            ud->set_vec3f("_bboxMin", toAbiVec3f(bmin));
+            ud->set_vec3f("_bboxMax", toAbiVec3f(bmax));
             return true;
         }
         else {

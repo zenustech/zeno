@@ -42,7 +42,7 @@ void ZTextEdit::initUI()
         if (m_hintlist && m_descLabel && hasFocus() && m_bShowHintList && m_index.isValid())
         {
             QString txt = toPlainText().left(textCursor().position());
-            QString nodePath = m_index.data(ROLE_OBJPATH).toString();
+            QString nodePath = m_index.data(QtRole::ROLE_OBJPATH).toString();
             zeno::Formula fmla(txt.toStdString(), nodePath.toStdString());
 
             const QTextCursor& cursor = textCursor();

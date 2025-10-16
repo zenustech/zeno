@@ -1,4 +1,13 @@
-//#include <Python.h>
+#ifdef ZENO_WITH_VLD
+#include <vld.h>
+struct VLDGuard {
+    VLDGuard() {
+        VLDGlobalDisable(); // 尽可能早地停止记录
+    }
+};
+static VLDGuard _earlyVLDGuard; // 构造函数会在 main() 之前调用
+#endif
+
 #include <QApplication>
 #include "style/zenostyle.h"
 #include "zenoapplication.h"
@@ -8,6 +17,11 @@
 #include "zeno/utils/log.h"
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
+#include <GL/glut.h>
+#include <QuickQanava>
+#include <QQuickStyle>
+#include "viewport/qml/zopenglquickview.h"
+#include "style/dpiscale.h"
 
 
 /* debug cutsom layout: ZGraphicsLayout */
@@ -26,11 +40,44 @@ PyMODINIT_FUNC PyInit_spam(void);
 #include <zenoui/comctrl/testwidget.h>
 #endif
 
-
+#if 0
+int	main(int argc, char** argv)
+{
+    QGuiApplication app(argc, argv);
+    QQuickStyle::setStyle("Material");
+    QQmlApplicationEngine* engine = new QQmlApplicationEngine();
+    engine->addPluginPath(QStringLiteral("../QuickQanava-2.4/src")); // Necessary only for development when plugin is not installed to QTDIR/qml
+    QuickQanava::initialize(engine);
+    engine->load(QUrl("qrc:/nodes.qml"));
+    const auto status = app.exec();
+    delete engine;
+    return status;
+}
+#else
 int main(int argc, char *argv[]) 
 {
+    //VLDGlobalDisable();
+    auto& sess = zeno::getSession();
+    zeno::scope_exit sp([&]() {
+        sess.destroy();
+    });
+
+#ifdef ENABLE_HIGHDPI_SCALE
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+    glutInit(&argc, argv);
+
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+    //ZOpenGLQuickView view;
+    ////view.show();
+    ////view.resize(600, 600);
+
+    //QWidget* wid = QWidget::createWindowContainer(&view);
+    //wid->show();
+    //wid->resize(600, 600);
+    //return a.exec();
 
 #ifdef DEBUG_NORMAL_WIDGET
     TestNormalWidget wid;
@@ -43,11 +90,6 @@ int main(int argc, char *argv[])
     view.show();
     return a.exec();
 #endif
-
-    if (argc >= 3 && !strcmp(argv[1], "-invoke")) {
-        extern int invoke_main(int argc, char *argv[]);
-        return invoke_main(argc - 2, argv + 2);
-    }
 
     QTranslator t;
     QTranslator qtTran;
@@ -70,3 +112,4 @@ int main(int argc, char *argv[])
     mainWindow.showMaximized();
     return a.exec();
 }
+#endif

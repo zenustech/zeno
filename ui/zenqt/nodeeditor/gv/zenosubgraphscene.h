@@ -14,6 +14,7 @@ class ZenoTempLink;
 class ZenoSocketItem;
 class NodeGridItem;
 class GraphModel;
+class ZenoSubGraphView;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -36,6 +37,7 @@ public:
     void select(const QStringList& nodes);
     void select(const QModelIndexList &nodes);
     QList<ZenoNodeBase*> getNodesItem() const;
+    ZenoSubGraphView* getView();
     QGraphicsItem* getNode(const QString& nodeName);
     void collectNodeSelChanged(const QString& name, bool bSelected);
     GraphModel* getGraphModel() const;
@@ -91,7 +93,7 @@ private:
 
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
-    std::map<QString, ZenoNodeBase*> m_nodes;   //TODO: ÊÇ·ñ¿É¿¼ÂÇÓÃuuid?
+    std::map<QString, ZenoNodeBase*> m_nodes;
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QHash<QUuid, ZenoFullLink*> m_links;
     //QMap<QString, ZenoFullLink*> m_links;

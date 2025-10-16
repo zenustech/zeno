@@ -5,7 +5,6 @@
 #include <typeinfo>
 #include <string>
 #include <memory>
-#include <zeno/core/common.h>
 
 namespace zeno {
 
@@ -69,14 +68,22 @@ struct UnimplError : Error {
     ZENO_API ~UnimplError() noexcept override;
 };
 
+struct ZfxParseError : Error {
+    ZENO_API explicit ZfxParseError() noexcept;
+    ZENO_API ~ZfxParseError() noexcept override;
+};
+
 class ErrorException : public std::exception {
     std::shared_ptr<Error> const err;
+    std::string node_path_info;
 
 public:
     ZENO_API explicit ErrorException(std::shared_ptr<Error> &&err) noexcept;
+    ZENO_API explicit ErrorException(const std::string& path, std::shared_ptr<Error>&& err) noexcept;
     ZENO_API ~ErrorException() noexcept override;
     ZENO_API char const *what() const noexcept override;
     ZENO_API std::shared_ptr<Error> getError() const noexcept;
+    ZENO_API std::string get_node_info() const;
 
     ErrorException(ErrorException const &) = default;
     ErrorException &operator=(ErrorException const &) = delete;
@@ -87,6 +94,11 @@ public:
 template <class T = Error, class ...Ts>
 static ErrorException makeError(Ts &&...ts) {
     return ErrorException(std::make_shared<T>(std::forward<Ts>(ts)...));
+}
+
+template <class T = Error, class ...Ts>
+static ErrorException makeNodeError(std::string const& node_path_info, Ts &&...ts) {
+    return ErrorException(node_path_info, std::make_shared<T>(std::forward<Ts>(ts)...));
 }
 
 }

@@ -62,7 +62,7 @@
          <string notr="true"/>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="assetsPage">
          <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -128,7 +128,88 @@
             <property name="styleSheet">
              <string notr="true">QListView
                     {
-                        background-color: transparent;
+                        show-decoration-selected: 1;
+                        font-size: 12pt;
+                        font-weight: bold;
+                    }</string>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="horizontalScrollBarPolicy">
+             <enum>Qt::ScrollBarAlwaysOff</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="pluginsPage">
+         <layout class="QVBoxLayout" name="verticalLayout_2333">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout434">
+            <property name="leftMargin">
+             <number>24</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>8</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="labelggre">
+              <property name="styleSheet">
+               <string notr="true">color: #737B85; font-size: 12pt;</string>
+              </property>
+              <property name="text">
+               <string>Plugins</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer4324">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="ZIconLabel" name="createBtn"/>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QListView" name="pluginsList">
+            <property name="styleSheet">
+             <string notr="true">QListView
+                    {
                         show-decoration-selected: 1;
                         font-size: 12pt;
                         font-weight: bold;
@@ -168,6 +249,9 @@
          </layout>
         </widget>
         <widget class="QWidget" name="searchPage">
+         <property name="focusPolicy">
+          <enum>Qt::StrongFocus</enum>
+         </property>
          <layout class="QVBoxLayout" name="verticalLayout_233">
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout2">
@@ -214,7 +298,7 @@
           <item>
            <widget class="QLineEdit" name="searchEdit">
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
            </widget>
           </item>
@@ -243,7 +327,7 @@
        </widget>
        <widget class="QStackedWidget" name="mainStacked">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QScrollArea" name="welcomeScrollPage">
          <property name="frameShape">
@@ -260,8 +344,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>127</width>
-            <height>579</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -272,77 +356,7 @@
           </property>
          </widget>
         </widget>
-        <widget class="QTabWidget" name="graphsViewTab">
-         <property name="palette">
-          <palette>
-           <active>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Window">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>58</red>
-               <green>58</green>
-               <blue>58</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </active>
-           <inactive>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>255</red>
-               <green>255</green>
-               <blue>255</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Window">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>58</red>
-               <green>58</green>
-               <blue>58</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </inactive>
-           <disabled>
-            <colorrole role="Base">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>58</red>
-               <green>58</green>
-               <blue>58</blue>
-              </color>
-             </brush>
-            </colorrole>
-            <colorrole role="Window">
-             <brush brushstyle="SolidPattern">
-              <color alpha="255">
-               <red>58</red>
-               <green>58</green>
-               <blue>58</blue>
-              </color>
-             </brush>
-            </colorrole>
-           </disabled>
-          </palette>
-         </property>
-         <property name="autoFillBackground">
-          <bool>true</bool>
-         </property>
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
+        <widget class="NodeEditorTabWidget" name="graphsViewTab">
          <property name="documentMode">
           <bool>true</bool>
          </property>
@@ -371,6 +385,12 @@
    <class>ZenoWelcomePage</class>
    <extends>QWidget</extends>
    <header>nodeeditor/gv/zenowelcomepage.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>NodeEditorTabWidget</class>
+   <extends>QTabWidget</extends>
+   <header>layout/nodeedittabwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

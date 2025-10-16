@@ -1,19 +1,28 @@
 #include "assetsmodel.h"
-#include "graphmodel.h"
+#include "GraphModel.h"
 #include <zeno/core/Session.h>
 #include <zeno/core/Assets.h>
 #include <zeno/io/zdawriter.h>
 #include <zeno/utils/log.h>
 #include <zeno/io/zdareader.h>
 #include "zassert.h"
+#include <zeno/core/typeinfo.h>
 
 
 AssetsModel::AssetsModel(QObject* parent)
     : QAbstractListModel(parent)
 {
-    std::shared_ptr<zeno::AssetsMgr> assets =  zeno::getSession().assets;
+    auto& assets =  zeno::getSession().assets;
     m_cbCreateAsset = assets->register_createAsset([&](zeno::AssetInfo info) {
         _addAsset(info);
+    });
+
+    assets->register_clear([&]() {
+        if (!m_assets.isEmpty()) {
+            beginRemoveRows(QModelIndex(), 0, m_assets.size() - 1);
+            m_assets.clear();
+            endRemoveRows();
+        }
     });
 
     m_cbRemoveAsset = assets->register_removeAsset([&](const std::string& name) {
@@ -24,7 +33,7 @@ AssetsModel::AssetsModel(QObject* parent)
         //TODO
     });
 
-    for (zeno::Asset asset : assets->getAssets()) {
+    for (const zeno::Asset& asset : assets->getAssets()) {
         _addAsset(asset.m_info);
     }
 }
@@ -58,10 +67,10 @@ GraphModel* AssetsModel::getAssetGraph(const QString& graphName)
             GraphModel* pModel = m_assets[i].pGraphM;
             if (!pModel) {
                 //delay load
-                std::shared_ptr<zeno::AssetsMgr> assets = zeno::getSession().assets;
-                std::shared_ptr<zeno::Graph> spAsset = assets->getAssetGraph(assetName, true);
+                auto& assets = zeno::getSession().assets;
+                auto spAsset = assets->getAssetGraph(assetName, true);
                 if (spAsset) {
-                    auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
+                    auto pNewAsstModel = new GraphModel(assetName, true, nullptr, nullptr, this);
                     m_assets[i].pGraphM = pNewAsstModel;
                     return pNewAsstModel;
                 }
@@ -100,7 +109,7 @@ QVariant AssetsModel::data(const QModelIndex& index, int role) const
 {
     int row = index.row();
     if (row >= 0 && row < m_assets.size()) {
-        if (Qt::DisplayRole == role || ROLE_CLASS_NAME == role) {
+        if (Qt::DisplayRole == role || QtRole::ROLE_CLASS_NAME == role) {
             return QString::fromStdString(m_assets[row].info.name);
         }
     }
@@ -124,29 +133,29 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
     sample.name = info.name;
 
     zeno::NodeData input1;
-    input1.name = "input1";
+    input1.name = "data_input";
     input1.cls = "SubInput";
     input1.uipos = { 0, 0 };
 
     zeno::NodeData objInput1;
-    objInput1.name = "objInput1";
+    objInput1.name = "Input";
     objInput1.cls = "SubInput";
     objInput1.uipos = { 0,700 };
 
     zeno::NodeData output1;
-    output1.name = "output1";
+    output1.name = "data_output";
     output1.cls = "SubOutput";
     output1.uipos = { 1300, 250 };
 
     zeno::NodeData objOutput1;
-    objOutput1.name = "objOutput1";
+    objOutput1.name = "Output";
     objOutput1.cls = "SubOutput";
     objOutput1.uipos = { 1300, 900 };
 
-    sample.nodes.insert(std::make_pair("input1", input1));
-    sample.nodes.insert(std::make_pair("objInput1", objInput1));
-    sample.nodes.insert(std::make_pair("output1", output1));
-    sample.nodes.insert(std::make_pair("objOutput1", objOutput1));
+    sample.nodes.insert(std::make_pair("data_input", input1));
+    sample.nodes.insert(std::make_pair("Input", objInput1));
+    sample.nodes.insert(std::make_pair("data_output", output1));
+    sample.nodes.insert(std::make_pair("Output", objOutput1));
 
     asset.optGraph = sample;
 
@@ -159,35 +168,34 @@ void AssetsModel::newAsset(const zeno::AssetInfo info)
 
     zeno::ParamPrimitive param;
     param.bInput = true;
-    param.name = "input1";
+    param.name = "data_input";
     zeno::PrimVar def = int(0);
     param.defl = zeno::reflect::make_any<zeno::PrimVar>(def);
-    size_t s = param.defl.type().hash_code();
-    size_t s1 = gParamType_Int;
-    size_t s2 = gParamType_PrimVariant;
-    param.type = zeno::types::gParamType_Int;
+    param.type = gParamType_Int;
     param.bSocketVisible = false;
     inputs.push_back(param);
     defaultGroup.params.push_back(param);
+
     zeno::ParamPrimitive outputparam;
     outputparam.bInput = false;
-    outputparam.name = "output1";
-    outputparam.defl = zeno::reflect::Any();
-    outputparam.type = Param_Wildcard;
-    outputparam.socketType = zeno::Socket_WildCard;
+    outputparam.name = "data_output";
+    outputparam.defl = 3;
+    outputparam.type = gParamType_Int;
+    outputparam.socketType = zeno::Socket_Clone;
     outputparam.bSocketVisible = false;
     outputs.push_back(outputparam);
+
     zeno::ParamObject objInput;
     objInput.bInput = true;
-    objInput.name = "objInput1";
-    objInput.type = Obj_Wildcard;
-    objInput.socketType = zeno::Socket_WildCard;
+    objInput.name = "Input";
+    objInput.type = gParamType_Geometry;
+    objInput.socketType = zeno::Socket_Clone;
     objInputs.push_back(objInput);
+
     zeno::ParamObject objOutput;
     objOutput.bInput = false;
-    objOutput.name = "objOutput1";
-    objOutput.type = Obj_Wildcard;
-    objOutput.socketType = zeno::Socket_WildCard;
+    objOutput.name = "Output";
+    objOutput.type = gParamType_Geometry;
     objOutputs.push_back(objOutput);
 
     zeno::ParamTab tab;
@@ -213,7 +221,7 @@ void AssetsModel::removeAsset(const QString& assetName)
 void AssetsModel::saveAsset(const QString& name)
 {
     auto& assets = zeno::getSession().assets;
-    zeno::Asset asset = assets->getAsset(name.toStdString());
+    const zeno::Asset& asset = assets->getAsset(name.toStdString());
 
     zeno::ZenoAsset zasset;
     zasset.info = asset.m_info;
@@ -249,10 +257,10 @@ void AssetsModel::_addAsset(zeno::AssetInfo info)
     _AssetItem item;
     item.info = info;
 
-    std::shared_ptr<zeno::AssetsMgr> asts = zeno::getSession().assets;
-    std::shared_ptr<zeno::Graph> spAsset = asts->getAsset(info.name).sharedGraph;
+    auto& asts = zeno::getSession().assets;
+    zeno::Graph* spAsset = asts->getAsset(info.name).sharedGraph.get();
     if (spAsset) {
-        auto pNewAsstModel = new GraphModel(spAsset, nullptr, this);
+        auto pNewAsstModel = new GraphModel(info.name, true, nullptr, nullptr, this);
         item.pGraphM = pNewAsstModel;
     }
 
@@ -284,10 +292,12 @@ QModelIndexList AssetsModel::match(const QModelIndex& start, int role,
 
 bool AssetsModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    return false;
+    return QAbstractListModel::removeRows(row, count, parent);
 }
 
 QHash<int, QByteArray> AssetsModel::roleNames() const
 {
-    return QHash<int, QByteArray>();
+    QHash<int, QByteArray> roles;
+    roles[QtRole::ROLE_CLASS_NAME] = "classname";
+    return roles;
 }

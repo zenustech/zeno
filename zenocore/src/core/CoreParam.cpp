@@ -1,5 +1,5 @@
 #include <zeno/core/CoreParam.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/utils/helper.h>
 
 namespace zeno {

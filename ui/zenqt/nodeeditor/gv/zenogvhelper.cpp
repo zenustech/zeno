@@ -70,7 +70,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
             BlockSignalScope scope(pItem);
             if (ZenoParamLineEdit* pLineEdit = qobject_cast<ZenoParamLineEdit*>(pItem))
             {
-                if (type == zeno::types::gParamType_Float)
+                if (type == ui_gParamType_Float)
                     pLineEdit->setText(QString::number(value.toFloat()));
                 else
                     pLineEdit->setText(value.toString());
@@ -113,7 +113,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
                 //if (value.canConvert<UI_VECSTRING>()) {
                 //    return;
                 //}
-                bool bFloat = (zeno::types::gParamType_Vec2f == type || zeno::types::gParamType_Vec3f == type || zeno::types::gParamType_Vec4f == type);
+                bool bFloat = (ui_gParamType_Vec2f == type || ui_gParamType_Vec3f == type || ui_gParamType_Vec4f == type);
                 pEditor->setVec(value, bFloat, pScene);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
@@ -141,7 +141,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, zeno::ParamType type, const QVa
         case QGraphicsTextItem::Type:
         {
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
-            if (type == zeno::types::gParamType_Float)
+            if (type == ui_gParamType_Float)
             {
                 if (value.canConvert<UI_VECSTRING>()) {
                     return;

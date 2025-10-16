@@ -1,4 +1,5 @@
 #include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/utils/log.h>
 #include <algorithm>
@@ -10,7 +11,7 @@ namespace _implObjectCodec {
 
 std::shared_ptr<ListObject> decodeListObject(const char *it);
 std::shared_ptr<ListObject> decodeListObject(const char *it) {
-    auto obj = std::make_shared<ListObject>();
+    auto obj = create_ListObject();
 
     size_t size = *(int *)it;
     it += sizeof(size);
@@ -19,11 +20,11 @@ std::shared_ptr<ListObject> decodeListObject(const char *it) {
     std::memcpy(tab.data(), it, sizeof(size_t) * tab.size()); 
     it += sizeof(size_t) * tab.size();
 
-    obj->resize(size);
+    obj->m_impl->resize(size);
     for (size_t i = 0; i < size; i++) {
         auto elm = decodeObject(it + tab[i * 2], tab[i * 2 + 1]);
         if (!elm) return nullptr;
-        obj->set(i, std::move(elm));
+        obj->m_impl->set(i, std::move(elm));
     }
 
     return obj;
@@ -31,7 +32,7 @@ std::shared_ptr<ListObject> decodeListObject(const char *it) {
 
 bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vector<char>> it);
 bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vector<char>> it) {
-    size_t size = obj->size();
+    size_t size = obj->m_impl->size();
     std::copy_n((char const *)&size, sizeof(size), it);
 
     std::vector<char> buf;
@@ -39,7 +40,7 @@ bool encodeListObject(ListObject const *obj, std::back_insert_iterator<std::vect
     std::vector<size_t> tab(size * 2);
     size_t base = 0;
     for (size_t i = 0; i < size; i++) {
-        auto const *elm = obj->get(i).get();
+        auto elm = obj->m_impl->get(i);
         if (!encodeObject(elm, buf))
             return false;
         size_t len = buf.size();

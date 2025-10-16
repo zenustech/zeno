@@ -1,5 +1,6 @@
 #include <zenovis/Scene.h>
 #include <zeno/core/IObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/DictObject.h>
@@ -35,14 +36,18 @@ std::unique_ptr<IGraphic> makeGraphic(Scene *scene, zeno::IObject *obj) {
     MakeGraphicVisitor visitor;
     visitor.in_scene = scene;
 
-    if (0) {
+    if (auto p = dynamic_cast<zeno::GeometryObject_Adapter*>(obj)) {
+        visitor.visit(p);
+    }
+    else {
+        if (0) {
 #define _ZENO_PER_XMACRO(TypeName, ...) \
     } else if (auto p = dynamic_cast<zeno::TypeName *>(obj)) { \
         visitor.visit(p);
 ZENO_XMACRO_IObject(_ZENO_PER_XMACRO)
 #undef _ZENO_PER_XMACRO
     }
-
+}
     auto res = std::move(visitor.out_result);
 
     if (!res) {

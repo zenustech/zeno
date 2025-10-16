@@ -10,10 +10,10 @@ namespace zeno {
 
 struct PrimitiveFillAttr : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto value = get_input<NumericObject>("value")->value;
-    auto attrName = get_param<std::string>(("attrName"));
-    auto attrType = get_param<std::string>(("attrType"));
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto value = ZImpl(get_input<NumericObject>("value"))->value;
+    auto attrName = ZImpl(get_param<std::string>(("attrName")));
+    auto attrType = ZImpl(get_param<std::string>(("attrType")));
     if (std::holds_alternative<vec3f>(value)) {
         attrType = "float3";
     }
@@ -33,7 +33,7 @@ struct PrimitiveFillAttr : INode {
         }
     }, arr, value);
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -66,8 +66,8 @@ static void print_cout(vec3f const &a) {
 
 struct PrimitivePrintAttr : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto attrName = get_param<std::string>(("attrName"));
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto attrName = ZImpl(get_param<std::string>(("attrName")));
     prim->attr_visit(attrName, [attrName](auto const &arr) {
         printf("attribute `%s`, length %zd:\n", attrName.c_str(), arr.size());
         for (int i = 0; i < arr.size(); i++) {
@@ -79,7 +79,7 @@ struct PrimitivePrintAttr : INode {
         printf("\n");
     });
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -102,15 +102,15 @@ ZENDEFNODE(PrimitivePrintAttr,{
 // deprecated: use PrimitiveRandomAttr instead
 struct PrimitiveRandomizeAttr : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto min = get_param<float>(("min"));
-    auto minY = get_param<float>(("minY"));
-    auto minZ = get_param<float>(("minZ"));
-    auto max = get_param<float>(("max"));
-    auto maxY = get_param<float>(("maxY"));
-    auto maxZ = get_param<float>(("maxZ"));
-    auto attrName = get_param<std::string>(("attrName"));
-    auto attrType = get_param<std::string>(("attrType"));
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto min = ZImpl(get_param<float>(("min")));
+    auto minY = ZImpl(get_param<float>(("minY")));
+    auto minZ = ZImpl(get_param<float>(("minZ")));
+    auto max = ZImpl(get_param<float>(("max")));
+    auto maxY = ZImpl(get_param<float>(("maxY")));
+    auto maxZ = ZImpl(get_param<float>(("maxZ")));
+    auto attrName = ZImpl(get_param<std::string>(("attrName")));
+    auto attrType = ZImpl(get_param<std::string>(("attrType")));
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
@@ -129,7 +129,7 @@ struct PrimitiveRandomizeAttr : INode {
         }
     });
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -158,13 +158,13 @@ ZENDEFNODE(PrimitiveRandomizeAttr, {
 
 struct PrimitiveRandomAttr : INode {
   virtual void apply() override {
-    auto prim = has_input("prim") ?
-        get_input<PrimitiveObject>("prim") :
-        std::make_shared<PrimitiveObject>();
-    auto min = get_input<NumericObject>("min");
-    auto max = get_input<NumericObject>("max");
-    auto attrName = get_param<std::string>(("attrName"));
-    auto attrType = get_param<std::string>(("attrType"));
+    auto prim = ZImpl(has_input("prim")) ?
+        ZImpl(get_input<PrimitiveObject>("prim")) :
+        std::make_unique<PrimitiveObject>();
+    auto min = ZImpl(get_input<NumericObject>("min"));
+    auto max = ZImpl(get_input<NumericObject>("max"));
+    auto attrName = ZImpl(get_param<std::string>(("attrName")));
+    auto attrType = ZImpl(get_param<std::string>(("attrType")));
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
         else if (attrType == "float") prim->add_attr<float>(attrName);
@@ -185,15 +185,15 @@ struct PrimitiveRandomAttr : INode {
         }
     });
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
 ZENDEFNODE(PrimitiveRandomAttr, {
     {
         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-        {gParamType_Float, "min", "-1", zeno::Socket_WildCard},
-        {gParamType_Float, "max", "1", zeno::Socket_WildCard},
+        {gParamType_Float, "min", "-1"},
+        {gParamType_Float, "max", "1"},
     },
     {
         {gParamType_Primitive, "prim"},

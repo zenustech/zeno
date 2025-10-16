@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/fileio.h>
@@ -46,14 +47,14 @@ static int takeu(char const *&it) {
     return val;
 }
 
-// std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) 
+// std::unique_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) 
 PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
     /*bin.resize(bin.size() + 8, '\0');*/
 
     char const *it = binData;
     char const *eit = binData + binSize;// - 8;
 
-    // auto prim = std::make_shared<PrimitiveObject>();
+    // auto prim = std::make_unique<PrimitiveObject>();
     auto prim = new PrimitiveObject;
     std::vector<int> loop_uvs;
 
@@ -127,17 +128,17 @@ PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
 
 struct ReadObjPrim : INode {
     virtual void apply() override {
-        auto path = get_input2<std::string>("path");
+        auto path = ZImpl(get_input2<std::string>("path"));
         std::string native_path = std::filesystem::u8path(path).string();
         std::ifstream file(native_path, std::ios::binary);
         auto binary = std::vector<char>((std::istreambuf_iterator<char>(file)),
                               std::istreambuf_iterator<char>());
         // auto prim = parse_obj(std::move(binary));
-        auto prim = std::shared_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
-        if (get_param<bool>("triangulate")) {
+        auto prim = std::unique_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
+        if (ZImpl(get_param<bool>("triangulate"))) {
             primTriangulate(prim.get());
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -154,17 +155,17 @@ ZENDEFNODE(ReadObjPrim,
 
 struct MustReadObjPrim : INode {
     virtual void apply() override {
-        auto path = get_input2<std::string>("path");
+        auto path = ZImpl(get_input2<std::string>("path"));
         auto binary = file_get_binary<std::vector<char>>(path);
         if (binary.empty()) {
             auto s = zeno::format("can not find {}", path);
             throw zeno::makeError(s);
         }
-        auto prim = std::shared_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
-        if (get_param<bool>("triangulate")) {
+        auto prim = std::unique_ptr<PrimitiveObject>(parse_obj(binary.data(), binary.size()));
+        if (ZImpl(get_param<bool>("triangulate"))) {
             primTriangulate(prim.get());
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

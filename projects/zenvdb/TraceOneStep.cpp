@@ -10,15 +10,15 @@ namespace zeno {
 
 struct TraceOneStep : INode {
   virtual void apply() override {
-    auto steps = get_input<NumericObject>("steps")->get<int>();
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto vecField = get_input<VDBFloat3Grid>("vecField");
-    auto size = get_input<NumericObject>("size")->get<int>();
-    auto dt = get_input<NumericObject>("dt")->get<float>();
+    auto steps = get_input2_int("steps");
+    auto prim = clone_input_PrimitiveObject("prim");
+    auto vecField = safe_dynamic_cast<VDBFloat3Grid>(get_input("vecField"));
+    auto size = get_input2_int("size");
+    auto dt = get_input2_float("dt");
     auto maxlength = std::numeric_limits<float>::infinity();
     if(has_input("maxlength"))
     {
-      maxlength = get_input<NumericObject>("maxlength")->get<float>();
+      maxlength = get_input2_float("maxlength");
     }
     
     for(auto s=0;s<steps;s++){

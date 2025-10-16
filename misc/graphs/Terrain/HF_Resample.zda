@@ -1,0 +1,1191 @@
+{
+    "name": "HF_Resample",
+    "version": "1.0",
+    "graph": {
+        "type": 0,
+        "nodes": {
+            "ForEachBegin1": {
+                "name": "ForEachBegin1",
+                "class": "ForEachBegin",
+                "object_inputs": {
+                    "Initial Object": {
+                        "links": [
+                            {
+                                "out-node": "Grid2DSample_M2_1",
+                                "out-socket": "prim",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Current Iteration": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Fetch Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "From Last Feedback",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Initial Object",
+                                "From Last Feedback",
+                                "Element of Object"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "ForEachEnd Path": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ForEachEnd1",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "Index": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {
+                    "Output Object": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    227.0,
+                    1122.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "ForEachEnd1": {
+                "name": "ForEachEnd1",
+                "class": "ForEachEnd",
+                "object_inputs": {
+                    "Iterate Object": {
+                        "links": [
+                            {
+                                "out-node": "SwitchIf1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Iterate Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "By Count",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "By Count",
+                                "By Container",
+                                "By Geometry Point",
+                                "By Geometry Face"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Collect Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Feedback to Begin",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Feedback to Begin",
+                                "Gather Each Iteration"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "ForEachBegin Path": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ForEachBegin1",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Iterations": {
+                        "links": [
+                            {
+                                "out-node": "StringToList1",
+                                "out-socket": "count",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 10,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "Increment": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 1,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Start Value": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Stop Condition": {
+                        "links": [
+                            {
+                                "out-node": "StringToList1",
+                                "out-socket": "count",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 1,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output Object": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    234.0,
+                    1849.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "GetStringFromList1": {
+                "name": "GetStringFromList1",
+                "class": "GetStringFromList",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "list": {
+                        "links": [
+                            {
+                                "out-node": "StringToList1",
+                                "out-socket": "list",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "",
+                        "default-value": null,
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "index": {
+                        "links": [
+                            {
+                                "out-node": "ForEachBegin1",
+                                "out-socket": "Index",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {
+                    "string": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -269.0,
+                    1319.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "GetUdPos": {
+                "name": "GetUdPos",
+                "class": "GetUserData3",
+                "object_inputs": {
+                    "object": {
+                        "links": [
+                            {
+                                "out-node": "高度场地形_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "key": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "pos",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "data": {
+                        "type": "numeric",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -208.0,
+                    709.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Grid2DSample_M2_1": {
+                "name": "Grid2DSample_M2_1",
+                "class": "Grid2DSample_M2",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "HF_Creation1",
+                                "out-socket": "HeightField",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    },
+                    "sampleGrid": {
+                        "links": [
+                            {
+                                "out-node": "高度场地形_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "nx": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "getud(\"高度场地形_in\", \"port\", \"nx\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "ny": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "getud(\"高度场地形_in\", \"port\", \"nx\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "h": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "getud(\"高度场地形_in\", \"port\", \"scale\") / getud(\"高度场地形_in\", \"port\", \"nx\")",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "bmin": {
+                        "links": [
+                            {
+                                "out-node": "PrimBoundingBox1",
+                                "out-socket": "bmin",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "channel": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../通道层名字\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "sampleBy": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "pos",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "sampleType": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Clamp",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Clamp",
+                                "Periodic"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "prim": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    223.0,
+                    917.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HF_Blur_OpenCV_v3_1": {
+                "name": "HF_Blur_OpenCV_v3_1",
+                "class": "HF_Blur_OpenCV_v3",
+                "object_inputs": {
+                    "高度场地形_in": {
+                        "links": [
+                            {
+                                "out-node": "ForEachBegin1",
+                                "out-socket": "Output Object",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "显示Mask": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "被平滑的属性": {
+                        "links": [
+                            {
+                                "out-node": "GetStringFromList1",
+                                "out-socket": "string",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "string",
+                        "default-value": "mask",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    },
+                    "模糊类型": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "blur",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "blur",
+                                "erode",
+                                "dilate"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "模糊半径": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "ref(\"../模糊半径\")",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask名字": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Clone": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "invert U": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "invert V": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "高度场地形_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    666.0,
+                    1366.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Blur_OpenCV_v3",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Blur_OpenCV_v3.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Creation1": {
+                "name": "HF_Creation1",
+                "class": "HF_Creation",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Terrain Position": {
+                        "links": [
+                            {
+                                "out-node": "GetUdPos",
+                                "out-socket": "data",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    },
+                    "Terrain Resolution": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../分辨率\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Terrain Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": "getud(\"高度场地形_in\", \"port\", \"scale\")",
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    130.0,
+                    705.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Creation",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Creation.zda",
+                    "version": "1.0"
+                }
+            },
+            "PrimBoundingBox1": {
+                "name": "PrimBoundingBox1",
+                "class": "PrimBoundingBox",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "高度场地形_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "extraBound": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "bmax": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "bmin": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "center": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "diameter": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "radius": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -551.0,
+                    713.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "StringToList1": {
+                "name": "StringToList1",
+                "class": "StringToList",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "string": {
+                        "links": [
+                            {
+                                "out-node": "通道层名字",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "Separator": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": " ",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Trim": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "KeepEmpty": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "count": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "list": {
+                        "type": "",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -543.0,
+                    1406.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "SwitchIf1": {
+                "name": "SwitchIf1",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "ForEachBegin1",
+                                "out-socket": "Output Object",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "HF_Blur_OpenCV_v3_1",
+                                "out-socket": "高度场地形_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": [
+                            {
+                                "out-node": "grid_has_attr",
+                                "out-socket": "hasAttr",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    292.0,
+                    1496.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "grid_has_attr": {
+                "name": "grid_has_attr",
+                "class": "HasAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "ForEachBegin1",
+                                "out-socket": "Output Object",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": [
+                            {
+                                "out-node": "GetStringFromList1",
+                                "out-socket": "string",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "string",
+                        "default-value": "attribute1",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "hasAttr": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    19.0,
+                    1477.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "分辨率": {
+                "name": "分辨率",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "模糊半径": {
+                "name": "模糊半径",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    0.0,
+                    0.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "通道层名字": {
+                "name": "通道层名字",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -807.0,
+                    1435.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "高度场地形_in": {
+                "name": "高度场地形_in",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {
+                    "port": {
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "uipos": [
+                    236.0,
+                    425.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "高度场地形_out": {
+                "name": "高度场地形_out",
+                "class": "SubOutput",
+                "object_inputs": {
+                    "port": {
+                        "links": [
+                            {
+                                "out-node": "ForEachEnd1",
+                                "out-socket": "Output Object",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {},
+                "uipos": [
+                    224.0,
+                    2106.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "Parameters": {
+        "object_inputs": {
+            "高度场地形_in": {
+                "links": null,
+                "type": "geometry",
+                "socket-type": "clone"
+            }
+        },
+        "primitive_inputs": {
+            "分辨率": {
+                "links": null,
+                "type": "int",
+                "default-value": 1000,
+                "control": {
+                    "name": "Integer"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "模糊半径": {
+                "links": null,
+                "type": "float",
+                "default-value": 0.75,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "通道层名字": {
+                "links": null,
+                "type": "string",
+                "default-value": "height debris water sediment",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            }
+        },
+        "primitive_outputs": {},
+        "object_outputs": {
+            "高度场地形_out": {
+                "type": "geometry",
+                "socket-type": "output"
+            }
+        }
+    },
+    "subnet-customUi": {
+        "nickname": "",
+        "iconResPath": "",
+        "category": "",
+        "doc": "",
+        "tabs": {
+            "Tab1": {
+                "Group1": {
+                    "分辨率": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 1000,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "模糊半径": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 0.75,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "通道层名字": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "height debris water sediment",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            }
+        }
+    }
+}

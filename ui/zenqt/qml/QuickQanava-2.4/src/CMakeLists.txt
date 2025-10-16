@@ -1,0 +1,96 @@
+
+set(qan_source_files
+    qanBehaviour.cpp
+    qanBottomRightResizer.cpp
+    qanRightResizer.cpp
+    qanBottomResizer.cpp
+    qanConnector.cpp
+    qanDraggable.cpp
+    qanDraggableCtrl.cpp
+    qanEdge.cpp
+    qanEdgeItem.cpp
+    qanEdgeDraggableCtrl.cpp
+    qanGraph.cpp
+    qanGraphView.cpp
+    qanGrid.cpp
+    qanLineGrid.cpp
+    qanGroup.cpp
+    qanGroupItem.cpp
+    qanNavigable.cpp
+    qanNavigablePreview.cpp
+    qanNode.cpp
+    qanNodeItem.cpp
+    qanPortItem.cpp
+    qanSelectable.cpp
+    qanStyle.cpp
+    qanStyleManager.cpp
+    qanAnalysisTimeHeatMap.cpp
+    qanUtils.cpp
+    qanTableGroup.cpp
+    qanTableCell.cpp
+    qanTableBorder.cpp
+    qanTableGroupItem.cpp
+    )
+
+set (qan_header_files
+    qanAbstractDraggableCtrl.h
+    qanBehaviour.h
+    qanBottomRightResizer.h
+    qanRightResizer.h
+    qanBottomResizer.h
+    qanConnector.h
+    qanDraggable.h
+    qanDraggableCtrl.h
+    qanEdge.h
+    qanEdgeDraggableCtrl.h
+    qanEdgeItem.h
+    qanGraph.h
+    qanGraphView.h
+    qanGrid.h
+    qanGroup.h
+    qanGroupItem.h
+    qanLineGrid.h
+    qanNavigable.h
+    qanNavigablePreview.h
+    qanNode.h
+    qanNodeItem.h
+    qanPortItem.h
+    qanSelectable.h
+    qanStyle.h
+    qanStyleManager.h
+    qanAnalysisTimeHeatMap.cpp
+    qanUtils.h
+    qanTableGroup.h
+    qanTableCell.h
+    qanTableBorder.h
+    qanTableGroupItem.h
+    QuickQanava.h
+    gtpo/container_adapter.h
+    gtpo/edge.h
+    gtpo/graph.h
+    gtpo/graph.hpp
+    gtpo/graph_property.h
+    gtpo/node.h
+    gtpo/node.hpp
+    gtpo/observable.h
+    gtpo/observer.h
+    )
+
+set(quickcontainers_source_files
+    quickcontainers/qcmContainerModel.cpp
+    quickcontainers/qcmAbstractContainer.cpp
+    )
+
+set (quickcontainers_header_files
+    quickcontainers/QuickContainers.h
+    quickcontainers/qcmContainerModel.h
+    quickcontainers/qcmAbstractContainer.h
+    quickcontainers/qcmContainer.h
+    quickcontainers/qcmAdapter.h
+    )
+
+if (${QT_VERSION_MAJOR} EQUAL 5)
+    include(CMakeLists.qt5.txt)
+else()
+    include(CMakeLists.qt6.txt)
+endif()

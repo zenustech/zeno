@@ -10,7 +10,6 @@
 #include "zenomainwindow.h"
 #include "settings/zenosettingsmanager.h"
 #include "dialog/zeditparamlayoutdlg.h"
-#include <zeno/core/Session.h>
 #include "util/uihelper.h"
 #include "nodeeditor/gv/zenographseditor.h"
 
@@ -168,7 +167,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             });
 
             connect(pCustomParams, &QAction::triggered, this, [=]() {
-                auto name = proxyIndex.data(ROLE_CLASS_NAME).toString();
+                auto name = proxyIndex.data(QtRole::ROLE_CLASS_NAME).toString();
                 m_pEditor->onAssetsCustomParamsClicked(name);
             });
 
@@ -180,12 +179,12 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pSave);
             menu->addAction(pCustomParams);
 #if 0
-            if (index.data(ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
+            if (index.data(QtRole::ROLE_SUBGRAPH_TYPE) != SUBGRAPH_PRESET)
             {
                 QAction* pPreset = new QAction(tr("Trans to Preset Subgrah"));
                 menu->addAction(pPreset);
                 connect(pPreset, &QAction::triggered, this, [=]() {
-                        m_model->setData(index, SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+                        m_model->setData(index, SUBGRAPH_PRESET, QtRole::ROLE_SUBGRAPH_TYPE);
                 });
             }
 #endif
@@ -201,7 +200,7 @@ void ZSubnetListItemDelegate::onDelete()
     if (button == QMessageBox::Yes) {
         QStringList nameList;
         for (const QModelIndex &idx : m_selectedIndexs) {
-            QString subgName = idx.data(ROLE_CLASS_NAME).toString();
+            QString subgName = idx.data(QtRole::ROLE_CLASS_NAME).toString();
             if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
                 QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
                 msg.exec();
@@ -219,7 +218,7 @@ void ZSubnetListItemDelegate::onRename(const QModelIndex &index)
 {
     QString name = QInputDialog::getText(qobject_cast<QWidget*>(this->parent()), 
         tr("Rename"), tr("subgraph name:"), 
-        QLineEdit::Normal, index.data(ROLE_CLASS_NAME).toString());
+        QLineEdit::Normal, index.data(QtRole::ROLE_CLASS_NAME).toString());
     if (!name.isEmpty()) {
         m_model->setData(index, name, Qt::EditRole);
     }
@@ -228,7 +227,7 @@ void ZSubnetListItemDelegate::onRename(const QModelIndex &index)
 void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 {
     DlgInEventLoopScope;
-    QString subgName = index.data(ROLE_CLASS_NAME).toString();
+    QString subgName = index.data(QtRole::ROLE_CLASS_NAME).toString();
     QString path = QFileDialog::getSaveFileName(qobject_cast<QWidget*>(this->parent()), "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         //todo: writer.
@@ -258,7 +257,7 @@ QModelIndexList ZSubnetListItemDelegate::getSubgraphs(const QModelIndex& subgIdx
         const QModelIndex& childIdx = m_model->index(r, 0);
         if (!childIdx.isValid())
             continue;
-        const QString& assetName = childIdx.data(ROLE_CLASS_NAME).toString();
+        const QString& assetName = childIdx.data(QtRole::ROLE_CLASS_NAME).toString();
         const QModelIndex& modelIdx = m_model->index(subgName);
         if (modelIdx.isValid() && !subgraphs.contains(modelIdx))
         {
@@ -324,7 +323,7 @@ bool SubListSortProxyModel::filterAcceptsRow(int source_row, const QModelIndex& 
 
     //TODO: refactor.
 #if 0
-    int value = index.data(ROLE_SUBGRAPH_TYPE).toInt();
+    int value = index.data(QtRole::ROLE_SUBGRAPH_TYPE).toInt();
     int type = ZenoSettingsManager::GetInstance().getValue(zsSubgraphType).toInt();
     return type == value ? true : false;
 #endif

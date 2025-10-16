@@ -9,10 +9,12 @@
 
 namespace zeno
 {
-
-    struct MaterialObject
-        : IObjectClone<MaterialObject>
+    struct MaterialObject : IObjectClone<MaterialObject>
     {
+        void Delete() override {
+            //delete this;
+        }
+
         std::string vert;
         std::string frag;
         std::string common;

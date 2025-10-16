@@ -22,15 +22,15 @@ namespace zeno
 	{
 		virtual void apply() override
 		{
-			auto tex = std::make_shared<zeno::Texture2DObject>();
+			auto tex = std::make_unique<zeno::Texture2DObject>();
 
-			tex->path = get_input2<std::string>("path");
-            if (has_input("heatmap")) {
+			tex->path = ZImpl(get_input2<std::string>("path"));
+            if (ZImpl(has_input("heatmap"))) {
                 if (tex->path.empty()) {
                     std::srand(std::time(0));
                     tex->path = std::filesystem::temp_directory_path().string() + '/' + "heatmap-" + std::to_string(std::rand()) + ".png";
                 }
-                auto heatmap = get_input<zeno::HeatmapObject>("heatmap");
+                auto heatmap = ZImpl(get_input<zeno::HeatmapObject>("heatmap"));
                 std::vector<uint8_t> col;
                 int width = heatmap->colors.size();
                 int height = width;
@@ -58,9 +58,9 @@ namespace zeno
 	else                                                           \
 		throw zeno::Exception(#WRAP + WRAP);
 
-			auto wrapS = get_input<zeno::StringObject>("wrapT")->get();
+			auto wrapS = ZImpl(get_input<zeno::StringObject>("wrapT"))->get();
 			SET_TEX_WRAP(tex, wrapS)
-			auto wrapT = get_input<zeno::StringObject>("wrapS")->get();
+			auto wrapT = ZImpl(get_input<zeno::StringObject>("wrapS"))->get();
 			SET_TEX_WRAP(tex, wrapT)
 
 #undef SET_TEX_WRAP
@@ -81,15 +81,15 @@ namespace zeno
 	else                                                                      \
 		throw zeno::Exception(#FILTER + FILTER);
 
-			auto minFilter = get_input<zeno::StringObject>("minFilter")->get();
+			auto minFilter = ZImpl(get_input<zeno::StringObject>("minFilter"))->get();
 			SET_TEX_FILTER(tex, minFilter)
-			auto magFilter = get_input<zeno::StringObject>("magFilter")->get();
+			auto magFilter = ZImpl(get_input<zeno::StringObject>("magFilter"))->get();
 			SET_TEX_FILTER(tex, magFilter)
 
 #undef SET_TEX_FILTER
 
-			tex->blockCompression = get_input2<bool>("blockCompression");
-			set_output("tex", std::move(tex));
+			tex->blockCompression = ZImpl(get_input2<bool>("blockCompression"));
+			ZImpl(set_output("tex", std::move(tex)));
 		}
 	};
 
@@ -136,16 +136,16 @@ namespace zeno
 
 		virtual void apply() override
 		{
-			auto tex = std::make_shared<zeno::TextureObjectVDB>();
+			auto tex = std::make_unique<zeno::TextureObjectVDB>();
 
-			tex->path = get_input2<std::string>("path");
-			tex->channel = get_input2<std::string>("channel");
+			tex->path = ZImpl(get_input2<std::string>("path"));
+			tex->channel = ZImpl(get_input2<std::string>("channel"));
 
-			auto type = get_input2<std::string>(dataTypeKey);
+			auto type = ZImpl(get_input2<std::string>(dataTypeKey));
 			auto casted = magic_enum::enum_cast<TextureObjectVDB::ElementType>(type);
 			tex->eleType = casted.value_or(TextureObjectVDB::ElementType::Fp32);
 
-			set_output("tex", std::move(tex));
+			ZImpl(set_output("tex", std::move(tex)));
 		}
 	};
 

@@ -1,7 +1,9 @@
 #include <zeno/zeno.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/para/parallel_reduce.h>
 #include <zeno/para/parallel_for.h>
@@ -10,15 +12,15 @@
 
 namespace zeno {
 
-ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr) {
+ZENO_API std::vector<std::unique_ptr<PrimitiveObject>> primUnmergeVerts(PrimitiveObject *prim, std::string tagAttr) {
     if (!prim->verts.size()) return {};
 
     auto const &tagArr = prim->verts.attr<int>(tagAttr);
     int tagMax = parallel_reduce_max(tagArr.begin(), tagArr.end()) + 1;
 
-    std::vector<std::shared_ptr<PrimitiveObject>> primList(tagMax);
+    std::vector<std::unique_ptr<PrimitiveObject>> primList(tagMax);
     for (int tag = 0; tag < tagMax; tag++) {
-        primList[tag] = std::make_shared<PrimitiveObject>();
+        primList[tag] = std::make_unique<PrimitiveObject>();
     }
 
 #if 1
@@ -32,7 +34,7 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeVerts(Primitiv
       aux_arrays[tagArr[i]].emplace_back(i);
     }
     for (int tag = 0; tag < tagMax; tag++) {
-        primList[tag]->assign(prim);
+        primList[tag] = safe_uniqueptr_cast<PrimitiveObject>(prim->clone());
         primFilterVerts(primList[tag].get(), tagAttr, tag, false, {}, "verts", aux_arrays[tag].data(), aux_arrays[tag].size(),true);
     }
 
@@ -206,14 +208,14 @@ void remap_attr_on_faces(PrimitiveObject *prim, std::string tagAttr, std::map<in
     }
 }
 
-ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(PrimitiveObject *prim, std::string tagAttr) {
+ZENO_API std::vector<std::unique_ptr<PrimitiveObject>> primUnmergeFaces(PrimitiveObject *prim, std::string tagAttr) {
     if (!prim->verts.size()) return {};
 
     if (prim->tris.size() > 0 && prim->polys.size() > 0) {
         primPolygonate(prim, true);
     }
 
-    std::vector<std::shared_ptr<PrimitiveObject>> list;
+    std::vector<std::unique_ptr<PrimitiveObject>> list;
 
     std::map<int, std::vector<int>> mapping;
     if (prim->tris.size() > 0) {
@@ -225,7 +227,7 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
             mapping[attr[i]].push_back(i);
         }
         for (auto &[key, val]: mapping) {
-            auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+            auto new_prim = safe_uniqueptr_cast<PrimitiveObject>(prim->clone());
             new_prim->tris.resize(val.size());
             for (auto i = 0; i < val.size(); i++) {
                 new_prim->tris[i] = prim->tris[val[i]];
@@ -237,7 +239,7 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
                     arr[i] = attr[val[i]];
                 }
             });
-            list.push_back(new_prim);
+            list.push_back(std::move(new_prim));
         }
     }
     else if (prim->polys.size() > 0) {
@@ -249,7 +251,7 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
             mapping[attr[i]].push_back(i);
         }
         for (auto &[key, val]: mapping) {
-            auto new_prim = std::dynamic_pointer_cast<PrimitiveObject>(prim->clone());
+            auto new_prim = safe_uniqueptr_cast<PrimitiveObject>(prim->clone());
             new_prim->polys.resize(val.size());
             for (auto i = 0; i < val.size(); i++) {
                 new_prim->polys[i] = prim->polys[val[i]];
@@ -261,11 +263,12 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
                     arr[i] = attr[val[i]];
                 }
             });
-            list.push_back(new_prim);
+            list.push_back(std::move(new_prim));
         }
     }
     for (auto i = 0; i < list.size(); i++) {
         primKillDeadVerts(list[i].get());
+        auto pUserData = dynamic_cast<UserData*>(list[i]->userData());
         // remove unused abcpath
         {
             auto abcpath_set = get_attr_on_faces(list[i].get(), "abcpath", true);
@@ -273,18 +276,18 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
             std::vector<std::string> abcpaths;
             for (auto &k: abcpath_set) {
                 mapping[k] = abcpaths.size();
-                abcpaths.push_back(list[i]->userData().get2<std::string>(format("abcpath_{}", k)));
+                abcpaths.push_back(pUserData->get2<std::string>(format("abcpath_{}", k)));
             }
             remap_attr_on_faces(list[i].get(), "abcpath", mapping);
-            auto old_abcpath_count = list[i]->userData().get2<int>("abcpath_count", 0);
+            auto old_abcpath_count = pUserData->get2<int>("abcpath_count", 0);
             for (int j = 0; j < old_abcpath_count; j++) {
-                list[i]->userData().del(format("abcpath_{}", j));
+                pUserData->del(stdString2zs(format("abcpath_{}", j)));
             }
 
             for (int j = 0; j < abcpaths.size(); j++) {
-                list[i]->userData().set2(format("abcpath_{}", j), abcpaths[j]);
+                pUserData->set2(format("abcpath_{}", j), abcpaths[j]);
             }
-            list[i]->userData().set2("abcpath_count", int(abcpath_set.size()));
+            pUserData->set2("abcpath_count", int(abcpath_set.size()));
         }
         // remove unused faceset
         {
@@ -293,18 +296,18 @@ ZENO_API std::vector<std::shared_ptr<PrimitiveObject>> primUnmergeFaces(Primitiv
             std::vector<std::string> abcpaths;
             for (auto &k: abcpath_set) {
                 mapping[k] = abcpaths.size();
-                abcpaths.push_back(list[i]->userData().get2<std::string>(format("faceset_{}", k)));
+                abcpaths.push_back(pUserData->get2<std::string>(format("faceset_{}", k)));
             }
             remap_attr_on_faces(list[i].get(), "faceset", mapping);
-            auto old_abcpath_count = list[i]->userData().get2<int>("faceset_count", 0);
+            auto old_abcpath_count = pUserData->get2<int>("faceset_count", 0);
             for (int j = 0; j < old_abcpath_count; j++) {
-                list[i]->userData().del(format("faceset_{}", j));
+                pUserData->del(stdString2zs(format("faceset_{}", j)));
             }
 
             for (int j = 0; j < abcpaths.size(); j++) {
-                list[i]->userData().set2(format("faceset_{}", j), abcpaths[j]);
+                pUserData->set2(format("faceset_{}", j), abcpaths[j]);
             }
-            list[i]->userData().set2("faceset_count", int(abcpath_set.size()));
+            pUserData->set2("faceset_count", int(abcpath_set.size()));
         }
     }
     return list;
@@ -314,14 +317,14 @@ namespace {
 
 struct PrimUnmerge : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        auto method = get_input<StringObject>("method")->get();
+        auto prim = get_input_Geometry("prim")->toPrimitiveObject();
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+        auto method = ZImpl(get_input<StringObject>("method"))->get();
 
-        if (get_input2<bool>("preSimplify")) {
+        if (ZImpl(get_input2<bool>("preSimplify"))) {
             primSimplifyTag(prim.get(), tagAttr);
         }
-        std::vector<std::shared_ptr<PrimitiveObject>> primList;
+        std::vector<std::unique_ptr<PrimitiveObject>> primList;
         if (method == "verts") {
             primList = primUnmergeVerts(prim.get(), tagAttr);
         }
@@ -329,17 +332,18 @@ struct PrimUnmerge : INode {
             primList = primUnmergeFaces(prim.get(), tagAttr);
         }
 
-        auto listPrim = std::make_shared<ListObject>();
+        auto listPrim = create_ListObject();
         for (auto &primPtr: primList) {
-            listPrim->push_back(std::move(primPtr));
+            auto geom = create_GeometryObject(primPtr.get());
+            listPrim->m_impl->push_back(std::move(geom));
         }
-        set_output("listPrim", std::move(listPrim));
+        ZImpl(set_output("listPrim", std::move(listPrim)));
     }
 };
 
 ZENDEFNODE(PrimUnmerge, {
     {
-        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Geometry, "prim", "", zeno::Socket_ReadOnly},
         {gParamType_String, "tagAttr", "tag"},
         {gParamType_Bool, "preSimplify", "0"},
         {"enum verts faces", "method", "verts"},
@@ -352,7 +356,7 @@ ZENDEFNODE(PrimUnmerge, {
     {"primitive"},
 });
 
-void cleanMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &verts,
                std::vector<zeno::vec3f> &nrm,
                std::vector<zeno::vec3f> &clr,
@@ -587,7 +591,7 @@ void computeTrianglesTangent(zeno::PrimitiveObject *prim)
 }
 struct primClean : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     std::vector<zeno::vec3f> verts;
     std::vector<zeno::vec3f> nrm;
     std::vector<zeno::vec3f> clr;
@@ -596,8 +600,8 @@ struct primClean : INode {
     std::vector<zeno::vec3i> idxBuffer;
     computeTrianglesTangent(prim.get());
     computeVertexTangent(prim.get());
-    cleanMesh(prim, verts, nrm, clr, tang, uv, idxBuffer);
-    auto oPrim = std::make_shared<zeno::PrimitiveObject>();
+    cleanMesh(prim.get(), verts, nrm, clr, tang, uv, idxBuffer);
+    auto oPrim = std::make_unique<zeno::PrimitiveObject>();
     oPrim->verts.resize(verts.size());
     oPrim->add_attr<zeno::vec3f>("nrm");
     oPrim->add_attr<zeno::vec3f>("clr");
@@ -616,7 +620,7 @@ struct primClean : INode {
     oPrim->tris = idxBuffer;
 
 
-    set_output("prim", std::move(oPrim));
+    ZImpl(set_output("prim", std::move(oPrim)));
   }
 };
 

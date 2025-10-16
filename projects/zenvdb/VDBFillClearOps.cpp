@@ -27,19 +27,18 @@ struct fill_voxels_op {
 };
 struct VDBFillActiveVoxels : INode {
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
-    auto value = get_input<NumericObject>("fillValue")->value;
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
-        velman.foreach(fill_voxels_op(std::get<float>(value)));
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+        velman.foreach(fill_voxels_op( get_input2_float("fillValue")));
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
-        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<zeno::vec3f>(value))));
+        velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(toVec3f(get_input2_vec3f("fillValue")))));
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 
@@ -70,19 +69,19 @@ struct multiply_voxels_op {
 
 struct VDBMultiplyOperation : INode {
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
     auto value = get_input<NumericObject>("fillValue")->value;
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
         velman.foreach(fill_voxels_op(std::get<float>(value)));
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
         auto velman = openvdb::tree::LeafManager
             <std::decay_t<decltype(p->m_grid->tree())>>(p->m_grid->tree());
         velman.foreach(fill_voxels_op(vec_to_other<openvdb::Vec3f>(std::get<zeno::vec3f>(value))));
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 
@@ -123,16 +122,16 @@ void touch_aabb_region(GridPtr const &grid, zeno::vec3f const &bmin, zeno::vec3f
 
 struct VDBTouchAABBRegion : INode {
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
-    auto bmin = get_input<NumericObject>("bmin")->get<zeno::vec3f>();
-    auto bmax = get_input<NumericObject>("bmax")->get<zeno::vec3f>();
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+    auto bmin = toVec3f(get_input2_vec3f("bmin"));
+    auto bmax = toVec3f(get_input2_vec3f("bmax"));
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
         touch_aabb_region(p->m_grid, bmin, bmax);
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
         touch_aabb_region(p->m_grid, bmin, bmax);
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 
@@ -151,32 +150,32 @@ ZENO_DEFNODE(VDBTouchAABBRegion)(
 
 struct VDBTopoCopy : INode{
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
-    auto topo = get_input<VDBGrid>("topo");
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
-        if(auto t = std::dynamic_pointer_cast<VDBFloatGrid>(topo); t)
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+    auto topo = safe_uniqueptr_cast<VDBGrid>(clone_input("topo"));
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
+        if(auto t = safe_dynamic_cast<VDBFloatGrid>(topo.get()); t)
         {
             p->m_grid->setTree(std::make_shared<openvdb::FloatTree>(t->m_grid->tree(),0, openvdb::TopologyCopy()));
             openvdb::tools::dilateActiveValues(
             p->m_grid->tree(), 1,
             openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
         }
-        else if (auto t = std::dynamic_pointer_cast<VDBFloat3Grid>(topo); t)
+        else if (auto t = safe_dynamic_cast<VDBFloat3Grid>(topo.get()); t)
         {
             p->m_grid->setTree(std::make_shared<openvdb::FloatTree>(t->m_grid->tree(),0, openvdb::TopologyCopy()));
             openvdb::tools::dilateActiveValues(
             p->m_grid->tree(), 1,
             openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
         }
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
-        if(auto t = std::dynamic_pointer_cast<VDBFloatGrid>(topo); t)
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
+        if(auto t = safe_dynamic_cast<VDBFloatGrid>(topo.get()); t)
         {
             p->m_grid->setTree(std::make_shared<openvdb::Vec3fTree>(t->m_grid->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
             openvdb::tools::dilateActiveValues(
             p->m_grid->tree(), 1,
             openvdb::tools::NearestNeighbors::NN_FACE_EDGE_VERTEX, openvdb::tools::TilePolicy::EXPAND_TILES);
         }
-        else if (auto t = std::dynamic_pointer_cast<VDBFloat3Grid>(topo); t)
+        else if (auto t = safe_dynamic_cast<VDBFloat3Grid>(topo.get()); t)
         {
             p->m_grid->setTree(std::make_shared<openvdb::Vec3fTree>(t->m_grid->tree(), openvdb::Vec3f{0}, openvdb::TopologyCopy()));
             openvdb::tools::dilateActiveValues(
@@ -186,7 +185,7 @@ struct VDBTopoCopy : INode{
     }
 
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 ZENO_DEFNODE(VDBTopoCopy)(

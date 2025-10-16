@@ -3,8 +3,8 @@
 
 #include "zenoapplication.h"
 #include <viewport/zenovis.h>
+#include <zeno/types/IGeometryObject.h>
 #include "model/graphsmanager.h"
-#include <zeno/types/PrimitiveObject.h>
 #include "nodesync.h"
 #include <QtWidgets>
 #include <glm/glm.hpp>
@@ -94,7 +94,7 @@ private:
     }
 
 private:
-    std::unordered_map<std::string, std::shared_ptr<PrimitiveObject>> m_objects;
+    std::unordered_map<std::string, GeometryObject_Adapter*> m_objects;
     std::set<std::string> m_objectsKeys;
 
     ObjectNodeInfo m_objnodeinfo;

@@ -13,6 +13,32 @@ namespace zenoio {
 
 ZENO_API Zsg2Reader::Zsg2Reader() {}
 
+bool Zsg2Reader::importNodes(const std::string& strjson, zeno::NodesData& nodes, zeno::LinksData& links,
+    zeno::ReferencesData& refs)
+{
+    rapidjson::Document doc;
+    doc.Parse(strjson.c_str());
+
+    if (!doc.IsObject() || !doc.HasMember("nodes"))
+        return false;
+
+    const rapidjson::Value& val = doc["nodes"];
+    if (val.IsNull())
+        return false;
+
+    zeno::GraphData subgData;
+    std::map<std::string, zeno::GraphData> subgraphDatas;
+    for (const auto& node : val.GetObject())
+    {
+        const std::string& nodeid = node.name.GetString();  //旧版本显示的key值是uuid，而name是cls
+        const zeno::NodeData& nodeData = _parseNode("", nodeid, node.value, subgraphDatas, subgData.links);
+        subgData.nodes.insert(std::make_pair(nodeData.name, nodeData));
+    }
+    nodes = subgData.nodes;
+    links = subgData.links;
+    return true;
+}
+
 bool Zsg2Reader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& mainData)
 {
     if (doc.HasMember("version") && doc["version"].IsString())
@@ -354,7 +380,7 @@ void Zsg2Reader::_parseSocket(
 
     if (sockObj.HasMember("control"))
     {
-        zenoio::importControl(sockObj["control"], ctrl, ctrlProps);
+        zenoio::importControl(sockObj["control"], ctrl);
     }
 
     if (sockObj.HasMember("tooltip")) 
@@ -479,14 +505,13 @@ bool Zsg2Reader::_parseParams(const std::string& id, const std::string& nodeCls,
                 param.type = zeno::convertToType(valueObj["type"].GetString());
             }
 
-            //����֪���᲻���SubInput��type������ͻ����������ᣬ����ֱ�ӽ������ˣ�������ʷ����
             param.defl = zenoio::jsonValueToAny(valueObj[iotags::params::params_valueKey], param.type);
-            param.socketType = zeno::NoSocket; //��ǰ�Ķ����ǲ���������ġ�
+            param.socketType = zeno::NoSocket;
 
             if (valueObj.HasMember("control"))
             {
                 zeno::ParamControl ctrl;
-                zenoio::importControl(valueObj["control"], ctrl, param.ctrlProps);
+                zenoio::importControl(valueObj["control"], ctrl);
             }
 
             if (valueObj.HasMember("tooltip"))

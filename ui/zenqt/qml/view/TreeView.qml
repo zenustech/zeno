@@ -102,6 +102,9 @@ Flickable {
            function onLayoutChanged() {
                tree.childCount = root.model ? root.model.rowCount(tree.parentIndex) : 0
            }
+           function onModelClear() {
+               tree.childCount = 0;
+           }
         }
     }
 

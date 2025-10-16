@@ -1,4 +1,4 @@
-#ifdef ZENO_WITH_PYTHON
+#if 0
 #include "zenopyapi.h"
 
 
@@ -203,7 +203,7 @@ Graph_createNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
             else
             {
                 bool bExist = true;
-                ParamPrimitive primInfo = spNode->get_input_prim_param(strKey, &bExist);
+                ParamPrimitive primInfo = spNode->ZImpl(get_input_prim_param(strKey, &bExist));
                 if (!bExist) {
                     //TODO:
                     return Py_None;

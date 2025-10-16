@@ -1,0 +1,542 @@
+{
+    "main": {
+        "type": 2,
+        "nodes": {
+            "Clip1": {
+                "name": "Clip1",
+                "class": "Clip",
+                "object_inputs": {
+                    "Input Object": {
+                        "links": [
+                            {
+                                "out-node": "Cube1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Keep": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Part Below The Plane",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Center Position": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -146.0,
+                    627.0
+                ],
+                "status": [
+                    "View"
+                ],
+                "collasped": false
+            },
+            "Cube1": {
+                "name": "Cube1",
+                "class": "Cube",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Size": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "X Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Y Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Z Division": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Uniform Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Point Normals": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -101.0,
+                    431.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Grid1": {
+                "name": "Grid1",
+                "class": "Grid",
+                "object_inputs": {},
+                "primitive_inputs": {
+                    "Center": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rotate": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Size": {
+                        "links": null,
+                        "type": "vec2f",
+                        "default-value": [
+                            1.0,
+                            1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 2"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Rows": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Slider"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Columns": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 2,
+                        "control": {
+                            "name": "Slider"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ZX",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Point Normals": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    372.0,
+                    402.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Overlap": {
+                "name": "Overlap",
+                "class": "Clip",
+                "object_inputs": {
+                    "Input Object": {
+                        "links": [
+                            {
+                                "out-node": "Grid1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Keep": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "All",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Center Position": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            1.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    588.0,
+                    607.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "corner_cut": {
+                "name": "corner_cut",
+                "class": "Clip",
+                "object_inputs": {
+                    "Input Object": {
+                        "links": [
+                            {
+                                "out-node": "Grid1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Keep": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Part Below The Plane",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Center Position": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            -1.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    354.0,
+                    610.0
+                ],
+                "status": [
+                    "View"
+                ],
+                "collasped": false
+            },
+            "x": {
+                "name": "x",
+                "class": "Clip",
+                "object_inputs": {
+                    "Input Object": {
+                        "links": [
+                            {
+                                "out-node": "Grid1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Keep": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "All",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Center Position": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Direction": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    170.0,
+                    609.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "views": {
+        "timeline": {
+            "start-frame": 0,
+            "end-frame": 100,
+            "curr-frame": 0,
+            "always": false,
+            "timeline-fps": 24
+        }
+    },
+    "version": "v3"
+}

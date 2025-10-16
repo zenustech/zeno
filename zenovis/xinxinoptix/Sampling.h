@@ -259,7 +259,7 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
 template<typename T>
 static __host__ __device__ __inline__ T interp(float2 barys, T a, T b, T c)
 {
-    float w0 = 1 - barys.x - barys.y;
+    float w0 = 1.0f - barys.x - barys.y;
     float w1 = barys.x;
     float w2 = barys.y;
     return w0*a + w1*b + w2*c;
@@ -291,6 +291,11 @@ inline float NextFloatDown(float v) {
     return __uint_as_float(ui);
 }
 
+//http://www.cemyuksel.com/research/pointlightattenuation/
+inline float PointIntensity(float d2, float d, float r2) {
+    return 2.0f / ( d  * sqrtf(d2 + r2) + d2 + r2 );
+}
+
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
 
@@ -308,7 +313,7 @@ inline float NextFloatDown(float v) {
 // }
 
 //https://www.reedbeta.com/blog/hash-functions-for-gpu-rendering/
-static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t &seed )
+static __host__ __device__ __inline__ uint32_t pcg_hash(uint32_t seed )
 {
     auto state = seed * 747796405u + 2891336453u;
     auto word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;

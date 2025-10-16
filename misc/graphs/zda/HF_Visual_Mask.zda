@@ -1,0 +1,734 @@
+{
+    "name": "HF_Visual_Mask",
+    "version": "1.0",
+    "graph": {
+        "type": 0,
+        "nodes": {
+            "Clone HF for Visualize": {
+                "name": "Clone HF for Visualize",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    18.0,
+                    52.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "CopyAttribute1": {
+                "name": "CopyAttribute1",
+                "class": "CopyAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "HeightField_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Source Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Mask Name\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Target Attribute": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_mask",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    991.0,
+                    299.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "DeleteAttribute1": {
+                "name": "DeleteAttribute1",
+                "class": "DeleteAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "mask_and_color",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "_mask",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    979.0,
+                    906.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HasAttribute1": {
+                "name": "HasAttribute1",
+                "class": "HasAttribute",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "HeightField_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attr_name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Mask Name\")",
+                        "control": {
+                            "name": ""
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Attribute Group": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Point",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Point",
+                                "Face",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "hasAttr": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    428.0,
+                    697.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HeightField_in": {
+                "name": "HeightField_in",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {
+                    "port": {
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "uipos": [
+                    805.0,
+                    121.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HeightField_out": {
+                "name": "HeightField_out",
+                "class": "SubOutput",
+                "object_inputs": {
+                    "port": {
+                        "links": [
+                            {
+                                "out-node": "if_has_attr_mask_name",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {},
+                "uipos": [
+                    847.0,
+                    1341.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Mask Name": {
+                "name": "Mask Name",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    24.0,
+                    199.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Reset Base Color": {
+                "name": "Reset Base Color",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    15.0,
+                    313.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Visualize Color": {
+                "name": "Visualize Color",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    24.0,
+                    448.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "clr": {
+                "name": "clr",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@clr = vec3(1,1,1);",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1222.0,
+                    409.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_has_attr_mask_name": {
+                "name": "if_has_attr_mask_name",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "HeightField_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "DeleteAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": [
+                            {
+                                "out-node": "HasAttribute1",
+                                "out-socket": "hasAttr",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    886.0,
+                    1117.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_reset_baseclr": {
+                "name": "if_reset_baseclr",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "CopyAttribute1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "clr",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Reset Base Color\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1056.0,
+                    586.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "mask_and_color": {
+                "name": "mask_and_color",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "if_reset_baseclr",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@_mask = clamp(@_mask,0,1);\r\nvector visClr = ref(\"../Visualize Color\");\r\n@clr = @_mask * visClr + (1 - @_mask) * @clr;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    1040.0,
+                    721.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "Parameters": {
+        "object_inputs": {
+            "HeightField_in": {
+                "links": null,
+                "type": "geometry",
+                "socket-type": "clone"
+            }
+        },
+        "primitive_inputs": {
+            "Clone HF for Visualize": {
+                "links": null,
+                "type": "bool",
+                "default-value": true,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Mask Name": {
+                "links": null,
+                "type": "string",
+                "default-value": "mask",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Reset Base Color": {
+                "links": null,
+                "type": "bool",
+                "default-value": true,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Visualize Color": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            }
+        },
+        "primitive_outputs": {},
+        "object_outputs": {
+            "HeightField_out": {
+                "type": "geometry",
+                "socket-type": "output"
+            }
+        }
+    },
+    "subnet-customUi": {
+        "nickname": "",
+        "iconResPath": "",
+        "category": "",
+        "doc": "",
+        "tabs": {
+            "Tab1": {
+                "Group1": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "mask",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": true,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            }
+        }
+    }
+}

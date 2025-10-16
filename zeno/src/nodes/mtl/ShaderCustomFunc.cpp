@@ -1,7 +1,8 @@
+#if 0
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/string.h>
 #include <zeno/types/StringObject.h>
@@ -20,11 +21,11 @@ struct ShaderCustomFuncObject : IObjectClone<ShaderCustomFuncObject> {
 
 struct ShaderCustomFunc : INode {
     virtual void apply() override {
-        auto code = get_input<StringObject>("code")->get();
-        auto args = get_input2<std::string>("args");
-        auto rettype = get_input2<std::string>("rettype");
+        auto code = ZImpl(get_input<StringObject>("code"))->get();
+        auto args = ZImpl(get_input2<std::string>("args"));
+        auto rettype = ZImpl(get_input2<std::string>("rettype"));
 
-        auto func = std::make_shared<ShaderCustomFuncObject>();
+        auto func = std::make_unique<ShaderCustomFuncObject>();
 
         static const char *tab[] = {"float", "vec2", "vec3", "vec4"};
         {
@@ -61,7 +62,7 @@ struct ShaderCustomFunc : INode {
         }
         func->code = "(" + exp + ") {\n" + code + "\n}";
 
-        set_output("func", std::move(func));
+        ZImpl(set_output("func", std::move(func)));
     }
 };
 
@@ -82,14 +83,14 @@ ZENDEFNODE(ShaderCustomFunc, {
 
 struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
     virtual int determineType(EmissionPass *em) override {
-        auto func = get_input<ShaderCustomFuncObject>("func");
-        auto args = get_input<ListObject>("args");
-        if (args->size() != func->argTypes.size())
+        auto func = ZImpl(get_input<ShaderCustomFuncObject>("func"));
+        auto args = ZImpl(get_input<ListObject>("args"));
+        if (args->m_impl->size() != func->argTypes.size())
             throw zeno::Exception("expect " + std::to_string(func->argTypes.size())
                                   + " arguments in call to " + func->name + ", got "
-                                  + std::to_string(args->size()));
+                                  + std::to_string(args->m_impl->size()));
         auto argTyIt = func->argTypes.begin();
-        for (auto const &arg: args->get<IObject>()) {
+        for (auto const &arg: args->m_impl->get<IObject>()) {
             auto ourType = *argTyIt++;
             auto theirType = em->determineType(arg.get());
             if (ourType != theirType)
@@ -101,8 +102,8 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto func = get_input<ShaderCustomFuncObject>("func");
-        auto args = get_input<ListObject>("args");
+        auto func = ZImpl(get_input<ShaderCustomFuncObject>("func"));
+        auto args = ZImpl(get_input<ListObject>("args"));
         if (func->name.empty()) {
             EmissionPass::CommonFunc comm;
             comm.rettype = func->retType;
@@ -111,7 +112,7 @@ struct ShaderInvokeFunc : ShaderNodeClone<ShaderInvokeFunc> {
             func->name = em->addCommonFunc(std::move(comm));
         }
         std::string exp;
-        for (auto const &arg: args->get<IObject>()) {
+        for (auto const &arg: args->m_impl->get<IObject>()) {
             if (!exp.empty())
                 exp += ", ";
             exp += em->determineExpr(arg.get());
@@ -137,3 +138,4 @@ ZENDEFNODE(ShaderInvokeFunc, {
 
 
 }
+#endif

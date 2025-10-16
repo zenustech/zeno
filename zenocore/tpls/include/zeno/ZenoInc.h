@@ -14,8 +14,6 @@
 #include <zeno/types/GenericObject.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/core/Graph.h>
-#include <zeno/extra/TempNode.h>
-#include <zeno/extra/MethodCaller.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>

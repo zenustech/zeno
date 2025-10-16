@@ -1,13 +1,14 @@
 //
 // Created by zh on 2023/3/23.
 //
+#if 1
 
 #include "zenoimagepanel.h"
 #include "PrimAttrTableModel.h"
 #include "viewport/zenovis.h"
-#include "zenovis/ObjectsManager.h"
 #include "zeno/utils/format.h"
 #include <zeno/types/UserData.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/types/PrimitiveObject.h>
 #include "zeno/utils/vec.h"
 #include "zeno/utils/log.h"
@@ -26,84 +27,75 @@ void ZenoImagePanel::clear() {
     pStatusBar->clear();
 }
 
-void ZenoImagePanel::setPrim(std::string primid) {
-    primid = primid.substr(0, primid.find(":"));
-    pPrimName->setText(primid.c_str());
-    zenovis::Scene* scene = nullptr;
-    auto mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    QVector<DisplayWidget*> wids = mainWin->viewports();
-    if (!wids.isEmpty())
-    {
-        auto session = wids[0]->getZenoVis()->getSession();
-        ZASSERT_EXIT(session);
-        scene = session->get_scene();
-    }
-    if (!scene)
-        return;
-
+void ZenoImagePanel::reload(const zeno::render_reload_info& info) {
+    m_info = info;
     bool enableGamma = pGamma->checkState() == Qt::Checked;
-    bool found = false;
-    for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if ((key.substr(0, key.find(":"))) != primid) {
-            continue;
+    const auto& update = info.objs[0];
+    if (update.reason == zeno::Update_Remove) {
+        for (const std::string& remkey : update.remove_objs) {
         }
-        auto &ud = ptr->userData();
-        if (ud.get2<int>("isImage", 0) == 0) {
-            continue;
-        }
-        found = true;
-        if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-            int width = ud.get2<int>("w");
-            int height = ud.get2<int>("h");
-            if (image_view) {
-                if (pMode->currentText() != "Alpha") {
-                    QImage img(width, height, QImage::Format_RGB32);
-                    auto index = std::map<QString, zeno::vec3i>{
-                        {"RGB", {0, 1, 2}},
-                        {"Red", {0, 0, 0}},
-                        {"Green", {1, 1, 1}},
-                        {"Blue", {2, 2, 2}},
-                    }.at(pMode->currentText());
-                    for (auto i = 0; i < obj->verts.size(); i++) {
-                        int h = i / width;
-                        int w = i % width;
-                        auto c = obj->verts[i];
-                        if (enableGamma) {
-                            c = zeno::pow(c, 1.0f / 2.2f);
-                        }
-                        int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
-                        int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
-                        int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
-
-                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
-                    }
-                    image_view->setImage(img);
+    }
+    else {
+        auto spNode = zeno::getSession().getNodeByUuidPath(update.uuidpath_node_objkey);
+        assert(spNode);
+        auto spObject = spNode->get_default_output_object();
+        if (spObject) {
+            if (update.reason == zeno::Update_View) {
+                auto ud = spObject->userData();
+                if (ud->get_int("isImage", 0) == 0 || ud->get_bool("isImage", false) == false) {
+                    return;
                 }
-                else if (pMode->currentText() == "Alpha") {
-                    QImage img(width, height, QImage::Format_RGB32);
-                    if (obj->verts.has_attr("alpha")) {
-                        auto &alpha = obj->verts.attr<float>("alpha");
-                        for (auto i = 0; i < obj->verts.size(); i++) {
-                            int h = i / width;
-                            int w = i % width;
-                            auto c = alpha[i];
-                            int r = glm::clamp(int(c * 255.99), 0, 255);
-                            int g = glm::clamp(int(c * 255.99), 0, 255);
-                            int b = glm::clamp(int(c * 255.99), 0, 255);
+                if (auto geom = dynamic_cast<zeno::GeometryObject_Adapter*>(spObject)) {
+                    auto obj = geom->toPrimitiveObject();
+                    int width = ud->get_int("w");
+                    int height = ud->get_int("h");
+                    if (image_view) {
+                        if (pMode->currentText() != "Alpha") {
+                            QImage img(width, height, QImage::Format_RGB32);
+                            auto index = std::map<QString, zeno::vec3i>{
+                                {"RGB", {0, 1, 2}},
+                                {"Red", {0, 0, 0}},
+                                {"Green", {1, 1, 1}},
+                                {"Blue", {2, 2, 2}},
+                            }.at(pMode->currentText());
+                            for (auto i = 0; i < obj->verts.size(); i++) {
+                                int h = i / width;
+                                int w = i % width;
+                                auto c = obj->verts[i];
+                                if (enableGamma) {
+                                    c = zeno::pow(c, 1.0f / 2.2f);
+                                }
+                                int r = glm::clamp(int(c[index[0]] * 255.99), 0, 255);
+                                int g = glm::clamp(int(c[index[1]] * 255.99), 0, 255);
+                                int b = glm::clamp(int(c[index[2]] * 255.99), 0, 255);
 
-                            img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                                img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                            }
+                            image_view->setImage(img);
+                        }
+                        else if (pMode->currentText() == "Alpha") {
+                            QImage img(width, height, QImage::Format_RGB32);
+                            if (obj->verts.has_attr("alpha")) {
+                                auto& alpha = obj->verts.attr<float>("alpha");
+                                for (auto i = 0; i < obj->verts.size(); i++) {
+                                    int h = i / width;
+                                    int w = i % width;
+                                    auto c = alpha[i];
+                                    int r = glm::clamp(int(c * 255.99), 0, 255);
+                                    int g = glm::clamp(int(c * 255.99), 0, 255);
+                                    int b = glm::clamp(int(c * 255.99), 0, 255);
+
+                                    img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                                }
+                            }
+                            image_view->setImage(img);
                         }
                     }
-                    image_view->setImage(img);
+                    QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
+                    pStatusBar->setText(statusInfo);
                 }
             }
-            QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
-            pStatusBar->setText(statusInfo);
         }
-    }
-    if (found == false) {
-        clear();
     }
 }
 
@@ -168,47 +160,11 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     if (!zenovis)
         return;
 
-    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
-        std::string prim_name = pPrimName->text().toStdString();
-        Zenovis* zenovis = wids[0]->getZenoVis();
-        ZASSERT_EXIT(zenovis);
-        auto session = zenovis->getSession();
-        ZASSERT_EXIT(session);
-        auto scene = session->get_scene();
-        ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
-                setPrim(key);
-            }
-        }
-    });
     connect(pGamma, &QCheckBox::stateChanged, this, [=](int state) {
-        std::string prim_name = pPrimName->text().toStdString();
-        Zenovis* zenovis = wids[0]->getZenoVis();
-        ZASSERT_EXIT(zenovis);
-        auto session = zenovis->getSession();
-        ZASSERT_EXIT(session);
-        auto scene = session->get_scene();
-        ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0) {
-                setPrim(key);
-            }
-        }
+        reload(m_info);
     });
     connect(pMode, &ZComboBox::_textActivated, [=](const QString& text) {
-        std::string prim_name = pPrimName->text().toStdString();
-        Zenovis* zenovis = wids[0]->getZenoVis();
-        ZASSERT_EXIT(zenovis);
-        auto session = zenovis->getSession();
-        ZASSERT_EXIT(session);
-        auto scene = session->get_scene();
-        ZASSERT_EXIT(scene);
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if (key.find(prim_name) == 0) {
-                setPrim(key);
-            }
-        }
+        reload(m_info);
     });
 
     connect(pFit, &QPushButton::clicked, this, [=](bool _) {
@@ -229,51 +185,56 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         }
         if (!scene)
             return;
-        bool found = false;
-        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-            if ((key.substr(0, key.find(":"))) != primid) {
-                continue;
-            }
-            auto &ud = ptr->userData();
-            if (ud.get2<int>("isImage", 0) == 0) {
-                continue;
-            }
-            found = true;
-            if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
-                int width = ud.get2<int>("w");
-                int height = ud.get2<int>("h");
-                int w = int(zeno::clamp(x, 0, width - 1));
-                int h = int(zeno::clamp(y, 0, height - 1));
-                int i = (height - 1 - h) * width + w;
-                auto c = obj->verts[i];
-                std::string info = zeno::format("width: {}, height: {}", width, height);
-                info += zeno::format(" | x: {:5}, y: {:5}", w, h);
-                if (obj->verts.has_attr("alpha")) {
-                    auto &alpha = obj->verts.attr<float>("alpha");
-                    info += zeno::format(
-                        " | value: {}, {}, {}, {}",
-                        QString::number(c[0], 'f', 6).toStdString(),
-                        QString::number(c[1], 'f', 6).toStdString(),
-                        QString::number(c[2], 'f', 6).toStdString(),
-                        QString::number(alpha[i], 'f', 6).toStdString()
-                    );
-                }
-                else {
-                    info += zeno::format(
-                        " | value: {}, {}, {}",
-                        QString::number(c[0], 'f', 6).toStdString(),
-                        QString::number(c[1], 'f', 6).toStdString(),
-                        QString::number(c[2], 'f', 6).toStdString()
-                    );
-                }
 
-                QString statusInfo = QString(info.c_str());
-                pStatusBar->setText(statusInfo);
+        bool found = false;
+        const auto& update = m_info.objs[0];
+        auto spNode = zeno::getSession().getNodeByUuidPath(update.uuidpath_node_objkey);
+        assert(spNode);
+        auto spObject = spNode->get_default_output_object();
+        if (!spObject) return;
+
+        auto ud = spObject->userData();
+        if (ud->get_int("isImage", 0) == 0 || ud->get_bool("isImage", false) == false) {
+            return;
+        }
+        found = true;
+        if (auto geom = dynamic_cast<zeno::GeometryObject_Adapter*>(spObject)) {
+            auto obj = geom->toPrimitiveObject();
+            int width = ud->get_int("w");
+            int height = ud->get_int("h");
+            int w = int(zeno::clamp(x, 0, width - 1));
+            int h = int(zeno::clamp(y, 0, height - 1));
+            int i = (height - 1 - h) * width + w;
+            auto c = obj->verts[i];
+            std::string info = zeno::format("width: {}, height: {}", width, height);
+            info += zeno::format(" | x: {:5}, y: {:5}", w, h);
+            if (obj->verts.has_attr("alpha")) {
+                auto &alpha = obj->verts.attr<float>("alpha");
+                info += zeno::format(
+                    " | value: {}, {}, {}, {}",
+                    QString::number(c[0], 'f', 6).toStdString(),
+                    QString::number(c[1], 'f', 6).toStdString(),
+                    QString::number(c[2], 'f', 6).toStdString(),
+                    QString::number(alpha[i], 'f', 6).toStdString()
+                );
             }
+            else {
+                info += zeno::format(
+                    " | value: {}, {}, {}",
+                    QString::number(c[0], 'f', 6).toStdString(),
+                    QString::number(c[1], 'f', 6).toStdString(),
+                    QString::number(c[2], 'f', 6).toStdString()
+                );
+            }
+
+            QString statusInfo = QString(info.c_str());
+            pStatusBar->setText(statusInfo);
         }
-        if (found == false) {
-            clear();
-        }
+
+    if (found == false) {
+        clear();
+    }
     });
 }
 
+#endif

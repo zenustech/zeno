@@ -93,8 +93,8 @@ void read_obj_file(
 
 struct ReadObjPrimitive : zeno::INode {
     virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path")->get();
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         auto &pos = prim->verts;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
@@ -103,7 +103,7 @@ struct ReadObjPrimitive : zeno::INode {
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
         read_obj_file(pos, uv, norm, tris, /*triuv, trinorm,*/ path.c_str());
         prim->resize(pos.size());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -133,7 +133,7 @@ ZENDEFNODE(ImportObjPrimitive,
 
 
 static void writeobj(
-        std::shared_ptr<zeno::PrimitiveObject> &prim,
+        zeno::PrimitiveObject* prim,
         const char *path)
 {
     FILE *fp = fopen(path, "w");
@@ -173,10 +173,10 @@ static void writeobj(
 
 struct WriteObjPrimitive : zeno::INode {
     virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path")->get();
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        writeobj(prim, path.c_str());
+        writeobj(prim.get(), path.c_str());
     }
 };
 
@@ -192,10 +192,10 @@ ZENDEFNODE(WriteObjPrimitive,
 
 struct ExportObjPrimitive : WriteObjPrimitive {
     virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path")->get();
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        writeobj(prim, path.c_str());
+        writeobj(prim.get(), path.c_str());
     }
 };
 
@@ -210,7 +210,7 @@ ZENDEFNODE(ExportObjPrimitive,
         }});
 
 //--------------------- dict--------------------------//
-static std::shared_ptr<zeno::DictObject>
+static std::unique_ptr<zeno::DictObject>
 read_obj_file_dict(
         std::vector<zeno::vec3f> &vertices,
         //std::vector<zeno::vec3f> &uvs,
@@ -225,7 +225,7 @@ read_obj_file_dict(
     std::vector<zeno::vec3i> sub_indices;
 
 
-    std::shared_ptr<zeno::DictObject> prims = std::make_shared<zeno::DictObject>();
+    auto prims = std::make_unique<zeno::DictObject>();
 
     size_t vert_offset = 0;
     size_t pre_vert_offset = 0;
@@ -275,14 +275,14 @@ read_obj_file_dict(
         } else if (zeno::starts_with(line, "o ")) {
             // if we have already parse the o tag, the subname, vertices and faces data should have already been read
             if(has_read_o_tag){
-                auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+                auto sub_prim = std::make_unique<zeno::PrimitiveObject>();
                 sub_prim->tris = sub_indices;
                 for(size_t i = 0;i < sub_prim->tris.size();++i){
                     sub_prim->tris[i] -= zeno::vec3i(pre_vert_offset);
                 }
                 sub_prim->verts = std::vector(vertices.begin() + pre_vert_offset,vertices.end()- 0);
                 std::vector<zeno::vec3f>(&vertices[pre_vert_offset],&vertices[vert_offset]);
-                prims->lut[sub_name] = sub_prim;
+                prims->lut[sub_name] = std::move(sub_prim);
             }
             // Update the sub_obj name
             sub_name = items[0];
@@ -296,7 +296,7 @@ read_obj_file_dict(
         }
     }
     // if there is no sub objects, output the mesh as a whole unameed subobject
-    auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+    auto sub_prim = std::make_unique<zeno::PrimitiveObject>();
     if(!has_read_o_tag){
         sub_prim->verts = vertices;
         sub_prim->tris = indices;
@@ -308,13 +308,13 @@ read_obj_file_dict(
             sub_prim->tris[i] -= zeno::vec3i(pre_vert_offset);
         }
     }
-    prims->lut[sub_name] = sub_prim;
+    prims->lut[sub_name] = std::move(sub_prim);
     return prims;
 }
 struct ReadObjPrimitiveDict : zeno::INode {
     virtual void apply() override {
-        auto path = get_input<zeno::StringObject>("path")->get();
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         auto &pos = prim->verts;
         //auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         //auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
@@ -322,8 +322,8 @@ struct ReadObjPrimitiveDict : zeno::INode {
         //auto &triuv = prim->tris.add_attr<zeno::vec3i>("uv");
         //auto &trinorm = prim->tris.add_attr<zeno::vec3i>("nrm");
         auto prims = read_obj_file_dict(pos, /*uv, norm,*/ tris, /*triuv, trinorm,*/ path.c_str());
-        set_output("prim", std::move(prim));
-        set_output("dict", std::move(prims));
+        ZImpl(set_output("prim", std::move(prim)));
+        ZImpl(set_output("dict", std::move(prims)));
     }
 };
 

@@ -22,8 +22,8 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     m_ui->setupUi(this);
 
     const bool bWorking = zeno::getSession().globalState->is_working();  //external running
-    int nRunFrames = zeno::getSession().globalComm->numOfFinishedFrame();
-    auto pair = zeno::getSession().globalComm->frameRange();
+    int nRunFrames = 0;// zeno::getSession().globalComm->numOfFinishedFrame();
+    std::pair<int,int> pair = { 0,0 };// zeno::getSession().globalComm->frameRange();
 
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -57,7 +57,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         else
         {
             int nLastRunFrom = pair.first;
-            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int nLastRunTo = /*zeno::getSession().globalComm->maxPlayFrames()*/ - 1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
 
             m_ui->btnRecordNow->setVisible(true);
@@ -108,12 +108,12 @@ bool ZRecFrameSelectDlg::hasBrokenFrameData()
 {
     auto& gblComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(gblComm, false);
-    auto pair = zeno::getSession().globalComm->frameRange();
+    std::pair<int, int> pair = { 0,0 };// zeno::getSession().globalComm->frameRange();
 
-    int nRunFrames = gblComm->numOfFinishedFrame();
+    int nRunFrames = -1;// gblComm->numOfFinishedFrame();
     for (int frame = pair.first; frame <= pair.second; frame++)
     {
-        if (gblComm->isFrameBroken(frame))
+        if (false)//gblComm->isFrameBroken(frame))
             return true;
     }
     return false;
@@ -180,9 +180,9 @@ bool ZRecFrameSelectDlg::validateFrame()
         return false;
     }
 
-    auto pair = zeno::getSession().globalComm->frameRange();
+    std::pair<int, int> pair = {0,0};// zeno::getSession().globalComm->frameRange();
     int nLastRunFrom = pair.first;
-    int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
+    int nLastRunTo = -1;// zeno::getSession().globalComm->maxPlayFrames() - 1;
     if (m_state == RUN_COMPLELTE || m_state == RUN_INCOMPLETE)
     {
         if (pair.first <= m_recStartF && m_recEndF <= nLastRunTo)

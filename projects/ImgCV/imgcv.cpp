@@ -1,7 +1,8 @@
+#if 0
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+//#include <opencv2/highgui.hpp>
 #include <zeno/zeno.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -9,6 +10,7 @@
 #include <zeno/utils/zeno_p.h>
 #include "imgcv.h"
 #include <zeno/utils/UserData.h>
+#include <filesystem>
 namespace zeno {
 namespace {
 
@@ -178,7 +180,7 @@ ZENDEFNODE(CVImageSepRGB, {
     {},
     {"opencv"},
 });
-
+#if 0
 struct CVImageShow : CVINode {
     void apply() override {
         auto image = get_input_image("image");
@@ -221,7 +223,7 @@ ZENDEFNODE(CVWaitKey, {
     {},
     {"opencv"},
 });
-
+#endif
 struct CVImageAdd : CVINode {
     void apply() override {
         auto image1 = get_input_image("image1");
@@ -899,7 +901,8 @@ ZENDEFNODE(CVImagePutText, {
 
 struct ReadImageByOpenCV : INode {
   void apply() override {
-    auto inputPath = get_input2<std::string>("inputPath");
+    auto path = get_input2<std::string>("inputPath");
+    std::string inputPath = std::filesystem::u8path(path).string();
     cv::Mat image = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
     cv::Mat exrImage;
     image.convertTo(exrImage, CV_32F);
@@ -936,3 +939,4 @@ ZENDEFNODE(ReadImageByOpenCV, {
 }
 
 }
+#endif

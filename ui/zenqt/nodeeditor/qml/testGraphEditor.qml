@@ -15,26 +15,26 @@ ApplicationWindow {
     height: 960
     title: qsTr("Hello World")
 
-    // ¶¨ÒåÈ«¾Ö¶ÔÏó£¬Í¨¹ı app À´·ÃÎÊ
+    // å®šä¹‰å…¨å±€å¯¹è±¡ï¼Œé€šè¿‡ app æ¥è®¿é—®
     Item {
         id: app
 
-        // ±êÇ©Ò³Âß¼­¿ØÖÆÆ÷
+        // æ ‡ç­¾é¡µé€»è¾‘æ§åˆ¶å™¨
         TabViewController { id: tab_ }
-        property var tab: tab_ // Í¨¹ı app.tab À´·ÃÎÊ
+        property var tab: tab_ // é€šè¿‡ app.tab æ¥è®¿é—®
 
-        // ³Ö¾Ã»¯´æ´¢
+        // æŒä¹…åŒ–å­˜å‚¨
         Settings { 
             id: settings
-            fileName: "./.settings_ui.ini" // ÅäÖÃÎÄ¼şÃû
+            fileName: "./.settings_ui.ini" // é…ç½®æ–‡ä»¶å
 
 
             property alias openPageList: tab_.openPageList
             property alias showPageIndex: tab_.showPageIndex
             property alias barIsLock: tab_.barIsLock
 
-            property bool refresh: false // ÓÃÓÚË¢ĞÂ
-            function save(){ // ÊÖ¶¯Ë¢ĞÂ
+            property bool refresh: false // ç”¨äºåˆ·æ–°
+            function save(){ // æ‰‹åŠ¨åˆ·æ–°
                 refresh=!refresh
             }
         }
@@ -90,7 +90,7 @@ ApplicationWindow {
                     var owner = graphM.owner()
                     //console.log("name: " + name)
                     //console.log("owner: " + owner)
-                    //tabView´ò¿ª±êÇ©ÎªownerµÄÍ¼£¬²¢ÇÒ°Ñ½¹µãfocusÔÚnameÉÏ¡£
+                    //tabViewæ‰“å¼€æ ‡ç­¾ä¸ºownerçš„å›¾ï¼Œå¹¶ä¸”æŠŠç„¦ç‚¹focusåœ¨nameä¸Šã€‚
                     app.tab.activatePage(owner, graphM)
                 }
                 onCurrentDataChanged: {

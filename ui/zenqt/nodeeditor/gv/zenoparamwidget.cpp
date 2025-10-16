@@ -8,7 +8,6 @@
 #include "util/uihelper.h"
 #include "widgets/zcomboboxitemdelegate.h"
 #include <QSvgRenderer>
-#include <zeno/extra/TempNode.h>
 #include <zeno/extra/assetDir.h>
 #include "widgets/zlineedit.h"
 
@@ -291,6 +290,7 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
         // need to resolve the formula path
         {
             zeno::setConfigVariable("ZSG", zsgDir.toStdString());
+#if 0
             auto code = std::make_shared<zeno::StringObject>();
             code->set(path.toStdString());
             auto outs = zeno::TempNodeSimpleCaller("StringEval")
@@ -301,6 +301,7 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             {
                 filePath = QString::fromStdString(spStrObj->get());
             }
+#endif
         }
 
         QString dirPath;
@@ -445,7 +446,7 @@ void ZenoVecEditItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene*
     {
         const QString& numText = QString::number(vec[i]);
         ZenoParamLineEdit* pLineEdit = new ZenoParamLineEdit(numText, zeno::Lineedit, m_param);
-        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? zeno::types::gParamType_Float : zeno::types::gParamType_Int));
+        pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? ui_gParamType_Float : ui_gParamType_Int));
         pLayout->addItem(pLineEdit);
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -1450,7 +1451,7 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     connect(m_mute, SIGNAL(toggled(bool)), m_minMute, SLOT(toggle(bool)));
 
     connect(m_minMute, &ZenoImageItem::toggled, [=](bool hovered) {
-        emit toggleChanged(STATUS_MUTE, hovered);
+        emit toggleChanged(STATUS_BYPASS, hovered);
     });
     connect(m_minView, &ZenoImageItem::toggled, [=](bool hovered) {
         emit toggleChanged(STATUS_VIEW, hovered);
@@ -1461,7 +1462,7 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
 
 void ZenoMinStatusBtnItem::setOptions(int options)
 {
-    setChecked(STATUS_MUTE, options & zeno::Mute);
+    setChecked(STATUS_BYPASS, options & zeno::ByPass);
     setChecked(STATUS_VIEW, options & zeno::View);
 }
 
@@ -1472,7 +1473,7 @@ void ZenoMinStatusBtnItem::setView(bool isView)
 
 void ZenoMinStatusBtnItem::setChecked(STATUS_BTN btn, bool bChecked)
 {
-    if (btn == STATUS_MUTE)
+    if (btn == STATUS_BYPASS)
     {
         m_mute->toggle(bChecked);
         m_minMute->toggle(bChecked);

@@ -11,9 +11,11 @@
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/CameraObject.h>
 #ifdef __linux__
-    #include<unistd.h>
+    #include <unistd.h>
     #include <sys/statfs.h>
 #endif
+#include <chrono>
+#include <thread>
 #define MIN_DISKSPACE_MB 1024
 
 namespace zeno {
@@ -25,7 +27,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
 
-void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
+void GlobalComm::toDisk(std::string cachedir, int frameid, std::map<std::string, zany>& objs, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string fileName) {
     if (cachedir.empty()) return;
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -39,7 +41,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 
         size_t bufsize =0;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
-        if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
+        if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData()->get_int("isL") || dynamic_cast<CameraObject*>(obj.get())))
         {
             bufsize = bufCaches[0].size();
             if (encodeObject(obj.get(), bufCaches[0]))
@@ -49,7 +51,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 poses[0].push_back(bufsize);
             }
         }
-        if (cacheMaterialOnly && (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)))
+        if (cacheMaterialOnly && (matNodeNames.count(nodeName)>0 || dynamic_cast<MaterialObject*>(obj.get())))
         {
             bufsize = bufCaches[1].size();
             if (encodeObject(obj.get(), bufCaches[1]))
@@ -61,7 +63,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
         }
         if (!cacheLightCameraOnly && !cacheMaterialOnly)
         {
-            if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)) {
+            if (lightCameraNodes.count(nodeName) || obj->userData()->get_int("isL") || dynamic_cast<CameraObject*>(obj.get())) {
                 bufsize = bufCaches[0].size();
                 if (encodeObject(obj.get(), bufCaches[0]))
                 {
@@ -69,7 +71,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                     keys[0].append(key);
                     poses[0].push_back(bufsize);
                 }
-            } else if (matNodeNames.count(nodeName)>0 || std::dynamic_pointer_cast<MaterialObject>(obj)) {
+            } else if (matNodeNames.count(nodeName)>0 || dynamic_cast<MaterialObject*>(obj.get())) {
                 bufsize = bufCaches[1].size();
                 if (encodeObject(obj.get(), bufCaches[1]))
                 {
@@ -120,17 +122,17 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     //wait in two case: 1. available space minus current frame size less than 1024MB, 2. available space less or equal than 1024MB
     while ( ((freeSpace >> 20) - MIN_DISKSPACE_MB) < (currentFrameSize >> 20)  || (freeSpace >> 20) <= MIN_DISKSPACE_MB)
     {
-        #ifdef __linux__
-            zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).string());
-            sleep(2);
-            statfs(std::filesystem::u8path(cachedir).c_str(), &diskInfo);
-            freeSpace = diskInfo.f_bsize * diskInfo.f_bavail;
+        // #ifdef __linux__
+        //     zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).string());
+        //     ::sleep(2);
+        //     statfs(std::filesystem::u8path(cachedir).c_str(), &diskInfo);
+        //     freeSpace = diskInfo.f_bsize * diskInfo.f_bavail;
 
-        #else
+        // #else
             zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).root_path().string());
             std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
-        #endif
+        // #endif
     }
     for (int i = 0; i < 3; i++)
     {
@@ -146,7 +148,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
     objs.clear();
 }
 
-bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string fileName) {
+bool GlobalComm::fromDisk(std::string cachedir, int frameid, std::map<std::string, zany>& objs, std::string fileName) {
     if (cachedir.empty())
         return false;
     objs.clear();
@@ -217,246 +219,5 @@ bool GlobalComm::fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObj
     return true;
 }
 
-ZENO_API void GlobalComm::newFrame() {
-    std::lock_guard lck(m_mtx);
-    log_debug("GlobalComm::newFrame {}", m_frames.size());
-    m_frames.emplace_back().frame_state = FRAME_UNFINISH;
 }
 
-ZENO_API void GlobalComm::finishFrame() {
-    std::lock_guard lck(m_mtx);
-    log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
-    if (m_maxPlayFrame >= 0 && m_maxPlayFrame < m_frames.size())
-        m_frames[m_maxPlayFrame].frame_state = FRAME_COMPLETED;
-    m_maxPlayFrame += 1;
-}
-
-ZENO_API void GlobalComm::dumpFrameCache(int frameid, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
-    std::lock_guard lck(m_mtx);
-    int frameIdx = frameid - beginFrameNumber;
-    if (frameIdx >= 0 && frameIdx < m_frames.size()) {
-        log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, cacheLightCameraOnly, cacheMaterialOnly);
-    }
-}
-
-ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<IObject> object) {
-    std::lock_guard lck(m_mtx);
-    log_debug("GlobalComm::addViewObject {}", m_frames.size());
-    if (m_frames.empty()) throw makeError("empty frame cache");
-    m_frames.back().view_objects.try_emplace(key, std::move(object));
-}
-
-ZENO_API void GlobalComm::clearState() {
-    std::lock_guard lck(m_mtx);
-    m_frames.clear();
-    m_inCacheFrames.clear();
-    m_maxPlayFrame = 0;
-    maxCachedFrames = 1;
-    cacheFramePath = {};
-}
-
-ZENO_API void GlobalComm::clearFrameState()
-{
-    std::lock_guard lck(m_mtx);
-    m_frames.clear();
-    m_inCacheFrames.clear();
-    m_maxPlayFrame = 0;
-}
-
-ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
-    std::lock_guard lck(m_mtx);
-    cacheFramePath = path;
-    maxCachedFrames = gcmax;
-}
-
-ZENO_API void GlobalComm::initFrameRange(int beg, int end) {
-    std::lock_guard lck(m_mtx);
-    beginFrameNumber = beg;
-    endFrameNumber = end;
-}
-
-ZENO_API int GlobalComm::maxPlayFrames() {
-    std::lock_guard lck(m_mtx);
-    return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
-}
-
-ZENO_API int GlobalComm::numOfFinishedFrame() {
-    std::lock_guard lck(m_mtx);
-    return m_maxPlayFrame;
-}
-
-ZENO_API int GlobalComm::numOfInitializedFrame()
-{
-    std::lock_guard lck(m_mtx);
-    return m_frames.size();
-}
-
-ZENO_API std::pair<int, int> GlobalComm::frameRange() {
-    std::lock_guard lck(m_mtx);
-    return std::pair<int, int>(beginFrameNumber, endFrameNumber);
-}
-
-ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
-    std::lock_guard lck(m_mtx);
-    return _getViewObjects(frameid);
-}
-
-GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
-    int frameIdx = frameid - beginFrameNumber;
-    if (frameIdx < 0 || frameIdx >= m_frames.size())
-        return nullptr;
-    if (maxCachedFrames != 0) {
-        // load back one gc:
-        if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
-            bool ret = fromDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
-            if (!ret)
-                return nullptr;
-
-            m_inCacheFrames.insert(frameid);
-            // and dump one as balance:
-            if (m_inCacheFrames.size() && m_inCacheFrames.size() > maxCachedFrames) { // notindisk then dumpit
-                for (int i: m_inCacheFrames) {
-                    if (i != frameid) {
-                        // seems that objs will not be modified when load_objects called later.
-                        // so, there is no need to dump.
-                        //toDisk(cacheFramePath, i, m_frames[i - beginFrameNumber].view_objects);
-                        m_frames[i - beginFrameNumber].view_objects.clear();
-                        m_inCacheFrames.erase(i);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    return &m_frames[frameIdx].view_objects;
-}
-
-ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
-    std::lock_guard lck(m_mtx);
-    return m_frames.back().view_objects;
-}
-
-ZENO_API void GlobalComm::clear_objects(const std::function<void()>& callback)
-{
-    std::lock_guard lck(m_mtx);
-    if (!callback)
-        return;
-
-    callback();
-}
-
-
-ZENO_API bool GlobalComm::load_objects(
-        const int frameid,
-        const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
-        bool& isFrameValid)
-{
-    if (!callback)
-        return false;
-
-    std::lock_guard lck(m_mtx);
-
-    int frame = frameid;
-    frame -= beginFrameNumber;
-    if (frame < 0 || frame >= m_frames.size() || m_frames[frame].frame_state != FRAME_COMPLETED)
-    {
-        isFrameValid = false;
-        return false;
-    }
-
-    isFrameValid = true;
-    bool inserted = false;
-    auto const* viewObjs = _getViewObjects(frameid);
-    if (viewObjs) {
-        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = callback(viewObjs->m_curr);
-    }
-    else {
-        zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = callback({});
-    }
-    return inserted;
-}
-
-ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
-    std::lock_guard lck(m_mtx);
-    frameid -= beginFrameNumber;
-    if (frameid < 0 || frameid >= m_frames.size())
-        return false;
-    return m_frames[frameid].frame_state == FRAME_COMPLETED;
-}
-
-ZENO_API GlobalComm::FRAME_STATE GlobalComm::getFrameState(int frameid) const
-{
-    std::lock_guard lck(m_mtx);
-    frameid -= beginFrameNumber;
-    if (frameid < 0 || frameid >= m_frames.size())
-        return FRAME_UNFINISH;
-    return m_frames[frameid].frame_state;
-}
-
-ZENO_API bool GlobalComm::isFrameBroken(int frameid) const
-{
-    std::lock_guard lck(m_mtx);
-    frameid -= beginFrameNumber;
-    if (frameid < 0 || frameid >= m_frames.size())
-        return false;
-    return m_frames[frameid].frame_state == FRAME_BROKEN;
-}
-
-ZENO_API int GlobalComm::maxCachedFramesNum()
-{
-    std::lock_guard lck(m_mtx);
-    return maxCachedFrames;
-}
-
-ZENO_API std::string GlobalComm::cachePath()
-{
-    std::lock_guard lck(m_mtx);
-    return cacheFramePath;
-}
-
-ZENO_API bool GlobalComm::removeCache(int frame)
-{
-    std::lock_guard lck(m_mtx);
-    bool hasZencacheOnly = true;
-    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1));
-    if (std::filesystem::exists(dirToRemove))
-    {
-        for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
-        {
-            std::string filePath = entry.path().string();
-            if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
-            {
-                hasZencacheOnly = false;
-                break;
-            }
-        }
-        if (hasZencacheOnly)
-        {
-            m_frames[frame - beginFrameNumber].frame_state = FRAME_BROKEN;
-            std::filesystem::remove_all(dirToRemove);
-            zeno::log_info("remove dir: {}", dirToRemove);
-        }
-    }
-    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
-    {
-        std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
-        zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
-    }
-    return true;
-}
-
-ZENO_API void GlobalComm::removeCachePath()
-{
-    std::lock_guard lck(m_mtx);
-    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
-    if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
-    {
-        std::filesystem::remove_all(dirToRemove);
-        zeno::log_info("remove dir: {}", dirToRemove);
-    }
-}
-
-}

@@ -27,7 +27,7 @@ QRectF StatusButton::boundingRect() const
 void StatusButton::initPath()
 {
     QRectF rc(0, 0, m_info.W, m_info.H);
-    //节点header添加dirty标志,需增加button高度填补空白
+    //鑺傜偣header娣诲姞dirty鏍囧織,闇�澧炲姞button楂樺害濉ˉ绌虹櫧
     rc.setHeight(rc.height() + dirtyLayoutHeight);
     m_path = UiHelper::getRoundPath(rc, m_info.ltradius, m_info.rtradius, m_info.lbradius, m_info.rbradius, true);
 }

@@ -8,7 +8,6 @@
 #include <zenovis/DrawOptions.h>
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ShaderManager.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/scope.h>
@@ -33,7 +32,6 @@ Scene::Scene()
     : camera(std::make_unique<Camera>()),
       drawOptions(std::make_unique<DrawOptions>()),
       shaderMan(std::make_unique<ShaderManager>()),
-      objectsMan(std::make_unique<ObjectsManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
     /* gl has been removed from optix scene.
@@ -60,18 +58,24 @@ void Scene::cleanupView()
     }
 }
 
+void Scene::set_show_ptnum(bool bShow)
+{
+    m_show_ptnum = bShow;
+}
+
+bool Scene::is_show_ptnum() const {
+    return m_show_ptnum;
+}
+
 void Scene::cleanUpScene()
 {
-        zeno::getSession().globalComm->clear_objects([this](){
-            if (!renderMan)
-                return;
+    if (!renderMan)
+        return;
 
-            RenderEngine* pEngine = renderMan->getEngine();
-            if (pEngine) {
-                pEngine->cleanupScene();
-                pEngine->cleanupAssets();
-            }
-        });
+    RenderEngine* pEngine = renderMan->getEngine();
+    if (pEngine) {
+        pEngine->cleanupScene();
+    }
 }
 
 void Scene::switchRenderEngine(std::string const &name) {
@@ -87,38 +91,9 @@ void* Scene::getOptixImg(int& w, int& h)
 #endif
 }
 
-void Scene::convertListObjsRender(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems,
-    std::set<std::string>& allListItemsKeys, bool convertKeyOnly, std::string listNamePath, std::string listIdxPath)
+void Scene::convertListObjs(zeno::IObject* objToBeConvert, std::map<std::string, zeno::IObject*>& allListItems)
 {
-    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
-        for (int i = 0; i < lst->size(); i++) {
-            std::shared_ptr<zeno::IObject> const& arrItem = lst->get(i);
-            std::string idxpath = listIdxPath + '/' + std::to_string(i);
-            std::string namepath = listNamePath + '/' + arrItem->nodeId;
-            if (lst->has_dirty(i)) {
-                convertListObjsRender(arrItem, allListItems, allListItemsKeys, convertKeyOnly, namepath, idxpath);
-                continue;
-            }
-            convertListObjsRender(arrItem, allListItems, allListItemsKeys, convertKeyOnly, namepath, idxpath);
-        }
-        return;
-    }
-    if (!objToBeConvert)
-        return;
-    else {
-        if (convertKeyOnly)
-            allListItemsKeys.insert(objToBeConvert->key());
-        else {
-            objToBeConvert->listitemNameIndex = listNamePath;
-            objToBeConvert->listitemNumberIndex = listIdxPath;
-            allListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
-        }
-    }
-}
-
-void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::map<std::string, std::shared_ptr<zeno::IObject>>& allListItems)
-{
-    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+    if (auto lst = dynamic_cast<zeno::ListObject*>(objToBeConvert)) {
         for (int i = 0; i < lst->size(); i++)
             convertListObjs(lst->get(i), allListItems);
         return;
@@ -126,13 +101,14 @@ void Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert,
     if (!objToBeConvert)
         return;
     else {
-        allListItems.insert(std::make_pair(objToBeConvert->key(), objToBeConvert));
+        std::string objkey = zsString2Std(objToBeConvert->key());
+        allListItems.insert(std::make_pair(objkey, objToBeConvert));
     }
 }
 
-void zenovis::Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToBeConvert, std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>>& allListItems)
+void zenovis::Scene::convertListObjs(zeno::IObject* objToBeConvert, std::vector<std::pair<std::string, zeno::IObject*>>& allListItems)
 {
-    if (std::shared_ptr<zeno::ListObject> lst = std::dynamic_pointer_cast<zeno::ListObject>(objToBeConvert)) {
+    if (auto lst = dynamic_cast<zeno::ListObject*>(objToBeConvert)) {
         for (int i = 0; i < lst->size(); i++)
             convertListObjs(lst->get(i), allListItems);
         return;
@@ -140,51 +116,40 @@ void zenovis::Scene::convertListObjs(std::shared_ptr<zeno::IObject>const& objToB
     if (!objToBeConvert)
         return;
     else {
-        allListItems.emplace_back(objToBeConvert->key(), objToBeConvert);
+        std::string objkey = zsString2Std(objToBeConvert->key());
+        allListItems.emplace_back(objkey, objToBeConvert);
     }
 }
 
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
+#if 0
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {
             return zeno::objectGetFocusCenterRadius(ptr, center, radius);
         }
     }
     zeno::log_warn("cannot focus: node with id {} not found, did you tagged VIEW on it?", nodeid);
+#endif
     return false;
 }
 
-void Scene::load_objects(const zeno::RenderObjsInfo& objs) {
+void Scene::reload(const zeno::render_reload_info& info) {
     if (renderMan)
     {
         if (RenderEngine* pEngine = renderMan->getEngine())
-            pEngine->load_objects(objs);
+            pEngine->reload(info);
     }
-}
-
-bool Scene::loadFrameObjects(int frameid) {
-    auto &ud = zeno::getSession().userData();
-    ud.set2<int>("frameid", std::move(frameid));
-
-    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
-        return this->objectsMan->load_objects(objs);
-    };
-    bool isFrameValid = false;
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
-    if (!isFrameValid)
-        return false;
-
-    renderMan->getEngine()->update();
-    return inserted;
 }
 
 void Scene::set_select_mode(PICK_MODE _select_mode) {
 //    zeno::log_info("{} -> {}", magic_enum::enum_name(select_mode), magic_enum::enum_name(_select_mode));
     select_mode = _select_mode;
 }
+
 PICK_MODE Scene::get_select_mode() {
     return select_mode;
 }
+
 void Scene::draw(bool record) {
     if (renderMan->getDefaultEngineName() != "optx")
     {
@@ -292,3 +257,4 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
 }
 
 } // namespace zenovis
+

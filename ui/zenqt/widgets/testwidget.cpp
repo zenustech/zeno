@@ -1,6 +1,7 @@
 #include "testwidget.h"
 #include "widgets/zwidgetfactory.h"
 #include "uicommon.h"
+#include <zeno/core/typeinfo.h>
 
 
 TestNormalWidget::TestNormalWidget()
@@ -23,10 +24,10 @@ TestNormalWidget::TestNormalWidget()
     std::vector<float> sliderInfo = { 1.0, 100.0, 1.0 };
     properties = sliderInfo;
 
-    QWidget* pSlider = zenoui::createWidget(QModelIndex(), 10, zeno::Slider, zeno::types::gParamType_Int, cbSet, properties);
+    QWidget* pSlider = zenoui::createWidget(QModelIndex(), 10, zeno::Slider, ui_gParamType_Int, cbSet, properties);
     pLayout->addWidget(pSlider);
 
-    QWidget* pSpinBox = zenoui::createWidget(QModelIndex(), 10, zeno::SpinBoxSlider, zeno::types::gParamType_Int, cbSet, properties);
+    QWidget* pSpinBox = zenoui::createWidget(QModelIndex(), 10, zeno::SpinBoxSlider, ui_gParamType_Int, cbSet, properties);
     pLayout->addWidget(pSpinBox);
 
     setLayout(pLayout);

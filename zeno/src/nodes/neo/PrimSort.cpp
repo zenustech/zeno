@@ -10,10 +10,10 @@ namespace zeno {
 
 struct PrimSort : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto attr = get_input2<std::string>("Attribute");
-    auto mode = get_input2<std::string>("Vertex Sort");
-    auto reverse = get_input2<bool>("Reverse");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto attr = ZImpl(get_input2<std::string>("Attribute"));
+    auto mode = ZImpl(get_input2<std::string>("Vertex Sort"));
+    auto reverse = ZImpl(get_input2<bool>("Reverse"));
     
     if (mode == "NoChange") {
         if (reverse) {
@@ -24,7 +24,7 @@ struct PrimSort : INode {
                 std::swap(tri[0], tri[2]);
             }*/
         }
-      set_output("prim", std::move(prim));
+      ZImpl(set_output("prim", std::move(prim)));
     }
     else if (mode == "ByAttribute") {
         auto &tris = prim->tris.values;
@@ -65,7 +65,7 @@ struct PrimSort : INode {
                 idx = reverse_indices[idx];
             }
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
   }
 };

@@ -133,6 +133,8 @@ namespace zenoio {
         zeno::GraphData mainGraph;
         zeno::ZSG_VERSION iover;
         zeno::TimelineInfo timeline;
+        std::wstring path;
+        int num_of_nodes;   //parse出的节点数，不包含嵌套asset的情况（只算一层）
         ERR_CODE code;
     };
 }

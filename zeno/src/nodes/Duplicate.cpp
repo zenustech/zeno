@@ -1,44 +1,32 @@
-#include <zeno/core/INode.h>
-#include <zeno/core/IObject.h>
-#include <zeno/core/Graph.h>
-#include <zeno/types/PrimitiveObject.h>
-#include <zeno/core/reflectdef.h>
-#include "zeno_types/reflect/reflection.generated.hpp"
-
+#include <zeno/zeno.h>
 
 namespace zeno
 {
-    struct ZDEFNODE() Duplicate : INode
+    struct Duplicate : INode
     {
-        ReflectCustomUI m_uilayout = {
-            // ‰»Î£∫
-            _Group {
-                {"input_object", ParamObject("Original Object", Socket_Clone)},
-                {"keepModifyOriginal", ParamPrimitive("Keep Modify Original")},
-            },
-            // ‰≥ˆ£∫
-            _Group {
-                {"", ParamObject("Duplicated Object", Socket_Output)},
-                {"", ParamObject("Original Object", Socket_Output, "", "visible = param('Keep Modify Original').value == 1;")},
-            }
-        };
+        void apply() override {
+            zany input_object = ZImpl(clone_input("Original Object"));
+            bool keepModifyOriginal = ZImpl(get_input2<bool>("Keep Modify Original"));
 
-        std::pair<zany, zany> apply(zany input_object, bool keepModifyOriginal)
-        {
-            auto res = std::make_pair<zany, zany>(nullptr, nullptr);
-            res.first = input_object->clone();
+            zany first_clone = input_object->clone();
             if (keepModifyOriginal) {
-                res.second = input_object;
+                ZImpl(set_output("Original Object", std::move(input_object)));
             }
-            return res;
+            ZImpl(set_output("Duplicated Object", std::move(first_clone)));
         }
     };
 
-    struct ZDEFNODE() Duplicate3 : INode
+    ZENDEFNODE(Duplicate,
     {
-        std::tuple<zany, zany, int> apply(zany input_object, bool keepModifyOriginal)
         {
-            return std::make_tuple<zany, zany, int>(nullptr, nullptr, 0);
-        }
-    };
+            {gParamType_IObject, "Original Object"},
+            {gParamType_Bool, "Keep Modify Original"}
+        },
+        {
+            {gParamType_IObject, "Duplicated Object"},
+            ParamObject("Original Object", gParamType_IObject, "visible = param('Keep Modify Original').value == 1;")
+        },
+        {},
+        {"geom"}
+    });
 }

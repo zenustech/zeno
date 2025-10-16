@@ -94,6 +94,15 @@ namespace zenoio
             if (node.bView) {
                 options.push_back("View");
             }
+            if (node.bypass) {
+                options.push_back("ByPass");
+            }
+            if (node.bnocache) {
+                options.push_back("NoCache");
+            }
+            if (node.bclearsbn) {
+                options.push_back("ClearSubnet");
+            }
             writer.StartArray();
             for (auto item : options)
             {
@@ -116,7 +125,9 @@ namespace zenoio
             dumpCustomUI(node.customUi, writer);
         }
 
-        if (node.subgraph.has_value() && node.type == zeno::Node_SubgraphNode)
+        if (node.subgraph.has_value() &&
+            (node.type == zeno::Node_SubgraphNode ||
+            (node.type == zeno::Node_AssetInstance && !node.bLocked)))
         {
             writer.Key("subnet");
             dumpGraph(node.subgraph.value(), writer);
@@ -124,16 +135,39 @@ namespace zenoio
 
         if (node.asset.has_value()) {
             zeno::AssetInfo asset = node.asset.value();
+
+            writer.Key("asset_locked");
+            writer.Bool(node.bLocked);
+
             writer.Key("asset");
             JsonObjScope scope(writer);
             writer.Key("name");
             writer.String(asset.name.c_str());
+
             writer.Key("path");
-            writer.String(asset.path.c_str());
+
+            std::filesystem::path projpath = m_proj_path;
+            std::filesystem::path proj_dir = projpath.parent_path();
+
+            std::filesystem::path assetpath = asset.path;
+            std::filesystem::path asset_dir = assetpath.parent_path();
+
+            if (proj_dir == asset_dir) {
+                auto fn = assetpath.filename().u8string();
+                writer.String(fn.c_str());
+            }
+            else {
+                writer.String(asset.path.c_str());
+            }
+
             writer.Key("version");
             std::string version = std::to_string(asset.majorVer) + "." + std::to_string(asset.minorVer);
             writer.String(version.c_str());
         }
+    }
+
+    void CommonWriter::set_proj_path(const std::string& path) {
+        m_proj_path = path;
     }
 
     void CommonWriter::dumpCustomUI(zeno::CustomUI customUi, RAPIDJSON_WRITER& writer)
@@ -143,7 +177,7 @@ namespace zenoio
         writer.Key("nickname");
         writer.String(customUi.nickname.c_str());
         writer.Key("iconResPath");
-        writer.String(customUi.iconResPath.c_str());
+        writer.String(customUi.uistyle.iconResPath.c_str());
         writer.Key("category");
         writer.String(customUi.category.c_str());
         writer.Key("doc");
@@ -213,9 +247,12 @@ namespace zenoio
             case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
             case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
             case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
-            case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
             default:
                 writer.String(iotags::params::socket_none);
+            }
+            if (param.bWildcard) {
+                writer.Key("is-wildcard");
+                writer.Bool(true);
             }
         }
         if (!param.wildCardGroup.empty())
@@ -288,43 +325,44 @@ namespace zenoio
             writer.Key("control");
             dumpControl(param.type, param.control, param.ctrlProps, writer);
 
-#if 0
             writer.Key("controlProps");
-            {
-                if (param.ctrlProps.has_value()) {
-                    JsonObjScope scopeCtrlProps(writer);
-                    writer.Key("items");
-                    if (param.ctrlProps->items.has_value()) {
-                        writer.StartArray();
-                        for (auto& v : param.ctrlProps->items.value())
-                            writer.String(v.c_str());
-                        writer.EndArray();
-                    }
-                    else {
-                        writer.Null();
-                    }
+            if (param.ctrlProps.has_value()) {
+                JsonObjScope scopeCtrlProps(writer);
 
-                    writer.Key("ranges");
-                    if (param.ctrlProps->ranges.has_value()) {
-                        JsonObjScope scopeRange(writer);
-                        writer.Key("min");
-                        writer.Double(param.ctrlProps->ranges.value()[0]);
-                        writer.Key("max");
-                        writer.Double(param.ctrlProps->ranges.value()[1]);
-                        writer.Key("step");
-                        writer.Double(param.ctrlProps->ranges.value()[2]);
+                auto typeHash = param.ctrlProps.type().hash_code();
+                if (typeHash == zeno::types::gParamType_StringList) {
+                    writer.Key("items");
+                    const auto& items = zeno::reflect::any_cast<std::vector<std::string>>(param.ctrlProps);
+                    writer.StartArray();
+                    for (const auto& item : items) {
+                        writer.String(item.c_str());
                     }
-                    else {
-                        writer.Null();
-                    }
+                    writer.EndArray();
                 }
-                else {
-                    writer.Null();
+                else if (typeHash == zeno::types::gParamType_IntList) {
+                    const auto& items = zeno::reflect::any_cast<std::vector<int>>(param.ctrlProps);
+                    writer.Key("min");
+                    writer.Int(items[0]);
+                    writer.Key("max");
+                    writer.Int(items[1]);
+                    writer.Key("step");
+                    writer.Int(items[2]);
+                }
+                else if (typeHash == zeno::types::gParamType_FloatList) {
+                    const auto& items = zeno::reflect::any_cast<std::vector<float>>(param.ctrlProps);
+                    writer.Key("min");
+                    writer.Double(items[0]);
+                    writer.Key("max");
+                    writer.Double(items[1]);
+                    writer.Key("step");
+                    writer.Double(items[2]);
                 }
             }
-#endif
+            else {
+                writer.Null();
+            }
         }
-        //�������Ҳ������Socket_WildCard���ͣ����¼socket_type
+
         writer.Key("socket-type");
         switch (param.socketType)
         {
@@ -332,10 +370,15 @@ namespace zenoio
         case zeno::Socket_Owning:   writer.String(iotags::params::socket_owning); break;
         case zeno::Socket_ReadOnly: writer.String(iotags::params::socket_readonly); break;
         case zeno::Socket_Primitve: writer.String(iotags::params::socket_primitive); break;
-        case zeno::Socket_WildCard: writer.String(iotags::params::socket_wildcard); break;
         default:
             writer.String(iotags::params::socket_none);
         }
+
+        if (param.bWildcard) {
+            writer.Key("is-wildcard");
+            writer.Bool(true);
+        }
+
         writer.Key("visible");
         writer.Bool(param.bSocketVisible);
 

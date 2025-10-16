@@ -1,6 +1,7 @@
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/Interpolation.h>
 #include <zeno/zeno.h>
+#include <zeno/utils/interfaceutil.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/NumericObject.h>
 #include <zeno/StringObject.h>
@@ -10,78 +11,78 @@ namespace zeno {
 
 struct SDFAdvect : zeno::INode {
     virtual void apply() override {
-        auto inSDF = get_input("InoutSDF")->as<VDBFloatGrid>();
-        auto vecField = get_input("VecField")->as<VDBFloat3Grid>();
+        auto inSDF = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("InoutSDF"));
+        auto vecField = safe_dynamic_cast<VDBFloat3Grid>(get_input("VecField"));
         auto grid = inSDF->m_grid;
         auto field = vecField->m_grid;
-        auto timeStep = get_input<NumericObject>("TimeStep")->get<float>();
+        auto timeStep = get_input2_float("TimeStep");
         auto velField = openvdb::tools::DiscreteField<openvdb::Vec3SGrid>(*field);
         auto advection = openvdb::tools::LevelSetAdvection<openvdb::FloatGrid, decltype(velField)>(*grid, velField);
 
-        auto spatialScheme = get_input<StringObject>("SpatialScheme")->get();
-        if (spatialScheme == std::string("Order_1")) {
+        auto spatialScheme = zsString2Std(get_input2_string("SpatialScheme"));
+        if (spatialScheme == "Order_1") {
             advection.setSpatialScheme(openvdb::math::FIRST_BIAS);
         }
-        else if (spatialScheme == std::string("Order_2")) {
+        else if (spatialScheme == "Order_2") {
             advection.setSpatialScheme(openvdb::math::SECOND_BIAS);
         }
-        else if (spatialScheme == std::string("Order_3")) {
+        else if (spatialScheme == "Order_3") {
             advection.setSpatialScheme(openvdb::math::THIRD_BIAS);
         }
-        else if (spatialScheme == std::string("Order_5_HJ_WENO")) {
+        else if (spatialScheme == "Order_5_HJ_WENO") {
             advection.setSpatialScheme(openvdb::math::HJWENO5_BIAS);
         }
-        else if (spatialScheme == std::string("Order_5_WENO")) {
+        else if (spatialScheme == "Order_5_WENO") {
             advection.setSpatialScheme(openvdb::math::WENO5_BIAS);
         }
         else {
             throw zeno::Exception("SDFAdvect Node: wrong parameter for SpatialScheme: " + spatialScheme);
         }
 
-        auto temporalScheme = get_input<StringObject>("TemporalScheme")->get();
-        if (temporalScheme == std::string("Explicit_Euler")) {
+        auto temporalScheme = zsString2Std(get_input2_string("TemporalScheme"));
+        if (temporalScheme == "Explicit_Euler") {
             advection.setTemporalScheme(openvdb::math::TVD_RK1);
         }
-        else if (temporalScheme == std::string("Order_2_Runge_Kuta")) {
+        else if (temporalScheme == "Order_2_Runge_Kuta") {
             advection.setTemporalScheme(openvdb::math::TVD_RK2);
         }
-        else if (temporalScheme == std::string("Order_3_Runge_Kuta")) {
+        else if (temporalScheme == "Order_3_Runge_Kuta") {
             advection.setTemporalScheme(openvdb::math::TVD_RK3);
         }
         else {
             throw zeno::Exception("SDFAdvect Node: wrong parameter for TemporalScheme: " + temporalScheme);
         }
 
-        advection.setNormCount(get_input<NumericObject>("RenormalizeStep")->get<int>());
+        advection.setNormCount(get_input2_int("RenormalizeStep"));
 
-        auto trackerSpatialScheme = get_input<StringObject>("TrackerSpatialScheme")->get();
-        if (trackerSpatialScheme == std::string("Order_1")) {
+        auto trackerSpatialScheme = zsString2Std(get_input2_string("TrackerSpatialScheme"));
+        if (trackerSpatialScheme == "Order_1") {
             advection.setTrackerSpatialScheme(openvdb::math::FIRST_BIAS);
         }
-        else if (trackerSpatialScheme == std::string("Order_2")) {
+        else if (trackerSpatialScheme == "Order_2") {
             advection.setTrackerSpatialScheme(openvdb::math::SECOND_BIAS);
         }
-        else if (trackerSpatialScheme == std::string("Order_3")) {
+        else if (trackerSpatialScheme == "Order_3") {
             advection.setTrackerSpatialScheme(openvdb::math::THIRD_BIAS);
         }
-        else if (trackerSpatialScheme == std::string("Order_5_HJ_WENO")) {
+        else if (trackerSpatialScheme == "Order_5_HJ_WENO") {
             advection.setTrackerSpatialScheme(openvdb::math::HJWENO5_BIAS);
         }
-        else if (trackerSpatialScheme == std::string("Order_5_WENO")) {
+        else if (trackerSpatialScheme == "Order_5_WENO") {
             advection.setTrackerSpatialScheme(openvdb::math::WENO5_BIAS);
         }
         else {
             throw zeno::Exception("SDFAdvect Node: wrong parameter for TrackerSpatialScheme: " + trackerSpatialScheme);
         }
 
-        auto trackerTemporalScheme = get_input<StringObject>("TrackerTemporalScheme")->get();
-        if (trackerTemporalScheme == std::string("Explicit_Euler")) {
+        auto trackerTemporalScheme = zsString2Std(get_input2_string("TrackerTemporalScheme"));
+        if (trackerTemporalScheme == "Explicit_Euler") {
             advection.setTrackerTemporalScheme(openvdb::math::TVD_RK1);
         }
-        else if (trackerTemporalScheme == std::string("Order_2_Runge_Kuta")) {
+        else if (trackerTemporalScheme == "Order_2_Runge_Kuta") {
             advection.setTrackerTemporalScheme(openvdb::math::TVD_RK2);
         }
-        else if (trackerTemporalScheme == std::string("Order_3_Runge_Kuta")) {
+        else if (trackerTemporalScheme == "Order_3_Runge_Kuta") {
             advection.setTrackerTemporalScheme(openvdb::math::TVD_RK3);
         }
         else {
@@ -89,7 +90,7 @@ struct SDFAdvect : zeno::INode {
         }
 
         advection.advect(0.0, timeStep);
-        set_output("InoutSDF", get_input("InoutSDF"));
+        set_output("InoutSDF", std::move(inSDF));
     }
 };
 
@@ -115,59 +116,59 @@ ZENO_DEFNODE(SDFAdvect)(
 struct VolumeAdvect : zeno::INode {
     virtual void apply() override {
         //
-        //auto inSDF = get_input("InoutField")->as<VDBFloatGrid>();
-        auto vecField = get_input("VecField")->as<VDBFloat3Grid>();
+        //auto inSDF = safe_dynamic_cast<VDBFloatGrid>(get_input("InoutField"));
+        auto vecField = safe_dynamic_cast<VDBFloat3Grid>(get_input("VecField"));
         //auto grid = inSDF->m_grid;
         auto field = vecField->m_grid;
-        auto timeStep = get_input<NumericObject>("TimeStep")->get<float>();
+        auto timeStep = get_input2_float("TimeStep");
         //auto velField = openvdb::tools::DiscreteField<openvdb::Vec3SGrid>(*field);
         using VolumeAdvection =
         openvdb::tools::VolumeAdvection< openvdb::Vec3fGrid, true>;
         VolumeAdvection advection(*field);
         
-        auto spatialScheme = get_input<StringObject>("Integrator")->get();
-        if (spatialScheme == std::string("SemiLagrangian")) {
+        auto spatialScheme = zsString2Std(get_input2_string("Integrator"));
+        if (spatialScheme == "SemiLagrangian") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::SEMI);
         }
-        else if (spatialScheme == std::string("MidPoint")) {
+        else if (spatialScheme == "MidPoint") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::MID);
         }
-        else if (spatialScheme == std::string("RK3")) {
+        else if (spatialScheme == "RK3") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::RK3);
         }
-        else if (spatialScheme == std::string("RK4")) {
+        else if (spatialScheme == "RK4") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::RK4);
         }
-        else if (spatialScheme == std::string("MacCormack")) {
+        else if (spatialScheme == "MacCormack") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::MAC);
         }
-        else if (spatialScheme == std::string("BFECC")) {
+        else if (spatialScheme == "BFECC") {
             advection.setIntegrator(openvdb::tools::Scheme::SemiLagrangian::BFECC);
         }
         else {
             throw zeno::Exception("VolumeAdvect Node: wrong parameter for Integrator: " + spatialScheme);
         }
 
-        auto temporalScheme = get_input<StringObject>("Limiter")->get();
-        if (temporalScheme == std::string("None")) {
+        auto temporalScheme = zsString2Std(get_input2_string("Limiter"));
+        if (temporalScheme == "None") {
             advection.setLimiter(openvdb::tools::Scheme::Limiter::NO_LIMITER);
         }
-        else if (temporalScheme == std::string("Clamp")) {
+        else if (temporalScheme == "Clamp") {
             advection.setLimiter(openvdb::tools::Scheme::Limiter::CLAMP);
         }
-        else if (temporalScheme == std::string("Revert")) {
+        else if (temporalScheme == "Revert") {
             advection.setLimiter(openvdb::tools::Scheme::Limiter::REVERT);
         }
         else {
             throw zeno::Exception("VolumeAdvect Node: wrong parameter for Limitter: " + temporalScheme);
         }
 
-        advection.setSubSteps(get_input<NumericObject>("SubSteps")->get<int>());
+        advection.setSubSteps(get_input2_int("SubSteps"));
         
-        if(get_input("InField")->as<VDBGrid>()->getType()=="FloatGrid")
+        if (safe_dynamic_cast<VDBGrid>(get_input("InField"))->getType()=="FloatGrid")
         {
             
-            auto f = get_input("InField")->as<VDBFloatGrid>();
+            auto f = safe_dynamic_cast<VDBFloatGrid>(get_input("InField"));
             auto f2 = f->m_grid->deepCopy();
             //auto result = std::make_shared<VDBFloatGrid>();
             auto res = advection.template advect<openvdb::FloatGrid,
@@ -175,9 +176,9 @@ struct VolumeAdvect : zeno::INode {
             f->m_grid = res->deepCopy();
             //set_output("outField", get_input("InField"));
         }
-        else if(get_input("InField")->as<VDBGrid>()->getType()=="Vec3fGrid")
+        else if(safe_dynamic_cast<VDBGrid>(get_input("InField"))->getType()=="Vec3fGrid")
         {
-            auto f = get_input("InField")->as<VDBFloat3Grid>();
+            auto f = safe_dynamic_cast<VDBFloat3Grid>(get_input("InField"));
             auto f2 = f->m_grid->deepCopy();
             auto res = advection.template advect<openvdb::Vec3fGrid,
                     openvdb::tools::Sampler<1, true>>(*f2, timeStep);
@@ -185,9 +186,9 @@ struct VolumeAdvect : zeno::INode {
             //set_output("outField", get_input("InField"));
         }
         //advection.advect(0.0, timeStep);
-        auto layers_to_ext = zeno::IObject::make<zeno::NumericObject>();
+        auto layers_to_ext = std::make_unique<zeno::NumericObject>();
         layers_to_ext->set<int>(advection.getMaxDistance(*field, timeStep));
-        set_output("extend", layers_to_ext);
+        set_output("extend", std::move(layers_to_ext));
     }
 };
 

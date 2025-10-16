@@ -1,4 +1,5 @@
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
@@ -235,7 +236,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
         desc.fvarChannels = channels.data();
     }
 
-    std::map<std::string, AttrVector<vec2i>::AttrVectorVariant> oldpolyattrs;
+    std::map<std::string, AttrVectorVariant> oldpolyattrs;
     if (copyFaceAttrs) { // make zhxx very happy
         size_t offsetred = 0, curOffsetred;
         size_t shift = 2 * (levels - 1);
@@ -712,27 +713,29 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
 
 struct OSDPrimSubdiv : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        int levels = get_input2<int>("levels");
-        if (get_input2<bool>("delayTillIpc") && levels) { // cihou zhxx
-            prim->userData().set2("delayedSubdivLevels", levels);
+        auto prim = get_input_Geometry("prim")->toPrimitiveObject();
+        int levels = get_input2_int("levels");
+        if (get_input2_bool("delayTillIpc") && levels) { // cihou zhxx
+            prim->userData()->set_int("delayedSubdivLevels", levels);
             set_output("prim", std::move(prim));
             return;
         }
-        auto edgeCreaseAttr = get_input2<std::string>("edgeCreaseAttr");
-        bool triangulate = get_input2<bool>("triangulate");
-        bool asQuadFaces = get_input2<bool>("asQuadFaces");
-        bool hasLoopUVs = get_input2<bool>("hasLoopUVs");
-        bool copyFaceAttrs = get_input2<bool>("copyFaceAttrs");
+        auto edgeCreaseAttr = zsString2Std(get_input2_string("edgeCreaseAttr"));
+        bool triangulate = get_input2_bool("triangulate");
+        bool asQuadFaces = get_input2_bool("asQuadFaces");
+        bool hasLoopUVs = get_input2_bool("hasLoopUVs");
+        bool copyFaceAttrs = get_input2_bool("copyFaceAttrs");
         if (levels)
             osdPrimSubdiv(prim.get(), levels, edgeCreaseAttr, triangulate, asQuadFaces, hasLoopUVs, copyFaceAttrs);
-        set_output("prim", std::move(prim));
+
+        auto geom = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geom));
     }
 };
 ZENO_DEFNODE(OSDPrimSubdiv)
 ({
     {
-        {gParamType_Primitive, "prim"},
+        {gParamType_Geometry, "prim"},
         {gParamType_Int, "levels", "2"},
         {gParamType_String, "edgeCreaseAttr", ""},
         {gParamType_Bool, "triangulate", "1"},
@@ -742,8 +745,8 @@ ZENO_DEFNODE(OSDPrimSubdiv)
         {gParamType_Bool, "delayTillIpc", "0"},
     },
     {
-{gParamType_Primitive, "prim"},
-},
+        {gParamType_Geometry, "prim"},
+    },
     {},
     {"primitive"},
 });

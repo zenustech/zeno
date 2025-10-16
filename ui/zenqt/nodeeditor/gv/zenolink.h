@@ -1,10 +1,11 @@
-#ifndef __ZENO_LINK_H__
+﻿#ifndef __ZENO_LINK_H__
 #define __ZENO_LINK_H__
 
 #include <QtWidgets>
 //#include "uicommon.h"
 #include "nodeeditor/gv/nodesys_common.h"
 #include <zeno/core/common.h>
+#include "zgraphicstextitem.h"
 
 class ZenoSubGraphScene;
 class ZenoSocketItem;
@@ -120,12 +121,16 @@ private:
     bool isPrimLink();
     void getConnectedState(zeno::SocketType& inSockProp, bool& inNodeCollasped);
 
+    void updateTextItemPosition();
+
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
     QString m_inNode;
     QString m_outNode;
     bool m_bHover;
     bool m_bLegacyLink;
+
+    ZGraphicsTextItem* m_pTextItem;
 };
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef __ZENO_PYTHON_API_H__
 #define __ZENO_PYTHON_API_H__
 
-#ifdef ZENO_WITH_PYTHON
+#ifdef 0
 
 #include <Python.h>
 #include <zeno/core/Graph.h>

@@ -456,7 +456,7 @@ QSizeF ZGraphicsLayout::calculateSize()
             }
             case Type_Spacing:
             {
-                //如果前一个元素或者后一个元素隐藏了，那这个Spacing也得隐藏
+                //濡傛灉鍓嶄竴涓厓绱犳垨鑰呭悗涓�涓厓绱犻殣钘忎簡锛岄偅杩欎釜Spacing涔熷緱闅愯棌
                 //if ((i > 1 && m_items[i - 1]->pItem && !m_items[i - 1]->pItem->isVisible()) ||
                 //    (i < m_items.size() - 1 && m_items[i + 1]->pItem && m_items[i + 1]->pItem->isVisible())) {
                 //    continue;

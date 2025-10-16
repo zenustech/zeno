@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/DummyObject.h>
 #include <zeno/extra/GlobalState.h>
@@ -13,7 +13,7 @@ namespace {
 
 struct MakeDummy : zeno::INode {
     virtual void apply() override {
-        set_output("dummy", std::make_shared<DummyObject>());
+        ZImpl(set_output("dummy", std::make_unique<DummyObject>()));
     }
 };
 
@@ -26,3 +26,4 @@ ZENDEFNODE(MakeDummy, {
 
 }
 }
+

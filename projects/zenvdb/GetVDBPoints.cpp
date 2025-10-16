@@ -12,7 +12,7 @@ namespace zeno {
 
 struct GetVDBPoints : zeno::INode {
   virtual void apply() override {
-    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+    auto grid = safe_dynamic_cast<VDBPointsGrid>(get_input("grid"))->m_grid;
 
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
@@ -20,7 +20,7 @@ struct GetVDBPoints : zeno::INode {
 
     auto transform = grid->transformPtr();
 
-    auto ret = zeno::IObject::make<ParticlesObject>();
+    auto ret = std::make_unique<ParticlesObject>();
 
     for (auto const &leaf: leafs) {
       //attributes
@@ -48,7 +48,7 @@ struct GetVDBPoints : zeno::INode {
         ret->vel.push_back(glm::vec3(v[0], v[1], v[2]));
       }
     }
-    set_output("pars", ret);
+    set_output("pars", std::move(ret));
   }
 };
 
@@ -65,10 +65,10 @@ static int defGetVDBPoints = zeno::defNodeClass<GetVDBPoints>("GetVDBPoints",
 #if 0
 struct GetVDBPointsLeafCount : zeno::INode {
   virtual void apply() override {
-    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+    auto grid = safe_dynamic_cast<VDBPointsGrid>(get_input("grid"))->m_grid;
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
-    auto ret = std::make_shared<zeno::NumericObject>();
+    auto ret = std::make_unique<zeno::NumericObject>();
     ret->set((int)leafs.size());
     set_output("leafCount", std::move(ret));
   }
@@ -77,14 +77,14 @@ struct GetVDBPointsLeafCount : zeno::INode {
 
 struct VDBPointsToPrimitive : zeno::INode {
   virtual void apply() override {
-    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
+    auto grid = safe_dynamic_cast<VDBPointsGrid>(get_input("grid"))->m_grid;
 
     std::vector<openvdb::points::PointDataTree::LeafNodeType *> leafs;
     grid->tree().getNodes(leafs);
     zeno::log_info("VDBPointsToPrimitive: particle leaf nodes: {}\n", leafs.size());
     auto transform = grid->transformPtr();
 
-    auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
+    auto ret = std::make_unique<zeno::PrimitiveObject>();
     size_t count = openvdb::points::pointCount(grid->tree());
     zeno::log_info("VDBPointsToPrimitive: particles: {}\n", count);
     ret->resize(count);
@@ -253,7 +253,7 @@ struct VDBPointsToPrimitive : zeno::INode {
     }
 
     zeno::log_info("VDBPointsToPrimitive: complete\n");
-    set_output("prim", ret);
+    set_output("prim", std::move(ret));
   }
 };
 
@@ -272,8 +272,8 @@ static int defVDBPointsToPrimitive = zeno::defNodeClass<VDBPointsToPrimitive>("V
 
 struct GetVDBPointsDroplets : zeno::INode {
   virtual void apply() override {
-    auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
-    auto sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
+    auto grid = safe_dynamic_cast<VDBPointsGrid>(get_input("grid"))->m_grid;
+    auto sdf = safe_dynamic_cast<VDBFloatGrid>(get_input("sdf"))->m_grid;
     auto dx = sdf->voxelSize()[0];
     std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
     grid->tree().getNodes(leafs);
@@ -281,7 +281,7 @@ struct GetVDBPointsDroplets : zeno::INode {
 
     auto transform = grid->transformPtr();
 
-    auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
+    auto ret = std::make_unique<zeno::PrimitiveObject>();
     auto &retpos = ret->add_attr<zeno::vec3f>("pos");
     auto &retvel = ret->add_attr<zeno::vec3f>("vel");
 
@@ -326,7 +326,7 @@ struct GetVDBPointsDroplets : zeno::INode {
       retpos[index] = std::get<0>(data[index]);
       retvel[index] = std::get<1>(data[index]);
     });
-    set_output("prim", ret);
+    set_output("prim", std::move(ret));
   }
 };
 
@@ -345,7 +345,7 @@ static int defGetVDBPointsDroplets = zeno::defNodeClass<GetVDBPointsDroplets>("G
 struct ConvertTo_VDBPointsGrid_PrimitiveObject : VDBPointsToPrimitive {
     virtual void apply() override {
         VDBPointsToPrimitive::apply();
-        //get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("prim"), gParamType_Primitive))).get());
+        //get_input_PrimitiveObject("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(anyToZAny(get_output_obj("prim"), gParamType_Primitive))).get());
     }
 };
 
@@ -364,7 +364,7 @@ ZENO_DEFOVERLOADNODE(ConvertTo, _VDBPointsGrid_PrimitiveObject, typeid(VDBPoints
 struct ToVisualize_VDBPointsGrid : VDBPointsToPrimitive {
     virtual void apply() override {
         VDBPointsToPrimitive::apply();
-        auto path = get_param<std::string>("path");
+        auto path = zsString2Std(get_param_string("path"));
         auto prim = std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim")));
         if (auto node = graph->getOverloadNode("ToVisualize", {std::move(prim)}); node) {
             node->inputs["path:"] = std::make_shared<StringObject>(path);

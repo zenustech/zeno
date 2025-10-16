@@ -1,12 +1,15 @@
+#define TINYEXR_IMPLEMENTATION
+#include "tinyexr.h"
 #include "ABCCommon.h"
 #include "ABCTree.h"
 #include "Alembic/Abc/IObject.h"
-#include "tinyexr.h"
-#include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/para/parallel_reduce.h"
 #include <filesystem>
 #include <zeno/logger.h>
 #include <zeno/zeno.h>
+#include <zeno/utils/interfaceutil.h>
+#include <zeno/geo/commonutil.h>
+
 
 namespace zeno {
 
@@ -84,7 +87,7 @@ int align_to(int count, int align) {
 }
 
 void writeObjFile(
-    const std::shared_ptr<zeno::PrimitiveObject>& primitive,
+    const zeno::PrimitiveObject* primitive,
     const char *path,
     int32_t frameNum,
     const std::pair<zeno::vec3f, zeno::vec3f>& bbox
@@ -165,8 +168,8 @@ struct AlembicToSoftBodyVAT: public INode {
     bool read_done = false;
 
     virtual void apply() override {
-        int frameStart = get_input2<int>("frameStart");
-        int frameEnd = get_input2<int>("frameEnd");
+        int frameStart = get_input2_int("frameStart");
+        int frameEnd = get_input2_int("frameEnd");
         if (frameEnd < frameStart) {
             std::swap(frameEnd, frameStart);
         }
@@ -175,9 +178,9 @@ struct AlembicToSoftBodyVAT: public INode {
             zeno::log_error("Invalid frame range: {} - {}", frameStart, frameEnd);
             return;
         }
-        bool use_xform = get_input2<bool>("useXForm");
-        std::string writePath = get_input2<std::string>("outputPath");
-        std::string path = get_input2<std::string>("path");
+        bool use_xform = get_input2_bool("useXForm");
+        std::string writePath = zsString2Std(get_input2_string("outputPath"));
+        std::string path = zsString2Std(get_input2_string("path"));
         size_t vatWidth;
         int32_t rowsPerFrame;
         size_t spaceToAlign;
@@ -198,30 +201,34 @@ struct AlembicToSoftBodyVAT: public INode {
             auto obj = archive.getTop();
             std::vector<float> pos_f32;
             std::vector<float> nrm_f32;
-            std::shared_ptr<ListObject> frameList = std::make_shared<ListObject>();
+            auto frameList = create_ListObject();
             for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
                 const int32_t frameIndex = frameEnd - idx - 1;
-                auto abctree = std::make_shared<ABCTree>();
-                auto prims = std::make_shared<zeno::ListObject>();
-                traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
+                auto abctree = std::make_unique<ABCTree>();
+                auto prims = std::make_unique<zeno::ListObject>();
+                traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false, 0);
                 if (use_xform) {
-                    prims = get_xformed_prims(abctree);
+                    prims = get_xformed_prims(abctree.get());
                 } else {
                     abctree->visitPrims([&] (auto const &p) {
-                        auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-                        prims->push_back(np);
+                        prims->push_back(p->clone());
                     });
                 }
-                auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
-                if (get_input2<bool>("flipFrontBack")) {
+
+                Vector<zeno::PrimitiveObject*> primlst;
+                for (auto spobj : prims->get()) {
+                    primlst.push_back(dynamic_cast<PrimitiveObject*>(spobj));
+                }
+                auto mergedPrim = zeno::PrimMerge(primlst);
+                if (get_input2_bool("flipFrontBack")) {
                     primFlipFaces(mergedPrim.get());
                 }
                 zeno::primTriangulate(mergedPrim.get());
-                frameList->push_back(mergedPrim);
+                frameList->push_back(mergedPrim->clone());
                 auto bbox = parallel_reduce_minmax(mergedPrim->verts.begin(), mergedPrim->verts.end());
                 temp_bboxs.push_back(bbox.first);
                 temp_bboxs.push_back(bbox.second);
-                set_output("primitive", mergedPrim);
+                set_output("primitive", std::move(mergedPrim));
             }
             // reduce bbox_temp to actual bbox
             auto bbox = parallel_reduce_minmax(temp_bboxs.begin(), temp_bboxs.end());
@@ -255,7 +262,7 @@ struct AlembicToSoftBodyVAT: public INode {
                     pos_f32.push_back(0.0f);
                     pos_f32.push_back(0.0f);
                 }
-                zeno::primCalcNormal(mergedPrim.get());
+                zeno::primCalcNormal(mergedPrim);
                 auto& nrm_ref = mergedPrim->verts.attr<vec3f>("nrm");
                 for (auto& normal : nrm_ref) {
                     nrm_f32.push_back(normal[0]);
@@ -366,8 +373,8 @@ struct AlembicToDynamicRemeshVAT : public INode {
     bool read_done = false;
 
     void apply() override {
-      int frameStart = get_input2<int>("frameStart");
-      int frameEnd = get_input2<int>("frameEnd");
+      int frameStart = get_input2_int("frameStart");
+      int frameEnd = get_input2_int("frameEnd");
       if (frameEnd < frameStart) {
         std::swap(frameEnd, frameStart);
       }
@@ -376,10 +383,10 @@ struct AlembicToDynamicRemeshVAT : public INode {
         zeno::log_error("Invalid frame range: {} - {}", frameStart, frameEnd);
         return;
       }
-      bool use_xform = get_input2<bool>("useXForm");
-      std::string writePath = get_input2<std::string>("outputPath");
-      std::string path = get_input2<std::string>("path");
-      bool shouldFlipFrontBack = get_input2<bool>("flipFrontBack");
+      bool use_xform = get_input2_bool("useXForm");
+      std::string writePath = zsString2Std(get_input2_string("outputPath"));
+      std::string path = zsString2Std(get_input2_string("path"));
+      bool shouldFlipFrontBack = get_input2_bool("flipFrontBack");
 
       std::vector<float> pos_f32;
       std::vector<float> nrm_f32;
@@ -397,32 +404,36 @@ struct AlembicToDynamicRemeshVAT : public INode {
         }
 
       auto obj = archive.getTop();
-      std::shared_ptr<ListObject> frameList = std::make_shared<ListObject>();
+      auto frameList = create_ListObject();
       size_t maxTriNum = 0;
       for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
         const int32_t frameIndex = frameEnd - idx - 1;
-        auto abctree = std::make_shared<ABCTree>();
-        auto prims = std::make_shared<zeno::ListObject>();
-        traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false);
+        auto abctree = std::make_unique<ABCTree>();
+        auto prims = std::make_unique<zeno::ListObject>();
+        traverseABC(obj, *abctree, idx, read_done, false, "", timeMap, ObjectVisibility::kVisibilityDeferred, false, false, 0);
         if (use_xform) {
-          prims = get_xformed_prims(abctree);
+          prims = get_xformed_prims(abctree.get());
         } else {
           abctree->visitPrims([&] (auto const &p) {
-            auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
-            prims->push_back(np);
+            prims->push_back(p->clone());
           });
         }
-        auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
+
+        Vector<zeno::PrimitiveObject*> primlst;
+        for (auto spobj : prims->get()) {
+            primlst.push_back(dynamic_cast<PrimitiveObject*>(spobj));
+        }
+        auto mergedPrim = zeno::PrimMerge(primlst);
         if (shouldFlipFrontBack) {
             primFlipFaces(mergedPrim.get());
         }
         zeno::primTriangulate(mergedPrim.get());
         maxTriNum = zeno::max(mergedPrim->tris.size(), maxTriNum);
-        frameList->push_back(mergedPrim);
+        frameList->push_back(mergedPrim->clone());
         auto bbox = parallel_reduce_minmax(mergedPrim->verts.begin(), mergedPrim->verts.end());
         temp_bboxs.push_back(bbox.first);
         temp_bboxs.push_back(bbox.second);
-        set_output("primitive", mergedPrim);
+        set_output("primitive", std::move(mergedPrim));
       }
       auto bbox = parallel_reduce_minmax(temp_bboxs.begin(), temp_bboxs.end());
       read_done = true;
@@ -440,7 +451,7 @@ struct AlembicToDynamicRemeshVAT : public INode {
         const int32_t frameIndex = idx - frameStart;
         auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->get(frameIndex));
         spaceToAlign = vatWidth * rowsPerFrame - mergedPrim->tris.size() * 3;
-        zeno::primCalcNormal(mergedPrim.get());
+        zeno::primCalcNormal(mergedPrim);
         auto& nrm_ref = mergedPrim->verts.attr<vec3f>("nrm");
         for (auto& trig : mergedPrim->tris) {
           for (uint8_t i = 0; i < 3; ++i) {

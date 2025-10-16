@@ -67,7 +67,7 @@ struct BulletMakeTransform : zeno::INode {
 };
 
 ZENDEFNODE(BulletMakeTransform, {
-    {{gParamType_Vec3f, "translate"},  {gParamType_Vec3f, "rotation", "", Socket_WildCard}},
+    {{gParamType_Vec3f, "translate"},  {gParamType_Vec3f, "rotation", ""}},
     {{gParamType_Unknown, "trans"}},
     {},
     {"Bullet"},
@@ -2215,7 +2215,7 @@ struct BulletMultiBodySetJointPosMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointPosMultiDof, {
-	{{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_WildCard}},
+	{{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", ""}},
 	{{gParamType_Unknown, "object"}},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},
@@ -2241,7 +2241,7 @@ struct BulletMultiBodySetJointVelMultiDof : zeno::INode {
 };
 
 ZENDEFNODE(BulletMultiBodySetJointVelMultiDof, {
-    {{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", "", Socket_WildCard}},
+    {{gParamType_Unknown, "object"}, {gParamType_Int, "startIndex", "0"}, {gParamType_Float, "pos", ""}},
 	{{gParamType_Unknown, "object"}},
 	{{"enum true false", "isSpherical", "false"}},
 	{"Bullet"},

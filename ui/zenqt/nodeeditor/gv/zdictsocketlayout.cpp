@@ -27,9 +27,9 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
 {
     setHorizontal(false);
 
-    bool bInput = m_paramIdx.data(ROLE_ISINPUT).toBool();
+    bool bInput = m_paramIdx.data(QtRole::ROLE_ISINPUT).toBool();
     //TODO: refactor about zdict panel layout.
-    const QString& sockName = m_paramIdx.data(ROLE_PARAM_NAME).toString();
+    const QString& sockName = m_paramIdx.data(QtRole::ROLE_PARAM_NAME).toString();
 
     QSizeF szSocket(14, 14);
     m_socket = new ZenoSocketItem(m_paramIdx, ZenoStyle::dpiScaledSize(szSocket));
@@ -39,7 +39,7 @@ void ZDictSocketLayout::initUI(const CallbackForSocket& cbSock)
     });
 
     m_text = new ZSocketPlainTextItem(m_paramIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
-    m_text->setToolTip(m_paramIdx.data(ROLE_PARAM_TOOLTIP).toString());
+    m_text->setToolTip(m_paramIdx.data(QtRole::ROLE_PARAM_TOOLTIP).toString());
     m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
     m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 

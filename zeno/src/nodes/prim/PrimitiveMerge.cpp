@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
 #include <cstdlib>
@@ -11,8 +12,8 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::ListObject> list, std::string tagAttr) {
-    auto outprim = std::make_shared<PrimitiveObject>();
+ZENO_API std::unique_ptr<PrimitiveObject> primitive_merge(zeno::ListObject* list, std::string tagAttr) {
+    auto outprim = std::make_unique<PrimitiveObject>();
 
     size_t len = 0;
     size_t poly_len = 0;
@@ -24,7 +25,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
 #endif
     //
 
-    for (auto const &prim: list->get<PrimitiveObject>()) {
+    for (auto const &prim: list->m_impl->get<PrimitiveObject>()) {
 #if defined(_OPENMP)
         nTotalVerts += prim->verts.size();
         nTotalPts += prim->points.size();
@@ -55,7 +56,7 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
         outprim->add_attr<int>(tagAttr);
     }
 
-    for (auto const &prim: list->get<PrimitiveObject>()) {
+    for (auto const &prim: list->m_impl->get<PrimitiveObject>()) {
         //const auto base = outprim->size();
         prim->foreach_attr([&] (auto const &key, auto const &arr) {
             using T = std::decay_t<decltype(arr[0])>;
@@ -148,17 +149,17 @@ ZENO_API std::shared_ptr<PrimitiveObject> primitive_merge(std::shared_ptr<zeno::
 
 struct PrimitiveMerge : zeno::INode {
   virtual void apply() override {
-    auto list = get_input<ListObject>("listPrim");
-    if(!has_input("dst")){
-        auto outprim = primitive_merge(list);
-        set_output("prim", std::move(outprim));
+    auto list = ZImpl(get_input<ListObject>("listPrim"));
+    if(!ZImpl(has_input("dst"))){
+        auto outprim = primitive_merge(list.get());
+        ZImpl(set_output("prim", std::move(outprim)));
     }
     else
     { // dage, weishenme buyong Assign jiedian ne?
-        auto dst = get_input<PrimitiveObject>("dst");
-        auto outprim = primitive_merge(list);
+        auto dst = ZImpl(get_input<PrimitiveObject>("dst"));
+        auto outprim = primitive_merge(list.get());
         *dst = *outprim;
-        set_output("prim", std::move(dst));
+        ZImpl(set_output("prim", std::move(dst)));
     }
   }
 };

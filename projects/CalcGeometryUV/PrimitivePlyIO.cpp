@@ -1,3 +1,10 @@
+#include <cmath>
+#include <cstddef>
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
@@ -15,7 +22,9 @@
 #define TINYPLY_IMPLEMENTATION
 #include "primplyio_tinyply.h"
 
+#include "happly.h"
 
+/*
 static void readply(
     std::vector<zeno::vec3f> &verts,
     std::vector<zeno::vec3f> &color,
@@ -99,10 +108,7 @@ static void readply(
             std::memcpy(zfaces.data(), faces->buffer.get(), numFacesBytes);
         } else if (faces->t == tinyply::Type::INT16 || faces->t == tinyply::Type::UINT16) {
             std::vector<zeno::vec3H> zfaces_uint16;
-            zfaces_uint16.resize(faces->count);
-            std::memcpy(zfaces_uint16.data(), faces->buffer.get(), numFacesBytes);
-            for (const auto& f: zfaces_uint16) {
-                zfaces.emplace_back(f[0], f[1], f[2]);
+            zfaces_uint16.res(ce_back(f[0], f[1], f[2]);
             }
         } else if (faces->t == tinyply::Type::INT8 || faces->t == tinyply::Type::UINT8) {
             std::vector<zeno::vec3C> zfaces_uint8;
@@ -117,16 +123,155 @@ static void readply(
         std::cerr << "Caught tinyply exception: " << e.what() << std::endl;
     }
 }
+*/
+
+static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
+    std::filesystem::path file_path(ply_file);
+    if(!std::filesystem::exists(file_path)){
+        throw std::runtime_error(ply_file + " not exsit");
+        return;
+    }
+    
+    std::ifstream file_stream;
+    file_stream.open(file_path,std::ios::binary);
+    if(!file_stream.is_open()){
+        throw std::runtime_error("fail to open "+ply_file);
+        return;
+    }
+    
+    happly::PLYData ply_obj(file_stream);
+    try{
+        ply_obj.validate();
+    }catch(std::exception &e){
+        std::cerr << e.what() << std::endl;
+        throw e;
+        return;
+    }
+    std::vector<std::string> element_names = ply_obj.getElementNames();
+    for(std::string element_name : element_names){
+        std::cout << element_name << "\n  |\n";
+        std::vector<std::string>property_names = ply_obj.getElement(element_name).getPropertyNames();
+        for(std::string property_name : property_names){
+            std::cout << "\t|--" << property_name << std::endl;
+        }
+        
+    }
+    happly::Element& vertex = ply_obj.getElement("vertex");
+    std::cout << "Vertex count = " <<vertex.count << std::endl;
+    prim->verts.resize(vertex.count);
+    std::vector<std::string> property_names = vertex.getPropertyNames();
+    for(std::string property_name : property_names){
+        std::vector<float> &new_property = prim->add_attr<float>(property_name);
+        try{
+            std::vector<float> data = vertex.getProperty<float>(property_name);
+            new_property.assign(data.begin(),data.end());
+        }catch(std::exception &e){
+            std::cerr << e.what() << std::endl;
+            throw e;
+            return;
+        }
+    }
+    return;
+
+}
+
+/*
+static void ReadAllAttrFromPlyFile(std::string &ply_file, std::shared_ptr<zeno::PrimitiveObject> prim){
+    std::filesystem::path file_path(ply_file);
+    if(!std::filesystem::exists(file_path)){
+        throw std::runtime_error(ply_file + " not exsit");
+        return;
+    }
+    
+    std::ifstream file_stream;
+    file_stream.open(file_path,std::ios::binary);
+    if(!file_stream.is_open()){
+        throw std::runtime_error("fail to open "+ply_file);
+        return;
+    }
+
+    tinyply::PlyFile ply_obj;
+    if(!ply_obj.parse_header(file_stream)){
+        throw std::runtime_error("fail to parse ply header");
+        return;
+    }
+    std::vector<tinyply::PlyElement> elements = ply_obj.get_elements();
+    bool found_vertex = false;
+    tinyply::PlyElement *vertex_element = nullptr;
+
+    std::vector<tinyply::PlyProperty> need_properties;
+    std::vector<std::shared_ptr<tinyply::PlyData>> data_list; 
+
+    int element_size = 0;
+
+    for(tinyply::PlyElement element : elements){
+        if(element.name == "vertex"){
+            found_vertex = true;
+            vertex_element = &element;
+            element_size = element.size;
+            std::cout << "Name: " <<element.name << std::endl;
+            for(tinyply::PlyProperty property : element.properties){
+                std::cout << "\tProperty Name: " << property.name ;
+                if(property.isList){
+                    std::cout << "\tList Type: " << tinyply::PropertyTable[property.listType].str;
+                    std::cout << "\tList Size: " << property.listCount;
+                }else{
+                    need_properties.push_back(property);
+                    data_list.push_back(ply_obj.request_properties_from_element("vertex", {property.name}));
+                    std::cout << "\t" << tinyply::PropertyTable[property.propertyType].str << "\n";
+                }
+            }
+        std::cout << std::endl;
+        }
+    }
+    if(!found_vertex){
+        throw std::runtime_error("No vertex element found in this ply");
+        return;
+    }
+
+    ply_obj.read(file_stream);
+    prim->verts.resize(element_size);
+
+    for(int i=0;i<need_properties.size();i++){
+        tinyply::PlyProperty property = need_properties[i];
+        auto &new_property = prim->add_attr<float>(property.name);
+        unsigned char *buffer = data_list[i]->buffer.get();
+
+        float value = 0.0f;
+        tinyply::PropertyInfo info = tinyply::PropertyTable[property.propertyType];
+
+        for(int j=0; j<element_size;j++){
+            if(info.str == "char"){
+                value = ((char *)buffer)[j];
+            }else if(info.str == "uchar"){
+                value = ((unsigned char *)buffer)[j];
+            }else if(info.str == "short"){
+                value = ((short *)buffer)[j];
+            }else if(info.str == "ushort"){
+                value = ((unsigned short *)buffer)[j];
+            }else if(info.str == "int"){
+                value = ((int *)buffer)[j];
+            }else if(info.str == "uint"){
+                value = ((unsigned int *)buffer)[j];
+            }else if(info.str == "float"){
+                value = ((float *)buffer)[j];
+            }else if(info.str == "double"){
+                value = ((double *)buffer)[j];
+            }else{
+                std::cout << "Unknow Type" << std::endl;
+            }
+            new_property[j] = value;
+        }
+    }
+
+}
+*/
 
 struct ReadPlyPrimitive : zeno::INode {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto &pos = prim->verts;
-        auto &clr = prim->add_attr<zeno::vec3f>("clr");
-        auto &tris = prim->tris;
-        readply(pos, clr, tris, path);
-        prim->resize(pos.size());
+        ReadAllAttrFromPlyFile(path, prim);
         set_output("prim", std::move(prim));
     }
 };

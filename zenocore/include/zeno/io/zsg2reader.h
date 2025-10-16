@@ -9,6 +9,8 @@ namespace zenoio
     {
     public:
         ZENO_API Zsg2Reader();
+        ZENO_API bool importNodes(const std::string& strjson, zeno::NodesData& nodes, zeno::LinksData& links,
+            zeno::ReferencesData& refs);
 
     protected:
         bool _parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) override;
@@ -25,17 +27,17 @@ namespace zenoio
 
     private:
         bool _parseSubGraph(
-                const std::string& graphPath,   //ÀıÈç "/main"  "/main/aaa"
+                const std::string& graphPath,   //ä¾‹å¦‚ "/main"  "/main/aaa"
                 const rapidjson::Value &subgraph,
                 const std::map<std::string, zeno::GraphData>& subgraphDatas,
                 zeno::GraphData& subgData);
 
         zeno::NodeData _parseNode(
-                const std::string& subgPath,    //Ò²ĞíÎŞÓÃÁË£¬ÒòÎª±ßĞÅÏ¢²»ÔÙÒÔpathµÄ·½Ê½´¢´æ£¨½âÎöÂé·³£©£¬ÏÈ±£Áô×Å
+                const std::string& subgPath,    //ä¹Ÿè®¸æ— ç”¨äº†ï¼Œå› ä¸ºè¾¹ä¿¡æ¯ä¸å†ä»¥pathçš„æ–¹å¼å‚¨å­˜ï¼ˆè§£æéº»çƒ¦ï¼‰ï¼Œå…ˆä¿ç•™ç€
                 const std::string& nodeid,
                 const rapidjson::Value& nodeObj,
                 const std::map<std::string, zeno::GraphData>& subgraphDatas,
-                zeno::LinksData& links);    //ÔÚparse½ÚµãµÄÊ±ºòË³´ø°Ñ½ÚµãÉÏµÄ±ßĞÅÏ¢Ò²Öğ¸ö¼ÇÂ¼µ½ÕâÀï
+                zeno::LinksData& links);    //åœ¨parseèŠ‚ç‚¹çš„æ—¶å€™é¡ºå¸¦æŠŠèŠ‚ç‚¹ä¸Šçš„è¾¹ä¿¡æ¯ä¹Ÿé€ä¸ªè®°å½•åˆ°è¿™é‡Œ
 
         bool _parseParams(
                 const std::string& id,

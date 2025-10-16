@@ -11,11 +11,11 @@ namespace zeno {
 
 struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
     virtual int determineType(EmissionPass *em) override {
-        auto in = em->determineType(get_input("in").get());
-        auto inMin = em->determineType(get_input("inMin").get());
-        auto inMax = em->determineType(get_input("inMax").get());
-        auto outMin = em->determineType(get_input("outMin").get());
-        auto outMax = em->determineType(get_input("outMax").get());
+        auto in = em->determineType(ZImpl(get_input_shader("in")));
+        auto inMin = em->determineType(ZImpl(get_input_shader("inMin")));
+        auto inMax = em->determineType(ZImpl(get_input_shader("inMax")));
+        auto outMin = em->determineType(ZImpl(get_input_shader("outMin")));
+        auto outMax = em->determineType(ZImpl(get_input_shader("outMax")));
 
         if (inMin == 1 && inMax == 1 && outMin == 1 && outMax == 1) {
             return in;
@@ -31,14 +31,14 @@ struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto in = em->determineExpr(get_input("in").get());
-        auto inMin = em->determineExpr(get_input("inMin").get());
-        auto inMax = em->determineExpr(get_input("inMax").get());
-        auto outMin = em->determineExpr(get_input("outMin").get());
-        auto outMax = em->determineExpr(get_input("outMax").get());
+        auto in = em->determineExpr(ZImpl(get_input_shader("in")));
+        auto inMin = em->determineExpr(ZImpl(get_input_shader("inMin")));
+        auto inMax = em->determineExpr(ZImpl(get_input_shader("inMax")));
+        auto outMin = em->determineExpr(ZImpl(get_input_shader("outMin")));
+        auto outMax = em->determineExpr(ZImpl(get_input_shader("outMax")));
 
         auto exp = "(" + in + " - " + inMin + ") / (" + inMax + " - " + inMin + ")";
-        if (get_param<bool>("clamped"))
+        if (ZImpl(get_param<bool>("clamped")))
             exp = "clamp(" + exp + ", 0.0, 1.0)";
         em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMin);
     }
@@ -65,8 +65,8 @@ struct ShaderVecConvert : ShaderNodeClone<ShaderVecConvert> {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
-        auto _type = get_param<std::string>("type");
-        em->determineType(get_input("in").get());
+        auto _type = ZImpl(get_param<std::string>("type"));
+        em->determineType(ZImpl(get_input_shader("in")));
         if (_type == "vec2") {
             ty = 2;
         }
@@ -80,7 +80,7 @@ struct ShaderVecConvert : ShaderNodeClone<ShaderVecConvert> {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        std::string exp = em->determineExpr(get_input("in").get());
+        std::string exp = em->determineExpr(ZImpl(get_input_shader("in")));
         em->emitCode(em->funcName("convertTo" + std::to_string(ty)) + "(" + exp + ")");
     }
 };
@@ -100,8 +100,8 @@ struct ShaderVecExtract : ShaderNodeClone<ShaderVecExtract> {
     int ty{};
 
     virtual int determineType(EmissionPass *em) override {
-        auto _type = get_param<std::string>("type");
-        em->determineType(get_input("in").get());
+        auto _type = ZImpl(get_param<std::string>("type"));
+        em->determineType(ZImpl(get_input_shader("in")));
         if (_type == "xyz" || _type == "xyz(srgb)") {
             ty = 3;
         }
@@ -112,8 +112,8 @@ struct ShaderVecExtract : ShaderNodeClone<ShaderVecExtract> {
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        std::string exp = em->determineExpr(get_input("in").get());
-        auto _type = get_param<std::string>("type");
+        std::string exp = em->determineExpr(ZImpl(get_input_shader("in")));
+        auto _type = ZImpl(get_param<std::string>("type"));
         if (_type == "xyz") {
             em->emitCode(em->funcName("convertTo3(" + exp + ")"));
         }
@@ -142,16 +142,16 @@ ZENDEFNODE(ShaderVecExtract, {
 
 struct ShaderNormalMap : ShaderNodeClone<ShaderNormalMap> {
     virtual int determineType(EmissionPass *em) override {
-        auto in1 = get_input("normalTexel");
-        auto in2 = get_input("scale");
-        em->determineType(in1.get());
-        em->determineType(in2.get());
+        auto in1 = ZImpl(get_input_shader("normalTexel"));
+        auto in2 = ZImpl(get_input_shader("scale"));
+        em->determineType(in1);
+        em->determineType(in2);
         return 3;
     }
 
     virtual void emitCode(EmissionPass *em) override {
-        auto in1 = em->determineExpr(get_input("normalTexel").get());
-        auto in2 = em->determineExpr(get_input("scale").get());
+        auto in1 = em->determineExpr(ZImpl(get_input_shader("normalTexel")));
+        auto in2 = em->determineExpr(ZImpl(get_input_shader("scale")));
 
         return em->emitCode(em->funcName("normalmap") + "(" + in1 + ", " + in2 + ")");
     }
@@ -171,15 +171,15 @@ ZENDEFNODE(ShaderNormalMap, {
 
 struct CalcCameraUp : INode {
     virtual void apply() override {
-        auto refUp = zeno::normalize(get_input2<zeno::vec3f>("refUp"));
-        auto pos = get_input2<zeno::vec3f>("pos");
-        auto target = get_input2<zeno::vec3f>("target");
+        auto refUp = zeno::normalize(ZImpl(get_input2<zeno::vec3f>("refUp")));
+        auto pos = ZImpl(get_input2<zeno::vec3f>("pos"));
+        auto target = ZImpl(get_input2<zeno::vec3f>("target"));
         vec3f view = zeno::normalize(target - pos);
         vec3f right = zeno::cross(view, refUp);
         vec3f up = zeno::cross(right, view);
-        set_output2("pos", pos);
-        set_output2("up", up);
-        set_output2("view", view);
+        ZImpl(set_output2("pos", pos));
+        ZImpl(set_output2("up", up));
+        ZImpl(set_output2("view", view));
     }
 };
 
@@ -201,11 +201,11 @@ ZENDEFNODE(CalcCameraUp, {
 
 struct SetPrimInvisible : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        int invisible = get_input2<int>("invisible");
-        prim->userData().set2("invisible", invisible);
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        int invisible = ZImpl(get_input2<int>("invisible"));
+        prim->userData()->set_int("invisible", invisible);
 
-        set_output("out", std::move(prim));
+        ZImpl(set_output("out", std::move(prim)));
     }
 };
 

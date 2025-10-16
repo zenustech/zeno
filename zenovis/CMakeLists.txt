@@ -2,12 +2,16 @@ file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 file(GLOB_RECURSE glad_source CONFIGURE_DEPENDS glad/include/*.h glad/src/*.c)
 file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp stbi/src/*.c)
 
+# For MSVC: Use static runtime (MultiThreaded)
+# set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 add_library(zenovis OBJECT ${source} ${glad_source} ${stbi_source})
 target_link_libraries(zenovis PRIVATE ${CMAKE_DL_LIBS})
-target_link_libraries(zenovis PUBLIC zeno)
+target_link_libraries(zenovis PUBLIC zenocore)
 target_include_directories(zenovis PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glad/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/freeglut/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/stbi/include>)
 
 option(ZENO_ENABLE_ZHXXVIS "Enable Zhxx Real-time Rendering Engine" ON)
@@ -16,15 +20,39 @@ if (ZENO_ENABLE_ZHXXVIS)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_ZHXXVIS)
 endif()
 
+add_subdirectory(freeglut)
+target_link_libraries(zenovis PRIVATE freeglut)
+
+if(MSVC)
+    target_compile_options(zenovis PRIVATE /MP)
+endif()
+
 if (ZENO_DEBUG_MSVC)
     zeno_dbg_msvc(zenovis)
 endif()
 
+if (MSVC)
+    target_compile_options(zenovis PRIVATE /MP)
+endif()
+
 option(ZENO_ENABLE_OPTIX "Enable NVIDIA OptiX in ZENO for path tracing" OFF)
 if (ZENO_ENABLE_OPTIX)
+    # set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
+    # target_compile_definitions(zenovis PRIVATE OTK_USE_VCPKG:BOOL=0)
+    # target_compile_definitions(zenovis PRIVATE OTK_FETCH_CONTENT:BOOL=0)
+    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_DOCS:BOOL=0)
+    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_TESTS:BOOL=0)
+    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_EXAMPLES:BOOL=0)
+    # target_compile_definitions(zenovis PRIVATE OTK_LIBRARIES=OmmBaking)
+    # target_compile_definitions(zenovis PRIVATE BUILD_SHARED_LIBS:BOOL=0)
+
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
     target_include_directories(zenovis PRIVATE xinxinoptix)
+
+    #find_package(OpenVDB REQUIRED)
+    #target_include_directories(zenovis PRIVATE zenvdb)#"C:\zeno3\projects\zenvdb\openvdb\nanovdb")
+    target_link_libraries(zenovis PRIVATE openvdb)
 endif()
 
 # the check of cuda display device fails on some user env, and the 
@@ -54,9 +82,5 @@ endif()
     #install(TARGETS zenovis EXPORT ZenoTargets)
 #endif()
 
-if(WIN32)
-    find_package(cryptopp CONFIG REQUIRED)
-    target_link_libraries(zenovis PRIVATE cryptopp::cryptopp)
-else()
-    target_link_libraries(zenovis PRIVATE cryptopp)
-endif()
+find_package(PNG REQUIRED)
+target_link_libraries(zenovis PRIVATE PNG::PNG)

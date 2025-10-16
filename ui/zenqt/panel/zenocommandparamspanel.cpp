@@ -88,7 +88,7 @@ void ZenoCommandParamsPanel::appendRow(const QString& path, const CommandParam& 
     const QString& paramName = index.data(ROLE_VPARAM_NAME).toString();
     PARAM_CONTROL ctrl = (PARAM_CONTROL)index.data(ROLE_PARAM_CTRL).toInt();
 
-    const QString& typeDesc = index.data(ROLE_PARAM_TYPE).toString();
+    const QString& typeDesc = index.data(QtRole::ROLE_PARAM_TYPE).toString();
     const QVariant& pros = index.data(ROLE_VPARAM_CTRL_PROPERTIES);
 
     int row = m_pTableWidget->rowCount();
@@ -142,7 +142,7 @@ void ZenoCommandParamsPanel::onExport()
         if (index.isValid())
         {
             writer.Key(val.name.toUtf8());
-            const QString& sockType = index.data(ROLE_PARAM_TYPE).toString();
+            const QString& sockType = index.data(QtRole::ROLE_PARAM_TYPE).toString();
             JsonHelper::AddVariant(val.value, sockType, writer);
         }
 
@@ -174,8 +174,8 @@ void ZenoCommandParamsPanel::onItemClicked(QTableWidgetItem* item)
     QModelIndex idx = pModel->nodeIndex(ident);
     if (idx.isValid())
     {
-        QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
-        const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
+        QModelIndex subgIdx = idx.data(QtRole::ROLE_SUBGRAPH_IDX).toModelIndex();
+        const QString& subgName = subgIdx.data(QtRole::ROLE_CLASS_NAME).toString();
         ZenoMainWindow* pWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pWin);
         ZenoGraphsEditor* pEditor = pWin->getAnyEditor();

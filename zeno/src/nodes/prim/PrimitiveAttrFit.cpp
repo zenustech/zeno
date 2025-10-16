@@ -18,20 +18,20 @@ namespace zeno {
 
     struct PrimitiveAttrFit : zeno::INode {
         virtual void apply() override {
-            auto prim = get_input<zeno::PrimitiveObject>("prim");
-            auto refPrim = get_input<zeno::PrimitiveObject>("refPrim");
-            auto attrNameDst = get_input<zeno::StringObject>("attrNameSrc")->get();
-            auto attrNameSrc = get_input<zeno::StringObject>("attrNameDst")->get();
-            auto refAttrNameSrc = get_input<zeno::StringObject>("refAttrNameSrc")->get();
-            auto refAttrNameDst = get_input<zeno::StringObject>("refAttrNameDst")->get();
-            auto axisSrc = axisIndex(get_input<zeno::StringObject>("axisSrc")->get());
-            auto axisDst = axisIndex(get_input<zeno::StringObject>("axisDst")->get());
-            auto refAxisSrc = axisIndex(get_input<zeno::StringObject>("refAxisSrc")->get());
-            auto refAxisDst = axisIndex(get_input<zeno::StringObject>("refAxisDst")->get());
-            auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
-            auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
-            auto autoMinMax = get_param<bool>("autoMinMax");
-            auto autoSort = get_param<bool>("autoSort");
+            auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+            auto refPrim = ZImpl(get_input<zeno::PrimitiveObject>("refPrim"));
+            auto attrNameDst = ZImpl(get_input<zeno::StringObject>("attrNameSrc"))->get();
+            auto attrNameSrc = ZImpl(get_input<zeno::StringObject>("attrNameDst"))->get();
+            auto refAttrNameSrc = ZImpl(get_input<zeno::StringObject>("refAttrNameSrc"))->get();
+            auto refAttrNameDst = ZImpl(get_input<zeno::StringObject>("refAttrNameDst"))->get();
+            auto axisSrc = axisIndex(ZImpl(get_input<zeno::StringObject>("axisSrc"))->get());
+            auto axisDst = axisIndex(ZImpl(get_input<zeno::StringObject>("axisDst"))->get());
+            auto refAxisSrc = axisIndex(ZImpl(get_input<zeno::StringObject>("refAxisSrc"))->get());
+            auto refAxisDst = axisIndex(ZImpl(get_input<zeno::StringObject>("refAxisDst"))->get());
+            auto limitMin = ZImpl(get_input<zeno::NumericObject>("limitMin"))->get<float>();
+            auto limitMax = ZImpl(get_input<zeno::NumericObject>("limitMax"))->get<float>();
+            auto autoMinMax = ZImpl(get_param<bool>("autoMinMax"));
+            auto autoSort = ZImpl(get_param<bool>("autoSort"));
 
             auto getAxis = [] (auto &val, int axis) -> auto & {
                 using T = std::decay_t<decltype(val)>;
@@ -136,7 +136,7 @@ namespace zeno {
                 });
             });
 
-            set_output("prim", std::move(prim));
+            ZImpl(set_output("prim", std::move(prim)));
         }
     };
 ZENDEFNODE(PrimitiveAttrFit, {

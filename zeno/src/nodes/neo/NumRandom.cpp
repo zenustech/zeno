@@ -184,13 +184,13 @@ namespace {
 
 struct NumRandom : INode {
     virtual void apply() override {
-        auto dir = get_input2<zeno::vec3f>("dir");
-        auto base = get_input2<float>("base");
-        auto scale = get_input2<float>("scale");
-        auto seed = get_input2<int>("seed");
-        auto randType = get_input2<std::string>("randType");
+        auto dir = ZImpl(get_input2<zeno::vec3f>("dir"));
+        auto base = ZImpl(get_input2<float>("base"));
+        auto scale = ZImpl(get_input2<float>("scale"));
+        auto seed = ZImpl(get_input2<int>("seed"));
+        auto randType = ZImpl(get_input2<std::string>("randType"));
         auto ret = objectFromLiterial(numRandom(dir, randType, base, scale, seed));
-        set_output("value", std::move(ret));
+        ZImpl(set_output("value", std::move(ret)));
     }
 };
 
@@ -212,12 +212,12 @@ ZENDEFNODE(NumRandom, {
 
 struct NumRandomSeedCombine : INode {
     virtual void apply() override {
-        int x = get_input2<int>("x");
-        int y = get_input2<int>("y");
-        int z = get_input2<int>("z");
-        int w = get_input2<int>("w");
+        int x = ZImpl(get_input2<int>("x"));
+        int y = ZImpl(get_input2<int>("y"));
+        int z = ZImpl(get_input2<int>("z"));
+        int w = ZImpl(get_input2<int>("w"));
         wangsrng rng(x, y, z, w);
-        set_output2("seed", rng.next_int32());
+        ZImpl(set_output2("seed", rng.next_int32()));
     }
 };
 
@@ -238,14 +238,14 @@ ZENDEFNODE(NumRandomSeedCombine, {
 
 struct NumRandomInt : INode {
     virtual void apply() override {
-        int valmin = get_input2<int>("valmin");
-        int valmax = get_input2<int>("valmax");
-        int seed = get_input2<int>("seed");
+        int valmin = ZImpl(get_input2<int>("valmin"));
+        int valmax = ZImpl(get_input2<int>("valmax"));
+        int seed = ZImpl(get_input2<int>("seed"));
         if (seed == -1) seed = std::random_device{}();
         std::mt19937 gen(seed);
         std::uniform_int_distribution<int> uni(valmin, valmax);
         int value = uni(gen);
-        set_output2("value", value);
+        ZImpl(set_output2("value", value));
     }
 };
 
@@ -265,14 +265,14 @@ ZENDEFNODE(NumRandomInt, {
 
 struct NumRandomFloat : INode {
     virtual void apply() override {
-        float valmin = get_input2<float>("valmin");
-        float valmax = get_input2<float>("valmax");
-        int seed = get_input2<int>("seed");
+        float valmin = ZImpl(get_input2<float>("valmin"));
+        float valmax = ZImpl(get_input2<float>("valmax"));
+        int seed = ZImpl(get_input2<int>("seed"));
         if (seed == -1) seed = std::random_device{}();
         std::mt19937 gen(seed);
         std::uniform_real_distribution<float> uni(valmin, valmax);
         float value = uni(gen);
-        set_output2("value", value);
+        ZImpl(set_output2("value", value));
     }
 };
 

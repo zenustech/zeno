@@ -1,0 +1,1269 @@
+        "CityGenutility_box_02": {
+            "type": 1,
+            "forkLock": false,
+            "nodes": {
+                "1f3dfe98-ShaderFinalize": {
+                    "name": "ShaderFinalize",
+                    "inputs": {
+                        "base": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "basecolor": {
+                            "link": "CityGenutility_box_02:723744f4-SmartTexture2D:[node]/outputs/out",
+                            "type": "colorvec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "roughness": {
+                            "link": "CityGenutility_box_02:8a41923-SmartTexture2D:[node]/outputs/out",
+                            "type": "float",
+                            "default-value": 0.4000000059604645,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "metallic": {
+                            "link": "CityGenutility_box_02:dda96d20-SmartTexture2D:[node]/outputs/out",
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "metalColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "specular": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "specularTint": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "anisotropic": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "anisoRotation": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "subsurface": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sssRadius": {
+                            "link": null,
+                            "type": "enum Fixed Adaptive",
+                            "default-value": "Fixed",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "Fixed",
+                                    "Adaptive"
+                                ]
+                            }
+                        },
+                        "sssParam": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "sssColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "scatterDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scatterStep": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sheen": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sheenTint": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoat": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoatColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "clearcoatRoughness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoatIOR": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.5,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "specTrans": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "transTint": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "transTintDepth": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transScatterColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "ior": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.4500000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "diffraction": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "diffractColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "flatness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "shadowReceiver": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "shadowTerminatorOffset": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "thin": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "doubleSide": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "normal": {
+                            "link": "CityGenutility_box_02:7b023184-SmartTexture2D:[node]/outputs/out",
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "displacement": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "smoothness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "emissionIntensity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "emission": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "reflectance": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "opacity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "thickness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "isHair": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "commonCode": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "extensionsCode": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "mtlid": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "CityGenutility_box_02",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "tex2dList": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "mask_value": {
+                            "link": null,
+                            "type": "vec3i",
+                            "default-value": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "control": {
+                                "name": "Integer Vector 3"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "backend": {
+                            "value": "CUDA",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "CUDA"
+                                ]
+                            },
+                            "type": "enum CUDA"
+                        }
+                    },
+                    "outputs": {
+                        "mtl": {
+                            "type": "MaterialObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        0.0,
+                        0.0
+                    ],
+                    "options": []
+                },
+                "b61af03a-SubOutput": {
+                    "name": "SubOutput",
+                    "inputs": {
+                        "port": {
+                            "link": "CityGenutility_box_02:1f3dfe98-ShaderFinalize:[node]/outputs/mtl",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": "",
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        },
+                        "name": {
+                            "value": "output1",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        1091.9981689453126,
+                        848.8740844726563
+                    ],
+                    "options": []
+                },
+                "723744f4-SmartTexture2D": {
+                    "name": "SmartTexture2D",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/CityGenerator/textures/utility_box_02_diff_1k.jpg",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "heatmap": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "wrapS": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "wrapT": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "minFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "magFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "coord": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "uvtiling": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "value": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum float vec2 vec3 vec4 R G B A",
+                            "default-value": "vec3",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "float",
+                                    "vec2",
+                                    "vec3",
+                                    "vec4",
+                                    "R",
+                                    "G",
+                                    "B",
+                                    "A"
+                                ]
+                            }
+                        },
+                        "post_process": {
+                            "link": null,
+                            "type": "enum raw srgb normal_map 1-x",
+                            "default-value": "srgb",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "raw",
+                                    "srgb",
+                                    "normal_map",
+                                    "1-x"
+                                ]
+                            }
+                        },
+                        "blockCompression": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "out": {
+                            "type": "shader"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -457.36962890625,
+                        -661.98095703125
+                    ],
+                    "options": []
+                },
+                "dda96d20-SmartTexture2D": {
+                    "name": "SmartTexture2D",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/CityGenerator/textures/utility_box_02_metal_1k.exr",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "heatmap": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "wrapS": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "wrapT": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "minFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "magFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "coord": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "uvtiling": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "value": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum float vec2 vec3 vec4 R G B A",
+                            "default-value": "float",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "float",
+                                    "vec2",
+                                    "vec3",
+                                    "vec4",
+                                    "R",
+                                    "G",
+                                    "B",
+                                    "A"
+                                ]
+                            }
+                        },
+                        "post_process": {
+                            "link": null,
+                            "type": "enum raw srgb normal_map 1-x",
+                            "default-value": "raw",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "raw",
+                                    "srgb",
+                                    "normal_map",
+                                    "1-x"
+                                ]
+                            }
+                        },
+                        "blockCompression": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "out": {
+                            "type": "shader"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -1009.3590698242188,
+                        157.277587890625
+                    ],
+                    "options": []
+                },
+                "7b023184-SmartTexture2D": {
+                    "name": "SmartTexture2D",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/CityGenerator/textures/utility_box_02_nor_gl_1k.exr",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "heatmap": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "wrapS": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "wrapT": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "minFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "magFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "coord": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "uvtiling": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "value": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum float vec2 vec3 vec4 R G B A",
+                            "default-value": "vec3",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "float",
+                                    "vec2",
+                                    "vec3",
+                                    "vec4",
+                                    "R",
+                                    "G",
+                                    "B",
+                                    "A"
+                                ]
+                            }
+                        },
+                        "post_process": {
+                            "link": null,
+                            "type": "enum raw srgb normal_map 1-x",
+                            "default-value": "normal_map",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "raw",
+                                    "srgb",
+                                    "normal_map",
+                                    "1-x"
+                                ]
+                            }
+                        },
+                        "blockCompression": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "out": {
+                            "type": "shader"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -796.383544921875,
+                        788.7999877929688
+                    ],
+                    "options": []
+                },
+                "8a41923-SmartTexture2D": {
+                    "name": "SmartTexture2D",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/CityGenerator/textures/utility_box_02_rough_1k.jpg",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "heatmap": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "wrapS": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "wrapT": {
+                            "link": null,
+                            "type": "enum REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
+                            "default-value": "REPEAT",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "REPEAT",
+                                    "MIRRORED_REPEAT",
+                                    "CLAMP_TO_EDGE",
+                                    "CLAMP_TO_BORDER"
+                                ]
+                            }
+                        },
+                        "minFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "magFilter": {
+                            "link": null,
+                            "type": "enum NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR",
+                            "default-value": "LINEAR",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "NEAREST",
+                                    "LINEAR",
+                                    "NEAREST_MIPMAP_NEAREST",
+                                    "LINEAR_MIPMAP_NEAREST",
+                                    "NEAREST_MIPMAP_LINEAR",
+                                    "LINEAR_MIPMAP_LINEAR"
+                                ]
+                            }
+                        },
+                        "coord": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "uvtiling": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "value": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum float vec2 vec3 vec4 R G B A",
+                            "default-value": "float",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "float",
+                                    "vec2",
+                                    "vec3",
+                                    "vec4",
+                                    "R",
+                                    "G",
+                                    "B",
+                                    "A"
+                                ]
+                            }
+                        },
+                        "post_process": {
+                            "link": null,
+                            "type": "enum raw srgb normal_map 1-x",
+                            "default-value": "raw",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "raw",
+                                    "srgb",
+                                    "normal_map",
+                                    "1-x"
+                                ]
+                            }
+                        },
+                        "blockCompression": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "out": {
+                            "type": "shader"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -1179.0013427734376,
+                        -409.3950500488281
+                    ],
+                    "options": []
+                }
+            },
+            "view_rect": {}
+        }

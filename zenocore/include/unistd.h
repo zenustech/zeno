@@ -4,7 +4,7 @@
 
 #else
 
-#  include <io.h>
-#  include <process.h>
+// #  include <sys/io.h>
+//#  include <process.h>
 
 #endif

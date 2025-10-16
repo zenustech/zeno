@@ -19,7 +19,9 @@ enum VisibilityMask {
     NothingMask    = 0u,
     DefaultMatMask = 1u << 0,
     LightMatMask   = 1u << 1,
-    VolumeMatMask  = 1u << 2,
+    VolumeMaskAnalytics     = 1u << 2,
+    VolumeMaskHeterogeneous = 1u << 3,
+    VolumeMatMask = VolumeMaskAnalytics | VolumeMaskHeterogeneous,
     EverythingMask = 255u
 }; 
 
@@ -150,28 +152,38 @@ struct CameraInfo
     float height;   //sensor physical height
 };
 
+struct PickInfo {
+    float3 pos;
+    uint4 meta;
+};
+
 struct Params
 {
     unsigned int subframe_index;
     float3*      accum_buffer;
+    //uint3*        seed_buffer;
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
     float3*      accum_buffer_T;
     ushort1*     accum_buffer_B;
     uchar4*      frame_buffer;
     ushort3*     frame_buffer_M;
-    ushort3*     frame_buffer_P;
+    
+    PickInfo*    pick_buffer;
 
     float3*      debug_buffer;
     float3*      albedo_buffer;
     float3*      normal_buffer;
+    
+    float4* d_uniforms;
+    void** global_buffers;
+
+    uint2 click_coord;
+    bool click_dirty;
+    bool pause;
 
     unsigned int width;
     unsigned int height;
-    unsigned int tile_i;
-    unsigned int tile_j;
-    unsigned int tile_w;
-    unsigned int tile_h;
     unsigned int samples_per_launch;
 
     CameraInfo cam;
@@ -187,18 +199,6 @@ struct Params
     unsigned long long lightTreeSampler;
     unsigned long long triangleLightCoordsBuffer;
     unsigned long long triangleLightNormalBuffer;
-
-    uint32_t firstVolumeOffset;
-    void* volumeBounds;
-
-    uint32_t firstSoloSphereOffset;
-    void* sphereInstAuxLutBuffer;
-
-    void* meshAux;
-    void* instToMesh;
-
-    uint32_t hairInstOffset;
-    void* hairAux;
 
     void*    dlights_ptr;
     void*    plights_ptr;
@@ -222,19 +222,14 @@ struct Params
 
     float* skycdf;
     int* sky_start;
-    int2 windowCrop_min;
-    int2 windowCrop_max;
-    int2 windowSpace;
 
     uint32_t skynx;
     uint32_t skyny;
     float envavg;
 
-    float sky_rot;
-    float sky_rot_x;
-    float sky_rot_y;
-    float sky_rot_z;
     float sky_strength;
+    float4 sky_rotation[3];
+    float4 sky_onitator[3];
 
     float sunLightDirX;
     float sunLightDirY;
@@ -250,17 +245,20 @@ struct Params
     float sunSoftness;
     float elapsedTime;
 
-    int32_t outside_random_number;
-    bool simpleRender     :1;
+    unsigned int outside_random_number;
     bool show_background  :1;
 
     bool denoise : 1;
+    bool needAOV : 1;
 
     float physical_camera_aperture;
     float physical_camera_shutter_speed;
     float physical_camera_iso;
     bool  physical_camera_aces;
     bool  physical_camera_exposure;
+    bool  physical_camera_panorama_camera;
+    bool  physical_camera_panorama_vr180;
+    float physical_camera_pupillary_distance;
 };
 
 
@@ -277,28 +275,17 @@ struct MissData
 struct HitGroupData
 {
     uint16_t dc_index;
+    float opacity = FLT_MAX;
     uint16_t vol_depth=999;
     float vol_extinction=1.0f;
+
+    bool binaryShadowTestDirectRay;
+    bool binaryShadowTestIndirectRay;
     
     bool equiangular  = false;
     bool multiscatter = false;
 
-#ifdef USE_SHORT
-    ushort3* instPos;
-    ushort3* instNrm;
-    ushort3* instUv;
-    ushort3* instClr;
-    ushort3* instTang;
-#else
-    float3* instPos;
-    float3* instNrm;
-    float3* instUv;
-    float3* instClr;
-    float3* instTang;
-#endif
-    float4* uniforms;
     cudaTextureObject_t textures[32];
-
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];
 };

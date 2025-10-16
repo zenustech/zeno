@@ -44,7 +44,10 @@ float LightBounds::importance(Vector3f p, Vector3f n) const {
         return 0;
 
     // Return final importance at reference point
-    float importance = phi * cosThetap / d2;
+    //float importance = phi * cosThetap / d2;
+    float r2 = 1.0f; float d = sqrtf(d2);
+    float importance = phi * cosThetap * 2.0f / ( d  * sqrtf(d2 + r2) + d2 + r2 );
+
     DCHECK(importance >= -1e-3);
     // Account for $\cos\theta_\roman{i}$ in importance at surfaces
     if (n[0]!=0 && n[1]!=0 && n[2]!=0) {

@@ -1,0 +1,2610 @@
+{
+    "name": "HF_Visualize_old",
+    "version": "1.0",
+    "graph": {
+        "type": 0,
+        "nodes": {
+            "AttributeWrangle1": {
+                "name": "AttributeWrangle1",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "HeightField_in",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "@pos.y = @height;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    99.0,
+                    487.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "AttributeWrangle2": {
+                "name": "AttributeWrangle2",
+                "class": "AttributeWrangle",
+                "object_inputs": {
+                    "Input": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask9",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Run Over": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Points",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "Points",
+                                "Faces",
+                                "Geometry"
+                            ]
+                        },
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "Zfx Code": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "float scale = ref(\"../Final Color Scale\");\n@clr *= scale;",
+                        "control": {
+                            "name": "CodeEditor"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    91.0,
+                    2673.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_1": {
+                "name": "Color_1",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -370.0,
+                    1019.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_2": {
+                "name": "Color_2",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -337.0,
+                    1184.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_3": {
+                "name": "Color_3",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -318.0,
+                    1349.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_4": {
+                "name": "Color_4",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -323.0,
+                    1529.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_5": {
+                "name": "Color_5",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -325.0,
+                    1711.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_6": {
+                "name": "Color_6",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -323.0,
+                    1893.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_7": {
+                "name": "Color_7",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -321.0,
+                    2073.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_8": {
+                "name": "Color_8",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -316.0,
+                    2258.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Color_9": {
+                "name": "Color_9",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "vec3f",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -315.0,
+                    2442.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Final Color Scale": {
+                "name": "Final Color Scale",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "float",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    237.0,
+                    21.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HF_Visual_Mask1": {
+                "name": "HF_Visual_Mask1",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "if_revert_heatmap",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_1\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_1",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    97.0,
+                    973.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask2": {
+                "name": "HF_Visual_Mask2",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask1",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_2\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_2",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    96.0,
+                    1156.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask3": {
+                "name": "HF_Visual_Mask3",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask2",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_3\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_3",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    98.0,
+                    1338.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask4": {
+                "name": "HF_Visual_Mask4",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask3",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_4\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_4",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    97.0,
+                    1505.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask5": {
+                "name": "HF_Visual_Mask5",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask4",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_5\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_5",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    107.0,
+                    1685.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask6": {
+                "name": "HF_Visual_Mask6",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask5",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_6\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_6",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    110.0,
+                    1868.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask7": {
+                "name": "HF_Visual_Mask7",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask6",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_7\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_7",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    115.0,
+                    2053.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask8": {
+                "name": "HF_Visual_Mask8",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask7",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_8\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_8",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    96.0,
+                    2231.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "HF_Visual_Mask9": {
+                "name": "HF_Visual_Mask9",
+                "class": "HF_Visual_Mask",
+                "object_inputs": {
+                    "HeightField_in": {
+                        "links": [
+                            {
+                                "out-node": "HF_Visual_Mask8",
+                                "out-socket": "HeightField_out",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Clone HF for Visualize": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Mask Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Layer_9\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Reset Base Color": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Visualize Color": {
+                        "links": [
+                            {
+                                "out-node": "Color_9",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": true
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "HeightField_out": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    95.0,
+                    2423.0
+                ],
+                "status": [],
+                "collasped": false,
+                "asset_locked": true,
+                "asset": {
+                    "name": "HF_Visual_Mask",
+                    "path": "C:\\Users\\Ada51\\Documents/Zeno/assets\\HF_Visual_Mask.zda",
+                    "version": "1.0"
+                }
+            },
+            "Heatmap": {
+                "name": "Heatmap",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "color",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -605.0,
+                    591.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Height Layer Name": {
+                "name": "Height Layer Name",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -314.0,
+                    21.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HeightField_in": {
+                "name": "HeightField_in",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {
+                    "port": {
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "uipos": [
+                    70.0,
+                    323.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "HeightField_out": {
+                "name": "HeightField_out",
+                "class": "SubOutput",
+                "object_inputs": {
+                    "port": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle2",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {},
+                "primitive_outputs": {},
+                "object_outputs": {},
+                "uipos": [
+                    39.0,
+                    2878.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_1": {
+                "name": "Layer_1",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -317.0,
+                    18.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_2": {
+                "name": "Layer_2",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -281.0,
+                    117.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_3": {
+                "name": "Layer_3",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -329.0,
+                    -1.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_4": {
+                "name": "Layer_4",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -311.0,
+                    1.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_5": {
+                "name": "Layer_5",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -262.0,
+                    -7.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_6": {
+                "name": "Layer_6",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -252.0,
+                    -7.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_7": {
+                "name": "Layer_7",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -366.0,
+                    502.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_8": {
+                "name": "Layer_8",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -308.0,
+                    19.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Layer_9": {
+                "name": "Layer_9",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "string",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -309.0,
+                    42.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "PrimitiveColorByHeatmap1": {
+                "name": "PrimitiveColorByHeatmap1",
+                "class": "PrimitiveColorByHeatmap",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attrName2": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "heatmap": {
+                        "links": [
+                            {
+                                "out-node": "Heatmap",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "color",
+                        "default-value": {
+                            "fac": [],
+                            "color": []
+                        },
+                        "control": {
+                            "name": "Color"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "min": {
+                        "links": [
+                            {
+                                "out-node": "prim_reduce_max",
+                                "out-socket": "result",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "max": {
+                        "links": [
+                            {
+                                "out-node": "prim_reduce_min",
+                                "out-socket": "result",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "attrName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "rho",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "none",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "prim": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    420.0,
+                    848.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "PrimitiveColorByHeatmap2": {
+                "name": "PrimitiveColorByHeatmap2",
+                "class": "PrimitiveColorByHeatmap",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attrName2": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Height Layer Name\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "heatmap": {
+                        "links": [
+                            {
+                                "out-node": "Heatmap",
+                                "out-socket": "port",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "color",
+                        "default-value": {
+                            "fac": [],
+                            "color": []
+                        },
+                        "control": {
+                            "name": "Color"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "min": {
+                        "links": [
+                            {
+                                "out-node": "prim_reduce_min",
+                                "out-socket": "result",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "float",
+                        "default-value": 0.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "max": {
+                        "links": [
+                            {
+                                "out-node": "prim_reduce_max",
+                                "out-socket": "result",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": true
+                    },
+                    "attrName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "rho",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "none",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "prim": {
+                        "type": "geometry",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    -232.0,
+                    818.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Revert Heatmap": {
+                "name": "Revert Heatmap",
+                "class": "SubInput",
+                "object_inputs": {},
+                "primitive_inputs": {},
+                "primitive_outputs": {
+                    "hasValue": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "port": {
+                        "type": "bool",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    287.0,
+                    199.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "if_revert_heatmap": {
+                "name": "if_revert_heatmap",
+                "class": "SwitchIf",
+                "object_inputs": {
+                    "If False": {
+                        "links": [
+                            {
+                                "out-node": "PrimitiveColorByHeatmap2",
+                                "out-socket": "prim",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    },
+                    "If True": {
+                        "links": [
+                            {
+                                "out-node": "PrimitiveColorByHeatmap1",
+                                "out-socket": "prim",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "iobject",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": "ref(\"../Revert Heatmap\")",
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output": {
+                        "type": "iobject",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    102.0,
+                    816.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "prim_reduce_max": {
+                "name": "prim_reduce_max",
+                "class": "PrimReduction",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attrName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Height Layer Name\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "op": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "max",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "avg",
+                                "max",
+                                "min",
+                                "absmax"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "result": {
+                        "type": "numeric",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -612.0,
+                    765.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "prim_reduce_min": {
+                "name": "prim_reduce_min",
+                "class": "PrimReduction",
+                "object_inputs": {
+                    "prim": {
+                        "links": [
+                            {
+                                "out-node": "AttributeWrangle1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": ""
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "attrName": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ref(\"../Height Layer Name\")",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "clone",
+                        "visible": false
+                    },
+                    "op": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "min",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "controlProps": {
+                            "items": [
+                                "avg",
+                                "max",
+                                "min",
+                                "absmax"
+                            ]
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "result": {
+                        "type": "numeric",
+                        "socket-type": "clone",
+                        "visible": true
+                    }
+                },
+                "object_outputs": {},
+                "uipos": [
+                    -610.0,
+                    959.0
+                ],
+                "status": [],
+                "collasped": false
+            }
+        }
+    },
+    "Parameters": {
+        "object_inputs": {
+            "HeightField_in": {
+                "links": null,
+                "type": "geometry",
+                "socket-type": "clone"
+            }
+        },
+        "primitive_inputs": {
+            "Final Color Scale": {
+                "links": null,
+                "type": "float",
+                "default-value": 1.0,
+                "control": {
+                    "name": "Float"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Heatmap": {
+                "links": null,
+                "type": "color",
+                "default-value": {
+                    "fac": [],
+                    "color": []
+                },
+                "control": {
+                    "name": "Color"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Revert Heatmap": {
+                "links": null,
+                "type": "bool",
+                "default-value": false,
+                "control": {
+                    "name": "Boolean"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Height Layer Name": {
+                "links": null,
+                "type": "string",
+                "default-value": "height",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_1": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_1",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_1": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_2": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_2",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_2": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_3": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_3",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_3": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_4": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_4",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_4": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_5": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_5",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_5": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_6": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_6",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_6": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_7": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_7",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_7": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_8": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_8",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_8": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Layer_9": {
+                "links": null,
+                "type": "string",
+                "default-value": "Layer_9",
+                "control": {
+                    "name": "String"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            },
+            "Color_9": {
+                "links": null,
+                "type": "vec3f",
+                "default-value": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "control": {
+                    "name": "Float Vector 3"
+                },
+                "controlProps": null,
+                "socket-type": "primitive",
+                "visible": false
+            }
+        },
+        "primitive_outputs": {},
+        "object_outputs": {
+            "HeightField_out": {
+                "type": "geometry",
+                "socket-type": "output"
+            }
+        }
+    },
+    "subnet-customUi": {
+        "nickname": "",
+        "iconResPath": "",
+        "category": "",
+        "doc": "",
+        "tabs": {
+            "Tab1": {
+                "Group1": {
+                    "Final Color Scale": {
+                        "links": null,
+                        "type": "float",
+                        "default-value": 1.0,
+                        "control": {
+                            "name": "Float"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Heatmap": {
+                        "links": null,
+                        "type": "color",
+                        "default-value": {
+                            "fac": [],
+                            "color": []
+                        },
+                        "control": {
+                            "name": "Color"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Revert Heatmap": {
+                        "links": null,
+                        "type": "bool",
+                        "default-value": false,
+                        "control": {
+                            "name": "Boolean"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Height Layer Name": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "height",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_1": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_1",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_1": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_2": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_2",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_2": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_3": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_3",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_3": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_4": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_4",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_4": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_5": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_5",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_5": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_6": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_6",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_6": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_7": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_7",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_7": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_8": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_8",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_8": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Layer_9": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Layer_9",
+                        "control": {
+                            "name": "String"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Color_9": {
+                        "links": null,
+                        "type": "vec3f",
+                        "default-value": [
+                            1.0,
+                            0.0,
+                            0.0
+                        ],
+                        "control": {
+                            "name": "Float Vector 3"
+                        },
+                        "controlProps": null,
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                }
+            }
+        }
+    }
+}

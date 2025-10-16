@@ -222,12 +222,12 @@ namespace {
 
 struct PrimSepTriangles : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto smoothNormal = get_input2<bool>("smoothNormal");
-        auto keepTriFaces = get_input2<bool>("keepTriFaces");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto smoothNormal = ZImpl(get_input2<bool>("smoothNormal"));
+        auto keepTriFaces = ZImpl(get_input2<bool>("keepTriFaces"));
         //printf("asdasd %d\n", prim->verts.attrs.erase("nrm"));
         primSepTriangles(prim.get(), smoothNormal, keepTriFaces);
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

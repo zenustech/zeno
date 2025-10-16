@@ -12,14 +12,14 @@ namespace zeno {
 
 struct PrimitiveSimplePoints : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t points_count = prim->size();
     prim->points.resize(points_count);
     for (int i = 0; i < points_count; i++) {
       prim->points[i] = i;
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -28,8 +28,8 @@ ZENDEFNODE(PrimitiveSimplePoints, {
         {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
     },
     {
-{gParamType_Primitive, "prim"},
-},
+        {gParamType_Primitive, "prim"},
+    },
     {
     },
     {
@@ -40,14 +40,14 @@ ZENDEFNODE(PrimitiveSimplePoints, {
 
 struct PrimitiveSimpleLines : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t lines_count = prim->size() / 2;
     prim->lines.resize(lines_count);
     for (int i = 0; i < lines_count; i++) {
       prim->lines[i] = zeno::vec2i(2 * i, 2 * i + 1);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -65,14 +65,14 @@ ZENDEFNODE(PrimitiveSimpleLines, {
 
 struct PrimitiveFarSimpleLines : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t lines_count = prim->size() / 2;
     prim->lines.resize(lines_count);
     for (int i = 0; i < lines_count; i++) {
       prim->lines[i] = zeno::vec2i(i, i + lines_count);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -91,14 +91,14 @@ ZENDEFNODE(PrimitiveFarSimpleLines, {
 
 struct PrimitiveNearSimpleLines : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t lines_count = prim->size() ? prim->size() - 1 : 0;
     prim->lines.resize(lines_count);
     for (int i = 0; i < lines_count; i++) {
       prim->lines[i] = zeno::vec2i(i, i + 1);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -118,14 +118,14 @@ ZENDEFNODE(PrimitiveNearSimpleLines,{
 
 struct PrimitiveSimpleTris : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t tris_count = prim->size() / 3;
     prim->tris.resize(tris_count);
     for (int i = 0; i < tris_count; i++) {
       prim->tris[i] = zeno::vec3i(3 * i, 3 * i + 1, 3 * i + 2);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -146,14 +146,14 @@ ZENDEFNODE(PrimitiveSimpleTris, {
 
 struct PrimitiveSimpleQuads : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     size_t quads_count = prim->size() / 4;
     prim->quads.resize(quads_count);
     for (int i = 0; i < quads_count; i++) {
       prim->quads[i] = zeno::vec4i(4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -173,8 +173,8 @@ ZENDEFNODE(PrimitiveSimpleQuads, {
 
 struct PrimitiveClearConnect : zeno::INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto type = get_input<StringObject>("type")->value;
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto type = ZImpl(get_input<StringObject>("type"))->value;
     
     if(type=="points" || type=="all")
       prim->points.clear();
@@ -191,7 +191,7 @@ struct PrimitiveClearConnect : zeno::INode {
       prim->loops.clear();
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -211,7 +211,7 @@ ZENDEFNODE(PrimitiveClearConnect, {
 
 struct PrimitiveLineSimpleLink : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
 
         prim->lines.clear();
         intptr_t n = prim->verts.size();
@@ -220,7 +220,7 @@ struct PrimitiveLineSimpleLink : zeno::INode {
             prim->lines.emplace_back(i - 1, i);
         }
         prim->lines.update();
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -240,7 +240,7 @@ ZENDEFNODE(PrimitiveLineSimpleLink, {
 
 struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replace this node
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
 
     prim->foreach_attr([&] (auto &, auto &arr) {
         auto oldarr = arr;
@@ -258,7 +258,7 @@ struct PrimitiveSplitEdges : zeno::INode { // TODO: use PrimSplitFaces to replac
         prim->tris[i] = zeno::vec3i(i * 3 + 0, i * 3 + 1, i * 3 + 2);
     }
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -276,7 +276,7 @@ struct PrimitiveFaceToEdges : zeno::INode {
   }
 
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
     std::set<std::pair<int, int>> lines;
 
     for (int i = 0; i < prim->tris.size(); i++) {
@@ -290,10 +290,10 @@ struct PrimitiveFaceToEdges : zeno::INode {
         prim->lines.emplace_back(u, v);
     }
 
-    if (get_param<bool>("clearFaces")) {
+    if (ZImpl(get_param<bool>("clearFaces"))) {
         prim->tris.clear();
     }
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -315,7 +315,7 @@ ZENDEFNODE(PrimitiveFaceToEdges, {
 
 struct PrimitiveFlipPoly : zeno::INode {
     virtual void apply() override {
-        auto surfIn = get_input<zeno::PrimitiveObject>("prim");
+        auto surfIn = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
         for(size_t i = 0;i < surfIn->tris.size();++i){
             auto& tri = surfIn->tris[i];
             size_t tri_idx_tmp = tri[1];
@@ -323,7 +323,7 @@ struct PrimitiveFlipPoly : zeno::INode {
             tri[2] = tri_idx_tmp;
         }
 
-        set_output("primOut",surfIn);
+        ZImpl(set_output("primOut", std::move(surfIn)));
     }
 };
 

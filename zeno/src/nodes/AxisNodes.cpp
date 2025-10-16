@@ -6,11 +6,11 @@ namespace {
 
 struct ExtractAxis : zeno::INode {
     virtual void apply() override {
-        auto p = get_input<AxisObject>("math");
-        set_output2("origin", p->origin);
-        set_output2("axisX", p->axisX);
-        set_output2("axisY", p->axisY);
-        set_output2("axisZ", p->axisZ);
+        auto p = ZImpl(get_input<AxisObject>("math"));
+        ZImpl(set_output2("origin", p->origin));
+        ZImpl(set_output2("axisX", p->axisX));
+        ZImpl(set_output2("axisY", p->axisY));
+        ZImpl(set_output2("axisZ", p->axisZ));
     }
 };
 
@@ -30,19 +30,19 @@ ZENDEFNODE(ExtractAxis, {
 
 struct MakeAxis : zeno::INode {
     virtual void apply() override {
-        auto origin = get_input2<zeno::vec3f>("origin");
-        auto axisX = get_input2<zeno::vec3f>("axisX");
-        auto axisY = get_input2<zeno::vec3f>("axisY");
-        auto axisZ = get_input2<zeno::vec3f>("axisZ");
-        auto p = std::make_shared<AxisObject>(origin, axisX, axisY, axisZ);
-        auto by = get_param<std::string>("normalize");
+        auto origin = ZImpl(get_input2<zeno::vec3f>("origin"));
+        auto axisX = ZImpl(get_input2<zeno::vec3f>("axisX"));
+        auto axisY = ZImpl(get_input2<zeno::vec3f>("axisY"));
+        auto axisZ = ZImpl(get_input2<zeno::vec3f>("axisZ"));
+        auto p = std::make_unique<AxisObject>(origin, axisX, axisY, axisZ);
+        auto by = ZImpl(get_param<std::string>("normalize"));
         if (by == "X")
             p->renormalizeByX();
         else if (by == "Y")
             p->renormalizeByY();
         else if (by == "Z")
             p->renormalizeByZ();
-        set_output("math", std::move(p));
+        ZImpl(set_output("math", std::move(p)));
     }
 };
 

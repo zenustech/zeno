@@ -8,7 +8,6 @@
 
 class ZIconToolButton;
 class ZenoGraphsEditor;
-class ZenoImagePanel;
 class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
@@ -65,6 +64,7 @@ protected:
     virtual void initToolbar(QHBoxLayout* pToolLayout) = 0;
     virtual QWidget *initWidget() = 0;
     virtual void initConnections() = 0;
+    void resizeEvent(QResizeEvent* event) override;
 
     QWidget* m_pWidget;
     static const int sToolbarHeight;
@@ -110,6 +110,7 @@ private:
     ZenoGraphsEditor* m_pEditor;
     ZToolBarButton *pListView;
     ZToolBarButton *pTreeView;
+    ZToolBarButton* pluginView;
     ZToolBarButton *pSubnetMgr;
     ZToolBarButton *pFold;
     ZToolBarButton *pUnfold;
@@ -120,9 +121,11 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton* pTestApi = nullptr;
-    QCheckBox*pAlways;
+    ZToolBarButton* pMultiThreadExecute = nullptr;
+    QCheckBox* pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
+    ZToolBarButton *pCleanProj;
 
     ZToolMenuButton *m_btnRun;
     ZTextIconButton* m_btnKill;
@@ -166,7 +169,10 @@ private:
     ZToolBarButton* m_scaleBtn;
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
+    ZToolBarButton* m_pointIndicator;
     QPushButton *m_camera_setting = nullptr;
+    QPushButton *m_pause = nullptr;
+    QCheckBox *m_matNeedUpdate = nullptr;
     QCheckBox *m_background;
     QCheckBox *m_uv_mode = nullptr;
     QCheckBox *m_depth = nullptr;
@@ -209,21 +215,6 @@ private:
     ZToolBarButton* m_pBtnPlainLog;
     ZToolBarButton* m_pDeleteLog;
     QComboBox* m_cbLogLevel;
-};
-
-class DockContent_Image : public DockToolbarWidget {
-    Q_OBJECT
-public:
-    explicit DockContent_Image(QWidget *parent = nullptr);
-    ZenoImagePanel *getImagePanel();
-
-protected:
-    QWidget *initWidget() override;
-    void initToolbar(QHBoxLayout *pToolLayout) override{};
-    void initConnections() override{};
-
-private:
-    ZenoImagePanel *m_ImagePanel;
 };
 
 #endif

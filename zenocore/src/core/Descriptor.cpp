@@ -8,17 +8,10 @@ namespace zeno {
         std::string const &name,
         std::string const &defl,
         SocketType connProp,
-        ParamControl ctrl,
-        std::string const& wildCard,
-        std::string const& doc,
-        std::string const& cboxitems)
+        ParamControl ctrl)
         : type(type)
         , name(name)
         , defl(defl)
-        , doc(doc)
-        , wildCard(wildCard)
-        , socketType(connProp)
-        , comboxitems(cboxitems)
         , control(ctrl) {}
 
 SocketDescriptor::SocketDescriptor(std::string const& comboitemsDesc, std::string const& name, std::string const& defl)
@@ -30,6 +23,17 @@ SocketDescriptor::SocketDescriptor(std::string const& comboitemsDesc, std::strin
     , defl(defl)
 {
 }
+
+    SocketDescriptor::SocketDescriptor(const ParamObject& param) {
+        _desc.type = Desc_Obj;
+        _desc.objparam = param;
+    }
+
+    SocketDescriptor::SocketDescriptor(const ParamPrimitive& param) {
+        _desc.type = Desc_Prim;
+        _desc.primparam = param;
+    }
+
 
 SocketDescriptor::~SocketDescriptor() = default;
 
@@ -44,6 +48,7 @@ ParamDescriptor::ParamDescriptor(std::string const& comboitemsDesc, std::string 
     , name(name)
     , comboxitems(comboitemsDesc)
     , defl(defl)
+    , control(zeno::Combobox)
 {
 }
 

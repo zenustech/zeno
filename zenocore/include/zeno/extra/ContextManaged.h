@@ -1,14 +1,15 @@
 #pragma once
 
 #include <zeno/core/Graph.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <memory>
 #include <cassert>
 
 
 namespace zeno {
 
-struct ContextManagedNode : INode {
+#if 0
+struct ContextManagedNode : NodeImpl {
     std::unique_ptr<Context> m_ctx = nullptr;
     bool bNewContext = false;
 
@@ -42,5 +43,6 @@ struct ContextManagedNode : INode {
         return old_ctx;
     }
 };
+#endif
 
 }

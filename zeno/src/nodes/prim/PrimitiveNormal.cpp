@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/vec.h>
@@ -133,29 +134,31 @@ ZENO_API void primCalcNormal(zeno::PrimitiveObject* prim, float flip, std::strin
 }
 struct PrimitiveCalcNormal : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto nrmAttr = get_input<StringObject>("nrmAttr")->get();
-        auto flip = get_input<NumericObject>("flip")->get<bool>();
+        auto geom = ZImpl(get_input<GeometryObject_Adapter>("prim"));
+        auto prim = geom->toPrimitiveObject();
+        auto nrmAttr = ZImpl(get_input<StringObject>("nrmAttr"))->get();
+        auto flip = ZImpl(get_input<NumericObject>("flip"))->get<bool>();
         primCalcNormal(prim.get(), flip ? -1 : 1, nrmAttr);
-        set_output("prim", get_input("prim"));
+        geom = create_GeometryObject(prim.get());
+        set_output("prim", std::move(geom));
     }
 };
 
 ZENDEFNODE(PrimitiveCalcNormal, {
     {
-    {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+    {gParamType_Geometry, "prim"},
     {gParamType_String, "nrmAttr", "nrm"},
     {gParamType_Bool, "flip", "0"},
     },
-    {{gParamType_Primitive, "prim"}},
+    {{gParamType_Geometry, "prim"}},
     {},
     {"primitive"},
 });
 
 struct PrimitiveOrderVertexByNormal : zeno::INode{
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto nrmAttr = get_input<StringObject>("nrmAttr")->get();
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto nrmAttr = ZImpl(get_input<StringObject>("nrmAttr"))->get();
     if(prim->tris.has_attr(nrmAttr))
     {
       auto &nrm = prim->tris.attr<zeno::vec3f>(nrmAttr);
@@ -188,7 +191,7 @@ struct PrimitiveOrderVertexByNormal : zeno::INode{
         }
       }
     }
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 ZENDEFNODE(PrimitiveOrderVertexByNormal, {

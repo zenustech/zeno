@@ -46,12 +46,12 @@ namespace zeno {
         std::vector<_ParamGroup> groups;
     };
 
-    //Ö»´¦Àíº¯ÊıÇ©ÃûÉÏµÄ²ÎÊıµÄÓ³ÉäĞÅÏ¢£¬²»°üÀ¨ÒÔ³ÉÔ±±äÁ¿¶¨ÒåµÄ²ÎÊıµÄÇé¿ö
+    //åªå¤„ç†å‡½æ•°ç­¾åä¸Šçš„å‚æ•°çš„æ˜ å°„ä¿¡æ¯ï¼Œä¸åŒ…æ‹¬ä»¥æˆå‘˜å˜é‡å®šä¹‰çš„å‚æ•°çš„æƒ…å†µ
     struct ReflectCustomUI
     {
         _Group inputParams;
         _Group outputParams;
-        CustomUIParams customUI;    //Õë¶ÔÊäÈëÊıÖµĞÍ²ÎÊıµÄ×Ô¶¨Òå²¼¾Ö
+        CustomUIParams customUI;    //é’ˆå¯¹è¾“å…¥æ•°å€¼å‹å‚æ•°çš„è‡ªå®šä¹‰å¸ƒå±€
     };
 
 }

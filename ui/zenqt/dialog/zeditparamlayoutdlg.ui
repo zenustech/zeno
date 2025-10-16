@@ -293,15 +293,34 @@
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout">
+         <item row="2" column="0">
+          <widget class="QLabel" name="controlLbl">
+           <property name="text">
+            <string>Control</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLineEdit" name="editHint"/>
+         </item>
+         <item row="4" column="1">
+          <widget class="QComboBox" name="cbSocketType"/>
+         </item>
+         <item row="5" column="1">
+          <widget class="QComboBox" name="cbObjectType"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="editLabel"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="editName"/>
+         </item>
          <item row="3" column="0">
           <widget class="QLabel" name="hintLbl">
            <property name="text">
             <string>hint</string>
            </property>
           </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QLineEdit" name="editHint"/>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="socketpropertyLbl">
@@ -310,12 +329,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="editLabel"/>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="editName"/>
-         </item>
          <item row="0" column="0">
           <widget class="QLabel" name="nameLbl">
            <property name="text">
@@ -323,8 +336,12 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
-          <widget class="QComboBox" name="cbSocketType"/>
+         <item row="5" column="0">
+          <widget class="QLabel" name="lblObjType">
+           <property name="text">
+            <string>object type</string>
+           </property>
+          </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="labelLbl">
@@ -336,12 +353,15 @@
          <item row="2" column="1">
           <widget class="ZComboBox" name="cbControl"/>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="controlLbl">
+         <item row="6" column="0">
+          <widget class="QLabel" name="lblPrimOutput">
            <property name="text">
-            <string>Control</string>
+            <string>outprim type</string>
            </property>
           </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QComboBox" name="cbOutputPrim"/>
          </item>
         </layout>
        </item>
@@ -357,6 +377,133 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Control Properties</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QStackedWidget" name="stackProperties">
+           <widget class="QWidget" name="pageNone"/>
+           <widget class="QWidget" name="pageCombobox">
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>items</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <layout class="QVBoxLayout" name="verticalLayout_8">
+               <item>
+                <widget class="QPushButton" name="m_pUpButton">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="verticalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item row="1" column="1">
+              <widget class="QTableWidget" name="itemsTable">
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="rowCount">
+                <number>1</number>
+               </property>
+               <property name="columnCount">
+                <number>1</number>
+               </property>
+               <attribute name="horizontalHeaderVisible">
+                <bool>false</bool>
+               </attribute>
+               <attribute name="verticalHeaderVisible">
+                <bool>false</bool>
+               </attribute>
+               <row/>
+               <column/>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="pageSpinbox">
+            <layout class="QGridLayout" name="gridLayout_4">
+             <property name="rightMargin">
+              <number>30</number>
+             </property>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="editMin">
+               <property name="focusPolicy">
+                <enum>Qt::ClickFocus</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="editMax">
+               <property name="focusPolicy">
+                <enum>Qt::ClickFocus</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="editStep">
+               <property name="focusPolicy">
+                <enum>Qt::ClickFocus</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>step</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>

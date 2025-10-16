@@ -6,7 +6,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/variantswitch.h>
@@ -18,6 +18,7 @@
 #include <sstream>
 #include <ctime>
 #include <iostream>
+#include <zeno/types/DictObject.h>
 namespace zeno
 {
 namespace
@@ -26,13 +27,13 @@ namespace
 struct WBPrimBend : INode {
     void apply() override
     {
-        auto limitDeformation = get_input<NumericObject>("Limit Deformation")->get<int>();
-        auto symmetricDeformation = get_input<NumericObject>("Symmetric Deformation")->get<int>();
-        auto angle = get_input<NumericObject>("Bend Angle (degree)")->get<float>();
-        auto upVector = has_input("Up Vector") ? get_input<NumericObject>("Up Vector")->get<zeno::vec3f>() : vec3f(0, 1, 0);
-        auto capOrigin = has_input("Capture Origin") ? get_input<NumericObject>("Capture Origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
-        auto dirVector = has_input("Capture Direction") ? get_input<NumericObject>("Capture Direction")->get<zeno::vec3f>() : vec3f(0, 0, 1);
-        double capLen = has_input("Capture Length") ? get_input<NumericObject>("Capture Length")->get<float>() : 1.0;
+        auto limitDeformation = ZImpl(get_input<NumericObject>("Limit Deformation"))->get<int>();
+        auto symmetricDeformation = ZImpl(get_input<NumericObject>("Symmetric Deformation"))->get<int>();
+        auto angle = ZImpl(get_input<NumericObject>("Bend Angle (degree)"))->get<float>();
+        auto upVector = ZImpl(has_input("Up Vector")) ? ZImpl(get_input<NumericObject>("Up Vector"))->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto capOrigin = ZImpl(has_input("Capture Origin")) ? ZImpl(get_input<NumericObject>("Capture Origin"))->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto dirVector = ZImpl(has_input("Capture Direction")) ? ZImpl(get_input<NumericObject>("Capture Direction"))->get<zeno::vec3f>() : vec3f(0, 0, 1);
+        double capLen = ZImpl(has_input("Capture Length")) ? ZImpl(get_input<NumericObject>("Capture Length"))->get<float>() : 1.0;
 
         glm::vec3 up = normalize(glm::vec3(upVector[0], upVector[1], upVector[2]));
         glm::vec3 dir = normalize(glm::vec3(dirVector[0], dirVector[1], dirVector[2]));
@@ -44,7 +45,7 @@ struct WBPrimBend : INode {
                                 axis1.x, axis1.y, axis1.z };
         glm::mat3 rotMat = glm::make_mat3x3(rotMatEle);
         glm::mat3 inverse = glm::transpose(rotMat);
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         auto& pos = prim->verts;
 
 #pragma omp parallel for
@@ -107,7 +108,7 @@ struct WBPrimBend : INode {
             deformedPos = rotMat * original + origin;
             pos[i] = vec3f(deformedPos.x, deformedPos.y, deformedPos.z);
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(WBPrimBend,
@@ -130,9 +131,9 @@ ZENDEFNODE(WBPrimBend,
 struct CreateCircle : INode {
     void apply() override
     {
-        auto seg = get_input<NumericObject>("segments")->get<int>();
-        auto r = get_input<NumericObject>("r")->get<float>();
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto seg = ZImpl(get_input<NumericObject>("segments"))->get<int>();
+        auto r = ZImpl(get_input<NumericObject>("r"))->get<float>();
+        auto prim = std::make_unique<PrimitiveObject>();
 
         for (int i = 0; i < seg; i++)
         {
@@ -146,7 +147,7 @@ struct CreateCircle : INode {
             prim->tris.push_back(vec3i(seg, i, (i + 1) % seg));
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(CreateCircle,
@@ -162,7 +163,7 @@ ZENDEFNODE(CreateCircle,
 
 struct ParameterizeLine : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         if(!prim->lines.has_attr("parameterization")) {
             prim->lines.add_attr<float>("parameterization");
             float total = 0;
@@ -180,7 +181,7 @@ struct ParameterizeLine : INode {
                 prim->lines.attr<float>("parameterization")[i] = linesLen[i] * inv_total;
             }
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(ParameterizeLine,
@@ -192,12 +193,32 @@ ZENDEFNODE(ParameterizeLine,
             }, /* category: */ {
                 "primitive",
             } });
+float lerp(float a, float b, float c)
+{
+  return a + (b-a)*c;
+}
+float Dlerp(float a, float b, float c)
+{
+  if(abs(b-511)<0.00001)
+    return a;
+  if(abs(b-a)>180){
+    float x = lerp(a, b+360, c);
+    return x>360?x-360:x;
+  }
+  return lerp(a, b, c);
+}
 struct LineResample : INode {
     void apply() override
     {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
 
-        auto segments = get_input<NumericObject>("segments")->get<int>();
+        auto segments = ZImpl(get_input<NumericObject>("segments"))->get<int>();
+        bool has_schema = false;
+        if(has_input("AttrSchema"))
+            has_schema = true;
+        auto attrSchema = std::make_unique<zeno::DictObject>();
+        if(has_schema)
+            attrSchema = safe_uniqueptr_cast<zeno::DictObject>(get_input_DictObject("AttrSchema")->clone());
         if (segments < 1) { segments = 1; }
         std::vector<float> linesLen(prim->lines.size());
         if(!prim->lines.has_attr("parameterization")) {
@@ -225,10 +246,10 @@ struct LineResample : INode {
             }
         }
 
-        auto retprim = std::make_shared<PrimitiveObject>();
-        if(has_input("PrimSampler")) {
-            retprim = get_input<PrimitiveObject>("PrimSampler");
-            auto sampleByAttr = get_input2<std::string>("SampleBy");
+        auto retprim = std::make_unique<PrimitiveObject>();
+        if(ZImpl(has_input("PrimSampler"))) {
+            retprim = ZImpl(get_input<PrimitiveObject>("PrimSampler"));
+            auto sampleByAttr = ZImpl(get_input2<std::string>("SampleBy"));
             auto& sampleBy = retprim->attr<float>(sampleByAttr);
             retprim->add_attr<float>("t");
             auto &t_arr = retprim->attr<float>("t");
@@ -275,11 +296,33 @@ struct LineResample : INode {
             for(auto key:prim->attr_keys())
             {
                 if(key!="pos")
-                    std::visit([&retprim, &prim, &ind, &r1, &i, key](auto &&ref) {
+                    std::visit([&has_schema, &attrSchema, &retprim, &prim, &ind, &r1, &i, key](auto &&ref) {
                         using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
                         auto a = prim->attr<T>(key)[ind[0]];
                         auto b = prim->attr<T>(key)[ind[1]];
                         retprim->attr<T>(key)[i] = a + (b-a)*r1;
+                        if(has_schema)
+                        {
+                          if(attrSchema->lut.find(key)!=attrSchema->lut.end())
+                          {
+                            auto schema = static_cast<zeno::StringObject*>(attrSchema->lut[key].get())->value;
+                            if(schema == "Degrees")
+                            {
+                              if constexpr (std::is_convertible_v<T, zeno::vec4f>)
+                              {
+                                retprim->attr<T>(key)[i] = zeno::vec4f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1),Dlerp(a[2],b[2],r1),Dlerp(a[3],b[3],r1));
+                              } else if constexpr (std::is_convertible_v<T, zeno::vec3f>)
+                              {
+                                retprim->attr<T>(key)[i] = zeno::vec3f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1),Dlerp(a[2],b[2],r1));
+                              } else if constexpr (std::is_convertible_v<T, zeno::vec2f>){
+                                retprim->attr<T>(key)[i] = zeno::vec2f(Dlerp(a[0],b[0],r1),Dlerp(a[1],b[1],r1));
+                              }else if constexpr (std::is_convertible_v<T, float>){
+                                retprim->attr<T>(key)[i] = Dlerp(a, b, r1);
+                              }
+                            }
+                          }
+                        }
+
                     }, prim->attr(key));
             }
         }
@@ -314,12 +357,13 @@ struct LineResample : INode {
 //            retprim->lines.emplace_back(i - 1, i);
 //        }
 
-        set_output("prim", std::move(retprim));
+        ZImpl(set_output("prim", std::move(retprim)));
     }
 };
 ZENDEFNODE(LineResample,
     {  /* inputs: */ {
             {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {"DictObject", "AttrSchema"},
             {gParamType_Int, "segments", "3"},
             {gParamType_Primitive, "PrimSampler"},
             {gParamType_String, "SampleBy", "t"},
@@ -333,10 +377,10 @@ ZENDEFNODE(LineResample,
 struct CurveOrientation  : INode {
     void apply() override
     {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto dirName = get_input2<std::string>("dirName");
-        auto tanName = get_input2<std::string>("tanName");
-        auto bitanName = get_input2<std::string>("bitanName");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto dirName = ZImpl(get_input2<std::string>("dirName"));
+        auto tanName = ZImpl(get_input2<std::string>("tanName"));
+        auto bitanName = ZImpl(get_input2<std::string>("bitanName"));
         auto &directions = prim->add_attr<zeno::vec3f>(dirName);
         auto &bidirections = prim->add_attr<zeno::vec3f>(tanName);
         auto &tridirections = prim->add_attr<zeno::vec3f>(bitanName);
@@ -362,7 +406,7 @@ struct CurveOrientation  : INode {
             bidirections[i] = orb.bitangent;
             tridirections[i] = normalize(cross(directions[i], bidirections[i]));
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(CurveOrientation,
@@ -381,8 +425,8 @@ ZENDEFNODE(CurveOrientation,
 struct LineCarve : INode {
     void apply() override
     {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto insertU = get_input<NumericObject>("insertU")->get<float>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto insertU = ZImpl(get_input<NumericObject>("insertU"))->get<float>();
 
         float total = 0;
         std::vector<float> linesLen(prim->lines.size());
@@ -426,9 +470,9 @@ struct LineCarve : INode {
             cu[i] = linesLen[i - 1];
         }
 
-        if (get_input<NumericObject>("cut")->get<int>())
+        if (ZImpl(get_input<NumericObject>("cut"))->get<int>())
         {
-            if (get_input<NumericObject>("cut insert to end")->get<int>())
+            if (ZImpl(get_input<NumericObject>("cut insert to end"))->get<int>())
             {
                 if (prim->verts.begin() + int(index) <= prim->verts.end())
                 {
@@ -454,7 +498,7 @@ struct LineCarve : INode {
         }
         prim->lines.update();
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(LineCarve,
@@ -478,16 +522,16 @@ ZENDEFNODE(LineCarve,
 struct VisVec3Attribute : INode {
     void apply() override
     {
-        auto color = get_input<NumericObject>("color")->get<zeno::vec3f>();
-        auto useNormalize = get_input<NumericObject>("normalize")->get<int>();
-        auto lengthScale = get_input<NumericObject>("lengthScale")->get<float>();
-        auto name = get_input2<std::string>("name");
+        auto color = ZImpl(get_input<NumericObject>("color"))->get<zeno::vec3f>();
+        auto useNormalize = ZImpl(get_input<NumericObject>("normalize"))->get<int>();
+        auto lengthScale = ZImpl(get_input<NumericObject>("lengthScale"))->get<float>();
+        auto name = ZImpl(get_input2<std::string>("name"));
 
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         auto& attr = prim->verts.attr<zeno::vec3f>(name);
         auto& pos = prim->verts;
 
-        auto primVis = std::make_shared<PrimitiveObject>();
+        auto primVis = std::make_unique<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
         primVis->lines.resize(prim->size());
         for (auto key : prim->attr_keys()) {
@@ -533,7 +577,7 @@ struct VisVec3Attribute : INode {
             primVis->lines[i / 2][1] = i;
         }
 
-        set_output("primVis", std::move(primVis));
+        ZImpl(set_output("primVis", std::move(primVis)));
     }
 };
 ZENDEFNODE(VisVec3Attribute,
@@ -553,11 +597,11 @@ ZENDEFNODE(VisVec3Attribute,
 struct TracePositionOneStep : INode {
     void apply() override
     {
-        auto primData = get_input<PrimitiveObject>("primData");
+        auto primData = ZImpl(get_input<PrimitiveObject>("primData"));
 
-        auto primVis = get_input<PrimitiveObject>("primStart");
+        auto primVis = ZImpl(get_input<PrimitiveObject>("primStart"));
 
-        auto idName = get_input2<std::string>("lineTag");
+        auto idName = ZImpl(get_input2<std::string>("lineTag"));
         if (!primVis->verts.has_attr(idName))
         {
             primVis->verts.add_attr<int>(idName);
@@ -597,7 +641,7 @@ struct TracePositionOneStep : INode {
             }
         }
 
-        set_output("primVis", std::move(primVis));
+        ZImpl(set_output("primVis", std::move(primVis)));
     }
 };
 ZENDEFNODE(TracePositionOneStep,
@@ -614,10 +658,10 @@ ZENDEFNODE(TracePositionOneStep,
 
 struct PrimCopyAttr : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto sourceName = get_input2<std::string>("sourceName");
-        auto targetName = get_input2<std::string>("targetName");
-        auto scope = get_input2<std::string>("scope");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto sourceName = ZImpl(get_input2<std::string>("sourceName"));
+        auto targetName = ZImpl(get_input2<std::string>("targetName"));
+        auto scope = ZImpl(get_input2<std::string>("scope"));
 
         if (scope == "vert") {
             if (!prim->verts.has_attr(sourceName)) {
@@ -670,7 +714,7 @@ struct PrimCopyAttr : INode {
             });
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(PrimCopyAttr,
@@ -781,13 +825,13 @@ char* getPrimRawData(PrimitiveObject* prim, std::string type, std::string name, 
 
 struct PrimTwoCopyAttr : INode {
   void apply() override {
-    auto prim   = get_input<PrimitiveObject>("primTo");
-    auto primFrom = get_input<PrimitiveObject>("primFrom");
-    auto sourceName = get_input2<std::string>("NameFrom");
-    auto targetName = get_input2<std::string>("NameTo");
-    auto srcscope = get_input2<std::string>("ScopeFrom");
-    auto tarscope = get_input2<std::string>("ScopeTo");
-    auto type = get_input2<std::string>("type");
+    auto prim   = ZImpl(get_input<PrimitiveObject>("primTo"));
+    auto primFrom = ZImpl(get_input<PrimitiveObject>("primFrom"));
+    auto sourceName = ZImpl(get_input2<std::string>("NameFrom"));
+    auto targetName = ZImpl(get_input2<std::string>("NameTo"));
+    auto srcscope = ZImpl(get_input2<std::string>("ScopeFrom"));
+    auto tarscope = ZImpl(get_input2<std::string>("ScopeTo"));
+    auto type = ZImpl(get_input2<std::string>("type"));
 
     char* dataToPtr;
     char* dataFromPtr;
@@ -823,7 +867,7 @@ struct PrimTwoCopyAttr : INode {
 
     memcpy(dataToPtr, dataFromPtr,size);
 
-    set_output("prim", std::move(prim));
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 ZENDEFNODE(PrimTwoCopyAttr,
@@ -846,12 +890,12 @@ ZENDEFNODE(PrimTwoCopyAttr,
 ///////////////////////////////////////////////////////////////////////////////
 struct BVHNearestPos : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto primNei = get_input<PrimitiveObject>("primNei");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto primNei = ZImpl(get_input<PrimitiveObject>("primNei"));
 
-        auto bvh_id = prim->attr<float>(get_input2<std::string>("bvhIdTag"));
-        auto bvh_ws = prim->attr<zeno::vec3f>(get_input2<std::string>("bvhWeightTag"));
-        auto &bvh_pos = prim->add_attr<zeno::vec3f>(get_input2<std::string>("bvhPosTag"));
+        auto bvh_id = prim->attr<float>(ZImpl(get_input2<std::string>("bvhIdTag")));
+        auto bvh_ws = prim->attr<zeno::vec3f>(ZImpl(get_input2<std::string>("bvhWeightTag")));
+        auto &bvh_pos = prim->add_attr<zeno::vec3f>(ZImpl(get_input2<std::string>("bvhPosTag")));
 
 #pragma omp parallel for
         for (int i = 0; i < prim->size(); i++) {
@@ -863,7 +907,7 @@ struct BVHNearestPos : INode {
             bvh_pos[i] = bvh_ws[i][0] * p0 + bvh_ws[i][1] * p1 + bvh_ws[i][2] * p2;
         }
 
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 ZENDEFNODE(BVHNearestPos,
@@ -882,12 +926,12 @@ ZENDEFNODE(BVHNearestPos,
 
 struct BVHNearestAttr : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto primNei = get_input<PrimitiveObject>("primNei");
-        auto bvhIdTag = get_input2<std::string>("bvhIdTag");
-        auto bvhAttributesType = get_input2<std::string>("bvhAttributesType");
-        auto targetType = get_input2<std::string>("targetPrimType");
-        auto attr_tag = get_input2<std::string>("bvhAttrTag");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto primNei = ZImpl(get_input<PrimitiveObject>("primNei"));
+        auto bvhIdTag = ZImpl(get_input2<std::string>("bvhIdTag"));
+        auto bvhAttributesType = ZImpl(get_input2<std::string>("bvhAttributesType"));
+        auto targetType = ZImpl(get_input2<std::string>("targetPrimType"));
+        auto attr_tag = ZImpl(get_input2<std::string>("bvhAttrTag"));
 
         if (!primNei->verts.has_attr(attr_tag))
         {
@@ -905,7 +949,7 @@ struct BVHNearestAttr : INode {
 
 
         if(targetType == "tris"){
-        auto bvhWeightTag = get_input2<std::string>("bvhWeightTag");
+        auto bvhWeightTag = ZImpl(get_input2<std::string>("bvhWeightTag"));
         auto& bvh_ws = prim->verts.attr<zeno::vec3f>(bvhWeightTag);
         auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
         #pragma omp parallel for
@@ -930,7 +974,7 @@ struct BVHNearestAttr : INode {
         }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
 
 
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 ZENDEFNODE(BVHNearestAttr,
@@ -955,14 +999,14 @@ ZENDEFNODE(BVHNearestAttr,
 ///////////////////////////////////////////////////////////////////////////////
 struct HeightStarPattern : zeno::INode {
     void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto rotate = get_input2<float>("rotate");
-        auto anglerandom = get_input2<float>("anglerandom");
-        auto shapesize = get_input2<float>("shapesize");
-        auto posjitter = get_input2<float>("posjitter");
-        auto sharpness = get_input2<float>("sharpness");
-        auto starness = get_input2<float>("starness");
-        auto sides = get_input2<int>("sides");
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        auto rotate = ZImpl(get_input2<float>("rotate"));
+        auto anglerandom = ZImpl(get_input2<float>("anglerandom"));
+        auto shapesize = ZImpl(get_input2<float>("shapesize"));
+        auto posjitter = ZImpl(get_input2<float>("posjitter"));
+        auto sharpness = ZImpl(get_input2<float>("sharpness"));
+        auto starness = ZImpl(get_input2<float>("starness"));
+        auto sides = ZImpl(get_input2<int>("sides"));
         prim->verts.add_attr<float>("result");
 
         std::uniform_real_distribution<float> dist(0, 1);
@@ -1004,7 +1048,7 @@ struct HeightStarPattern : zeno::INode {
             prim->verts.attr<float>("result")[i] = result;
         }
         prim->verts.erase_attr("res");
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(HeightStarPattern,
@@ -1032,12 +1076,12 @@ ZENDEFNODE(HeightStarPattern,
 struct PrimSetAttr : INode {
     void apply() override {
 
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto value = get_input<NumericObject>("value");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-        auto method = get_input<StringObject>("method")->get();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto value = ZImpl(get_input<NumericObject>("value"));
+        auto name = ZImpl(get_input2<std::string>("name"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto index = ZImpl(get_input<NumericObject>("index"))->get<int>();
+        auto method = ZImpl(get_input<StringObject>("method"))->get();
 
         std::visit(
             [&](auto ty) {
@@ -1076,7 +1120,7 @@ struct PrimSetAttr : INode {
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
                 array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(PrimSetAttr,
@@ -1097,13 +1141,13 @@ ZENDEFNODE(PrimSetAttr,
 // Get Attr
 struct PrimGetAttr : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-        auto method = get_input<StringObject>("method")->get();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto name = ZImpl(get_input2<std::string>("name"));
+        auto type = ZImpl(get_input2<std::string>("type"));
+        auto index = ZImpl(get_input<NumericObject>("index"))->get<int>();
+        auto method = ZImpl(get_input<StringObject>("method"))->get();
 
-        auto value = std::make_shared<NumericObject>();
+        auto value = std::make_unique<NumericObject>();
 
         std::visit(
             [&](auto ty) {
@@ -1141,7 +1185,7 @@ struct PrimGetAttr : INode {
             enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
                 array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
-        set_output("value", std::move(value));
+        ZImpl(set_output("value", std::move(value)));
     }
 };
 ZENDEFNODE(PrimGetAttr,
@@ -1152,7 +1196,7 @@ ZENDEFNODE(PrimGetAttr,
                    {"enum vert tri line loop poly", "method", "tri"},
                    {gParamType_Int, "index", "0"},
                }, /* outputs: */ {
-                   {gParamType_Float,"value","", Socket_WildCard},
+                   {gParamType_Float,"value",""},
                }, /* params: */ {
                }, /* category: */ {
                    "erode",
@@ -1161,10 +1205,10 @@ ZENDEFNODE(PrimGetAttr,
 // 删除多个属性
 struct PrimitiveDelAttrs : zeno::INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto invert = get_input2<bool>("invert");
-        auto nameString = get_input2<std::string>("names");
-        auto scope = get_input2<std::string>("scope");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto invert = ZImpl(get_input2<bool>("invert"));
+        auto nameString = ZImpl(get_input2<std::string>("names"));
+        auto scope = ZImpl(get_input2<std::string>("scope"));
         bool flag_verts = false;
         bool flag_tris = false;
         bool flag_lines = false;
@@ -1225,7 +1269,7 @@ struct PrimitiveDelAttrs : zeno::INode {
             }
         }
 
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 ZENDEFNODE(PrimitiveDelAttrs,
@@ -1249,17 +1293,17 @@ ZENDEFNODE(PrimitiveDelAttrs,
 struct QuatRotBetweenVectors : INode {
     void apply() override
     {
-        auto start = normalize(get_input<NumericObject>("start")->get<zeno::vec3f>());
-        auto dest = normalize(get_input<NumericObject>("dest")->get<zeno::vec3f>());
+        auto start = normalize(ZImpl(get_input<NumericObject>("start"))->get<zeno::vec3f>());
+        auto dest = normalize(ZImpl(get_input<NumericObject>("dest"))->get<zeno::vec3f>());
 
         glm::vec3 gl_start(start[0], start[1], start[2]);
         glm::vec3 gl_dest(dest[0], dest[1], dest[2]);
         glm::quat gl_quat = glm::rotation(gl_start, gl_dest);
 
         vec4f rot(gl_quat.x, gl_quat.y, gl_quat.z, gl_quat.w);
-        auto rotation = std::make_shared<NumericObject>();
+        auto rotation = std::make_unique<NumericObject>();
         rotation->set<vec4f>(rot);
-        set_output("quat", rotation);
+        ZImpl(set_output("quat", std::move(rotation)));
     }
 };
 ZENDEFNODE(QuatRotBetweenVectors,
@@ -1276,17 +1320,17 @@ ZENDEFNODE(QuatRotBetweenVectors,
 // 矢量 * 四元数 => 矢量
 struct QuatRotate : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
-        auto vec3 = get_input<NumericObject>("vec3")->get<zeno::vec3f>();
+        auto quat = ZImpl(get_input<NumericObject>("quat"))->get<zeno::vec4f>();
+        auto vec3 = ZImpl(get_input<NumericObject>("vec3"))->get<zeno::vec3f>();
 
         glm::vec3 gl_vec3(vec3[0], vec3[1], vec3[2]);
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
         glm::vec3 gl_vec3_out = glm::rotate(gl_quat, gl_vec3);
 
         vec3f vec3_o(gl_vec3_out.x, gl_vec3_out.y, gl_vec3_out.z);
-        auto vec3_out = std::make_shared<NumericObject>();
+        auto vec3_out = std::make_unique<NumericObject>();
         vec3_out->set<vec3f>(vec3_o);
-        set_output("vec3", vec3_out);
+        ZImpl(set_output("vec3", std::move(vec3_out)));
     }
 };
 ZENDEFNODE(QuatRotate,
@@ -1304,18 +1348,18 @@ ZENDEFNODE(QuatRotate,
 struct QuatAngleAxis : INode {
     void apply() override
     {
-        auto angle = get_input<NumericObject>("angle(D)")->get<float>();
-        auto axis = normalize(get_input<NumericObject>("axis")->get<zeno::vec3f>());
+        auto angle = ZImpl(get_input<NumericObject>("angle(D)"))->get<float>();
+        auto axis = normalize(ZImpl(get_input<NumericObject>("axis"))->get<zeno::vec3f>());
 
         float gl_angle = glm::radians(angle);
         glm::vec3 gl_axis(axis[0], axis[1], axis[2]);
         glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
 
         vec4f rot(gl_quat.x, gl_quat.y, gl_quat.z, gl_quat.w);
-        auto rotation = std::make_shared<NumericObject>();
+        auto rotation = std::make_unique<NumericObject>();
         rotation->set<vec4f>(rot);
 
-        set_output("quat", rotation);
+        ZImpl(set_output("quat", std::move(rotation)));
     }
 };
 ZENDEFNODE(QuatAngleAxis,
@@ -1332,15 +1376,15 @@ ZENDEFNODE(QuatAngleAxis,
 // 四元数 -> 旋转角度
 struct QuatGetAngle : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
+        auto quat = ZImpl(get_input<NumericObject>("quat"))->get<zeno::vec4f>();
 
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
         float gl_angle = glm::degrees(glm::angle(gl_quat));
 
-        auto angle = std::make_shared<NumericObject>();
+        auto angle = std::make_unique<NumericObject>();
         angle->set<float>(gl_angle);
 
-        set_output("angle(D)", angle);
+        ZImpl(set_output("angle(D)", std::move(angle)));
     }
 };
 ZENDEFNODE(QuatGetAngle,
@@ -1356,15 +1400,15 @@ ZENDEFNODE(QuatGetAngle,
 // 四元数 -> 旋转轴
 struct QuatGetAxis : INode {
     void apply() override {
-        auto quat = get_input<NumericObject>("quat")->get<zeno::vec4f>();
+        auto quat = ZImpl(get_input<NumericObject>("quat"))->get<zeno::vec4f>();
 
         glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
         glm::vec3 gl_axis = glm::axis(gl_quat);
 
         vec3f axis_o(gl_axis.x, gl_axis.y, gl_axis.z);
-        auto axis = std::make_shared<NumericObject>();
+        auto axis = std::make_unique<NumericObject>();
         axis->set<vec3f>(axis_o);
-        set_output("axis", axis);
+        ZImpl(set_output("axis", std::move(axis)));
     }
 };
 ZENDEFNODE(QuatGetAxis,
@@ -1381,11 +1425,11 @@ ZENDEFNODE(QuatGetAxis,
 struct MatTranspose : INode {
     void apply() override
     {
-        glm::mat mat = std::get<glm::mat4>(get_input<MatrixObject>("mat")->m);
+        glm::mat mat = std::get<glm::mat4>(ZImpl(get_input<MatrixObject>("mat"))->m);
         glm::mat transposeMat = glm::transpose(mat);
-        auto oMat = std::make_shared<MatrixObject>();
+        auto oMat = std::make_unique<MatrixObject>();
         oMat->m = transposeMat;
-        set_output("transposeMat", oMat);
+        ZImpl(set_output("transposeMat", std::move(oMat)));
     }
 };
 ZENDEFNODE(MatTranspose,
@@ -1406,8 +1450,8 @@ ZENDEFNODE(MatTranspose,
 struct PrimCurveDir : INode {
     void apply() override
     {
-        auto prim = get_input<PrimitiveObject>("prim_curve");
-        auto dirName = get_input2<std::string>("dirName");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim_curve"));
+        auto dirName = ZImpl(get_input2<std::string>("dirName"));
         auto &directions = prim->add_attr<zeno::vec3f>(dirName);
         size_t n = prim->size();
 #pragma omp parallel for
@@ -1420,7 +1464,7 @@ struct PrimCurveDir : INode {
         }
         directions[0] = normalize(prim->verts[1] - prim->verts[0]);
         directions[n - 1] = normalize(prim->verts[n - 1] - prim->verts[n - 2]);
-        set_output("prim_curve", std::move(prim));
+        ZImpl(set_output("prim_curve", std::move(prim)));
     }
 };
 ZENDEFNODE(PrimCurveDir,
@@ -1471,20 +1515,20 @@ static void smooth(const std::vector<int> &neighborIdxs,
 // 平滑属性，非常有用的功能
 struct PrimAttribBlur : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto prim_type = get_input2<std::string>("primType");
-        auto attr_name = get_input2<std::string>("attributes");
-        auto attr_type = get_input2<std::string>("attributesType");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto prim_type = ZImpl(get_input2<std::string>("primType"));
+        auto attr_name = ZImpl(get_input2<std::string>("attributes"));
+        auto attr_type = ZImpl(get_input2<std::string>("attributesType"));
 
-        auto useEdgeLength = get_input<NumericObject>("useEdgeLengthWeight")->get<bool>();
+        auto useEdgeLength = ZImpl(get_input<NumericObject>("useEdgeLengthWeight"))->get<bool>();
 
-        auto iterations = get_input<NumericObject>("blurringIterations")->get<int>();
+        auto iterations = ZImpl(get_input<NumericObject>("blurringIterations"))->get<int>();
 
-        auto mode = get_input2<std::string>("mode");
-        auto mu = get_input<NumericObject>("stepSize")->get<float>();
+        auto mode = ZImpl(get_input2<std::string>("mode"));
+        auto mu = ZImpl(get_input<NumericObject>("stepSize"))->get<float>();
         auto lambda = mu;
         if (mode == "VolumePreserving") {
-            auto passband = get_input<NumericObject>("cutoffFrequency")->get<float>();
+            auto passband = ZImpl(get_input<NumericObject>("cutoffFrequency"))->get<float>();
             if (passband < 1e-5) {
                 float sqrt2_5 = 0.6324555320336758664;
                 lambda = sqrt2_5;
@@ -1514,11 +1558,11 @@ struct PrimAttribBlur : INode {
                 mu = lambda / (passband * lambda - 1.0);
             }
         } else if (mode == "custom") {
-            lambda = get_input<NumericObject>("oddStepSize")->get<float>();
-            mu = get_input<NumericObject>("evenStepSize")->get<float>();
+            lambda = ZImpl(get_input<NumericObject>("oddStepSize"))->get<float>();
+            mu = ZImpl(get_input<NumericObject>("evenStepSize"))->get<float>();
         }
 
-        auto weightName = get_input2<std::string>("weightAttributes");
+        auto weightName = ZImpl(get_input2<std::string>("weightAttributes"));
         if (!prim->verts.has_attr(weightName)) {
             auto &_weight = prim->verts.add_attr<float>(weightName);
             std::fill(_weight.begin(), _weight.end(), 1.0);
@@ -1806,7 +1850,7 @@ struct PrimAttribBlur : INode {
         prim->verts.erase_attr("_edgeweight_6");
         prim->verts.erase_attr("_edgeweight_7");
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(PrimAttribBlur,
@@ -1835,14 +1879,14 @@ ZENDEFNODE(PrimAttribBlur,
 struct PrimCurveFromVerts : INode {
     virtual void apply() override
     {
-        auto prim = get_input<PrimitiveObject>("primVerts");
+        auto prim = ZImpl(get_input<PrimitiveObject>("primVerts"));
         size_t lines_count = prim->size() - 1;
         prim->lines.resize(lines_count);
         for (int i = 0; i < lines_count; i++) {
             prim->lines[i] = zeno::vec2i(i, i + 1);
         }
 
-        set_output("primCurve", get_input("primVerts"));
+        ZImpl(set_output("primCurve", ZImpl(clone_input("primVerts"))));
     }
 };
 ZENDEFNODE(PrimCurveFromVerts,
@@ -1901,9 +1945,9 @@ static void _CreateBezierCurve(const std::vector<zeno::vec3f> src, std::vector<z
 // 用指定的 verts 生成二阶贝塞尔曲线点
 struct CreatePrimCurve : INode {
     virtual void apply() override {
-        auto inPrim = get_input<zeno::PrimitiveObject>("inputPoints").get();
-        auto outprim = std::make_shared<zeno::PrimitiveObject>();
-        auto precision = get_input<zeno::NumericObject>("precision")->get<float>();
+        auto inPrim = ZImpl(get_input<zeno::PrimitiveObject>("inputPoints")).get();
+        auto outprim = std::make_unique<zeno::PrimitiveObject>();
+        auto precision = ZImpl(get_input<zeno::NumericObject>("precision"))->get<float>();
 
         auto tmpPos = inPrim->attr<zeno::vec3f>("pos");
         int subCurveCount = inPrim->verts.size() - 2;
@@ -1950,7 +1994,7 @@ struct CreatePrimCurve : INode {
             outprim->lines[i] = zeno::vec2i(i, i + 1);
         }
 
-        set_output("prim", std::move(outprim));
+        ZImpl(set_output("prim", std::move(outprim)));
     }
 };
 ZENDEFNODE(CreatePrimCurve,
@@ -1970,9 +2014,9 @@ ZENDEFNODE(CreatePrimCurve,
 
 struct PrimHasAttr : INode {
     void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto attrName = get_input2<std::string>("attrName");
-        auto scope = get_input2<std::string>("scope");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto attrName = ZImpl(get_input2<std::string>("attrName"));
+        auto scope = ZImpl(get_input2<std::string>("scope"));
 
         bool x = false;
         if (scope == "vert") {
@@ -1991,9 +2035,9 @@ struct PrimHasAttr : INode {
             x = prim->lines.has_attr(attrName);
         }
 
-        auto hasAttr = std::make_shared<NumericObject>();
+        auto hasAttr = std::make_unique<NumericObject>();
         hasAttr->set<bool>(x);
-        set_output("hasAttr", hasAttr);
+        ZImpl(set_output("hasAttr", std::move(hasAttr)));
     }
 };
 ZENDEFNODE(PrimHasAttr,

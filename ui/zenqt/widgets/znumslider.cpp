@@ -96,7 +96,7 @@ void ZNumSlider::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-bool ZNumSlider::activateLabel(QPoint& pos, bool pressed)
+bool ZNumSlider::activateLabel(const QPoint& pos, bool pressed)
 {
     for (ZTextLabel* label : m_labels)
     {

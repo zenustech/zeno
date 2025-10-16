@@ -73,14 +73,14 @@ static openvdb::points::PointDataGrid::Ptr particleArrayToGrid
 
 struct PrimToVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
-    //auto dx = get_param<float>(("dx"));
+    //auto dx = get_param_float("dx");
     //if(has_input("Dx"))
     //{
-      //dx = get_input("Dx")->as<NumericObject>()->get<float>();
+      //dx = get_input2_float("Dx");
     //}
-    //auto dx = get_input2<float>("Dx");
-    auto dx = get_input("Dx")->as<NumericObject>()->get<float>();
-    auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
+    //auto dx = get_input2_float("Dx");
+    auto dx = get_input2_float("Dx");
+    auto prims = safe_dynamic_cast<PrimitiveObject>(get_input("ParticleGeo"));
     //auto particles = std::make_unique<ParticlesObject>();
     //particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
     //particles->vel.resize(prims->attr<zeno::vec3f>("pos").size());
@@ -98,16 +98,16 @@ struct PrimToVDBPointDataGrid : zeno::INode {
     
     if(has_input("vdbPoints"))
     {
-        auto input = get_input("vdbPoints"); 
-        auto data = input->as<VDBPointsGrid>();
+        auto input = clone_input("vdbPoints"); 
+        auto data = safe_dynamic_cast<VDBPointsGrid>(input.get());
         dx = data->m_grid->transformPtr()->voxelSize()[0];
         data->m_grid = particleArrayToGrid(positions, velocitys, dx);
         set_output("Particles", std::move(input));
     }
     else{
-        auto data = zeno::IObject::make<VDBPointsGrid>();
+        auto data = std::make_unique<VDBPointsGrid>();
         data->m_grid = particleArrayToGrid(positions, velocitys, dx);
-        set_output("Particles", data);
+        set_output("Particles", std::move(data));
     }
   }
 };
@@ -126,12 +126,12 @@ static int defPrimToVDBPointDataGrid = zeno::defNodeClass<PrimToVDBPointDataGrid
 
 struct SetVDBPointDataGrid : zeno::INode {
   virtual void apply() override {
-    auto dx = get_param<float>(("dx"));
+    auto dx = get_param_float("dx");
     if(has_input("Dx"))
     {
-      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+      dx = get_input2_float("Dx");
     }
-    auto particles = get_input("ParticleGeo")->as<ParticlesObject>();
+    auto particles = safe_dynamic_cast<ParticlesObject>(get_input("ParticleGeo"));
     std::vector<openvdb::Vec3f> positions(particles->size());
     std::vector<openvdb::Vec3f> velocitys(particles->size());
     for (auto i = 0; i < particles->size(); ++i){
@@ -141,9 +141,9 @@ struct SetVDBPointDataGrid : zeno::INode {
           
           }
     }
-    auto data = zeno::IObject::make<VDBPointsGrid>();
+    auto data = std::make_unique<VDBPointsGrid>();
     data->m_grid = particleArrayToGrid(positions, velocitys, dx);
-    set_output("Particles", data);
+    set_output("Particles", std::move(data));
   }
 };
 

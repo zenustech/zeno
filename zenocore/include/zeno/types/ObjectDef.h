@@ -13,3 +13,4 @@
 #include <zeno/types/HeatmapObject.h>
 #include <zeno/types/MeshObject.h>
 #include <zeno/types/ParticlesObject.h>
+#include <zeno/types/GeometryObject.h>

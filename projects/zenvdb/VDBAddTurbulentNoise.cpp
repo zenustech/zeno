@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/utils/interfaceutil.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/types/NumericObject.h>
 #include <openvdb/openvdb.h>
@@ -109,14 +110,14 @@ static float perlin(float x, float y, float z) {
 
 struct VDBAddPerlinNoise : INode {
   virtual void apply() override {
-    auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
-    auto strength = get_input<NumericObject>("strength")->get<float>();
-    auto scale = get_input<NumericObject>("scale")->get<float>();
+    auto inoutSDF = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("inoutSDF"));
+    auto strength = get_input2_float("strength");
+    auto scale = get_input2_float("scale");
     auto scaling = has_input("scaling") ?
-        get_input<NumericObject>("scaling")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("scaling"))
         : zeno::vec3f(1);
     auto translation = has_input("translation") ?
-        get_input<NumericObject>("translation")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("translation"))
         : zeno::vec3f(0);
     auto inv_scale = 1.f / (scale * scaling);
 
@@ -137,7 +138,7 @@ struct VDBAddPerlinNoise : INode {
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
 
-    set_output("inoutSDF", get_input("inoutSDF"));
+    set_output("inoutSDF", std::move(inoutSDF));
   }
 };
 
@@ -246,14 +247,14 @@ float operator()(float x, float y, float z) {  // https://www.shadertoy.com/view
 
 struct VDBAddTurbulentNoise : INode {
   virtual void apply() override {
-    auto inoutSDF = get_input<VDBFloatGrid>("inoutSDF");
-    auto strength = get_input<NumericObject>("strength")->get<float>();
-    auto scale = get_input<NumericObject>("scale")->get<float>();
+    auto inoutSDF = safe_uniqueptr_cast<VDBFloatGrid>(clone_input("inoutSDF"));
+    auto strength = get_input2_float("strength");
+    auto scale = get_input2_float("scale");
     auto scaling = has_input("scaling") ?
-        get_input<NumericObject>("scaling")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("scaling"))
         : zeno::vec3f(1);
     auto translation = has_input("translation") ?
-        get_input<NumericObject>("translation")->get<zeno::vec3f>()
+        toVec3f(get_input2_vec3f("translation"))
         : zeno::vec3f(0);
     auto inv_scale = 1.f / (scale * scaling);
 
@@ -276,7 +277,7 @@ struct VDBAddTurbulentNoise : INode {
     auto velman = openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>>(grid->tree());
     velman.foreach(wrangler);
 
-    set_output("inoutSDF", get_input("inoutSDF"));
+    set_output("inoutSDF", std::move(inoutSDF));
   }
 };
 

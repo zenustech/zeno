@@ -2,10 +2,11 @@
 #include "util/uihelper.h"
 #include "uicommon.h"
 #include "model/graphsmanager.h"
-#include "model/graphstreemodel.h"
+#include "model/GraphsTreeModel.h"
 #include "zassert.h"
-#include <zeno/core/ObjectManager.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/typeinfo.h>
+#include "declmetatype.h"
 
 
 namespace zeno {
@@ -20,7 +21,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     }
 
     auto subgraph = node_location.subgraph;
-    auto pos = nodeIdx.data(ROLE_OBJPOS).toPointF();
+    auto pos = nodeIdx.data(QtRole::ROLE_OBJPOS).toPointF();
     pos.setX(pos.x() + 100);
 
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
@@ -29,7 +30,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
 
     auto new_node_id = UiHelper::createNewNode(subgraph, QString::fromStdString(new_node_type), pos);
 
-    auto this_node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
+    auto this_node_id = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
 
     const QString& subgName = subgraph->name();
     const QString& outNode = this_node_id;
@@ -58,6 +59,7 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
         return {};
     }
 
+#if 0
     const auto& objsMan = zeno::getSession().objsMan;
     std::set<ObjPath> nodeNameSet = objsMan->getAttachNodes(prim_name);
     if (nodeNameSet.empty())
@@ -65,12 +67,13 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 
     for (auto nodepath : nodeNameSet)
     {
-        auto spNode = zeno::getSession().mainGraph->getNodeByUuidPath(nodepath);
+        auto spNode = zeno::getSession().getNodeByUuidPath(nodepath);
         if (spNode && spNode->is_view()) {
             auto search_result = graph_model->searchByUuidPath(*nodeNameSet.begin());
             return NodeLocation(search_result[0].targetIdx, search_result[0].subGraph);
         }
     }
+#endif
     return {};
 }
 
@@ -88,13 +91,13 @@ std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) 
 
 bool NodeSyncMgr::checkNodeType(const QModelIndex& node,
                                 const std::string& node_type) {
-    auto node_id = node.data(ROLE_NODE_NAME).toString();
+    auto node_id = node.data(QtRole::ROLE_NODE_NAME).toString();
     return node_id.contains(node_type.c_str());
 }
 
 bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node, const std::string& input_name)
 {
-    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    auto inputs = node.data(QtRole::ROLE_INPUTS).value<PARAMS_INFO>();
     QString inSock = QString::fromLocal8Bit(input_name.c_str());
     if (inputs.find(inSock) == inputs.end())
         return false;
@@ -110,8 +113,8 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(NodeLocatio
         return {};
     }
 
-    auto this_outputs = node_location.node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
-    auto this_node_id = node_location.node.data(ROLE_NODE_NAME).toString(); // BindMaterial1
+    auto this_outputs = node_location.node.data(QtRole::ROLE_OUTPUTS).value<PARAMS_INFO>();
+    auto this_node_id = node_location.node.data(QtRole::ROLE_NODE_NAME).toString(); // BindMaterial1
     auto prim_sock_name = getPrimSockName(node_location);
 
     QString sockName = QString::fromLocal8Bit(prim_sock_name.c_str());
@@ -126,7 +129,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(NodeLocatio
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
             auto linked_subgraph = search_result[0].subGraph;
-            auto option = linked_node.data(ROLE_NODE_STATUS).toInt();
+            auto option = linked_node.data(QtRole::ROLE_NODE_STATUS).toInt();
             if (option & zeno::View)
                 return NodeLocation(linked_node,
                     linked_subgraph);
@@ -138,7 +141,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(NodeLocatio
 std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
                                                      const std::string& input_name) {
     std::vector<NodeLocation> res;
-    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    auto inputs = node.data(QtRole::ROLE_INPUTS).value<PARAMS_INFO>();
 
     QString sockName = QString::fromLocal8Bit(input_name.c_str());
     if (inputs.find(sockName) == inputs.end())
@@ -156,7 +159,7 @@ std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
 std::string NodeSyncMgr::getInputValString(const QModelIndex& node,
                                            const std::string& input_name)
 {
-    auto inputs = node.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    auto inputs = node.data(QtRole::ROLE_INPUTS).value<PARAMS_INFO>();
     const QString& paramName = QString::fromStdString(input_name);
     std::string ret;
     if (inputs.find(paramName) != inputs.end()) {
@@ -181,13 +184,13 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
     if (!nodeIdx.isValid())
         return;
 
-    auto node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
-    int old_option = nodeIdx.data(ROLE_NODE_STATUS).toInt();
+    auto node_id = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
+    int old_option = nodeIdx.data(QtRole::ROLE_NODE_STATUS).toInt();
     int new_option = old_option;
     new_option ^= zeno::View;
 
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-    pModel->setData(nodeIdx, new_option, ROLE_NODE_STATUS);
+    pModel->setData(nodeIdx, new_option, QtRole::ROLE_NODE_STATUS);
 }
 
 void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
@@ -202,15 +205,15 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
     if (!nodeIdx.isValid())
         return;
 
-    auto node_id = nodeIdx.data(ROLE_NODE_NAME).toString();
-    auto inputs = nodeIdx.data(ROLE_INPUTS).value<PARAMS_INFO>();
+    auto node_id = nodeIdx.data(QtRole::ROLE_NODE_NAME).toString();
+    auto inputs = nodeIdx.data(QtRole::ROLE_INPUTS).value<PARAMS_INFO>();
     const QString& paramName = QString::fromStdString(input_name);
     if (inputs.find(paramName) != inputs.end()) {
         auto& param = inputs[paramName];
         param.defl = new_value;
     }
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-    pModel->setData(nodeIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
+    pModel->setData(nodeIdx, QVariant::fromValue(inputs), QtRole::ROLE_INPUTS);
 }
 
 void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
@@ -220,11 +223,11 @@ void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
 }
 
 std::string NodeSyncMgr::getPrimSockName(const NodeLocation& node_location) {
-    auto& nodename = node_location.node.data(ROLE_NODE_NAME).toString().toStdString();
+    const auto& nodename = node_location.node.data(QtRole::ROLE_NODE_NAME).toString().toStdString();
     if (m_prim_sock_map.find(nodename) != m_prim_sock_map.end())
         return m_prim_sock_map[nodename];
     else {
-        PARAMS_INFO outputs = node_location.node.data(ROLE_OUTPUTS).value<PARAMS_INFO>();
+        PARAMS_INFO outputs = node_location.node.data(QtRole::ROLE_OUTPUTS).value<PARAMS_INFO>();
         outputs.remove("DST");
         if (!outputs.empty())
             return outputs.firstKey().toStdString();

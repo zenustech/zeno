@@ -53,6 +53,11 @@ struct LightData {
 };
 
 struct LightObject : IObjectClone<LightObject>, LightData {
+
+    void Delete() override {
+        //delete this;
+    }
+
     LightData const &get() const {
         return static_cast<LightData const &>(*this);
     }

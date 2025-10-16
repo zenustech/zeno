@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/utils/log.h>
 #include <glm/glm.hpp>
@@ -34,9 +35,9 @@ namespace {
 
 struct PrimDecodeUVs : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         primDecodeUVs(prim.get());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -53,9 +54,9 @@ ZENO_DEFNODE(PrimDecodeUVs)({
 
 struct PrimLoopUVsToVerts : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         primLoopUVsToVerts(prim.get());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -72,7 +73,7 @@ ZENO_DEFNODE(PrimLoopUVsToVerts)({
 
 struct PrimUVVertsToLoopsuv : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         auto &vuv = prim->verts.attr<zeno::vec3f>("uv");
         if (prim->loops.size()) {
             auto &uvs = prim->loops.add_attr<int>("uvs");
@@ -95,7 +96,7 @@ struct PrimUVVertsToLoopsuv : INode {
                 uv2[i] = vuv[prim->tris[i][2]];
             }
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -112,8 +113,8 @@ ZENO_DEFNODE(PrimUVVertsToLoopsuv)({
 
 struct PrimUVEdgeDuplicate : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto writeUVToVertex = get_input2<bool>("writeUVToVertex");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto writeUVToVertex = ZImpl(get_input2<bool>("writeUVToVertex"));
         bool isTris = prim->tris.size() > 0;
         if (isTris) {
             primPolygonate(prim.get(), true);
@@ -162,7 +163,7 @@ struct PrimUVEdgeDuplicate : INode {
             primTriangulate(prim.get(), true, false);
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -180,7 +181,7 @@ ZENO_DEFNODE(PrimUVEdgeDuplicate)({
 
 struct PrimSplitVertexForSharedNormal : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         if (prim->loops.attr_is<vec3f>("nrm")) {
             std::vector<int> indexs;
             indexs.reserve(prim->loops.size());
@@ -235,7 +236,7 @@ struct PrimSplitVertexForSharedNormal : INode {
                 prim->loops[i] = new_indexs[i];
             }
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

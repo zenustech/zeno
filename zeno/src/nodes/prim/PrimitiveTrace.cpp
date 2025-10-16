@@ -10,10 +10,10 @@ namespace zeno {
 
 
 struct PrimitiveTraceTrail : zeno::INode {
-    std::shared_ptr<PrimitiveObject> trailPrim = std::make_shared<PrimitiveObject>();
+    std::unique_ptr<PrimitiveObject> trailPrim = std::make_unique<PrimitiveObject>();
 
     virtual void apply() override {
-        auto parsPrim = get_input<PrimitiveObject>("parsPrim");
+        auto parsPrim = ZImpl(get_input<PrimitiveObject>("parsPrim"));
 
         int base = trailPrim->size();
         int last_base = base - parsPrim->size();
@@ -34,7 +34,7 @@ struct PrimitiveTraceTrail : zeno::INode {
             }
         }
 
-        set_output("trailPrim", trailPrim);
+        ZImpl(set_output("trailPrim", std::move(trailPrim)));
     }
 };
 
@@ -54,8 +54,8 @@ struct PrimitiveCalcVelocity : zeno::INode {
     bool no_last_pos = true;
 
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto dt = has_input("dt") ? get_input<NumericObject>("dt")->get<float>() : 0.04f;
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto dt = ZImpl(has_input("dt")) ? ZImpl(get_input<NumericObject>("dt"))->get<float>() : 0.04f;
         auto const &pos = prim->attr<zeno::vec3f>("pos");
         if (no_last_pos) {
             last_pos = pos;
@@ -69,7 +69,7 @@ struct PrimitiveCalcVelocity : zeno::INode {
         }
         last_pos = pos;
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -90,8 +90,8 @@ struct PrimitiveInterpSubframe : zeno::INode {
     std::vector<vec3f> curr_pos;
 
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto portion = get_input<NumericObject>("portion")->get<float>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto portion = ZImpl(get_input<NumericObject>("portion"))->get<float>();
 
         if (portion == 0) {
             base_pos = std::move(curr_pos);
@@ -106,7 +106,7 @@ struct PrimitiveInterpSubframe : zeno::INode {
             pos[i] = mix(base_pos[i], curr_pos[i], portion);
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

@@ -8,11 +8,11 @@
 #include <cmath>
 #include <memory>
 #include <zeno/core/common.h>
-#include <zeno/core/INode.h>
 #include <glm/glm.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/geo/kdsearch.h>
 
 
 namespace zeno {
@@ -23,6 +23,7 @@ enum nodeType {
     BOOLTYPE,
     FUNC,               //函数
     FOUROPERATIONS,     //四则运算+ - * / %
+    UNARY_EXP,           //一元运算符
     NEGATIVE,           //取负号
     STRING,             //字符串
     ZENVAR,
@@ -58,6 +59,7 @@ enum operatorVals {
     MOD,
     OR,
     AND,
+    NOT,    //非，即!
     NEG,    //取负
 
     //函数 nodeType对应FUNC
@@ -93,8 +95,11 @@ enum operatorVals {
     TYPE_STRING,
     TYPE_STRING_ARR,
     TYPE_VECTOR2,
+    TYPE_VECTOR2_ARR,
     TYPE_VECTOR3,
+    TYPE_VECTOR3_ARR,
     TYPE_VECTOR4,
+    TYPE_VECTOR4_ARR,
     TYPE_MATRIX2,
     TYPE_MATRIX3,
     TYPE_MATRIX4,
@@ -111,7 +116,9 @@ enum operatorVals {
 using zfxintarr = std::vector<int>;
 using zfxfloatarr = std::vector<float>;
 using zfxstringarr = std::vector<std::string>;
-
+using zfxvec2arr = std::vector<glm::vec2>;
+using zfxvec3arr = std::vector<glm::vec3>;
+using zfxvec4arr = std::vector<glm::vec4>;
 
 enum LValueType {
     LVal_NodeParam,
@@ -127,8 +134,73 @@ struct ZfxLValue {
 
 using zfxvariant = std::variant<int, float, std::string, ZfxLValue,
     zfxintarr, zfxfloatarr, zfxstringarr,
+    zfxvec2arr, zfxvec3arr, zfxvec4arr,
     glm::vec2, glm::vec3, glm::vec4, 
     glm::mat2, glm::mat3, glm::mat4>;
+
+using ZfxVector = std::variant<
+    std::vector<int>,
+    std::vector<float>,
+    std::vector<std::string>,
+    std::vector<ZfxLValue>,
+    std::vector<zfxintarr>,
+    std::vector<zfxfloatarr>,
+    std::vector<zfxstringarr>,
+    std::vector<zfxvec2arr>,
+    std::vector<zfxvec3arr>,
+    std::vector<zfxvec4arr>,
+    std::vector<glm::vec2>,
+    std::vector<glm::vec3>,
+    std::vector<glm::vec4>,
+    std::vector<glm::mat2>,
+    std::vector<glm::mat3>,
+    std::vector<glm::mat4>
+>;
+
+
+
+struct ZfxVariable
+{
+    ZfxVector value;  //如果是属性变量(bAttr=true)，那这个容器的大小就是runover（点线面）的元素个数，否则就是size=1，也可以单值表示所有属性的等值。
+
+    bool bAttr = false;     //是否与属性关联（好像没什么用）
+    bool bAttrUpdated = false;      //ZfxVariable也记录属性值（比如@P, @N @ptnum等），此标记记录在zfx执行中，属性值是否修改了
+    bool bArray = false;    //int[] float[] vectorN[]这种都array，而vec3这些不算
+
+    ZfxVariable() {}
+    ZfxVariable(ZfxVector&& var) {
+        value = var;
+    }
+    ZfxVariable(const ZfxVector& var) {
+        value = var;
+    }
+
+    size_t size() const {
+        return std::visit([&](const auto& vec)->size_t {
+            return vec.size();
+        }, value);
+    }
+};
+
+using VariableTable = std::map<std::string, ZfxVariable>;
+using ZfxVarRef = VariableTable::const_iterator;
+using ZfxElemFilter = std::vector<char>;
+
+using ZfxVecVar = std::variant<
+    std::vector<int>,
+    std::vector<float>,
+    std::vector<std::string>,
+    std::vector<ZfxLValue>,
+    std::vector<glm::vec2>,
+    std::vector<glm::vec3>,
+    std::vector<glm::vec4>,
+    std::vector<glm::mat2>,
+    std::vector<glm::mat3>,
+    std::vector<glm::mat4>,
+    std::vector<zfxintarr>,
+    std::vector<zfxfloatarr>,
+    std::vector<zfxstringarr>>;
+
 
 enum TokenMatchCase {
     Match_Nothing,
@@ -173,12 +245,27 @@ struct ZfxParamConstrain
     bool update_nodeparam_prop = false;      //参数属性是否更新了，比如可见性可用性
 };
 
+class KdTree;
+
+struct PointCloud
+{
+    std::shared_ptr<zeno::KdTree> pTree;
+    std::vector<vec3f> testPoints;
+    float radius = 0.f;
+    int maxpoints = 0;
+};
+
+class NodeImpl;
+
 struct ZfxContext
 {
-    /* in */ std::shared_ptr<IObject> spObject;
-    /* in */ std::weak_ptr<INode> spNode;
+    /* in */ zany spObject;
+    /* in */ NodeImpl* spNode;
     /* in */ std::string code;
-    /* in */ ZfxRunOver runover = RunOver_Points;
+    /* in */ GeoAttrGroup runover = ATTR_POINT;
+    /* in */ bool bSingleFmla = false;      //只是计算一个表达式
+    /**/     std::vector<PointCloud> pchandles;
+    /**/     VariableTable* zfxVariableTbl = nullptr;
     /* inout */ ZfxParamConstrain param_constrain;
     /* out */ std::string printContent;
     /* out */ operatorVals jumpFlag;

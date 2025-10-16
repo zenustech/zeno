@@ -7,7 +7,6 @@
 #include "model/graphsmanager.h"
 
 #include <zenovis/Scene.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/funcs/ObjectGeometryInfo.h>
 

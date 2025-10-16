@@ -392,7 +392,7 @@ void SVColorView::paintEvent(QPaintEvent* event)
 
 
 /////////////////////////////////////////////////////////////////////
-ZenoHeatMapEditor::ZenoHeatMapEditor(const QString& heatmap, QWidget* parent)
+ZenoHeatMapEditor::ZenoHeatMapEditor(const zeno::HeatmapData& heatmap, QWidget* parent)
 	: QDialog(parent)
 {
 	setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
@@ -407,12 +407,10 @@ ZenoHeatMapEditor::~ZenoHeatMapEditor()
 {
 }
 
-void ZenoHeatMapEditor::init(const QString& heatmap)
+void ZenoHeatMapEditor::init(const zeno::HeatmapData& heatmap)
 {
     int nres = 1024;
-    QString colorStr;
-    JsonHelper::parseHeatmap(heatmap, nres, colorStr);
-    QLinearGradient grad = UiHelper::colorString2Grad(colorStr);
+    QLinearGradient grad = UiHelper::heatmap2Grad(heatmap);
 	initRamps(grad);
 	m_ui->cbPreset->addItems({"BlackBody", "Grayscale", "InfraRed", "TwoTone", "WhiteToRed"});
 	m_ui->hueSlider;
@@ -430,12 +428,9 @@ void ZenoHeatMapEditor::init(const QString& heatmap)
 	initColorView();
 }
 
-QString ZenoHeatMapEditor::colorRamps() const
+zeno::HeatmapData ZenoHeatMapEditor::colorRamps() const
 {
-    QString colorStr = UiHelper::gradient2colorString(m_ui->rampBarView->colorRamps());
-    int nres = m_ui->m_nresLineEdit->text().toInt();
-    QString res = JsonHelper::dumpHeatmap(nres, colorStr);
-	return res;
+    return UiHelper::grad2heatmap(m_ui->rampBarView->colorRamps());
 }
 
 void ZenoHeatMapEditor::installFilters()

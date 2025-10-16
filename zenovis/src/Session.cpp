@@ -174,14 +174,17 @@ void Session::do_screenshot(std::string path, std::string type, bool bOptix) {
         const char *err = nullptr;
 #ifdef ZENO_ENABLE_OPTIX
         using namespace zeno::ChiefDesignerEXR;
-#endif
-        int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
+        int ret = SaveEXR((float*)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
         if (ret != 0) {
             if (err) {
                 zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
                 FreeEXRErrorMessage(err);
             }
         }
+#else
+        zeno::log_error("failed to perform SaveEXR, please Open ZENO_ENABLE_OPTIX");
+#endif
+
     }},
     {"hdr", [&] {
         stbi_flip_vertically_on_write(true);
@@ -195,8 +198,8 @@ void Session::look_perspective() {
     impl->scene->camera->updateMatrix();
 }
 
-void Session::load_objects(const zeno::RenderObjsInfo& objs) {
-    impl->scene->load_objects(objs);
+void Session::reload(const zeno::render_reload_info& info) {
+    impl->scene->reload(info);
 }
 
 void Session::look_to_dir(float cx, float cy, float cz,
@@ -226,16 +229,16 @@ int Session::get_curr_frameid() {
     return impl->curr_frameid;
 }
 
-bool Session::load_objects() {
-    return impl->scene->loadFrameObjects(impl->curr_frameid);
-}
-
 void Session::set_render_engine(std::string const &name) {
     impl->scene->switchRenderEngine(name);
 }
 
 void Session::set_handler(std::shared_ptr<IGraphicHandler> &handler) {
     impl->scene->drawOptions->handler = handler;
+}
+
+void Session::set_show_ptnum(bool bShow) {
+    impl->scene->set_show_ptnum(bShow);
 }
 
 void Session::load_opengl_api(void *procaddr) {

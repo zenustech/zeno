@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/QuickQanava">
+        <file>LinearGradient.qml</file>
+        <file>OpacityMask.qml</file>
+        <file>DropShadow.qml</file>
+        <file>Glow.qml</file>
+        <file>RectangularGlow.qml</file>
+    </qresource>
+</RCC>

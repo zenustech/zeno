@@ -11,11 +11,11 @@ namespace {
 
 struct PrimGenerateONB : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto dirAttr = get_input2<std::string>("dirAttr");
-        auto tanAttrOut = get_input2<std::string>("tanAttrOut");
-        auto bitanAttrOut = get_input2<std::string>("bitanAttrOut");
-        auto writebackDir = get_input2<bool>("doNormalize");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto dirAttr = ZImpl(get_input2<std::string>("dirAttr"));
+        auto tanAttrOut = ZImpl(get_input2<std::string>("tanAttrOut"));
+        auto bitanAttrOut = ZImpl(get_input2<std::string>("bitanAttrOut"));
+        auto writebackDir = ZImpl(get_input2<bool>("doNormalize"));
 
         auto &dir = prim->verts.attr<zeno::vec3f>(dirAttr);
         auto &tan = prim->verts.add_attr<zeno::vec3f>(tanAttrOut);
@@ -28,7 +28,7 @@ struct PrimGenerateONB : INode {
                 dir[i] = d;
         });
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -49,11 +49,11 @@ ZENO_DEFNODE(PrimGenerateONB)({
 
 struct PrimLineGenerateONB : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto lineSort = get_input2<bool>("lineSort");
-        auto dirAttrOut = get_input2<std::string>("dirAttrOut");
-        auto tanAttrOut = get_input2<std::string>("tanAttrOut");
-        auto bitanAttrOut = get_input2<std::string>("bitanAttrOut");
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        auto lineSort = ZImpl(get_input2<bool>("lineSort"));
+        auto dirAttrOut = ZImpl(get_input2<std::string>("dirAttrOut"));
+        auto tanAttrOut = ZImpl(get_input2<std::string>("tanAttrOut"));
+        auto bitanAttrOut = ZImpl(get_input2<std::string>("bitanAttrOut"));
 
         size_t n = prim->verts.size();
         if (lineSort) primLineSort(prim.get());
@@ -87,7 +87,7 @@ struct PrimLineGenerateONB : zeno::INode {
             }
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

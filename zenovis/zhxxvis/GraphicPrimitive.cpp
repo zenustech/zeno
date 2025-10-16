@@ -12,6 +12,7 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/types/InstancingObject.h>

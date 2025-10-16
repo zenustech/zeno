@@ -76,8 +76,8 @@ struct PrimitiveBooleanOp : INode {
 ZENO_DEFNODE(PrimitiveBooleanOp)({
     {
         {gParamType_Primitive, "primA"}, {gParamType_Primitive, "primB"},
-        {gParamType_Float, "faceAttrA", "", Socket_WildCard},
-        {gParamType_Float, "faceAttrB", "", Socket_WildCard},
+        {gParamType_Float, "faceAttrA", ""},
+        {gParamType_Float, "faceAttrB", ""},
     },
     {
         {gParamType_Primitive, "primC"},

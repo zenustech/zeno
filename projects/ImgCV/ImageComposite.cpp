@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/utils/parallel_reduce.h>
@@ -131,64 +132,67 @@ static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const ve
 
 struct Blend: INode {//optimize
     virtual void apply() override {//TODO:: add blend scope RGBA and Premultiplied / Alpha Blending(https://github.com/jamieowen/glsl-blend/issues/6)
-        auto blend = get_input<PrimitiveObject>("Foreground");
-        auto base = get_input<PrimitiveObject>("Background");
-        auto maskopacity = get_input2<float>("Mask Opacity");
+        auto blend = get_input_Geometry("Foreground");
+        auto base = get_input_Geometry("Background");
+        auto maskopacity = get_input2_float("Mask Opacity");
 
-        auto compmode = get_input2<std::string>("Blending Mode");
-        //auto alphablend = get_input2<std::string>("Alpha Blending");
-        auto alphamode = get_input2<std::string>("Alpha Mode");
-        auto opacity1 = get_input2<float>("Foreground Opacity");
-        auto opacity2 = get_input2<float>("Background Opacity");
+        auto compmode = zsString2Std(get_input2_string("Blending Mode"));
+        //auto alphablend = get_input2_string("Alpha Blending");
+        auto alphamode = zsString2Std(get_input2_string("Alpha Mode"));
+        auto opacity1 = get_input2_float("Foreground Opacity");
+        auto opacity2 = get_input2_float("Background Opacity");
 
-        auto &ud1 = base->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
+        auto ud1 = base->userData();
+        int w1 = ud1->get_int("w");
+        int h1 = ud1->get_int("h");
         int imagesize = w1 * h1;
         auto mask = std::make_shared<PrimitiveObject>();
         if(has_input("Mask")) {
-            mask = get_input<PrimitiveObject>("Mask");
-
+            auto maskgeo = get_input_Geometry("Mask");
+            mask = maskgeo->toPrimitiveObject();
         }
         else {
             mask->verts.resize(w1*h1);
-            mask->userData().set2("isImage", 1);
-            mask->userData().set2("w", w1);
-            mask->userData().set2("h", h1);
+            mask->userData()->set_int("isImage", 1);
+            mask->userData()->set_int("w", w1);
+            mask->userData()->set_int("h", h1);
             for (int i = 0; i < imagesize; i++) {
                     mask->verts[i] = {maskopacity,maskopacity,maskopacity};
             }
         }
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w1);
-        image2->userData().set2("h", h1);
-        image2->verts.resize(imagesize);
-        bool alphaoutput =  blend->has_attr("alpha")||base->has_attr("alpha");
-        auto &image2alpha = image2->add_attr<float>("alpha");
-        const auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
-        const auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):std::vector<float>(imagesize, 1.0f);
+
+        auto image2 = create_GeometryObject(zeno::Topo_IndiceMesh, true, imagesize, 0);
+        image2->userData()->set_int("isImage", 1);
+        image2->userData()->set_int("w", w1);
+        image2->userData()->set_int("h", h1);
+        bool alphaoutput =  blend->has_point_attr("alpha") || base->has_point_attr("alpha");
+        image2->create_point_attr("alpha", 0.f);
+        auto &image2alpha = image2->get_float_attr(ATTR_POINT, "alpha");
+        const auto &blendalpha = blend->has_point_attr("alpha") ? blend->get_float_attr(zeno::ATTR_POINT, "alpha")
+            : std::vector<float>(imagesize, 1.0f);
+        const auto &basealpha = base->has_point_attr("alpha") ? base->get_float_attr(zeno::ATTR_POINT, "alpha")
+            : std::vector<float>(imagesize, 1.0f);
+        const auto& blendpos = blend->points_pos();
+        const auto& basepos = base->points_pos();
 
 #pragma omp parallel for
             for (int i = 0; i < imagesize; i++) {
-                vec3f foreground = blend->verts[i] * opacity1;
-                vec3f rgb2 = base->verts[i];
+                vec3f foreground = blendpos[i] * opacity1;
+                vec3f rgb2 = basepos[i];
                 vec3f background = rgb2 * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i] * maskopacity, 0, 1);
                 float alpha1 = zeno::clamp(blendalpha[i] * opacity1, 0, 1);
                 float alpha2 = zeno::clamp(basealpha[i] * opacity2, 0, 1);
                 if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
                     vec3f c = BlendModeV(alpha1, alpha2, foreground, rgb2, background, opacity, compmode);
-                    image2->verts[i] = c;
+                    image2->set_pos(i, c);
                 }
                 else{
                     vec3f c = BlendMode<zeno::vec3f>(alpha1, alpha2, foreground, rgb2, background, opacity, compmode);
-                    image2->verts[i] = c;
+                    image2->set_pos(i, c);
                 }
             }
             if(alphaoutput) {//如果两个输入 其中一个没有alpha  对于rgb和alpha  alpha的默认值不一样 前者为1 后者为0？
-                auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):blend->add_attr<float>("alpha");//只有blendbase都没有alpha 结果才没有
-                auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):base->add_attr<float>("alpha");
                 //std::string alphablendmode = alphamode == "SameWithBlend" ? compmode : alphamode;
 #pragma omp parallel for
                 for (int i = 0; i < imagesize; i++) {
@@ -198,16 +202,15 @@ struct Blend: INode {//optimize
                 image2alpha[i] = alpha;
                 }
             }
-
-        set_output("image", image2);
+            set_output("image", std::move(image2));
     }
 };
 
 ZENDEFNODE(Blend, {
     {
-        {gParamType_Primitive, "Foreground"},
-        {gParamType_Primitive, "Background"},
-        {gParamType_Primitive, "Mask"},
+        {gParamType_Geometry, "Foreground"},
+        {gParamType_Geometry, "Background"},
+        {gParamType_Geometry, "Mask"},
         {"enum Over Copy Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Overlay SoftLight Divide Xor", "Blending Mode", "Over"},
         //{"enum IgnoreAlpha SourceAlpha", "Alpha Blending", "Ignore Alpha"}, SUBSTANCE DESIGNER ALPHA MODE
         //{"enum SameWithBlend Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "SameWithBlend"},
@@ -217,7 +220,7 @@ ZENDEFNODE(Blend, {
         {gParamType_Float, "Background Opacity", "1"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "comp" },
@@ -238,28 +241,27 @@ std::vector<std::vector<float>> createKernel(float blurValue,
 
 struct CompBlur : INode {//TODO::delete
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto s = get_input2<int>("strength");
-        auto ktop = get_input2<zeno::vec3f>("kerneltop");
-        auto kmid = get_input2<zeno::vec3f>("kernelmid");
-        auto kbot = get_input2<zeno::vec3f>("kernelbot");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto blurredImage = std::make_shared<PrimitiveObject>();
-        blurredImage->verts.resize(w * h);
-        blurredImage->userData().set2("h", h);
-        blurredImage->userData().set2("w", w);
-        blurredImage->userData().set2("isImage", 1);
-        if(image->has_attr("alpha")){
-            
-            blurredImage->verts.add_attr<float>("alpha");
-            blurredImage->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
+        auto image = get_input_Geometry("image");
+        auto s = get_input2_int("strength");
+        auto ktop = get_input2_vec3f("kerneltop");
+        auto kmid = get_input2_vec3f("kernelmid");
+        auto kbot = get_input2_vec3f("kernelbot");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto blurredImage = create_GeometryObject(zeno::Topo_IndiceMesh, true, w*h, 0);
+        blurredImage->userData()->set_int("h", h);
+        blurredImage->userData()->set_int("w", w);
+        blurredImage->userData()->set_int("isImage", 1);
+        if(image->has_point_attr("alpha")){
+            blurredImage->create_point_attr("alpha", 0.f);
+            blurredImage->set_point_attr("alpha", image->get_float_attr(ATTR_POINT, "alpha"));
         }
         std::vector<std::vector<float>>k = createKernel(kmid[1],kmid[0],kmid[2],ktop[1],kbot[1],ktop[0],ktop[2],kbot[0],kbot[2]);
 // 计算卷积核的中心坐标
         int anchorX = 3 / 2;
         int anchorY = 3 / 2;
+        const auto& imageverts = image->points_pos();
         for (int iter = 0; iter < s; iter++) {
 #pragma omp parallel for
             // 对每个像素进行卷积操作
@@ -269,9 +271,9 @@ struct CompBlur : INode {//TODO::delete
                     float sum1 = 0.0f;
                     float sum2 = 0.0f;
                     if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
-                        sum0 = image->verts[y * w + x][0];
-                        sum1 = image->verts[y * w + x][1];
-                        sum2 = image->verts[y * w + x][2];
+                        sum0 = imageverts[y * w + x][0];
+                        sum1 = imageverts[y * w + x][1];
+                        sum2 = imageverts[y * w + x][2];
                     } 
                     else
                     {
@@ -279,33 +281,32 @@ struct CompBlur : INode {//TODO::delete
                             for (int j = 0; j < 3; j++) {
                                 int kernelX = x + j - anchorX;
                                 int kernelY = y + i - anchorY;
-                                sum0 += image->verts[kernelY * w + kernelX][0] * k[i][j];
-                                sum1 += image->verts[kernelY * w + kernelX][1] * k[i][j];
-                                sum2 += image->verts[kernelY * w + kernelX][2] * k[i][j];
+                                sum0 += imageverts[kernelY * w + kernelX][0] * k[i][j];
+                                sum1 += imageverts[kernelY * w + kernelX][1] * k[i][j];
+                                sum2 += imageverts[kernelY * w + kernelX][2] * k[i][j];
                             }
                         }
                     }
-                    blurredImage->verts[y * w + x] = {static_cast<float>(sum0),
+                    blurredImage->set_pos(y * w + x, zeno::vec3f{static_cast<float>(sum0),
                                                       static_cast<float>(sum1),
-                                                      static_cast<float>(sum2)};
+                                                      static_cast<float>(sum2)});
                 }
             }
-            image = blurredImage;
         }
-        set_output("image", blurredImage);
+        set_output("image", std::move(blurredImage));
     }
 };
 
 ZENDEFNODE(CompBlur, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Int, "strength", "5"},
         {gParamType_Vec3f, "kerneltop", "0.075,0.124,0.075"},
         {gParamType_Vec3f, "kernelmid", "0.124,0.204,0.124"},
         {gParamType_Vec3f, "kernelbot", "0.075,0.124,0.075"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "deprecated" },
@@ -313,52 +314,54 @@ ZENDEFNODE(CompBlur, {
 
 struct ImageExtractChannel : INode {
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto channel = get_input2<std::string>("channel");
-        auto &ud1 = image->userData();
-        int w = ud1.get2<int>("w");
-        int h = ud1.get2<int>("h");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-        image2->verts.resize(image->size());
+        auto image = get_input_Geometry("image");
+        auto channel = get_input2_string("channel");
+        auto ud1 = image->userData();
+        int w = ud1->get_int("w");
+        int h = ud1->get_int("h");
+        int N = image->npoints();
+        auto image2 = create_GeometryObject(zeno::Topo_IndiceMesh, true, N, 0);
+        image2->userData()->set_int("isImage", 1);
+        image2->userData()->set_int("w", w);
+        image2->userData()->set_int("h", h);
+        const auto& imageverts = image->points_pos();
+
         if(channel == "R") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i] = vec3f(image->verts[i][0]);
+            for (auto i = 0; i < N; i++) {
+                image2->set_pos(i, vec3f(imageverts[i][0]));
             }
         }
         else if(channel == "G") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i] = vec3f(image->verts[i][1]);
+            for (auto i = 0; i < N; i++) {
+                image2->set_pos(i, vec3f(imageverts[i][1]));
             }
         }
         else if(channel == "B") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i] = vec3f(image->verts[i][2]);
+            for (auto i = 0; i < N; i++) {
+                image2->set_pos(i, vec3f(imageverts[i][2]));
             }
         }
         else if(channel == "A") {
-            if (image->verts.has_attr("alpha")) {
-                auto &attr = image->verts.attr<float>("alpha");
+            if (image->has_point_attr("alpha")) {
+                auto &attr = image->get_float_attr(ATTR_POINT, "alpha");
                 for(int i = 0; i < w * h; i++){
-                    image2->verts[i] = vec3f(attr[i]);
+                    image2->set_pos(i, vec3f(attr[i]));
                 }
             }
             else{
                 throw zeno::makeError("image have no alpha channel");
             }
         }
-        set_output("image", image2);
+        set_output("image", std::move(image2));
     }
 };
 ZENDEFNODE(ImageExtractChannel, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {"enum R G B A", "channel", "R"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "image" },
@@ -369,32 +372,31 @@ ZENDEFNODE(ImageExtractChannel, {
 
 struct CompImport : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto &ud = prim->userData();
-        int nx = ud.has("nx")?ud.get2<int>("nx"):ud.get2<int>("w");
-        int ny = ud.has("ny")?ud.get2<int>("ny"):ud.get2<int>("h");
-        auto attrName = get_input2<std::string>("attrName");
-        auto remapRange = get_input2<zeno::vec2f>("RemapRange");
-        auto remap = get_input2<bool>("Remap");
-        auto image = std::make_shared<PrimitiveObject>();
-        auto attributesType = get_input2<std::string>("AttributesType");
+        auto prim = get_input_Geometry("prim");
+        auto ud = prim->userData();
+        int nx = ud->has("nx") ? ud->get_int("nx") : ud->get_int("w");
+        int ny = ud->has("ny") ? ud->get_int("ny") : ud->get_int("h");
+        auto attrName = get_input2_string("attrName");
+        auto remapRange = toVec2f(get_input2_vec2f("RemapRange"));
+        auto remap = get_input2_bool("Remap");
+        auto image = std::make_unique<PrimitiveObject>();
+        auto attributesType = get_input2_string("AttributesType");
 
         image->resize(nx * ny);
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", nx);
-        image->userData().set2("h", ny);
+        image->userData()->set_int("isImage", 1);
+        image->userData()->set_int("w", nx);
+        image->userData()->set_int("h", ny);
 
-        std::visit([&](auto attrty) {
-            using T = decltype(attrty);
-            if (!prim->verts.has_attr(attrName)) {
-                zeno::log_error("No such attribute '{}' in prim", attrName);
+        if (attributesType == "float") {
+            if (!prim->has_point_attr(attrName)) {
+                throw makeError<UnimplError>("No such attribute in prim");
                 return;
             }
-            auto &attr = prim->verts.attr<T>(attrName);
-            auto minresult = zeno::parallel_reduce_array<T>(attr.size(), attr[0], [&] (size_t i) -> T { return attr[i]; },
-            [&] (T i, T j) -> T { return zeno::min(i, j); });
-            auto maxresult = zeno::parallel_reduce_array<T>(attr.size(), attr[0], [&] (size_t i) -> T { return attr[i]; },
-            [&] (T i, T j) -> T { return zeno::max(i, j); });
+            auto& attr = prim->get_float_attr(ATTR_POINT, attrName);
+            auto minresult = zeno::parallel_reduce_array<float>(attr.size(), attr[0], [&](size_t i) -> float { return attr[i]; },
+                [&](float i, float j) -> float { return zeno::min(i, j); });
+            auto maxresult = zeno::parallel_reduce_array<float>(attr.size(), attr[0], [&](size_t i) -> float { return attr[i]; },
+                [&](float i, float j) -> float { return zeno::max(i, j); });
 
             if (remap) {
                 for (auto i = 0; i < nx * ny; i++) {
@@ -410,21 +412,25 @@ struct CompImport : INode {
                     image->verts[i] = vec3f(v);
                 }
             }
-        }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, attributesType)));
-        set_output("image", image);
+        }
+        else if (attributesType == "vec3f") {
+            //TODO
+        }
+        auto geo = create_GeometryObject(image.get());
+        set_output("image", std::move(geo));
     }
 };
 
 ZENDEFNODE(CompImport, {
     {
-        {gParamType_Primitive, "prim"},
+        {gParamType_Geometry, "prim"},
         {gParamType_String, "attrName", ""},
         {gParamType_Bool, "Remap", "0"},
         {gParamType_Vec2f, "RemapRange", "0, 1"},
         {"enum float vec3f", "AttributesType", "float"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     { "comp" },

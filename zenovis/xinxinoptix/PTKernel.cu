@@ -11,6 +11,11 @@
 
 #include <cuda_fp16.h>
 
+#ifndef __CUDACC_RTC__
+#define __AOV__ 1
+#define DENOISE 1
+#endif
+
 extern "C" {
 __constant__ Params params;
 
@@ -71,13 +76,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
-static __inline__ __device__
-vec3 HdrToLDR(vec3 in)
-{
-  vec3 mapped = in;//vec3(1.0f) - exp(-in * 1.0/32.0);
-  //mapped = pow(mapped, 1.0f/2.2f);
-  return mapped;
-}
+
 static __inline__ __device__
 vec3 PhysicalCamera(vec3 in,
                    float aperture = 2,
@@ -92,57 +91,17 @@ vec3 PhysicalCamera(vec3 in,
   mapped = in * exposure;
   return  enableExposure? (enableACES? ACESFilm(mapped):mapped ) : (enableACES? ACESFilm(in) : in);
 }
+__inline__ __device__ bool isBadVector(const float3 & vector) {
 
-static __inline__ __device__
-ushort3 float3_to_half3(float3 in)
-{
-    half x = __float2half(in.x);
-    half y = __float2half(in.y);
-    half z = __float2half(in.z);
-    ushort3 v;
-    v.x = reinterpret_cast<unsigned short&>(x);
-    v.y = reinterpret_cast<unsigned short&>(y);
-    v.z = reinterpret_cast<unsigned short&>(z);
-    return v;
+    bool bad = !isfinite(vector.x) || !isfinite(vector.y) || !isfinite(vector.z);
+    return bad? true : lengthSquared(vector) == 0.0f;
 }
-
-static __inline__ __device__
-float3 half3_to_float3(ushort3 in)
-{
-    half x = reinterpret_cast<half&>(in.x);
-    half y = reinterpret_cast<half&>(in.y);
-    half z = reinterpret_cast<half&>(in.z);
-    float3 v;
-    v.x = __half2float(x);
-    v.y = __half2float(y);
-    v.z = __half2float(z);
-    return v;
-}
-
-static __inline__ __device__
-ushort1 float_to_half(float in)
-{
-    half x = __float2half(in);
-    return reinterpret_cast<ushort1&>(x);
-}
-
-static __inline__ __device__
-float half_to_float(ushort1 in)
-{
-    half x = reinterpret_cast<half&>(in);
-    return __half2float(x);
-}
-
 extern "C" __global__ void __raygen__rg()
 {
+    const auto w = params.width;
+    const auto h = params.height;
 
-    const int    w   = params.windowSpace.x;
-    const int    h   = params.windowSpace.y;
-    //const float3 eye = params.eye;
-    const uint3  idxx = optixGetLaunchIndex();
-    uint3 idx;
-    idx.x = idxx.x + params.tile_i * params.tile_w;
-    idx.y = idxx.y + params.tile_j * params.tile_h;
+    uint3 idx = optixGetLaunchIndex();
     if(idx.x>w || idx.y>h)
         return;
 
@@ -152,10 +111,59 @@ extern "C" __global__ void __raygen__rg()
 
     int seedy = idx.y/4, seedx = idx.x/8;
     int sid = (idx.y%4) * 8 + idx.x%8;
-    unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
-    unsigned int eventseed = tea<4>( idx.y * w + idx.x, subframe_index + 1);
-    seed += params.outside_random_number;
-    eventseed += params.outside_random_number;
+
+    unsigned int seed0;
+    unsigned int seed;
+    unsigned int eventseed;
+    unsigned int seed1;
+
+    //seed0 is fixed for a pixel, at subframe_index = 0:
+    seed0 = tea<4>( idx.y * w + idx.x, 0) + params.outside_random_number;
+    seed0 = pcg_hash(seed0);
+    rnd(seed0);
+
+    //seed changes every subframe
+    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
+    seed = pcg_hash(seed);
+    rnd(seed);
+
+    //eventseed, which is used for sobol random number per pixel
+    //shall be simply seed0 + subframe_index, because it shall come at
+    //squence!!
+    eventseed = seed0 + subframe_index;
+
+    //vdcseed, which is used for vdc sequence permulation, shall
+    //stay fixed for subframes of a pixel!
+    unsigned int vdcseed = seed0;
+
+    //vdc offset, which is used to draw elements from the vdc sequence
+    //shall increase exactly as the subframe_index!
+    seed1 = seed0 + subframe_index;
+
+//    if(subframe_index==0) {
+//        seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
+//        seed = pcg_hash(seed);
+//        rnd(seed);
+//        rnd(seed);
+////        unsigned int k = params.outside_random_number%10;
+////        for(int i=0;i<k;i++) rnd(seed);
+//
+//        //eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
+//        //seed += params.outside_random_number;
+//        eventseed = seed;
+//        seed1 = seed;
+//        seed0 = seed;
+//        params.seed_buffer[idx.y * w + idx.x] = make_uint3(seed,seed,seed);
+//
+//    }
+//    seed1 = seed0 + subframe_index;
+//    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
+//    seed = pcg_hash(seed);
+//    rnd(seed);
+//    rnd(seed);
+//    eventseed = seed0 + subframe_index;
+
+
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     float physical_aperture = 0.0f;
@@ -165,31 +173,38 @@ extern "C" __global__ void __raygen__rg()
         physical_aperture = cam.focal_length / aperture;
     }
     
-
     float3 result = make_float3( 0.0f );
-    float3 result_d = make_float3( 0.0f );
-    float3 result_s = make_float3( 0.0f );
-    float3 result_t = make_float3( 0.0f );
-    float3 result_b = make_float3( 0.0f );
-    float3 aov[4];
-    int i = params.samples_per_launch;
 
+#if __AOV__
+    float3 aov[4] {};
+    float3& result_d = aov[1];
+    float3& result_s = aov[2];
+    float3& result_t = aov[3];
+    float&  result_b = aov[0].x;
+#endif
+
+    int i = params.samples_per_launch;
+    
+#if DENOISE
     float3 tmp_albedo{};
     float3 tmp_normal{};
+#endif 
+
     unsigned int sobolseed = subframe_index;
     float3 mask_value = make_float3( 0.0f );
-    float3 click_pos = make_float3( 0.0f );
 
     do{
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = sobolRnd(sobolseed);
+        float2 subpixel_jitter = mmd(eventseed);
+//        subpixel_jitter.x = pcg_rng(seed);
+//        subpixel_jitter.y = pcg_rng(seed);
 
         float2 d = 2.0f * make_float2(
-            ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
-            ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
+            ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
+            ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
             ) - 1.0f;
 
-        float2 r01 = sobolRnd(eventseed);
+        float2 r01 = {rnd(seed), rnd(seed)};
 
         float r0 = r01.x * 2.0f * M_PIf;
         float r1 = sqrtf(r01.y) * physical_aperture;
@@ -213,7 +228,7 @@ extern "C" __global__ void __raygen__rg()
 
         // Under camer local space, cam.eye as origin, cam.right as X axis, cam.up as Y axis, cam.front as Z axis.
         float3 eye_shake     = r1 * (cosf(r0) * make_float3(1.0f,0.0f,0.0f) + sinf(r0) * make_float3(0.0f,1.0f,0.0f)); // r1 * ( cos(r0) , sin(r0) , 0 );
-        float3 focal_plane_center = make_float3(cam.vertical_shift*cam.height, cam.horizontal_shift*cam.width, cam.focal_length);
+        float3 focal_plane_center = make_float3(cam.horizontal_shift*cam.width, cam.vertical_shift*cam.height, cam.focal_length);
         float3 old_direction =   focal_plane_center + make_float3(cam.width * 0.5f * d.x, cam.height * 0.5f * d.y, 0.0f);
         float3 tile_normal =  make_float3(sin_pitch*sin_yaw, - cos_yaw * sin_pitch, cos_pitch);
 
@@ -241,21 +256,46 @@ extern "C" __global__ void __raygen__rg()
         float3 ray_origin    = eye_shake;
         float3 ray_direction = terminal_point - eye_shake; 
         ray_direction = normalize(ray_direction);
+        if (params.physical_camera_panorama_camera) {
+            ray_origin    = make_float3(0.0f, 0.0f, 0.0f);
+            float phi = (float(idx.x) + subpixel_jitter.x) / float(w) * 2.0f * M_PIf;
+            mat3 camera_transform = mat3(
+                    cam.right.x, cam.up.x, -cam.front.x,
+                    cam.right.y, cam.up.y, -cam.front.y,
+                    cam.right.z, cam.up.z, -cam.front.z
+            );
+            if (params.physical_camera_panorama_vr180) {
+                int idxx = idx.x >= w/2? idx.x - w/2 : idx.x;
+                phi = ((float(idxx) + subpixel_jitter.x) / float(w / 2) + 0.5f) * M_PIf;
+                if (idx.x < w / 2) {
+                    ray_origin = camera_transform * make_float3(-params.physical_camera_pupillary_distance / 2.0f, 0.0f, 0.0f);
+                }
+                else {
+                    ray_origin = camera_transform * make_float3(params.physical_camera_pupillary_distance / 2.0f, 0.0f, 0.0f);
+                }
+            }
+            float theta = (float(idx.y) + subpixel_jitter.y) / float(h) * M_PIf;
+            float y = -cosf(theta);
+            float z = sinf(theta) * cosf(phi);
+            float x = sinf(theta) * sinf(-phi);
+
+            ray_direction = camera_transform * make_float3(x, y, z);
+        }
 
         RadiancePRD prd;
+        prd.vdcseed = vdcseed;
+        prd.offset = seed1;
+        prd.offset2 = seed1;
+        prd.offset3 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
 
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
-        prd.attenuation2 = make_float3(1.f);
-        prd.prob         = 1.0f;
-        prd.prob2        = 1.0f;
         prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;
         prd.eventseed    = eventseed;
-        prd.flags        = 0;
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
@@ -263,56 +303,65 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.samplePdf = 1.0f;
         prd.mask_value = make_float3( 0.0f );
-        prd.click_pos = make_float3( 0.0f );
 
         prd.depth = 0;
         prd.diffDepth = 0;
         prd.isSS = false;
         prd.curMatIdx = 0;
         prd.test_distance = false;
-        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.ss_alpha_queue[0] = half3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
         prd.max_depth = 4;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
-        
-        //if constexpr(params.denoise) 
-        if (params.denoise) 
-        {
-            prd.trace_denoise_albedo = true;
-            prd.trace_denoise_normal = true;
-        }
+    #if DENOISE 
+        prd.denoise = true;
+    #endif
 
         // Primary Ray
-        unsigned char background_trace = 0;
-        prd.alphaHit = false;
+        auto _attenuation = prd.attenuation;
+        do {
+            prd.alphaHit = false;
+            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+        } while (prd.alphaHit); // skip alpha
+        
+        if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
+        {
+            float3 click_pos {0,0,0};
+            uint4 record {0,0,0,0};
 
-        traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-        click_pos = prd.click_pos;
+            if (prd._tmax_ < FLT_MAX) {
+                click_pos = ray_origin + ray_direction * prd._tmax_;
+                record = prd.record;
+            }
+            *params.pick_buffer = PickInfo { click_pos, record };
+        }
+        if(params.pause) return;
+        
+        prd._tmin_ = 0;
+        prd._tmax_ = FLT_MAX;
+        prd.maxDistance = FLT_MAX;
+        
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
 
-        auto primary_hit_type = prd.hit_type;
-        background_trace = primary_hit_type;
-
+    #if __AOV__
+        const auto primary_hit_type = prd.hit_type;
+        result_b += primary_hit_type? 1:0;
         if(primary_hit_type > 0) {
-            result_d = prd.radiance_d * prd.attenuation2;
-            result_s = prd.radiance_s * prd.attenuation2;
-            result_t = prd.radiance_t * prd.attenuation2;
+            result_d = prd.aov[0] * _attenuation;
+            result_s = prd.aov[1] * _attenuation;
+            result_t = prd.aov[2] * _attenuation;
         }
+    #endif
 
+    #if DENOISE
         tmp_albedo = prd.tmp_albedo;
         tmp_normal = prd.tmp_normal;
-
-        prd.trace_denoise_albedo = false;
-        prd.trace_denoise_normal = false;
-
-        aov[0] = result_b;
-        aov[1] = result_d;
-        aov[2] = result_s;
-        aov[3] = result_t;
+        prd.denoise = false;
+    #endif
 
         for(;;)
         {
@@ -326,16 +375,17 @@ extern "C" __global__ void __raygen__rg()
             ray_direction = prd.direction;
 
             if(prd.countEmitted==false || prd.depth>0) {
-                auto temp_radiance = prd.radiance * prd.attenuation2;
+                auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
-                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(40));
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
-
+            #if __AOV__
                 if(primary_hit_type > 0 && ( prd.depth>1 || (prd.depth==1 && prd.hit_type == 0) )) {
                     aov[primary_hit_type] += prd.depth>1?clampped:temp_radiance;
                 }
+            #endif
             }
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
@@ -348,7 +398,7 @@ extern "C" __global__ void __raygen__rg()
                 break;
             }
 
-            if(prd.depth > 1){
+            if(prd.depth > 3){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 0.99f);
                 if(rnd(prd.seed) > RRprob) {
@@ -357,97 +407,105 @@ extern "C" __global__ void __raygen__rg()
                     prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
                 }
             }
-            if(prd.countEmitted == true)
-                prd.passed = true;
 
-
-            prd.radiance_d = make_float3(0);
-            prd.radiance_s = make_float3(0);
-            prd.radiance_t = make_float3(0);
-            prd.alphaHit = false;
-            prd._tmin_ = 0;
+            _attenuation = prd.attenuation;
+            if(prd.diffDepth > 1)
+                _mask_ &= ~VolumeMaskAnalytics;
+            //if(isfinite(ray_origin.x) && isfinite(ray_origin.y) && isfinite(ray_origin.z))
             traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-
-            if(prd.hit_type>0 && primary_hit_type==0)
-            {
-              primary_hit_type = prd.hit_type;
-              aov[primary_hit_type] += (prd.hit_type==1?prd.radiance_d:(prd.hit_type==2?prd.radiance_s:prd.radiance_t))*prd.attenuation2;
-            }
-            background_trace += prd.hit_type>0?1:0;
+            //else
+                //;
 
         }
-        
-        seed = prd.seed;
-
-        if (!(background_trace == 0)) {
-            result_b += make_float3(1);
-        }
+//        seed = prd.seed;
+//        seed1 = prd.offset;
+//        eventseed = prd.eventseed;
     }
     while( --i );
     aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
     float shutter_speed = params.physical_camera_shutter_speed;
     float iso           = params.physical_camera_iso;
-    float aces          = params.physical_camera_aces;
-    float exposure      = params.physical_camera_exposure;
     float midGray       = 0.18f;
+
+    bool need_manual_exposure = params.physical_camera_exposure;
+    bool need_tone_mapping = params.physical_camera_aces;
+
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
-    vec3         accum_color    = PhysicalCamera(vec3(result), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_d  = PhysicalCamera(vec3(aov[1]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_s  = PhysicalCamera(vec3(aov[2]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    vec3         accum_color_t  = PhysicalCamera(vec3(aov[3]), aperture, shutter_speed, iso, midGray, exposure, aces) / samples_per_launch;
-    float3         accum_color_b  = result_b / samples_per_launch;
-    float3         accum_mask     = mask_value / samples_per_launch;
-    
+    const auto tmp = 1.0f / params.samples_per_launch;
+    auto& accum_color    = result; accum_color *= tmp;
+#if __AOV__
+    auto& accum_color_d  = aov[1]; accum_color_d *= tmp;
+    auto& accum_color_s  = aov[2]; accum_color_s *= tmp;
+    auto& accum_color_t  = aov[3]; accum_color_t *= tmp;
+
+    auto accum_color_b  = result_b * tmp;
+    auto accum_mask     = mask_value * tmp;
+#endif
+
+    if (need_manual_exposure) {
+        auto manual_exposure = [&](float3& color){
+            color = PhysicalCamera(color, aperture, shutter_speed, iso, midGray, true, false);
+        };
+        manual_exposure(accum_color);
+    #if __AOV__ 
+        manual_exposure(accum_color_d);
+        manual_exposure(accum_color_s);
+        manual_exposure(accum_color_t);
+    #endif
+    }
+
     if( subframe_index > 0 )
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
         const float3 accum_color_prev   = params.accum_buffer[ image_index ];
+        accum_color = mix( accum_color_prev, accum_color, a );
+    #if __AOV__
         const float3 accum_color_prev_d = params.accum_buffer_D[ image_index ];
         const float3 accum_color_prev_s = params.accum_buffer_S[ image_index ];
         const float3 accum_color_prev_t = params.accum_buffer_T[ image_index ];
-        const float3 accum_color_prev_b = {
-                half_to_float(params.accum_buffer_B[ image_index ]),
-                half_to_float(params.accum_buffer_B[ image_index ]),
-                half_to_float(params.accum_buffer_B[ image_index ]),
-        };
+        const float accum_color_prev_b  = __half2float(*(__half*)&params.accum_buffer_B[image_index]);
         const float3 accum_mask_prev    = half3_to_float3(params.frame_buffer_M[ image_index ]);
-        accum_color   = mix( vec3(accum_color_prev), accum_color, a );
+
         accum_color_d = mix( vec3(accum_color_prev_d), accum_color_d, a );
         accum_color_s = mix( vec3(accum_color_prev_s), accum_color_s, a );
         accum_color_t = mix( vec3(accum_color_prev_t), accum_color_t, a );
-        accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
+        accum_color_b = mix( accum_color_prev_b, accum_color_b, a );
         accum_mask    = lerp( accum_mask_prev, accum_mask, a);
+    #endif
 
-        if (params.denoise) {
-
+        #if DENOISE
             const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
             tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
-
             const float3 accum_normal_prev = params.normal_buffer[ image_index ];
             tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
-        }
+
+            params.albedo_buffer[ image_index ] = tmp_albedo;
+            params.normal_buffer[ image_index ] = tmp_normal;
+        #endif
     }
 
-    params.accum_buffer[ image_index ]   = make_float3( accum_color.x, accum_color.y, accum_color.z);
-    params.accum_buffer_D[ image_index ] = make_float3( accum_color_d.x,accum_color_d.y,accum_color_d.z);
-    params.accum_buffer_S[ image_index ] = make_float3( accum_color_s.x,accum_color_s.y, accum_color_s.z);
-    params.accum_buffer_T[ image_index ] = make_float3( accum_color_t.x,accum_color_t.y,accum_color_t.z);
-    params.accum_buffer_B[ image_index ] = float_to_half(accum_color_b.x);
+    params.accum_buffer[ image_index ] = accum_color;
+    //params.seed_buffer[ image_index ] = {seed1, seed, eventseed};
 
-    params.frame_buffer_M[ image_index ] = float3_to_half3(accum_mask);
-    params.frame_buffer_P[ image_index ] = float3_to_half3(click_pos);
+    #if __AOV__
+        params.accum_buffer_D[ image_index ] = accum_color_d;
+        params.accum_buffer_S[ image_index ] = accum_color_s;
+        params.accum_buffer_T[ image_index ] = accum_color_t;
+        auto h3 = float3_to_half3(accum_mask);
+        params.frame_buffer_M[ image_index ] = reinterpret_cast<ushort3&>(h3);
+        auto accum_buffer_B = reinterpret_cast<__half*>(params.accum_buffer_B);
+        accum_buffer_B[image_index] = __float2half(accum_color_b);
+    #endif
 
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
     dither = (dither-0.5f);
-    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
-
-    if (params.denoise) {
-        params.albedo_buffer[ image_index ] = tmp_albedo;
-        params.normal_buffer[ image_index ] = tmp_normal;
+    if (need_tone_mapping) {
+        accum_color = ACESFilm(accum_color);
     }
+    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
 }
 
 extern "C" __global__ void __miss__radiance()
@@ -459,8 +517,6 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-    prd->attenuation2 = prd->attenuation;
-    prd->passed = false;
     prd->countEmitted = false;
     
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
@@ -515,7 +571,6 @@ extern "C" __global__ void __miss__radiance()
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
@@ -539,10 +594,10 @@ extern "C" __global__ void __miss__radiance()
 
 extern "C" __global__ void __miss__occlusion()
 {
-    setPayloadOcclusion( false );
+    auto flags = OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT; 
+    if (optixGetRayFlags() == flags){
+        ShadowPRD* prd = getPRD<ShadowPRD>();
+        prd->attanuation = vec3(1.0f);
+    }
 }
 
-extern "C" __global__ void __closesthit__occlusion()
-{
-    setPayloadOcclusion( true );
-}

@@ -1,10 +1,11 @@
 file(GLOB MESHSUBDIV_SOURCE *.cpp *.h)
 
-target_sources(zeno PRIVATE ${MESHSUBDIV_SOURCE})
-target_include_directories(zeno PRIVATE .)
+add_library(zensubdiv SHARED ${MESHSUBDIV_SOURCE})
+
+target_include_directories(zensubdiv PRIVATE .)
 
 find_package(OpenMP REQUIRED)
-target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(zensubdiv PRIVATE zenocore OpenMP::OpenMP_CXX)
 
 set(NO_CLEW ON CACHE BOOL "GUN TMD NO" FORCE)
 set(NO_CUDA ON CACHE BOOL "GUN TMD NO" FORCE)
@@ -33,9 +34,9 @@ add_subdirectory(OpenSubdiv)
 
 if (TARGET osd_dynamic_cpu)
     message(STATUS "Linking with: osd_dynamic_cpu")
-    target_link_libraries(zeno PRIVATE osd_dynamic_cpu)
+    target_link_libraries(zensubdiv PRIVATE osd_dynamic_cpu)
 else()
     message(STATUS "Linking with: osd_static_cpu")
-    target_link_libraries(zeno PRIVATE osd_static_cpu)
+    target_link_libraries(zensubdiv PRIVATE osd_static_cpu)
 endif()
-target_include_directories(zeno PRIVATE OpenSubdiv)
+target_include_directories(zensubdiv PRIVATE OpenSubdiv)

@@ -1,6 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/utils/parallel_reduce.h>
 #include <zeno/utils/vec.h>
 #include <cstring>
@@ -11,93 +12,89 @@
 
 namespace zeno {
 
-template <class T>
-static T prim_reduce(PrimitiveObject *prim, std::string channel, std::string type)
-{
-    std::vector<T> const &temp = prim->attr<T>(channel);
-    
-    if(type==std::string("avg")){
-        T total = zeno::parallel_reduce_array<T>(temp.size(), T(0), [&] (size_t i) -> T { return temp[i]; },
-        [&] (T i, T j) -> T { return i + j; });
-        return total/(T)(temp.size());
+    template <class T>
+    static T prim_reduce(std::vector<T> const& temp, std::string type)
+    {
+        if (type == std::string("avg")) {
+            T total = zeno::parallel_reduce_array<T>(temp.size(), T(0), [&](size_t i) -> T { return temp[i]; },
+                [&](T i, T j) -> T { return i + j; });
+            return total / (T)(temp.size());
+        }
+        if (type == std::string("max")) {
+            T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&](size_t i) -> T { return temp[i]; },
+                [&](T i, T j) -> T { return zeno::max(i, j); });
+            return total;
+        }
+        if (type == std::string("min")) {
+            T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&](size_t i) -> T { return temp[i]; },
+                [&](T i, T j) -> T { return zeno::min(i, j); });
+            return total;
+        }
+        if (type == std::string("absmax")) {
+            T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&](size_t i) -> T { return zeno::abs(temp[i]); },
+                [&](T i, T j) -> T { return zeno::max(i, j); });
+            return total;
+        }
+        return T(0);
     }
-    if(type==std::string("max")){
-        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
-        [&] (T i, T j) -> T { return zeno::max(i, j); });
-        return total;   
-    }
-    if(type==std::string("min")){
-        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return temp[i]; },
-        [&] (T i, T j) -> T { return zeno::min(i, j); });
-        return total;
-    }
-    if(type==std::string("absmax")){
-        T total = zeno::parallel_reduce_array<T>(temp.size(), temp[0], [&] (size_t i) -> T { return zeno::abs(temp[i]); },
-        [&] (T i, T j) -> T { return zeno::max(i, j); });
-        return total;
-    }
-    return T(0);
-}
 
-
-struct PrimitiveReduction : zeno::INode {
-    virtual void apply() override{
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto attrToReduce = get_param<std::string>(("attr"));
-        auto op = get_param<std::string>(("op"));
-        zeno::NumericValue result;
-        if (prim->attr_is<zeno::vec3f>(attrToReduce))
-            result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);
-        else 
-            result = prim_reduce<float>(prim.get(), attrToReduce, op);
-        auto out = std::make_shared<zeno::NumericObject>();
-        out->set(result);
-        set_output("result", std::move(out));
-    }
-};
-ZENDEFNODE(PrimitiveReduction,
-    { /* inputs: */ {
-        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
-    }, /* outputs: */ {
-        {gParamType_Vec3f, "result", "", zeno::Socket_WildCard},
-    }, /* params: */ {
-    {gParamType_String, "attr", "pos"},
-    {"enum avg max min absmax", "op", "avg"},
-    }, /* category: */ {
-    "deprecated",
-    }});
 
 struct PrimReduction : zeno::INode {
     virtual void apply() override{
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto attrToReduce = get_input2<std::string>(("attrName"));
-        auto op = get_input2<std::string>(("op"));
-        zeno::NumericValue result;
-        if (prim->attr_is<zeno::vec3f>(attrToReduce))
-            result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);
-        else 
-            result = prim_reduce<float>(prim.get(), attrToReduce, op);
-        auto out = std::make_shared<zeno::NumericObject>();
-        out->set(result);
-        set_output("result", std::move(out));
+        auto prim = get_input_Geometry("prim");
+        auto attrToReduce = get_input2_string("attrName");
+        zeno::GeoAttrType type = prim->get_attr_type(ATTR_POINT, attrToReduce);
+        auto op = get_input2_string("op");
+        if (zeno::ATTR_VEC3 == type) {
+            const std::vector<zeno::vec3f>& attrData = prim->get_vec3f_attr(ATTR_POINT, attrToReduce);
+            zeno::vec3f result = prim_reduce<zeno::vec3f>(attrData, zsString2Std(op));
+            ZImpl(set_primitive_output("result", result));
+        }
+        else {
+            const std::vector<float>& attrData = prim->get_float_attr(ATTR_POINT, attrToReduce);
+            float result = prim_reduce<float>(attrData, zsString2Std(op));
+            ZImpl(set_primitive_output("result", result));
+        }
     }
 };
 ZENDEFNODE(PrimReduction,{
     {
-        {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+        {gParamType_Geometry, "prim", "", zeno::Socket_ReadOnly},
         {gParamType_String, "attrName", "pos"},
         {"enum avg max min absmax", "op", "avg"},
     },
     {
-        {"NumericObject","result"},
+        {gParamType_AnyNumeric, "result"},
     },
     {},
     {"primitive"},
 });
-
+//struct PrimAttrScatter : zeno::INode {
+//  virtual void apply() override{
+//    auto prim = get_input<PrimitiveObject>("primFrom");
+//    auto prim2 = get_input<PrimitiveObject>("primTo");
+//    auto attrToReduce = get_input2<std::string>(("attrName"));
+//    auto op = get_input2<std::string>(("op"));
+//
+//    set_output("result", std::move(prim));
+//  }
+//};
+//ZENDEFNODE(PrimAttrScatter,{
+//                              {
+//                                    {"primFrom"},
+//                                    {"primTo"},
+//                                  {"string", "attrName", "pos"},
+//                                  {"enum add max min absmax mul", "op", "add"},
+//                              },
+//                              {
+//                                  {"prim"},
+//                              },
+//                              {},
+//                              {"primitive"},
+//                          });
 struct PrimitiveBoundingBox : zeno::INode {
     virtual void apply() override{
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         auto &pos = prim->attr<zeno::vec3f>("pos");
 
         auto bmin = pos.size() ? pos[0] : vec3f(0);
@@ -108,14 +105,14 @@ struct PrimitiveBoundingBox : zeno::INode {
             bmax = zeno::max(pos[i], bmax);
         }
 
-        // auto exwidth = get_param<float>("exWidth");
-        auto exwidth = has_input("exWidth") ? get_input2<float>("exWidth") : 0.f;
+        // auto exwidth = ZImpl(get_param<float>("exWidth"));
+        auto exwidth = ZImpl(has_input("exWidth")) ? ZImpl(get_input2<float>("exWidth")) : 0.f;
         if (exwidth) {
             bmin -= exwidth;
             bmax += exwidth;
         }
-        set_output2("bmin", bmin);
-        set_output2("bmax", bmax);
+        ZImpl(set_output2("bmin", bmin));
+        ZImpl(set_output2("bmax", bmax));
     }
 };
 

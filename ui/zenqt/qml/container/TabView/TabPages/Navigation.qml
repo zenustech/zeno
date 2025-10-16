@@ -23,7 +23,7 @@ Rectangle {
     Component.onCompleted: initData()
     function initData() {
         pageModel.clear()
-        const f = app.tab.infoList
+        const f = nodeseditor.tab.infoList
         // 遍历所有文件信息（排除第一项自己）
         for(let i=1,c=f.length; i<c; i++){
             pageModel.append({
@@ -84,11 +84,11 @@ Rectangle {
                                         naviPage.introText = intro
                                     }
                                     onClicked: {
-                                        let i = app.tab.getTabPageIndex(naviPage)
+                                        let i = nodeseditor.tab.getTabPageIndex(naviPage)
                                         if(i < 0){
                                             console.error("【Error】导航页"+text+"未找到下标！")
                                         }
-                                        app.tab.changeTabPage(i, infoIndex)
+                                        nodeseditor.tab.changeTabPage(i, infoIndex)
                                     }
                                     
                                     background: Rectangle {

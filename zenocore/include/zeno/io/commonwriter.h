@@ -10,6 +10,7 @@ namespace zenoio
     {
     public:
         CommonWriter();
+        ZENO_API void set_proj_path(const std::string& path);
 
     protected:
         void dumpGraph(zeno::GraphData graph, RAPIDJSON_WRITER& writer);
@@ -18,6 +19,9 @@ namespace zenoio
         void dumpPrimitiveParam(zeno::ParamPrimitive info, RAPIDJSON_WRITER& writer);
         void dumpTimeline(zeno::TimelineInfo info, RAPIDJSON_WRITER& writer);
         void dumpCustomUI(zeno::CustomUI customUi, RAPIDJSON_WRITER& writer);
+
+    private:
+        std::string m_proj_path;
     };
 }
 

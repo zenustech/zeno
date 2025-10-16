@@ -2,10 +2,12 @@
 #include <zeno/core/INodeClass.h>
 #include <regex>
 #include <zeno/utils/helper.h>
+#include <zeno/extra/SubnetNode.h>
+#include <zeno/core/SolverImpl.h>
 
 namespace zeno {
 
-    static void initCoreParams(std::shared_ptr<INode> spNode, CustomUI customui)
+    static void initCoreParams(NodeImpl* spNode, CustomUI customui)
     {
         //init all params, and set defl value
         for (const ParamObject& param : customui.inputObjs)
@@ -24,20 +26,37 @@ namespace zeno {
         {
             spNode->add_output_obj_param(param);
         }
-        //根据customui上的约束信息调整所有控件的可见可用情况
+        //鏍规嵁customui涓婄殑绾︽潫淇℃伅璋冩暣鎵�鏈夋帶浠剁殑鍙鍙敤鎯呭喌
         spNode->checkParamsConstrain();
     }
 
 
-    ImplNodeClass::ImplNodeClass(std::shared_ptr<INode>(*ctor)(), CustomUI const& customui, std::string const& name)
+    ImplNodeClass::ImplNodeClass(INode*(*ctor)(), CustomUI const& customui, std::string const& name)
         : INodeClass(customui, name), ctor(ctor) {}
 
-    std::shared_ptr<INode> ImplNodeClass::new_instance(std::shared_ptr<Graph> pGraph, std::string const& name) {
-        std::shared_ptr<INode> spNode = ctor();
+    std::unique_ptr<NodeImpl> ImplNodeClass::new_instance(Graph* pGraph, std::string const& name) {
+        INode* pNode = ctor();
+        std::unique_ptr<NodeImpl> spNode;
+        NodeType type = pNode->type();
+        if (type == Node_SubgraphNode) {
+            auto subnetNode = std::make_unique<SubnetNode>(pNode);
+            spNode = std::move(subnetNode);
+        }
+        else if (type == Node_Solver) {
+            auto solverNode = std::make_unique<SolverImpl>(pNode);
+            spNode = std::move(solverNode);
+        }
+        else {
+            spNode = std::make_unique<NodeImpl>(pNode);
+        }
         spNode->initUuid(pGraph, classname);
         spNode->set_name(name);
-        initCoreParams(spNode, m_customui);
+        initCoreParams(spNode.get(), m_customui);
         return spNode;
     }
 
+    std::unique_ptr<INode> ImplNodeClass::new_coreinst() {
+        std::unique_ptr<INode> upNode(ctor());
+        return upNode;
+    }
 }

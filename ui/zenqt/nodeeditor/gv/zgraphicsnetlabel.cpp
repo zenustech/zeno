@@ -223,7 +223,7 @@ void ZGraphicsNetLabel::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     menu->addAction(pDelete);
 
     auto idx = paramIdx();
-    bool bInput = idx.data(ROLE_ISINPUT).toBool();
+    bool bInput = idx.data(QtRole::ROLE_ISINPUT).toBool();
     if (idx.isValid() && !bInput) {
         QAction* pEdit = new QAction(tr("Edit Net Label"));
         connect(pEdit, &QAction::triggered, this, [=]() {

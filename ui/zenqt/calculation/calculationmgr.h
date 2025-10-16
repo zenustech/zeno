@@ -14,17 +14,19 @@ class CalcWorker : public QObject
 {
     Q_OBJECT
 public:
-    CalcWorker(QObject* parent = nullptr);
+    CalcWorker();
+    void setCurrentGraphPath(const QString& current_graph_path);
 
 signals:
-    void calcFinished(bool, zeno::ObjPath, QString);
-    void nodeStatusChanged(zeno::ObjPath, NodeState);
+    void calcFinished(bool, QString, QString, const zeno::render_reload_info&);
+    void nodeStatusChanged(QString, QmlNodeRunStatus::Value);
 
 public slots:
     void run();
 
 private:
-    bool m_bReportNodeStatus = true;    //在正常运行模式下，是否发送每个节点的运行状态到前端
+    bool m_bReportNodeStatus = true;    //鍦ㄦ甯歌繍琛屾ā寮忎笅锛屾槸鍚﹀彂閫佹瘡涓妭鐐圭殑杩愯鐘舵�佸埌鍓嶇
+    QString m_current_graph_path;       //璁板綍褰撳墠杩愯寮�濮嬫椂鐨勫浘灞傜骇璺緞
 };
 
 
@@ -33,33 +35,51 @@ class CalculationMgr : public QObject
     Q_OBJECT
 public:
     CalculationMgr(QObject* parent);
-    void run();
-    void kill();
+    Q_PROPERTY(RunStatus::Value runStatus READ getRunStatus WRITE setRunStatus NOTIFY runStatus_changed)
+    RunStatus::Value getRunStatus() const;
+
+    Q_PROPERTY(bool autoRun READ getAutoRun WRITE setAutoRun NOTIFY autorun_changed)
+    bool getAutoRun() const;
+    void setAutoRun(bool autoRun);
+
+    Q_INVOKABLE void run();
+    Q_INVOKABLE void kill();
+    Q_INVOKABLE void run_and_clean();
+    Q_INVOKABLE void clear();
+    Q_INVOKABLE void clearNodeObjs(const QModelIndex& nodeIdx);
+    Q_INVOKABLE void clearSubnetObjs(const QModelIndex& nodeIdx);
+
     void registerRenderWid(DisplayWidget* pDisp);
     void unRegisterRenderWid(DisplayWidget* pDisp);
     bool isMultiThreadRunning() const;
 
 signals:
-    void calcFinished(bool, zeno::ObjPath, QString);
-    void nodeStatusChanged(zeno::ObjPath, NodeState);
+    void calcFinished(bool, QString, QString, const zeno::render_reload_info&);
+    void renderRequest(QString);
+    void nodeStatusChanged(QString, QmlNodeRunStatus::Value);
+    void runStatus_changed();
+    void autorun_changed();
 
 public slots:
     void onPlayTriggered(bool bToggled);
     void onFrameSwitched(int frame);
 
 private slots:
-    void onCalcFinished(bool, zeno::ObjPath, QString);
-    void onNodeStatusReported(zeno::ObjPath, NodeState);
+    void onCalcFinished(bool, QString, QString, const zeno::render_reload_info& info);
+    void onNodeStatusReported(QString, QmlNodeRunStatus::Value);
     void on_render_objects_loaded();
     void onPlayReady();
 
 private:
+    void setRunStatus(RunStatus::Value runstatus);
+
     bool m_bMultiThread;
-    CalcWorker* m_worker;
+    QScopedPointer<CalcWorker> m_worker;
     QThread m_thread;
     QTimer* m_playTimer;
     QSet<DisplayWidget*> m_registerRenders;
     QSet<DisplayWidget*> m_loadedRender;
+    RunStatus::Value m_runstatus;
 };
 
 #endif

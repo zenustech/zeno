@@ -3,6 +3,7 @@
 #include <opencv2/core.hpp>
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
 #include <random>
@@ -206,11 +207,11 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
 /*struct ImageResize: INode {//TODO::FIX BUG
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int width = get_input2<int>("width");
-        int height = get_input2<int>("height");
+        int width = get_input2_int("width");
+        int height = get_input2_int("height");
         auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         auto image2 = std::make_shared<PrimitiveObject>();
         image2->verts.resize(width * height);
         image2->userData().set2("isImage", 1);
@@ -230,8 +231,7 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
             int srcY = static_cast<int>(y * scaleY);
             image2->verts[y * width + x] = image->verts[srcY * w + srcX];
             image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
-        }
-        set_output("image", image2);
+        }set_output("image", std::move(image2)));
     }
 };
 ZENDEFNODE(ImageResize, {
@@ -247,11 +247,12 @@ ZENDEFNODE(ImageResize, {
     {"image"},
 });*/
 
+#if 0
 void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<PrimitiveObject> & dst, float angle, bool balpha) {
 
     double radians = angle * 3.14159 / 180.0;
-    int width = src->userData().get2<int>("w");
-    int height = src->userData().get2<int>("h");
+    int width = src->userData()->get_int("w");
+    int height = src->userData()->get_int("h");
 
     int centerX = width / 2;
     int centerY = height / 2;
@@ -325,19 +326,18 @@ void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<Primitive
 struct ImageRotate: INode {//TODO::transform and rorate
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto balpha = get_input2<bool>("alpha");
+        auto balpha = get_input2_bool("alpha");
         float rotate = get_input2<float>("rotate");
         auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         auto image2 = std::make_shared<PrimitiveObject>();
         image2->verts.resize(w * h);
         image2->userData().set2("isImage", 1);
         rotateimage(image,image2,rotate,balpha);
         auto &ud2 = image2->userData();
-        w = ud2.get2<int>("w");
-        h = ud2.get2<int>("h");
-        set_output("image", image2);
+        w = ud2->get_int("w");
+        h = ud2->get_int("h");set_output("image", std::move(image2)));
     }
 };
 ZENDEFNODE(ImageRotate, {
@@ -352,57 +352,64 @@ ZENDEFNODE(ImageRotate, {
     {},
     {"image"},
 });
+#endif
 
 struct ImageFlip: INode {
     void apply() override {
-        auto fliphori = get_input2<bool>("Flip Horizontally");
-        auto flipvert = get_input2<bool>("Flip Vertically");
-        auto image = get_input<PrimitiveObject>("image");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        auto fliphori = get_input2_bool("Flip Horizontally");
+        auto flipvert = get_input2_bool("Flip Vertically");
+        auto image = clone_input_Geometry("image");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto imageverts = image->points_pos();
         if(fliphori&&flipvert){
-            image_flip_horizontal(image->verts.data(), w, h);
-            image_flip_vertical(image->verts.data(), w, h);
-            if (image->verts.has_attr("alpha")) {
-                auto alpha = image->verts.attr<float>("alpha");
+            image_flip_horizontal(imageverts.data(), w, h);
+            image_flip_vertical(imageverts.data(), w, h);
+            if (image->has_point_attr("alpha")) {
+                auto alpha = image->get_float_attr(ATTR_POINT, "alpha");
                 image_flip_horizontal(alpha.data(), w, h);
                 image_flip_vertical(alpha.data(), w, h);
+                image->set_point_attr("alpha", alpha);
             }
         }
         else if(fliphori&&!flipvert){
-            image_flip_horizontal(image->verts.data(), w, h);
-            if (image->verts.has_attr("alpha")) {
-                auto alpha = image->verts.attr<float>("alpha");
+            image_flip_horizontal(imageverts.data(), w, h);
+            if (image->has_point_attr("alpha")) {
+                auto alpha = image->get_float_attr(ATTR_POINT, "alpha");
                 image_flip_horizontal(alpha.data(), w, h);
+                image->set_point_attr("alpha", alpha);
             }
         }
         else if(!fliphori&&flipvert){
-            image_flip_vertical(image->verts.data(), w, h);
-            if (image->verts.has_attr("alpha")) {
-                auto alpha = image->verts.attr<float>("alpha");
+            image_flip_vertical(imageverts.data(), w, h);
+            if (image->has_point_attr("alpha")) {
+                auto alpha = image->get_float_attr(ATTR_POINT, "alpha");
                 image_flip_vertical(alpha.data(), w, h);
+                image->set_point_attr("alpha", alpha);
             }
         }
         else if(!fliphori&&!flipvert){
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 
 ZENDEFNODE(ImageFlip, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Bool, "Flip Horizontally", "0"},
         {gParamType_Bool, "Flip Vertically", "0"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
 });
 
+#if 0
 struct ImageRGB2HSV : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -415,8 +422,7 @@ struct ImageRGB2HSV : INode {
             image->verts[i][0]= H;
             image->verts[i][1]= S;
             image->verts[i][2]= V;
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -443,8 +449,7 @@ struct ImageHSV2RGB : INode {
             image->verts[i][0]= R ;
             image->verts[i][1]= G ;
             image->verts[i][2]= B ;
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -482,8 +487,7 @@ struct ImageEditHSV : INode {//TODO::FIX BUG
             image->verts[i][0] = R;
             image->verts[i][1] = G;
             image->verts[i][2] = B;
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -500,6 +504,7 @@ ZENDEFNODE(ImageEditHSV, {
     {},
     { "image" },
 });
+#endif
 
 
 float gaussian(float x, float sigma) {
@@ -640,32 +645,34 @@ void gaussBlur(std::vector<zeno::vec3f> scl, std::vector<zeno::vec3f>& tcl, int 
 
 struct ImageBlur : INode {
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto kernelSize = get_input2<int>("kernelSize");
-        auto type = get_input2<std::string>("type");
-        auto fastgaussian = get_input2<bool>("Fast Blur(Gaussian)");
-        auto sigmaX = get_input2<float>("GaussianSigma");
-        auto sigmaColor = get_input2<zeno::vec2f>("BilateralSigma")[0];
-        auto sigmaSpace = get_input2<zeno::vec2f>("BilateralSigma")[1];
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto img_out = std::make_shared<PrimitiveObject>();
-        img_out->resize(w * h);
-        img_out->userData().set2("w", w);
-        img_out->userData().set2("h", h);
-        img_out->userData().set2("isImage", 1);
+        auto image = clone_input_Geometry("image");
+        auto kernelSize = get_input2_int("kernelSize");
+        auto type = get_input2_string("type");
+        auto fastgaussian = get_input2_bool("Fast Blur(Gaussian)");
+        auto sigmaX = get_input2_float("GaussianSigma");
+        auto sigmaColor = get_input2_vec2f("BilateralSigma").x;
+        auto sigmaSpace = get_input2_vec2f("BilateralSigma").y;
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto img_out = create_GeometryObject(zeno::Topo_IndiceMesh, true, w * h, 0);
+        img_out->userData()->set_int("w", w);
+        img_out->userData()->set_int("h", h);
+        img_out->userData()->set_int("isImage", 1);
 
+        std::vector<vec3f> img_data = image->points_pos();
         if(type == "Gaussian" && fastgaussian){
-            gaussBlur(image->verts, img_out->verts, w, h, sigmaX, 3);
+            std::vector<vec3f> imgout_data = img_out->points_pos();
+            gaussBlur(img_data, imgout_data, w, h, sigmaX, 3);
+            img_out->set_point_attr("pos", imgout_data);
         }
         else{//CV BLUR
             cv::Mat imagecvin(h, w, CV_32FC3);
             cv::Mat imagecvout(h, w, CV_32FC3);
-            for (auto a = 0; a < image->verts.size(); a++){
+            for (auto a = 0; a < img_data.size(); a++){
                 int i = a / w;
                 int j = a % w;
-                vec3f rgb = image->verts[i * w + j];
+                vec3f rgb = img_data[i * w + j];
                 imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
             }
             if(kernelSize%2==0){
@@ -691,20 +698,20 @@ struct ImageBlur : INode {
             else{
                 zeno::log_error("ImageBlur: Blur type does not exist");
             }
-            for (auto a = 0; a < image->verts.size(); a++){
+            for (auto a = 0; a < img_data.size(); a++){
                 int i = a / w;
                 int j = a % w;
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                img_out->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                img_out->set_pos(i * w + j, vec3f{rgb[0], rgb[1], rgb[2]});
             }
         }
-        set_output("image", img_out);
+        set_output("image", std::move(img_out));
     }
 };
 
 ZENDEFNODE(ImageBlur, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {"enum Gaussian Box Median Bilateral Stack", "type", "Gaussian"},
         {gParamType_Int, "kernelSize", "5"},
         {gParamType_Float, "GaussianSigma", "3"},//fast gaussian only effect by sigma  等参数分开显示再移开
@@ -712,7 +719,7 @@ ZENDEFNODE(ImageBlur, {
         {gParamType_Bool, "Fast Blur(Gaussian)", "1"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "image" },
@@ -720,26 +727,28 @@ ZENDEFNODE(ImageBlur, {
 
 struct ImageEditContrast : INode {
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        float ContrastRatio = get_input2<float>("ContrastRatio");
-        float ContrastCenter = get_input2<float>("ContrastCenter");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        for (auto i = 0; i < image->verts.size(); i++) {
-            image->verts[i] = image->verts[i] + (image->verts[i]-ContrastCenter) * (ContrastRatio-1);
+        auto image = clone_input_Geometry("image");
+        float ContrastRatio = get_input2_float("ContrastRatio");
+        float ContrastCenter = get_input2_float("ContrastCenter");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto imageverts = image->points_pos();
+        for (auto i = 0; i < imageverts.size(); i++) {
+            imageverts[i] = imageverts[i] + (imageverts[i]-ContrastCenter) * (ContrastRatio-1);
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 
 ZENDEFNODE(ImageEditContrast, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Float, "ContrastRatio", "1"},
         {gParamType_Float, "ContrastCenter", "0.5"},
     },
-    {{gParamType_Primitive, "image"}},
+    {{gParamType_Geometry, "image"}},
     {},
     { "image" },
 });
@@ -747,19 +756,21 @@ ZENDEFNODE(ImageEditContrast, {
 
 struct ImageEditInvert : INode{
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        for (auto i = 0; i < image->verts.size(); i++) {
-            image->verts[i] = 1 - image->verts[i];
+        auto image = clone_input_Geometry("image");
+        auto imageverts = image->points_pos();
+        for (auto i = 0; i < imageverts.size(); i++) {
+            imageverts[i] = 1 - imageverts[i];
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 ZENDEFNODE(ImageEditInvert, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
@@ -768,37 +779,40 @@ ZENDEFNODE(ImageEditInvert, {
 /* 将高度图像转换为法线贴图 */
 struct ImageToNormalMap : INode {
     virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto strength = get_input2<float>("strength");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto InvertR = get_input2<bool>("InvertR");
-        auto InvertG = get_input2<bool>("InvertG");
-        auto normalmap = std::make_shared<PrimitiveObject>();
-        normalmap->verts.resize(w * h);
-        normalmap->userData().set2("isImage", 1);
-        normalmap->userData().set2("w", w);
-        normalmap->userData().set2("h", h);
+        auto image = clone_input_Geometry("image");
+        auto strength = get_input2_float("strength");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto InvertR = get_input2_bool("InvertR");
+        auto InvertG = get_input2_bool("InvertG");
+        auto normalmap = create_GeometryObject(zeno::Topo_IndiceMesh, true, w * h, 0);
+        auto normalmap_verts = normalmap->points_pos();
+        normalmap->userData()->set_int("isImage", 1);
+        normalmap->userData()->set_int("w", w);
+        normalmap->userData()->set_int("h", h);
 
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 if (i == 0 || i == h || j == 0 || j == w) {
-                    normalmap->verts[i * w + j] = {0, 0, 1};
+                    normalmap_verts[i * w + j] = {0, 0, 1};
                 }
             }
         }
+
+        const auto& imageverts = image->points_pos();
+        //image->set_point_attr("pos", imageverts);
         
 #pragma omp parallel for
         for (int i = 1; i < h-1; i++) {
             for (int j = 1; j < w-1; j++) {
-                float gx = -image->verts[(i - 1) * w + j - 1][0] + image->verts[(i - 1) * w + j + 1][0] 
-                - 2.0f * image->verts[i * w + j - 1][0] + 2.0f * image->verts[ i * w + j + 1][0]
-                - image->verts[(i + 1) * w + j - 1][0] + image->verts[(i + 1) * w + j + 1][0]; 
+                float gx = -imageverts[(i - 1) * w + j - 1][0] + imageverts[(i - 1) * w + j + 1][0] 
+                - 2.0f * imageverts[i * w + j - 1][0] + 2.0f * imageverts[ i * w + j + 1][0]
+                - imageverts[(i + 1) * w + j - 1][0] + imageverts[(i + 1) * w + j + 1][0]; 
 
-                float gy = image->verts[(i - 1) * w + j - 1][0] + 2.0f * image->verts[(i - 1) * w + j][0]
-                + image->verts[(i - 1) * w + j + 1][0] - image->verts[(i + 1) * w + j - 1][0]
-                - 2.0f * image->verts[(i + 1) * w + j][0] - image->verts[(i + 1) * w + j + 1][0]; 
+                float gy = imageverts[(i - 1) * w + j - 1][0] + 2.0f * imageverts[(i - 1) * w + j][0]
+                + imageverts[(i - 1) * w + j + 1][0] - imageverts[(i + 1) * w + j - 1][0]
+                - 2.0f * imageverts[(i + 1) * w + j][0] - imageverts[(i + 1) * w + j + 1][0]; 
                 
                 gx = gx * strength;
                 gy = gy * strength;
@@ -813,23 +827,24 @@ struct ImageToNormalMap : INode {
                 else if(InvertR){
                     rgb[0] = 1 - rgb[0];
                 }
-                normalmap->verts[i * w + j] = rgb;
+                normalmap_verts[i * w + j] = rgb;
                 
                 }
             }
-        set_output("image", normalmap);
+        normalmap->set_point_attr("pos", normalmap_verts);
+        set_output("image", std::move(normalmap));
     }
 };
 
 ZENDEFNODE(ImageToNormalMap, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Float, "strength", "10"},
         {gParamType_Bool, "InvertR", "0"},
         {gParamType_Bool, "InvertG", "0"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "image" },
@@ -837,13 +852,14 @@ ZENDEFNODE(ImageToNormalMap, {
 
 struct ImageGray : INode {
     void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        for (auto i = 0; i < image->verts.size(); i++) {
-            vec3f &v = image->verts[i];
+        auto image = clone_input_Geometry("image");
+        auto mode = get_input2_string("mode");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto imageverts = image->points_pos();
+        for (auto i = 0; i < imageverts.size(); i++) {
+            vec3f &v = imageverts[i];
             if(mode=="Average"){
                 float avg = (v[0] + v[1] + v[2]) / 3;
                 v = vec3f(avg);
@@ -870,26 +886,29 @@ struct ImageGray : INode {
                 v = vec3f(min);
             }
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 ZENDEFNODE(ImageGray, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {"enum Average Luminance Red Green Blue MaxComponent MinComponent", "mode", "Average"},
     },
     {
-        {gParamType_Primitive, "image"}
+        {gParamType_Geometry, "image"}
     },
     {},
     { "image" },
 });
 
-static std::shared_ptr<PrimitiveObject> normal_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
-    int width = image1->userData().get2<int>("w");
-    int height = image1->userData().get2<int>("h");
+static void normal_tiling(GeometryObject_Adapter* image1, GeometryObject_Adapter* image2, int rows, int cols) {
+    int width = image1->userData()->get_int("w");
+    int height = image1->userData()->get_int("h");
     int new_width = width * cols;
     int new_height = height * rows;
+    auto image1verts = image1->points_pos();
+    auto image2verts = image2->points_pos();
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             int x = j * width;
@@ -898,19 +917,21 @@ static std::shared_ptr<PrimitiveObject> normal_tiling(std::shared_ptr<PrimitiveO
                 for (int w = 0; w < width; w++) {
                     int index1 = (y + h) * new_width + (x + w);
                     int index2 = h * width + w;
-                    image2->verts[index1] = image1->verts[index2];
+                    image2verts[index1] = image1verts[index2];
                 }
             }
         }
     }
-    return image2;
+    image2->set_point_attr("pos", image2verts);
 }
 
-static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
-    int width = image1->userData().get2<int>("w");
-    int height = image1->userData().get2<int>("h");
+static void mirror_tiling(GeometryObject_Adapter* image1, GeometryObject_Adapter* image2, int rows, int cols) {
+    int width = image1->userData()->get_int("w");
+    int height = image1->userData()->get_int("h");
     int new_width = width * cols;
     int new_height = height * rows;
+    auto image1verts = image1->points_pos();
+    auto image2verts = image2->points_pos();
     // 复制像素并进行镜像平铺
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
@@ -919,67 +940,66 @@ static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveO
             for (int h = 0; h < height; h++) {
                 for (int w = 0; w < width; w++) {
                     if(i%2 == 0 && j%2 == 0){
-                        image2->verts[(y + h) * width * cols + (x + w)] = image1->verts[h * width + w];
+                        image2verts[(y + h) * width * cols + (x + w)] = image1verts[h * width + w];
                     }
                     if(i%2 == 0 && j%2 == 1){
-                        image2->verts[((y + h) * width * cols + x + (width - w - 1))] = image1->verts[(h * width + w)];
+                        image2verts[((y + h) * width * cols + x + (width - w - 1))] = image1verts[(h * width + w)];
                     }
                     if(i%2 == 1 && j%2 == 0){
-                        image2->verts[(y + (height - h - 1)) * width * cols + w + x] = image1->verts[(h * width + w)];
+                        image2verts[(y + (height - h - 1)) * width * cols + w + x] = image1verts[(h * width + w)];
                     }
                     if(i%2 == 1 && j%2 == 1){
-                        image2->verts[(y + (height - h - 1)) * width * cols + (width - w - 1) + x] = image1->verts[(h * width + w)];
+                        image2verts[(y + (height - h - 1)) * width * cols + (width - w - 1) + x] = image1verts[(h * width + w)];
                     }
                 }
             }
         }
     }
-    return image2;
+    image2->set_point_attr("pos", image2verts);
 }
 
 struct ImageTile: INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto tilemode = get_input2<std::string>("tilemode");
-        auto rows = get_input2<int>("rows");
-        auto cols = get_input2<int>("cols");
-        UserData &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        auto image = clone_input_Geometry("image");
+        auto tilemode = get_input2_string("tilemode");
+        auto rows = get_input2_int("rows");
+        auto cols = get_input2_int("cols");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         int w1 = w * cols;
         int h1 = h * rows;
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->resize(w1 * h1);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w1);
-        image2->userData().set2("h", h1);
+        auto image2 = create_GeometryObject(zeno::Topo_IndiceMesh, true, w1 * h1, 0);
+        image2->userData()->set_int("isImage", 1);
+        image2->userData()->set_int("w", w1);
+        image2->userData()->set_int("h", h1);
         if(tilemode == "normal"){
-            zeno::normal_tiling(image,image2, rows, cols);
+            zeno::normal_tiling(image.get(), image2.get(), rows, cols);
         }
         if(tilemode == "mirror"){
-            zeno::mirror_tiling(image,image2, rows, cols);
+            zeno::mirror_tiling(image.get(), image2.get(), rows, cols);
         }
-        set_output("image", image2);
+        set_output("image", std::move(image2));
     }
 };
 ZENDEFNODE(ImageTile, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {"enum normal mirror", "tilemode", "normal"},
         {gParamType_Int, "rows", "2"},
         {gParamType_Int, "cols", "2"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
 });
 
 // ImageDilate函数实现
-void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel,int iterations) {
-    int image_height = image->userData().get2<int>("h");
-    int image_width = image->userData().get2<int>("w");
+void imagedilate(std::unique_ptr<GeometryObject_Adapter>& image, std::vector<std::vector<int>>& kernel,int iterations) {
+    int image_height = image->userData()->get_int("h");
+    int image_width = image->userData()->get_int("w");
     int kernel_height = kernel.size();
     int kernel_width = kernel[0].size();
     int center_y = kernel_height / 2;
@@ -987,11 +1007,12 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
 
 #pragma omp parallel for
     for (int iter = 0; iter < iterations; iter++){
-        auto imagetmp = std::make_shared<PrimitiveObject>();
-        imagetmp->resize(image_width * image_height);
-        imagetmp->userData().set2("isImage", 1);
-        imagetmp->userData().set2("w", image_width);
-        imagetmp->userData().set2("h", image_height);
+        auto imagetmp = create_GeometryObject(zeno::Topo_IndiceMesh, true, image_width * image_height, 0);
+        imagetmp->userData()->set_int("isImage", 1);
+        imagetmp->userData()->set_int("w", image_width);
+        imagetmp->userData()->set_int("h", image_height);
+        auto imageverts = image->points_pos();
+        auto imagetmpverts = imagetmp->points_pos();
         for (int y = center_y; y < image_height - center_y; y++) {
             for (int x = center_x; x < image_width - center_x; x++) {
                 float maxValue0 = 0;
@@ -1001,21 +1022,21 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
                     for (int kx = 0; kx < kernel_width; kx++) {
                         int image_y = y - center_y + ky;
                         int image_x = x - center_x + kx;
-                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][0] > maxValue0) {
-                            maxValue0 = image->verts[image_y * image_width + image_x][0];
+                        if (kernel[ky][kx] == 1 && imageverts[image_y * image_width + image_x][0] > maxValue0) {
+                            maxValue0 = imageverts[image_y * image_width + image_x][0];
                         }
-                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][1] > maxValue1) {
-                            maxValue1 = image->verts[image_y * image_width + image_x][1];
+                        if (kernel[ky][kx] == 1 && imageverts[image_y * image_width + image_x][1] > maxValue1) {
+                            maxValue1 = imageverts[image_y * image_width + image_x][1];
                         }
-                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][2] > maxValue2) {
-                            maxValue2 = image->verts[image_y * image_width + image_x][2];
+                        if (kernel[ky][kx] == 1 && imageverts[image_y * image_width + image_x][2] > maxValue2) {
+                            maxValue2 = imageverts[image_y * image_width + image_x][2];
                         }
                     }
                 }
-                imagetmp->verts[y * image_width + x]= {maxValue0,maxValue1,maxValue2};
+                imagetmpverts[y * image_width + x]= {maxValue0,maxValue1,maxValue2};
             }
         }
-        image = imagetmp;
+        image = std::move(imagetmp);
     }
 }
 
@@ -1025,18 +1046,19 @@ void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Streng
 }
 struct ImageDilate: INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int strength = get_input2<int>("strength");
-        int kheight = get_input2<int>("kernel_height");
-        int kwidth = get_input2<int>("kernel_width");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        auto image = clone_input_Geometry("image");
+        int strength = get_input2_int("strength");
+        int kheight = get_input2_int("kernel_height");
+        int kwidth = get_input2_int("kernel_width");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         cv::Mat imagecvin(h, w, CV_32FC3);
         cv::Mat imagecvout(h, w, CV_32FC3);
+        auto imageverts = image->points_pos();
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
+                vec3f rgb = imageverts[i * w + j];
                 imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
             }
         }
@@ -1045,38 +1067,39 @@ struct ImageDilate: INode {
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                imageverts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
             }
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 ZENDEFNODE(ImageDilate, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Int, "strength", "1"},
         {gParamType_Int, "kernel_width", "3"},
         {gParamType_Int, "kernel_height", "3"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
 });
 
-void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel, int iterations) {
-    int image_height = image->userData().get2<int>("h");
-    int image_width = image->userData().get2<int>("w");
+void imageerode(std::unique_ptr<GeometryObject_Adapter>& image, std::vector<std::vector<int>>& kernel, int iterations) {
+    int image_height = image->userData()->get_int("h");
+    int image_width = image->userData()->get_int("w");
     int kernel_height = kernel.size();
     int kernel_width = kernel[0].size();
 #pragma omp parallel for
     for (int iter = 0; iter < iterations; iter++) {
-        auto imagetmp = std::make_shared<PrimitiveObject>();
-        imagetmp->resize(image_width * image_height);
-        imagetmp->userData().set2("isImage", 1);
-        imagetmp->userData().set2("w", image_width);
-        imagetmp->userData().set2("h", image_height);
+        auto imagetmp = create_GeometryObject(zeno::Topo_IndiceMesh, true, image_width * image_height, 0);
+        imagetmp->userData()->set_int("isImage", 1);
+        imagetmp->userData()->set_int("w", image_width);
+        imagetmp->userData()->set_int("h", image_height);
+        auto imageverts = imagetmp->points_pos();
 
         for (int i = 0; i < image_height; i++) {
             for (int j = 0; j < image_width; j++) {
@@ -1089,34 +1112,35 @@ void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector
                         int posY = i + y - kernel_height / 2;
                         if (posX >= 0 && posX < image_width && posY >= 0 && posY < image_height) {
                             if (kernel[x][y] == 1) {
-                                minVal0 = std::min(minVal0, image->verts[posY * image_width + posX][0]);
-                                minVal1 = std::min(minVal1, image->verts[posY * image_width + posX][1]);
-                                minVal2 = std::min(minVal2, image->verts[posY * image_width + posX][2]);
+                                minVal0 = std::min(minVal0, imageverts[posY * image_width + posX][0]);
+                                minVal1 = std::min(minVal1, imageverts[posY * image_width + posX][1]);
+                                minVal2 = std::min(minVal2, imageverts[posY * image_width + posX][2]);
                             }
                         }
                     }
                 }
-                imagetmp->verts[i * image_width + j]= {minVal0,minVal1,minVal2};
+                imageverts[i * image_width + j]= {minVal0,minVal1,minVal2};
             }
         }
-        image = imagetmp;
+        image = std::move(imagetmp);
     }
 }
 
 struct ImageErode: INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int strength = get_input2<int>("strength");
-        int kheight = get_input2<int>("kernel_height");
-        int kwidth = get_input2<int>("kernel_width");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        auto image = clone_input_Geometry("image");
+        int strength = get_input2_int("strength");
+        int kheight = get_input2_int("kernel_height");
+        int kwidth = get_input2_int("kernel_width");
+        auto ud = image->userData();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         cv::Mat imagecvin(h, w, CV_32FC3);
         cv::Mat imagecvout(h, w, CV_32FC3);
+        auto imageverts = image->points_pos();
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
+                vec3f rgb = imageverts[i * w + j];
                 imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
             }
         }
@@ -1127,22 +1151,23 @@ struct ImageErode: INode {
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                imageverts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
             }
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 ZENDEFNODE(ImageErode, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Int, "strength", "1"},
         {gParamType_Int, "kernel_width", "3"},
         {gParamType_Int, "kernel_height", "3"},
 
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
@@ -1151,29 +1176,30 @@ ZENDEFNODE(ImageErode, {
 
 struct ImageColor : INode {
     virtual void apply() override {
-        auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<zeno::vec4f>("Color");
-        auto size = get_input2<zeno::vec2i>("Size");
-        auto balpha = get_input2<bool>("alpha");
-        auto vertsize = size[0] * size[1];
-        image->verts.resize(vertsize);
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", size[0]);
-        image->userData().set2("h", size[1]);
+        auto color = toVec4f(get_input2_vec4f("Color"));
+        auto size = get_input2_vec2i("Size");
+        auto balpha = get_input2_bool("alpha");
+        auto vertsize = size.x * size.y;
+        auto image = create_GeometryObject(zeno::Topo_IndiceMesh, true, vertsize, 0);
+        image->userData()->set_int("isImage", 1);
+        image->userData()->set_int("w", size.x);
+        image->userData()->set_int("h", size.y);
+        auto imageverts = image->points_pos();
         if(balpha){
-            auto &alphaAttr = image->verts.add_attr<float>("alpha");
+            image->create_point_attr("alpha", 0.f);
+            auto alphaAttr = image->get_float_attr(ATTR_POINT, "alpha");
             for (int i = 0; i < vertsize ; i++) {
-                image->verts[i] = {color[0], color[1], color[2]};
+                imageverts[i] = {color[0], color[1], color[2]};
                 alphaAttr[i] = color[3];
             }
         }
         else{
             for (int i = 0; i < vertsize ; i++) {
-                image->verts[i] = {color[0], color[1], color[2]};
+                imageverts[i] = {color[0], color[1], color[2]};
             }
         }
-        set_output("image", image);
-        
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 
@@ -1189,18 +1215,21 @@ ZENDEFNODE(ImageColor, {
     {},
     { "deprecated" },
 });
+
+/*
 struct ImageColor2 : INode {
     virtual void apply() override {
-        auto image = std::make_shared<PrimitiveObject>();
+        auto image = create_GeometryObject(true, );
         auto color = get_input2<zeno::vec3f>("Color");
         auto alpha = get_input2<float>("Alpha");
         auto size = get_input2<zeno::vec2i>("Size");
-        auto balpha = get_input2<bool>("alpha");
+        auto balpha = get_input2_bool("alpha");
         auto vertsize = size[0] * size[1];
         image->verts.resize(vertsize);
         image->userData().set2("isImage", 1);
         image->userData().set2("w", size[0]);
         image->userData().set2("h", size[1]);
+        auto imageverts = image->points_pos();
         if(balpha){
             auto &alphaAttr = image->verts.add_attr<float>("alpha");
             for (int i = 0; i < vertsize ; i++) {
@@ -1213,7 +1242,7 @@ struct ImageColor2 : INode {
                 image->verts[i] = {color[0], color[1], color[2]};
             }
         }
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);set_output("image", std::move(image)));
     }
 };
 
@@ -1234,12 +1263,14 @@ ZENDEFNODE(ImageColor2, {
 struct ImageClamp: INode {//Add Unpremultiplied Space Option?
     void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto background = get_input2<std::string>("ClampedValue");
+        auto background = get_input2_string("ClampedValue");
         auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         auto up = get_input2<float>("Max");
         auto low = get_input2<float>("Min");
+        auto imageverts = image->points_pos();
+
         if(background == "LimitValue"){
         for (auto i = 0; i < image->verts.size(); i++) {
             image->verts[i] = zeno::clamp(image->verts[i], low, up);
@@ -1266,7 +1297,7 @@ struct ImageClamp: INode {//Add Unpremultiplied Space Option?
             }
         }
 
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);set_output("image", std::move(image)));
     }
 };
 
@@ -1283,15 +1314,15 @@ ZENDEFNODE(ImageClamp, {
     {},
     {"image"},
 });
-/*
+
 struct ImageMatting: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto imagemode = get_input2<std::string>("imagemode");
-        auto maskmode = get_input2<std::string>("maskmode");
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
+        auto imagemode = get_input2_string("imagemode");
+        auto maskmode = get_input2_string("maskmode");
 
         if(imagemode == "origin"){
             if (!image->has_attr("alpha")) {
@@ -1332,8 +1363,8 @@ struct ImageMatting: INode {
         if (has_input("mask")) {
             auto gimage = get_input2<PrimitiveObject>("mask");
             auto &gud = gimage->userData();
-            int wg = gud.get2<int>("w");
-            int hg = gud.get2<int>("h");
+            int wg = gud->get_int("w");
+            int hg = gud->get_int("h");
             if (wg == w && hg == h) {
                 if (maskmode == "black") {
                     if (gimage->verts.has_attr("alpha")) {
@@ -1465,8 +1496,7 @@ struct ImageMatting: INode {
             }
             else if (wg < w && hg < h) {
             }
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 
@@ -1486,16 +1516,17 @@ ZENDEFNODE(ImageMatting, {
 
 struct ImageLevels: INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto inputLevels = get_input2<zeno::vec2f>("Input Levels");
-        auto outputLevels = get_input2<zeno::vec2f>("Output Levels");
-        auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
-        auto channel = get_input2<std::string>("channel");
-        auto clamp = get_input2<bool>("Clamp Output");
-        auto autolevel = get_input2<bool>("Auto Level");
-        UserData &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        auto image = clone_input_Geometry("image");
+        auto inputLevels = toVec4f(get_input2_vec4f("Input Levels"));
+        auto outputLevels = toVec4f(get_input2_vec4f("Output Levels"));
+        auto gamma = get_input2_float("gamma");//range  0.01 - 9.99
+        auto channel = get_input2_string("channel");
+        auto clamp = get_input2_bool("Clamp Output");
+        auto autolevel = get_input2_bool("Auto Level");
+        auto ud = image->userData();
+        auto imageverts = image->points_pos();
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         float inputRange = inputLevels[1] - inputLevels[0];
         float outputRange = outputLevels[1] - outputLevels[0];
         float inputMin = inputLevels[0];
@@ -1508,9 +1539,9 @@ struct ImageLevels: INode {
             std::vector<int> histogramgreen(256, 0);
             std::vector<int> histogramblue(256, 0);
             for (int i = 0; i < w * h; i++) {
-                histogramred[zeno::clamp(int(image->verts[i][0] * 255.99), 0, 255)]++;
-                histogramgreen[zeno::clamp(int(image->verts[i][1] * 255.99), 0, 255)]++;
-                histogramblue[zeno::clamp(int(image->verts[i][2] * 255.99), 0, 255)]++;
+                histogramred[zeno::clamp(int(imageverts[i][0] * 255.99), 0, 255)]++;
+                histogramgreen[zeno::clamp(int(imageverts[i][1] * 255.99), 0, 255)]++;
+                histogramblue[zeno::clamp(int(imageverts[i][2] * 255.99), 0, 255)]++;
             }
             int total = w * h;
             int sum = 0;
@@ -1575,7 +1606,7 @@ struct ImageLevels: INode {
         if(autolevel){
 #pragma omp parallel for
             for (int i = 0; i < w * h; i++) {
-                vec3f &v = image->verts[i];
+                vec3f &v = imageverts[i];
                 v[0] = (v[0] < MinRed) ? MinRed : v[0];
                 v[1] = (v[1] < MinGreen) ? MinGreen : v[1];
                 v[2] = (v[2] < MinBlue) ? MinBlue : v[2];
@@ -1588,7 +1619,7 @@ struct ImageLevels: INode {
         else if (channel == "All") {
 #pragma omp parallel for
             for (int i = 0; i < w * h; i++) {
-                vec3f &v = image->verts[i];
+                vec3f &v = imageverts[i];
                 v[0] = (v[0] < inputMin) ? inputMin : v[0];
                 v[1] = (v[1] < inputMin) ? inputMin : v[1];
                 v[2] = (v[2] < inputMin) ? inputMin : v[2];
@@ -1596,8 +1627,8 @@ struct ImageLevels: INode {
                 v = pow(v, gammaCorrection);
                 v = clamp ? zeno::clamp((v * outputRange + outputMin), 0, 1) : (v * outputRange + outputMin);
             }
-            if(image->has_attr("alpha")){
-                auto &alphaAttr = image->verts.attr<float>("alpha");
+            if(image->has_point_attr("alpha")){
+                auto alphaAttr = image->get_float_attr(ATTR_POINT, "alpha");
 #pragma omp parallel for
                 for (int i = 0; i < w * h; i++) {
                     alphaAttr[i] = (alphaAttr[i] < inputMin) ? inputMin : alphaAttr[i];
@@ -1605,12 +1636,13 @@ struct ImageLevels: INode {
                     alphaAttr[i] = pow(alphaAttr[i], gammaCorrection) * outputRange + outputMin;
                     alphaAttr[i] = clamp ? zeno::clamp(alphaAttr[i], 0, 1) : alphaAttr[i];
                 }
+                image->set_point_attr("alpha", alphaAttr);
             }
         }
         else if (channel == "R") {
 #pragma omp parallel for
         for (int i = 0; i < w * h; i++) {
-                float &v = image->verts[i][0];
+                float &v = imageverts[i][0];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
                 v = pow(v, gammaCorrection);
@@ -1621,7 +1653,7 @@ struct ImageLevels: INode {
         else if (channel == "G") {
 #pragma omp parallel for
         for (int i = 0; i < w * h; i++) {
-                float &v = image->verts[i][1];
+                float &v = imageverts[i][1];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
                 v = pow(v, gammaCorrection);
@@ -1632,7 +1664,7 @@ struct ImageLevels: INode {
         else if (channel == "B") {
 #pragma omp parallel for
         for (int i = 0; i < w * h; i++) {
-                float &v = image->verts[i][2];
+                float &v = imageverts[i][2];
                 if (v < inputMin) v = inputMin;
                 v = (v - inputMin) / inputRange;
                 v = pow(v, gammaCorrection);
@@ -1641,27 +1673,28 @@ struct ImageLevels: INode {
         }
         
         else if (channel == "A") {
-        if(image->has_attr("alpha")){
-            auto &alphaAttr = image->verts.attr<float>("alpha");
+            if(image->has_point_attr("alpha")){
+                auto alphaAttr = image->get_float_attr(ATTR_POINT, "alpha");
 #pragma omp parallel for
-            for (int i = 0; i < w * h; i++) {
-                alphaAttr[i] = (alphaAttr[i] < inputMin) ? inputMin : alphaAttr[i];
-                alphaAttr[i] = (alphaAttr[i] - inputMin) / inputRange;
-                alphaAttr[i] = pow(alphaAttr[i], gammaCorrection) * outputRange + outputMin;
-                alphaAttr[i] = clamp ? zeno::clamp(alphaAttr[i], 0, 1) : alphaAttr[i];
+                for (int i = 0; i < w * h; i++) {
+                    alphaAttr[i] = (alphaAttr[i] < inputMin) ? inputMin : alphaAttr[i];
+                    alphaAttr[i] = (alphaAttr[i] - inputMin) / inputRange;
+                    alphaAttr[i] = pow(alphaAttr[i], gammaCorrection) * outputRange + outputMin;
+                    alphaAttr[i] = clamp ? zeno::clamp(alphaAttr[i], 0, 1) : alphaAttr[i];
                 }
+                image->set_point_attr("alpha", alphaAttr);
             }
             else{
                 zeno::log_error("no alpha channel");
             }
         }
-
-        set_output("image", image);
+        image->set_point_attr("pos", imageverts);
+        set_output("image", std::move(image));
     }
 };
 ZENDEFNODE(ImageLevels, {
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
         {gParamType_Vec2f, "Input Levels", "0, 1"},
         {gParamType_Float, "gamma", "1"},
         {gParamType_Vec2f, "Output Levels", "0, 1"},
@@ -1670,22 +1703,23 @@ ZENDEFNODE(ImageLevels, {
         {gParamType_Bool, "Clamp Output", "1"},
     },
     {
-        {gParamType_Primitive, "image"},
+        {gParamType_Geometry, "image"},
     },
     {},
     {"image"},
 });
 
+#if 0
 struct ImageQuantization: INode {
     void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int clusternumber = get_input2<int>("Number of Color");
-        bool outputcenter = get_input2<bool>("Output Cluster Centers");
-        //int simplifyscale = get_input2<int>("Image Simplification Scale");
-        auto clusterattribute = get_input2<std::string>("Cluster Attribute");
+        auto image = get_input<PrimitiveObject>("image");
+        int clusternumber = get_input2_int("Number of Color");
+        bool outputcenter = get_input2_bool("Output Cluster Centers");
+        //int simplifyscale = get_input2_int("Image Simplification Scale");
+        auto clusterattribute = get_input2_string("Cluster Attribute");
         UserData &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        int w = ud->get_int("w");
+        int h = ud->get_int("h");
         auto &imagepos = image->verts.attr<vec3f>("pos");
         const int HistogramSize = 64 * 64 * 64;// (256/simplifyscale)  256 / 4 = 64
         std::vector<vec3f> labs(HistogramSize, vec3f(0.0f));
@@ -1809,8 +1843,7 @@ struct ImageQuantization: INode {
                 image->verts[i] = LabtoRGB(seeds[clusterindices[index]]);
                 clusterattr[i] = clusterindices[index];
             }
-        }
-        set_output("image", image);
+        }set_output("image", std::move(image)));
     }
 };
 ZENDEFNODE(ImageQuantization, {
@@ -1826,6 +1859,7 @@ ZENDEFNODE(ImageQuantization, {
     {},
     {"image"},
 });
+#endif
 
 }
 }

@@ -6,6 +6,8 @@
 #include "zassert.h"
 #include "widgets/zveceditor.h"
 #include "util/uihelper.h"
+#include <zeno/core/typeinfo.h>
+#include "declmetatype.h"
 
 
 namespace curve_util
@@ -338,7 +340,7 @@ namespace curve_util
 
     zeno::CurvesData getCurvesData(const QPersistentModelIndex& perIdx, const QStringList& keys) {
         bool bValid = false;
-        const auto& qvar = perIdx.data(ROLE_PARAM_VALUE);
+        const auto& qvar = perIdx.data(QtRole::ROLE_PARAM_VALUE);
         zeno::CurvesData val = UiHelper::getCurvesFromQVar(qvar, &bValid);
         if (val.empty() || !bValid) {
             return val;

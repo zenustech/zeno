@@ -1,58 +1,122 @@
 #include "graphsmanager.h"
-#include "model/graphstreemodel.h"
-#include "model/assetsmodel.h"
+#include "GraphsTreeModel.h"
+#include "assetsmodel.h"
 #include "uicommon.h"
+#include "dialog/zeditparamlayoutdlg.h"
+#include "dialog/znewassetdlg.h"
+#include "customuimodel.h"
 #include <zeno/io/zsg2reader.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
-#include <zeno/core/Graph.h>
 #include <zeno/io/iohelper.h>
 #include "util/uihelper.h"
 #include <zeno/io/zenwriter.h>
 #include <zeno/io/zenreader.h>
 #include <zeno/core/Session.h>
-#include <zeno/types/UserData.h>
 #include "nodeeditor/gv/zenosubgraphscene.h"
 #include "zassert.h"
 #include "variantptr.h"
-#include "model/parammodel.h"
+#include "parammodel.h"
+#include "pluginsmodel.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "settings/zsettings.h"
+#include <QQmlContext>
+
+
+GraphsTotalView::GraphsTotalView()
+    : _graphMgr(zenoApp->graphsManager())
+{
+    connect(_graphMgr, &GraphsManager::modelInited, this, &GraphsTotalView::modelInited);
+    connect(_graphMgr, &GraphsManager::modelDataChanged, this, &GraphsTotalView::modelDataChanged);
+    connect(_graphMgr, &GraphsManager::fileOpened, this, &GraphsTotalView::fileOpened);
+    connect(_graphMgr, &GraphsManager::fileClosed, this, &GraphsTotalView::fileClosed);
+    connect(_graphMgr, &GraphsManager::fileSaved, this, &GraphsTotalView::fileSaved);
+    connect(_graphMgr, &GraphsManager::dirtyChanged, this, &GraphsTotalView::dirtyChanged);
+}
+
+GraphsTotalView::GraphsTotalView(const GraphsTotalView& graphsview) {
+    _graphMgr = graphsview._graphMgr;
+}
+
+void GraphsTotalView::setGraphsMgr(GraphsManager* graph) {
+    _graphMgr = zenoApp->graphsManager();
+}
+
+void GraphsTotalView::newFile() {
+    zenoApp->getMainWindow()->onNewFile();
+}
+
+void GraphsTotalView::openFile() {
+    zenoApp->getMainWindow()->openFileDialog();
+}
 
 
 GraphsManager::GraphsManager(QObject* parent)
     : QObject(parent)
-    , m_model(nullptr)
+    , m_treemodel(nullptr)
     , m_logModel(nullptr)
     , m_assets(nullptr)
     , m_main(nullptr)
     , m_version(zeno::VER_3)
     , m_bIniting(false)
     , m_bImporting(false)
+    , m_nodeDelegate(nullptr)
+    , m_edgeDelegate(nullptr)
 {
     m_logModel = new QStandardItemModel(this);
-    m_model = new GraphsTreeModel(this);
-    m_main = new GraphModel(zeno::getSession().mainGraph, m_model, this);
-    m_model->init(m_main);
+    m_treemodel = new GraphsTreeModel(this);
+    //m_main = new GraphModel("/main", false, m_model, this);
+    //m_model->init(m_main);
     m_assets = new AssetsModel(this);
+    m_plugins = new PluginsModel(this);
 }
 
 GraphsManager::~GraphsManager()
 {
 }
 
-GraphsManager& GraphsManager::instance() {
-    static GraphsManager inst;
-    return inst;
+void GraphsManager::initRootObjects() {
+    QQmlApplicationEngine* engine = zenoApp->getQmlEngine();
+    engine->rootContext()->setContextProperty("graphsmanager", this);
+    if (m_main)
+        engine->rootContext()->setContextProperty("nodesModel", m_main);
+    if (m_treemodel)
+        engine->rootContext()->setContextProperty("treeModel", m_treemodel);
+    if (m_assets)
+        engine->rootContext()->setContextProperty("assetsModel", m_assets);
+    if (m_plugins)
+        engine->rootContext()->setContextProperty("pluginsModel", m_plugins);
 }
 
 void GraphsManager::registerCoreNotify() {
 
 }
 
+QQmlComponent* GraphsManager::nodeDelegate() {
+    if (!m_nodeDelegate) {
+        m_nodeDelegate = new QQmlComponent(zenoApp->getQmlEngine(), "qrc:/NormalNode.qml",
+            QQmlComponent::PreferSynchronous, this);
+    }
+    return m_nodeDelegate;
+}
+
+QQmlComponent* GraphsManager::edgeDelegate() {
+    if (!m_edgeDelegate) {
+        m_edgeDelegate = new QQmlComponent(zenoApp->getQmlEngine(), "qrc:/QuickQanava/Edge.qml",
+            QQmlComponent::PreferSynchronous, this);
+    }
+    return m_edgeDelegate;
+}
+
 AssetsModel* GraphsManager::assetsModel() const
 {
     return m_assets;
+}
+
+PluginsModel* GraphsManager::pluginModel() const
+{
+    return m_plugins;
 }
 
 QStandardItemModel* GraphsManager::logModel() const
@@ -66,7 +130,10 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
         return nullptr;
 
     if (objPath[0] == "main") {
-        return m_model ? m_model->getGraphByPath(objPath) : nullptr;
+        QStringList _path = objPath;
+        _path.removeFirst();
+        if (!m_main) return nullptr;
+        return m_main->getGraphByPath(_path);
     }
     else {
         QStringList assetGraphPath = objPath;
@@ -81,21 +148,36 @@ GraphModel* GraphsManager::getGraph(const QStringList& objPath) const
     }
 }
 
+QString GraphsManager::currentGraphPath() const
+{
+    return m_graphPath;
+}
+
+void GraphsManager::setCurrentGraphPath(const QString& path)
+{
+    m_graphPath = path;
+    emit currentPathChanged(m_graphPath);
+}
+
 GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE& code)
 {
-    zeno::ZSG_VERSION ver = zenoio::getVersion(fn.toStdString());
     zenoio::ZSG_PARSE_RESULT result;
+
+    result.path = fn.toStdWString();
+    zeno::getSession().globalState->clearState();
+    zeno::getSession().init_project_path(result.path);
+    zeno::ZSG_VERSION ver = zenoio::getVersion(fn.toStdWString());
 
     m_bIniting = true;
     zeno::scope_exit sp([=] { m_bIniting = false; });
-
-    if (ver == zeno::VER_2_5) {
+    /*if (ver == zeno::VER_2_5) {
         zenoio::Zsg2Reader reader;
-        result = reader.openFile(fn.toStdString());
+        result = reader.openFile(result.path);
     }
-    else if (ver == zeno::VER_3) {
+    else */if (ver == zeno::VER_3) {
         zenoio::ZenReader reader;
-        result = reader.openFile(fn.toStdString());
+        result = reader.openFile(result.path);
+        result.num_of_nodes = reader.numOfNodes();
     }
     else {
         m_version = zeno::UNKNOWN_VER;
@@ -110,6 +192,29 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE&
 
     m_version = ver;
 
+    zenoApp->getMainWindow()->updateStatusTip(false, "parse finish, now importing");
+
+    if (false) {
+        zeno::getSession().registerIOCallback([&](const std::string& info, int inc) {
+        auto& gState = zeno::getSession().globalState;
+        gState->inc_io_processed(inc);
+        int io_processed = gState->get_io_processed();
+        float value = 0;
+        bool bShowProgress = false;
+        QString text;
+        if (io_processed >= result.num_of_nodes) {
+            value = 1.0;
+            text = "Open Project Finish";
+        }
+        else {
+            value = (float)io_processed / result.num_of_nodes;
+            text = QString::fromStdString(info);
+            bShowProgress = true;
+        }
+        zenoApp->getMainWindow()->updateStatusTip(bShowProgress, text, value);
+    });
+    }
+
     m_timerInfo = result.timeline;
     createGraphs(result);
     //reset model.
@@ -117,8 +222,8 @@ GraphsTreeModel* GraphsManager::openZsgFile(const QString& fn, zenoio::ERR_CODE&
     m_filePath = fn;
 
     emit fileOpened(fn);
-    m_model->markDirty(false);
-    return m_model;
+    m_treemodel->markDirty(false);
+    return m_treemodel;
 }
 
 bool GraphsManager::isInitializing() const
@@ -139,7 +244,7 @@ void GraphsManager::createGraphs(const zenoio::ZSG_PARSE_RESULT ioresult)
 
 bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
 {
-    if (m_model == nullptr) {
+    if (m_treemodel == nullptr) {
         zeno::log_error("The current model is empty.");
         return false;
     }
@@ -150,6 +255,7 @@ bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
     zeno::GraphData graph = zeno::getSession().mainGraph->exportGraph();
 
     zenoio::ZenWriter writer;
+    writer.set_proj_path(filePath.toStdString());
     std::string strContent = writer.dumpProgramStr(graph, settings);
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
@@ -166,7 +272,7 @@ bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
 
     m_filePath = filePath;
 
-    m_model->clearDirty();
+    m_treemodel->clearDirty();
 
     QFileInfo info(filePath);
     emit fileSaved(filePath);
@@ -175,26 +281,28 @@ bool GraphsManager::saveFile(const QString& filePath, APP_SETTINGS)
 
 GraphsTreeModel* GraphsManager::newFile()
 {
+    auto& sess = zeno::getSession();
     clear();
-
-    if (!m_model) {
-        m_model = new GraphsTreeModel(this);
-        auto& sess = zeno::getSession();
-        m_main = new GraphModel(sess.mainGraph, m_model, this);
-        m_model->init(m_main);
+    if (!sess.mainGraph) {
+        sess.resetMainGraph();
     }
+    m_main = new GraphModel("/main", false, m_treemodel, nullptr, this);
+    m_treemodel->init(m_main);
+
+    m_graphPath = "/main";
 
     //TODO: assets may be kept.
+    initRootObjects();
 
     emit modelInited();
 
-    connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+    connect(m_treemodel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
-    connect(m_model, &GraphsTreeModel::dirtyChanged, this, [=]() {
-        emit dirtyChanged(m_model->isDirty());
+    connect(m_treemodel, &GraphsTreeModel::dirtyChanged, this, [=]() {
+        emit dirtyChanged(m_treemodel->isDirty());
     });
 
-    return m_model;
+    return m_treemodel;
 }
 
 void GraphsManager::importGraph(const QString& fn)
@@ -213,13 +321,9 @@ void GraphsManager::importSubGraphs(const QString& fn, const QMap<QString, QStri
 
 void GraphsManager::clear()
 {
-    if (m_model)
+    if (m_treemodel)
     {
-        m_model->clear();
-
-        delete m_model;
-        m_model = nullptr;
-
+        m_treemodel->clear();
         for (auto scene : m_scenes)
         {
             delete scene;
@@ -227,12 +331,17 @@ void GraphsManager::clear()
         m_scenes.clear();
     }
 
-    //clear main model
+    //前面delete main的时候会removeNode，导致treemodel又脏了})
+    zeno::scope_exit sp([&] {    m_treemodel->markDirty(false); });
+
+    //先清理UIModel，再清理内核模型
     if (m_main) {
         m_main->clear();
         delete m_main;
         m_main = nullptr;
-        zeno::getSession().resetMainGraph();
+
+        zeno::getSession().clearMainGraph();
+        zeno::getSession().clearAssets();
     }
     m_filePath = "";
     emit fileClosed();
@@ -245,7 +354,7 @@ void GraphsManager::onRowsAboutToBeRemoved(const QModelIndex& parent, int first,
     const QModelIndex& idx = m_model->index(first, 0);
     if (idx.isValid())
     {
-        const QString& subgName = idx.data(ROLE_CLASS_NAME).toString();
+        const QString& subgName = idx.data(QtRole::ROLE_CLASS_NAME).toString();
         if (m_scenes.find(subgName) != m_scenes.end())
         {
             delete m_scenes[subgName];
@@ -259,8 +368,8 @@ void GraphsManager::onModelDataChanged(const QModelIndex& subGpIdx, const QModel
 {
     switch (role)
     {
-    case ROLE_OBJPOS:
-    case ROLE_COLLASPED:
+    case QtRole::ROLE_OBJPOS:
+    case QtRole::ROLE_COLLASPED:
         break;
     default:
         emit modelDataChanged();
@@ -270,7 +379,7 @@ void GraphsManager::onModelDataChanged(const QModelIndex& subGpIdx, const QModel
 
 void GraphsManager::removeCurrent()
 {
-    if (m_model) {
+    if (m_treemodel) {
         
     }
 }
@@ -293,7 +402,7 @@ QGraphicsScene* GraphsManager::gvScene(const QModelIndex& subgIdx) const
     if (!subgIdx.isValid())
         return nullptr;
 
-    const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
+    const QString& subgName = subgIdx.data(QtRole::ROLE_CLASS_NAME).toString();
     if (m_scenes.find(subgName) == m_scenes.end())
         return nullptr;
 
@@ -319,7 +428,7 @@ void GraphsManager::addScene(const QModelIndex& subgIdx, ZenoSubGraphScene* scen
 {
     //TODO: deprecated
     /*
-    const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
+    const QString& subgName = subgIdx.data(QtRole::ROLE_CLASS_NAME).toString();
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
         return;
     m_scenes.insert(subgName, scene);
@@ -378,29 +487,275 @@ RECORD_SETTING GraphsManager::recordSettings() const
     return RECORD_SETTING();
 }
 
-zeno::NodeCates GraphsManager::getCates() const
+void GraphsManager::saveProject(const QString& name)
 {
-    zeno::NodeCates cates = zeno::getSession().dumpCoreCates();
-    std::vector<std::string> assetsNames;
+    if (name == "main") {
+        zenoApp->getMainWindow()->save();
+    }
+    else {
+        assetsModel()->saveAsset(name);
+        if (m_main)
+        {
+            m_main->syncToAssetsInstance(name);
+        }
+    }
+}
+
+void GraphsManager::undo(const QStringList& path)
+{
+    if (path.isEmpty()) return;
+
+    QString graph(path[0]);
+    if (graph == "main") {
+        m_main->undo();
+    }
+    else {
+        GraphModel* pModel = m_assets->getAssetGraph(graph);
+        ZASSERT_EXIT(pModel);
+        pModel->undo();
+    }
+}
+
+void GraphsManager::redo(const QStringList& path)
+{
+    if (path.isEmpty()) return;
+
+    QString graph(path[0]);
+    if (graph == "main") {
+        m_main->redo();
+    }
+    else {
+        GraphModel* pModel = m_assets->getAssetGraph(graph);
+        ZASSERT_EXIT(pModel);
+        pModel->redo();
+    }
+}
+
+void GraphsManager::openProject(const QString& zsgpath) {
+    zenoApp->getMainWindow()->openFile(zsgpath);
+}
+
+void GraphsManager::openCustomUIDialog(CustomUIModel* customUIM) {
+    if (!customUIM)
+        return;
+    auto mainWin = zenoApp->getMainWindow();
+    ZEditParamLayoutDlg dlg(customUIM, mainWin);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+        ParamsModel* paramsM = customUIM->coreModel();
+        const zeno::CustomUI& ui = dlg.getCustomUiInfo();
+        paramsM->resetCustomUi(ui);
+        paramsM->batchModifyParams(info);
+    }
+}
+
+void GraphsManager::onAssetsCustomUIDialog(const QString& assetsName) {
+    auto& assetsMgr = zeno::getSession().assets;
+    const auto& name = assetsName.toStdString();
+    const zeno::Asset& asset = assetsMgr->getAsset(name);
+    auto mainWin = zenoApp->getMainWindow();
+
+    //ensure the graph be loaded.
+    assetsMgr->getAssetGraph(name, true);
+
+    ParamsModel paramsM(asset.m_customui);
+    CustomUIModel* pCustomM = paramsM.customUIModel();
+    ZEditParamLayoutDlg dlg(pCustomM, mainWin);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        auto graphsMgr = zenoApp->graphsManager();
+        zeno::ParamsUpdateInfo info = dlg.getEdittedUpdateInfo();
+        zeno::CustomUI customui = dlg.getCustomUiInfo();
+        updateAssets(assetsName, info, customui);
+    }
+}
+
+void GraphsManager::onNodeSelected(const QStringList& graphs_path, const QModelIndex& idx) {
+    if (graphs_path.empty())
+        return;
+    auto mainWin = zenoApp->getMainWindow();
+    auto graphM = getGraph(graphs_path);
+    mainWin->onNodesSelected(graphM, { idx }, true);
+}
+
+void GraphsManager::createAssetDialog()
+{
+    ZNewAssetDlg dlg(zenoApp->getMainWindow());
+    if (QDialog::Accepted == dlg.exec())
+    {
+        zeno::AssetInfo asset = dlg.getAsset();
+        AssetsModel* pModel = zenoApp->graphsManager()->assetsModel();
+        pModel->newAsset(asset);
+    }
+}
+
+void GraphsManager::loadAssetDialog()
+{
+    //TODO
+}
+
+void GraphsManager::addPlugin()
+{
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    QString filePath = QFileDialog::getOpenFileName(mainWin, "File to Open", "", "Zeno Module (*.dll)");
+    if (!filePath.isEmpty()) {
+        m_plugins->addPlugin(filePath);
+    }
+}
+
+void GraphsManager::copy(const QModelIndexList& selNodes)
+{
+    if (selNodes.empty())
+        return;
+    zeno::NodesData datas = UiHelper::dumpNodes(selNodes);
+    zenoio::ZenWriter writer;
+    QString strJson = QString::fromStdString(writer.dumpToClipboard(datas));
+    QMimeData* pMimeData = new QMimeData;
+    pMimeData->setText(strJson);
+    QApplication::clipboard()->setMimeData(pMimeData);
+}
+
+QStringList GraphsManager::paste(const QPointF& pos, const QStringList& path_of_graphM)
+{
+    const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
+
+    GraphModel* pTargetModel = getGraph(path_of_graphM);
+    QStringList newnodes_name;
+
+    if (pMimeData->hasText() && pTargetModel)
+    {
+        const QString& strJson = pMimeData->text();
+        rapidjson::Document doc;
+        doc.Parse(strJson.toStdString().c_str());
+        if (doc.HasMember("version"))
+        {
+            std::string ver = doc["version"].GetString();
+            std::pair<zeno::NodesData, zeno::LinksData> datas;
+            zeno::ReferencesData refs;
+            if (ver == "v2") {
+                zenoio::Zsg2Reader reader;
+                reader.importNodes(strJson.toStdString(), datas.first, datas.second, refs);
+            }
+            else {
+                zenoio::ZenReader reader;
+                reader.importNodes(strJson.toStdString(), datas.first, datas.second, refs);
+            }
+            newnodes_name = pTargetModel->pasteNodes(datas.first, datas.second, pos);
+        }
+    }
+    return newnodes_name;
+}
+
+QModelIndex GraphsManager::getNodeIndexByUuidPath(const QString& objPath)
+{
+    if (!m_main)
+        return QModelIndex();
+
+    return m_main->indexFromUuidPath(objPath.toStdString());
+}
+
+static QModelIndex recursive_search(GraphModel* pCurrentGraph, QStringList pathList) {
+    /*pathList是一个相对于当前pCurrentGraph的路径，不是完整的路径*/
+    if (pathList.empty())
+        return QModelIndex();
+
+    if (pathList.size() == 1) {
+        //最后一项必须是节点的名字(name)
+        QString name = pathList[0];
+        return pCurrentGraph->indexFromName(name);
+    }
+    else {
+        QString subnetnode = pathList.front();
+        pathList.pop_front();
+        //观察subnetnode是不是一个子图节点
+        QModelIndex subnetnode_idx = pCurrentGraph->indexFromName(subnetnode);
+        if (!subnetnode_idx.isValid())
+            return QModelIndex();
+
+        GraphModel* pSubgraph = pCurrentGraph->subgraph(subnetnode_idx);
+        if (!pSubgraph)
+            return QModelIndex();
+
+        return recursive_search(pSubgraph, pathList);
+    }
+}
+
+QModelIndex GraphsManager::getNodeIndexByPath(const QString& path) {
+    if (!m_main)
+        return QModelIndex();
+
+    QStringList fullPathList = path.split('/', Qt::SkipEmptyParts);
+    if (fullPathList.first() == "main") {
+        fullPathList.pop_front();
+    }
+    else {
+        //TODO: assets相关
+    }
+    return recursive_search(m_main, fullPathList);
+}
+
+QStringList GraphsManager::recentFiles() const
+{
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("Recent File List");
+    QStringList lst = settings.childKeys();
+    zenoApp->getMainWindow()->sortRecentFile(lst);
+
+    QStringList paths;
+    for (int i = 0; i < lst.size(); i++)
+    {
+        const QString& key = lst[i];
+        const QString& path = settings.value(key).toString();
+        if (path.endsWith(".zen"))
+            paths.append(path);
+    }
+    return paths;
+}
+
+NodeCates GraphsManager::getCates() const
+{
+    zeno::NodeRegistry nodeRegs = zeno::getSession().dumpCoreCates();
+    QVector<zeno::NodeInfo> assetsNames;
+    NodeCates cates;
 
     for (int r = 0; r < m_assets->rowCount(); r++)
     {
         QModelIndex idx = m_assets->index(r);
-        const QString& asset = idx.data(ROLE_CLASS_NAME).toString();
-        assetsNames.push_back(asset.toStdString());
+        const QString& asset = idx.data(QtRole::ROLE_CLASS_NAME).toString();
+        zeno::NodeInfo info;
+        info.name = asset.toStdString();
+        info.status = zeno::ZModule_Loaded;
+        info.module_path = "";  //先默认算到主模块
+        assetsNames.push_back(std::move(info));
     }
 
-    cates.insert(std::make_pair("assets", assetsNames));
+    cates["assets"] = assetsNames;
+
+    for (const zeno::NodeInfo& nodereg : nodeRegs) {
+        QString category = QString::fromStdString(nodereg.cate);
+        if (!category.isEmpty()) {
+            cates[category].append(nodereg);
+        }
+    }
+
+    //1. foreach-count
+    QVector<zeno::NodeInfo> control_cases = {
+        {"Foreach-Count", "", "control", zeno::ZModule_Loaded},
+        {"Foreach-Geometry-attr", "", "control", zeno::ZModule_Loaded},
+        {"Foreach-StopCond", "", "control", zeno::ZModule_Loaded}
+    };
+    cates["control"] = control_cases;
     return cates;
 }
 
 void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateInfo info, const zeno::CustomUI& customui)
 {
-    zeno::getSession().assets->updateAssets(assetsName.toStdString(), info, customui);
+    const std::string& sasset = assetsName.toStdString();
+    zeno::getSession().assets->updateAssets(sasset, info, customui);
     //update to each assets node on the tree
-    GraphModel* mainM = m_model->getGraphByPath({"main"});
-    ZASSERT_EXIT(mainM);
-    mainM->syncToAssetsInstance(assetsName, info, customui);
+    ZASSERT_EXIT(m_main);
+    m_main->syncToAssetsInstance_customui(assetsName, info, customui);
 
     //also need to sync all other assets.
     for (int i = 0; i < m_assets->rowCount(); i++)
@@ -408,7 +763,7 @@ void GraphsManager::updateAssets(const QString& assetsName, zeno::ParamsUpdateIn
         GraphModel* pAssetM = m_assets->getAssetGraph(i);
         if (pAssetM && pAssetM->name() != assetsName)
         {
-            pAssetM->syncToAssetsInstance(assetsName, info, customui);
+            pAssetM->syncToAssetsInstance_customui(assetsName, info, customui);
         }
     }
 }

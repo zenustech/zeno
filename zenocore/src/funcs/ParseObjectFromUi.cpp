@@ -4,6 +4,7 @@
 
 namespace zeno {
 
+#if 0
 zany parseHeatmapObj(const std::string& json)
 {
     auto heatmap = std::make_shared<zeno::HeatmapObject>();
@@ -48,5 +49,5 @@ zany parseHeatmapObj(const std::string& json)
     }
     return heatmap;
 }
-
+#endif
 }

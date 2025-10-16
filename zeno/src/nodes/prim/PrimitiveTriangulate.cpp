@@ -4,44 +4,10 @@
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/parallel_scan.h>
 #include <zeno/utils/variantswitch.h>
+#include <zeno/geo/commonutil.h>
+
 
 namespace zeno {
-
-ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
-    if (prim->quads.size() == 0) {
-        return;
-    }
-    auto base = prim->tris.size();
-    prim->tris.resize(base + prim->quads.size() * 2);
-    bool hasmat = prim->quads.has_attr("matid");
-    if(hasmat == false)
-    {
-        prim->quads.add_attr<int>("matid");
-        prim->quads.attr<int>("matid").assign(prim->quads.size(), -1);
-    }
-
-    if (prim->tris.has_attr("matid")) {
-        prim->tris.attr<int>("matid").resize(base + prim->quads.size() * 2);
-    } else {
-        prim->tris.add_attr<int>("matid");
-    }
-
-
-    for (size_t i = 0; i < prim->quads.size(); i++) {
-        auto quad = prim->quads[i];
-        prim->tris[base+i*2+0] = vec3f(quad[0], quad[1], quad[2]);
-        prim->tris[base+i*2+1] = vec3f(quad[0], quad[2], quad[3]);
-        if(hasmat) {
-            prim->tris.attr<int>("matid")[base + i * 2 + 0] = prim->quads.attr<int>("matid")[i];
-            prim->tris.attr<int>("matid")[base + i * 2 + 1] = prim->quads.attr<int>("matid")[i];
-        } else
-        {
-            prim->tris.attr<int>("matid")[base + i * 2 + 0] = -1;
-            prim->tris.attr<int>("matid")[base + i * 2 + 1] = -1;
-        }
-    }
-    prim->quads.clear();
-}
 
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines, bool with_attr) {
     if (prim->polys.size() == 0) {
@@ -173,14 +139,14 @@ namespace {
 
 struct PrimitiveTriangulate : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        if (get_param<bool>("from_poly")) {
-            primTriangulate(prim.get(), get_param<bool>("with_uv"), get_param<bool>("has_lines"), get_input2<bool>("with_attr"));
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        if (ZImpl(get_param<bool>("from_poly"))) {
+            primTriangulate(prim.get(), ZImpl(get_param<bool>("with_uv")), ZImpl(get_param<bool>("has_lines")), ZImpl(get_input2<bool>("with_attr")));
         }
-        if (get_param<bool>("from_quads")) {
+        if (ZImpl(get_param<bool>("from_quads"))) {
             primTriangulateQuads(prim.get());
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 
@@ -206,6 +172,16 @@ ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim) {
         primPolygonate(prim, true);
     }
     else if (prim->polys.size()) {
+        bool all_is_tri = true;
+        for (auto const &[_start, len]: prim->polys) {
+            if (len != 3) {
+                all_is_tri = false;
+                break;
+            }
+        }
+        if (all_is_tri) {
+            return;
+        }
         int new_poly_count = 0;
         int new_loops_count = 0;
         for (auto [_s, c] : prim->polys) {
@@ -284,9 +260,9 @@ ZENO_API void primTriangulateIntoPolys(PrimitiveObject *prim) {
 
 struct PrimTriangulateIntoPolys : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         primTriangulateIntoPolys(prim.get());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

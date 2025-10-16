@@ -18,6 +18,8 @@ public:
                   std::shared_ptr<zeno::Picker> picker,
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
+    void setScale(int scale);
+    int scale() const {return m_scale; }
     QVector2D res() const { return m_res; }
 
     glm::vec3 getPos() const;
@@ -39,11 +41,11 @@ public:
 
     bool fakeKeyPressEvent(int uKey);
     bool fakeKeyReleaseEvent(int uKey);
-    void fakeMousePressEvent(QMouseEvent* event);
-    void fakeMouseReleaseEvent(QMouseEvent* event);
-    void fakeMouseMoveEvent(QMouseEvent* event);
-    void fakeWheelEvent(QWheelEvent* event);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event);
+    void fakeMousePressEvent(ViewMouseInfo info);
+    void fakeMouseReleaseEvent(ViewMouseInfo info);
+    void fakeMouseMoveEvent(ViewMouseInfo info);
+    void fakeWheelEvent(ViewMouseInfo info);
+    void fakeMouseDoubleClickEvent(ViewMouseInfo info);
     void focus(QVector3D center, float radius);
     [[deprecated]]
     QVector3D realPos() const;
@@ -72,17 +74,15 @@ private:
     QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
     QVector2D m_res;
+    int m_scale = 1;
     QSet<int> m_pressedKeys;
     std::optional<glm::vec3> m_hit_posWS;
 
-    std::shared_ptr<zeno::Picker> m_picker;
-    std::shared_ptr<zeno::FakeTransformer> m_transformer;
+    std::weak_ptr<zeno::Picker> m_picker;
+    std::weak_ptr<zeno::FakeTransformer> m_transformer;
     Zenovis* m_zenovis;
 
     bool middle_button_pressed = false;
-    bool shift_pressed = false;
-    bool ctrl_pressed = false;
-    bool alt_pressed = false;
 };
 
 

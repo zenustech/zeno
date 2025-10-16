@@ -40,19 +40,19 @@ if (ZS_PYTHON_FOUND AND ZENO_WITH_PyZpc)
     set(RESOURCE_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
   endif()
 
-  get_target_property(ZENO_BIN_DIR zeno RUNTIME_OUTPUT_DIRECTORY)
+  get_target_property(ZPC_BIN_DIR zeno RUNTIME_OUTPUT_DIRECTORY)
   add_custom_target(copy_py)
   add_dependencies(zeno copy_py)
   add_dependencies(copy_py zpc_jit_py)
   # message(STATUS "retrieved python impl: ${Python3_INTERPRETER_ID}")
   message(STATUS "python3 libraries: ${ZS_OVERWRITE_PYTHON_LIBRARIES}")
   message(STATUS "python3 include directories: ${ZS_OVERWRITE_PYTHON_INCLUDE_DIR}")
-  set(ENV{ZENO_BIN_DIR} "${ZENO_BIN_DIR}")
+  set(ENV{ZPC_BIN_DIR} "${ZPC_BIN_DIR}")
   add_custom_command(
     TARGET copy_py
     POST_BUILD
     COMMAND 
-    ${CMAKE_COMMAND} -E env ZENO_BIN_DIR="${ZENO_BIN_DIR}"
+    ${CMAKE_COMMAND} -E env ZPC_BIN_DIR="${ZPC_BIN_DIR}"
     ${ZS_OVERWRITE_PYTHON_EXECUTABLE} -m ensurepip
     COMMENT "preparing pip module"
   )

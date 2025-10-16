@@ -7,6 +7,8 @@
 #include <zenovis/DrawOptions.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/log.h>
+#include <zeno/geo/commonutil.h>
+#include <zeno/utils/interfaceutil.h>
 #include <util/log.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
@@ -16,6 +18,7 @@
 #include <zeno/types/HeatmapObject.h>
 #include <zeno/extra/GlobalError.h>
 #include <zeno/core/Session.h>
+#include <filesystem>
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
@@ -107,11 +110,11 @@ VideoRecInfo RecordVideoMgr::getRecordInfo() const
     return m_recordInfo;
 }
 
-void RecordVideoMgr::endRecToExportVideo()
+REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
 {
     if (m_recordInfo.bExportEXR) {
         emit recordFinished(m_recordInfo.record_path);
-        return;
+        return REC_NOERROR;
     }
     // denoising
     if (m_recordInfo.needDenoise) {
@@ -126,8 +129,8 @@ void RecordVideoMgr::endRecToExportVideo()
             auto pfm_dn_path = jpg_path + ".dn.pfm";
             // jpg to pfm
             {
-                auto image = zeno::readImageFile(jpg_path);
-                write_pfm(pfm_path, image);
+                auto image = zeno::readImageFile(zeno::stdString2zs(jpg_path));
+                write_pfm(zeno::stdString2zs(pfm_path), image.get());
             }
 
             const auto albedo_pfm_path = jpg_path + ".albedo.pfm";
@@ -161,44 +164,32 @@ void RecordVideoMgr::endRecToExportVideo()
                 qDebug() << ret;
                 // pfm to jpg
                 if (ret == 0) {
-                    auto image = zeno::readPFMFile(pfm_dn_path);
-                    write_jpg(jpg_path, image);
-                    QFile fileOrigin(QString::fromStdString(pfm_path));
-                    if (fileOrigin.exists()) {
-                        fileOrigin.remove();
+                    std::string native_pfm_dn_path = std::filesystem::u8path(pfm_dn_path).string();
+                    auto image = zeno::readPFMFile(zeno::stdString2zs(native_pfm_dn_path));
+                    {
+                        std::string native_jpg_path = std::filesystem::u8path(jpg_path).string();
+                        write_jpg(zeno::stdString2zs(native_jpg_path), image.get());
                     }
-                    QFile fileDn(QString::fromStdString(pfm_dn_path));
-                    if (fileDn.exists()) {
-                        fileDn.remove();
-                    }
-                    for (auto& task : auxiliaryTasks) {
-                        task();
-                    } // auxiliaryTasks
                 }
+                for (auto& task : auxiliaryTasks) {
+                    task();
+                }
+                QFile::remove(QString::fromStdString(pfm_path));
+                QFile::remove(QString::fromStdString(pfm_dn_path));
             }
+            QCoreApplication::processEvents();
         }
     }
     if (!m_recordInfo.bExportVideo) {
         emit recordFinished(m_recordInfo.record_path);
-        return;
+        return REC_NO_RECORD_OPTION;
     }
     //Zenovis::GetInstance().blockSignals(false);
-    {
-        QString dir_path = m_recordInfo.record_path + "/P/";
-        QDir qDir = QDir(dir_path);
-        qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-        fileList.sort();
-        for (auto i = 0; i < fileList.size(); i++) {
-            auto new_name = dir_path + zeno::format("{:07d}.jpg", i).c_str();
-            auto old_name = dir_path + fileList.at(i);
-            QFile::rename(old_name,new_name);
-        }
-    }
     QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
     QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
 
-    QString cmd = QString("ffmpeg -y -r %1 -i %2 -b:v %3k -c:v mpeg4 %4")
+    QString cmd = QString("ffmpeg -y -start_number %1 -r %2 -i %3 -b:v %4k -c:v mpeg4 %5")
+              .arg(m_recordInfo.frameRange.first)
               .arg(m_recordInfo.fps)
               .arg(imgPath)
               .arg(m_recordInfo.bitrate)
@@ -211,18 +202,24 @@ void RecordVideoMgr::endRecToExportVideo()
                       .arg(outPath)
                       .arg(m_recordInfo.audioPath);
             ret = QProcess::execute(cmd);
-            if (ret == 0)
+            if (ret == 0) {
                 emit recordFinished(m_recordInfo.record_path);
-            else
+                return REC_NOERROR;
+            }
+            else {
                 emit recordFailed(QString());
-            return;
+                return REC_FFMPEG_FATAL;
+        }
         }
         emit recordFinished(m_recordInfo.record_path);
+        return REC_NOERROR;
     }
     else
     {
         //todo get the error string from QProcess.
-        emit recordFailed(QString(tr("ffmpeg command failed, please whether check ffmpeg exists.")));
+        QString err_info = QString(tr("ffmpeg command failed, please whether check ffmpeg exists."));
+        emit recordFailed(err_info);
+        return REC_NOFFMPEG;
     }
 }
 
@@ -254,7 +251,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
     auto& pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
 
-    bool bFrameCompleted = pGlobalComm->isFrameCompleted(currFrame);
+    bool bFrameCompleted = false;// pGlobalComm->isFrameCompleted(currFrame);
     bool bFrameRecorded = m_recordInfo.m_bFrameFinished[currFrame];
 
     Zenovis* pVis = getZenovis();
@@ -293,8 +290,9 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             m_recordInfo.m_bFrameFinished[currFrame] = true;
             emit frameFinished(currFrame);
 
-            if (m_recordInfo.bAutoRemoveCache)
-                zeno::getSession().globalComm->removeCache(currFrame);
+            if (m_recordInfo.bAutoRemoveCache) {
+                //zeno::getSession().globalComm->removeCache(currFrame);
+            }
         }
 
         if (currFrame == m_recordInfo.frameRange.second)
@@ -310,7 +308,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             m_recordInfo = VideoRecInfo();
         }
     }
-    else if (pGlobalComm->isFrameBroken(currFrame) && !bFrameRecorded)
+    else if (/*pGlobalComm->isFrameBroken(currFrame) && */!bFrameRecorded)
     {
         //recordErrorImg(currFrame);
         zeno::log_warn("The zencache of frame {} has been removed.", currFrame);
@@ -344,3 +342,4 @@ void RecordVideoMgr::recordErrorImg(int currFrame)
         m_recordInfo = VideoRecInfo();
     }
 }
+

@@ -1,0 +1,14 @@
+<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- 圆柱体 -->
+  <ellipse cx="6" cy="5" rx="3" ry="1" fill="lightblue" />
+  <rect x="3" y="5" width="6" height="8" fill="lightblue" />
+  <ellipse cx="6" cy="13" rx="3" ry="1" fill="blue" />
+
+  <!-- 锥体 -->
+  <polygon points="12,4 10,12 14,12" fill="orange" />
+  <ellipse cx="12" cy="12" rx="2" ry="0.5" fill="darkorange" />
+
+  <!-- 球体 -->
+  <circle cx="16" cy="6" r="3" fill="lightgreen" />
+  <ellipse cx="16" cy="7" rx="2.5" ry="1" fill="rgba(0, 0, 0, 0.2)" />
+</svg>

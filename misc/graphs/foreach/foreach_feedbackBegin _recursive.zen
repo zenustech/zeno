@@ -2,12 +2,12 @@
     "main": {
         "type": 2,
         "nodes": {
-            "Cube2": {
-                "name": "Cube2",
-                "class": "CreateCube",
+            "Cube1": {
+                "name": "Cube1",
+                "class": "Cube",
                 "object_inputs": {},
                 "primitive_inputs": {
-                    "position": {
+                    "Center": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -18,10 +18,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "scaleSize": {
+                    "Size": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -32,10 +32,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "rotate": {
+                    "Rotate": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -46,40 +46,10 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "hasNormal": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "hasVertUV": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "isFlipFace": {
-                        "links": null,
-                        "type": "bool",
-                        "default-value": false,
-                        "control": {
-                            "name": "Boolean"
-                        },
-                        "socket-type": "readonly",
-                        "visible": false
-                    },
-                    "div_w": {
+                    "X Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -89,7 +59,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "div_h": {
+                    "Y Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -99,7 +69,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "div_d": {
+                    "Z Division": {
                         "links": null,
                         "type": "int",
                         "default-value": 2,
@@ -109,7 +79,7 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "size": {
+                    "Uniform Scale": {
                         "links": null,
                         "type": "float",
                         "default-value": 1.0,
@@ -119,7 +89,17 @@
                         "socket-type": "primitive",
                         "visible": false
                     },
-                    "quads": {
+                    "Face Type": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Quadrilaterals",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Point Normals": {
                         "links": null,
                         "type": "bool",
                         "default-value": false,
@@ -132,14 +112,85 @@
                 },
                 "primitive_outputs": {},
                 "object_outputs": {
-                    "prim": {
-                        "type": "prim",
+                    "Output": {
+                        "type": "geometry",
                         "socket-type": "output"
                     }
                 },
                 "uipos": [
-                    910.0,
-                    93.0
+                    289.0,
+                    255.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "ForEachBegin1": {
+                "name": "ForEachBegin1",
+                "class": "ForEachBegin",
+                "object_inputs": {
+                    "Initial Object": {
+                        "links": [
+                            {
+                                "out-node": "Cube1",
+                                "out-socket": "Output",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Initial Object"
+                            }
+                        ],
+                        "type": "",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Fetch Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "From Last Feedback",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "ForEachEnd Path": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "ForEachEnd1",
+                        "control": {
+                            "name": "String"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Current Iteration": {
+                        "property": "normal",
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {
+                    "Current Iteration": {
+                        "type": "int",
+                        "socket-type": "clone",
+                        "visible": false
+                    }
+                },
+                "object_outputs": {
+                    "Output Object": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    296.0,
+                    379.0
                 ],
                 "status": [],
                 "collasped": false
@@ -151,29 +202,18 @@
                     "Initial Object": {
                         "links": [
                             {
-                                "out-node": "Cube2",
-                                "out-socket": "prim",
+                                "out-node": "ForEachBegin1",
+                                "out-socket": "Output Object",
                                 "out-key": "",
                                 "in-key": "",
                                 "target-socket": "Initial Object"
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Current Iteration": {
-                        "property": "normal",
-                        "links": null,
-                        "type": "int",
-                        "default-value": 4,
-                        "control": {
-                            "name": ""
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "Fetch Method": {
                         "links": null,
                         "type": "string",
@@ -193,169 +233,9 @@
                         },
                         "socket-type": "primitive",
                         "visible": false
-                    }
-                },
-                "primitive_outputs": {
-                    "Current Iteration": {
-                        "type": "int",
-                        "socket-type": "primitive",
-                        "visible": false
-                    }
-                },
-                "object_outputs": {
-                    "Output Object": {
-                        "type": "",
-                        "socket-type": "output"
-                    }
-                },
-                "uipos": [
-                    852.0,
-                    238.0
-                ],
-                "status": [],
-                "collasped": false
-            },
-            "ForEachBegin3": {
-                "name": "ForEachBegin3",
-                "class": "ForEachBegin",
-                "object_inputs": {
-                    "Initial Object": {
-                        "links": [
-                            {
-                                "out-node": "ForEachBegin2",
-                                "out-socket": "Output Object",
-                                "out-key": "",
-                                "in-key": "",
-                                "target-socket": "Output Object"
-                            }
-                        ],
-                        "type": "",
-                        "socket-type": "owning"
-                    }
-                },
-                "primitive_inputs": {
+                    },
                     "Current Iteration": {
                         "property": "normal",
-                        "links": null,
-                        "type": "int",
-                        "default-value": 2,
-                        "control": {
-                            "name": ""
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Fetch Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "From Last Feedback",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "ForEachEnd Path": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "ForEachEnd3",
-                        "control": {
-                            "name": "String"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    }
-                },
-                "primitive_outputs": {
-                    "Current Iteration": {
-                        "type": "int",
-                        "socket-type": "primitive",
-                        "visible": false
-                    }
-                },
-                "object_outputs": {
-                    "Output Object": {
-                        "type": "",
-                        "socket-type": "output"
-                    }
-                },
-                "uipos": [
-                    847.0,
-                    412.0
-                ],
-                "status": [],
-                "collasped": false
-            },
-            "ForEachEnd2": {
-                "name": "ForEachEnd2",
-                "class": "ForEachEnd",
-                "object_inputs": {
-                    "Iterate Object": {
-                        "links": [
-                            {
-                                "out-node": "ForEachEnd3",
-                                "out-socket": "Output Object",
-                                "out-key": "",
-                                "in-key": "",
-                                "target-socket": "Iterate Object"
-                            }
-                        ],
-                        "type": "",
-                        "socket-type": "owning"
-                    }
-                },
-                "primitive_inputs": {
-                    "Collect Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "Feedback to Begin",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "ForEachBegin Path": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "ForEachBegin2",
-                        "control": {
-                            "name": "String"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Increment": {
-                        "links": null,
-                        "type": "int",
-                        "default-value": 1,
-                        "control": {
-                            "name": "Integer"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Iterate Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "By Count",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Iterations": {
-                        "links": null,
-                        "type": "int",
-                        "default-value": 4,
-                        "control": {
-                            "name": "Integer"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Start Value": {
                         "links": null,
                         "type": "int",
                         "default-value": 0,
@@ -364,19 +244,15 @@
                         },
                         "socket-type": "primitive",
                         "visible": false
-                    },
-                    "Stop Condition": {
-                        "links": null,
+                    }
+                },
+                "primitive_outputs": {
+                    "Current Iteration": {
                         "type": "int",
-                        "default-value": 6,
-                        "control": {
-                            "name": "Integer"
-                        },
-                        "socket-type": "primitive",
+                        "socket-type": "clone",
                         "visible": false
                     }
                 },
-                "primitive_outputs": {},
                 "object_outputs": {
                     "Output Object": {
                         "type": "",
@@ -384,69 +260,37 @@
                     }
                 },
                 "uipos": [
-                    771.0,
-                    839.0
+                    354.0,
+                    487.0
                 ],
-                "status": [
-                    "View"
-                ],
+                "status": [],
                 "collasped": false
             },
-            "ForEachEnd3": {
-                "name": "ForEachEnd3",
+            "ForEachEnd1": {
+                "name": "ForEachEnd1",
                 "class": "ForEachEnd",
                 "object_inputs": {
                     "Iterate Object": {
                         "links": [
                             {
-                                "out-node": "Transform2",
-                                "out-socket": "outPrim",
+                                "out-node": "ForEachEnd2",
+                                "out-socket": "Output Object",
                                 "out-key": "",
                                 "in-key": "",
-                                "target-socket": "outPrim"
+                                "target-socket": "Iterate Object"
                             }
                         ],
                         "type": "",
-                        "socket-type": "owning"
+                        "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "Collect Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "Feedback to Begin",
-                        "control": {
-                            "name": "Enum"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
                     "ForEachBegin Path": {
                         "links": null,
                         "type": "string",
-                        "default-value": "ForEachBegin3",
+                        "default-value": "ForEachBegin1",
                         "control": {
                             "name": "String"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Increment": {
-                        "links": null,
-                        "type": "int",
-                        "default-value": 1,
-                        "control": {
-                            "name": "Integer"
-                        },
-                        "socket-type": "primitive",
-                        "visible": false
-                    },
-                    "Iterate Method": {
-                        "links": null,
-                        "type": "string",
-                        "default-value": "By Count",
-                        "control": {
-                            "name": "Enum"
                         },
                         "socket-type": "primitive",
                         "visible": false
@@ -455,6 +299,16 @@
                         "links": null,
                         "type": "int",
                         "default-value": 2,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Increment": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 1,
                         "control": {
                             "name": "Integer"
                         },
@@ -480,6 +334,26 @@
                         },
                         "socket-type": "primitive",
                         "visible": false
+                    },
+                    "Iterate Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "By Count",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Collect Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Feedback to Begin",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
                     }
                 },
                 "primitive_outputs": {},
@@ -490,90 +364,138 @@
                     }
                 },
                 "uipos": [
-                    816.0,
-                    707.0
+                    211.0,
+                    876.0
                 ],
-                "status": [],
+                "status": [
+                    "View"
+                ],
                 "collasped": false
             },
-            "MakeList1": {
-                "name": "MakeList1",
-                "class": "MakeList",
+            "ForEachEnd2": {
+                "name": "ForEachEnd2",
+                "class": "ForEachEnd",
                 "object_inputs": {
-                    "objs": {
+                    "Iterate Object": {
                         "links": [
                             {
-                                "out-node": "ForEachEnd2",
-                                "out-socket": "Output Object",
-                                "out-key": "",
-                                "in-key": "obj0",
-                                "target-socket": "Output Object"
-                            }
-                        ],
-                        "type": "list",
-                        "socket-type": "readonly"
-                    }
-                },
-                "primitive_inputs": {},
-                "primitive_outputs": {},
-                "object_outputs": {
-                    "list": {
-                        "type": "list",
-                        "socket-type": "output"
-                    }
-                },
-                "uipos": [
-                    669.9700317382813,
-                    1100.9891357421876
-                ],
-                "status": [],
-                "collasped": false
-            },
-            "Transform2": {
-                "name": "Transform2",
-                "class": "PrimitiveTransform",
-                "object_inputs": {
-                    "Matrix": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "local": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "preTransform": {
-                        "links": null,
-                        "type": "",
-                        "socket-type": "readonly"
-                    },
-                    "prim": {
-                        "links": [
-                            {
-                                "out-node": "ForEachBegin3",
-                                "out-socket": "Output Object",
+                                "out-node": "Transform1",
+                                "out-socket": "Output",
                                 "out-key": "",
                                 "in-key": "",
-                                "target-socket": "prim"
+                                "target-socket": "Iterate Object"
                             }
                         ],
-                        "type": "prim",
+                        "type": "",
                         "socket-type": "clone"
                     }
                 },
                 "primitive_inputs": {
-                    "path": {
+                    "ForEachBegin Path": {
                         "links": null,
                         "type": "string",
-                        "default-value": "",
+                        "default-value": "ForEachBegin2",
                         "control": {
                             "name": "String"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "translation": {
+                    "Iterations": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 3,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Increment": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 1,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Start Value": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 0,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Stop Condition": {
+                        "links": null,
+                        "type": "int",
+                        "default-value": 10,
+                        "control": {
+                            "name": "Integer"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Iterate Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "By Count",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "Collect Method": {
+                        "links": null,
+                        "type": "string",
+                        "default-value": "Feedback to Begin",
+                        "control": {
+                            "name": "Enum"
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    }
+                },
+                "primitive_outputs": {},
+                "object_outputs": {
+                    "Output Object": {
+                        "type": "",
+                        "socket-type": "output"
+                    }
+                },
+                "uipos": [
+                    260.0,
+                    724.0
+                ],
+                "status": [],
+                "collasped": false
+            },
+            "Transform1": {
+                "name": "Transform1",
+                "class": "Transform",
+                "object_inputs": {
+                    "Input Geometry": {
+                        "links": [
+                            {
+                                "out-node": "ForEachBegin2",
+                                "out-socket": "Output Object",
+                                "out-key": "",
+                                "in-key": "",
+                                "target-socket": "Input Geometry"
+                            }
+                        ],
+                        "type": "geometry",
+                        "socket-type": "clone"
+                    }
+                },
+                "primitive_inputs": {
+                    "Translation": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -584,7 +506,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "eulerXYZ": {
@@ -598,7 +520,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "quatRotation": {
@@ -613,10 +535,10 @@
                         "control": {
                             "name": "Float Vector 4"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "scaling": {
+                    "Scaling": {
                         "links": null,
                         "type": "vec3f",
                         "default-value": [
@@ -627,7 +549,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "shear": {
@@ -641,7 +563,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "pivot": {
@@ -665,7 +587,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "localX": {
@@ -679,7 +601,7 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
                     "localY": {
@@ -693,40 +615,145 @@
                         "control": {
                             "name": "Float Vector 3"
                         },
-                        "socket-type": "readonly",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "EulerRotationOrder": {
+                    "Matrix": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "preTransform": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "local": {
+                        "links": null,
+                        "type": "Matrix4",
+                        "default-value": [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                1.0,
+                                0.0
+                            ],
+                            [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ]
+                        ],
+                        "control": {
+                            "name": ""
+                        },
+                        "socket-type": "primitive",
+                        "visible": false
+                    },
+                    "order": {
                         "links": null,
                         "type": "string",
                         "default-value": "YXZ",
                         "control": {
-                            "name": "Enum"
+                            "name": "String"
                         },
-                        "socket-type": "none",
+                        "socket-type": "primitive",
                         "visible": false
                     },
-                    "EulerAngleMeasure": {
+                    "measure": {
                         "links": null,
                         "type": "string",
                         "default-value": "Degree",
                         "control": {
-                            "name": "Enum"
+                            "name": "String"
                         },
-                        "socket-type": "none",
+                        "socket-type": "primitive",
                         "visible": false
                     }
                 },
                 "primitive_outputs": {},
                 "object_outputs": {
-                    "outPrim": {
-                        "type": "prim",
+                    "Output": {
+                        "type": "geometry",
                         "socket-type": "output"
                     }
                 },
                 "uipos": [
-                    797.0,
-                    548.0
+                    384.0,
+                    611.0
                 ],
                 "status": [],
                 "collasped": false

@@ -154,7 +154,10 @@ struct CompactLightBounds {
             return 0;
 
         // Return final importance at reference point
-        float importance = phi * cosThetap / d2;
+        //float importance = phi * cosThetap / d2;
+        float r2 = 1.0f; float d = sqrtf(d2);
+        float importance = phi * cosThetap * 2.0f / ( d  * sqrtf(d2 + r2) + d2 + r2 );
+
         DCHECK(importance >= -1e-3f);
 
         if (n[0]!=0 && n[1]!=0 && n[2]!=0) {
@@ -233,14 +236,14 @@ struct LightTreeSampler {
         {
             size_t byte_length = sizeof( lightBitTrails[0] ) * lightBitTrails.size();
 
-            CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightBitTrailsPtr ), byte_length) );
+            CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightBitTrailsPtr ), byte_length, 0) );
             CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( lightBitTrailsPtr ),
                                    lightBitTrails.data(), byte_length, cudaMemcpyHostToDevice) );
         }
         {
             size_t byte_length = sizeof( nodes[0] ) * nodes.size();
 
-            CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightTreeNodesPtr ), byte_length) );
+            CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &lightTreeNodesPtr ), byte_length, 0) );
             CUDA_CHECK( cudaMemcpy(reinterpret_cast<void*>( lightTreeNodesPtr ),
                                    nodes.data(), byte_length, cudaMemcpyHostToDevice) );
         }

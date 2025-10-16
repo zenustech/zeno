@@ -1,4 +1,4 @@
-#ifndef __ZENO_NODE_NEW_H__
+﻿#ifndef __ZENO_NODE_NEW_H__
 #define __ZENO_NODE_NEW_H__
 
 #include <QtWidgets>
@@ -19,8 +19,8 @@ class ZenoGraphsEditor;
 class ZenoSubGraphScene;
 class GroupNode;
 class ParamsModel;
-class StatusGroup;
-class StatusButton;
+class RightStatusBtnGroup;
+class LeftStatusBtnGroup;
 
 class NodeNameItem : public ZGraphicsTextItem
 {
@@ -60,6 +60,9 @@ public:
     void onCollaspeBtnClicked() override;
     void onOptionsUpdated(int options) override;
     void onViewUpdated(bool bView) override;
+    void onByPassUpdated(bool bypass) override;
+    void onNoCachedUpdated(bool nocache) override;
+    void onClearSubnetUpdated(bool clearSubnet) override;
     void onRunStateChanged() override;
     void onSocketLinkChanged(const QModelIndex& paramIdx, bool bInput, bool bAdded, const QString keyName) override;
     void onNameUpdated(const QString& newName);
@@ -80,6 +83,7 @@ private slots:
     void onViewParamsMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row);
     void onLayoutChanged();
     void onUpdateParamsVisbleEnabled();
+    void updateNodeNameByEditor();
 
 private:
     ZLayoutBackground* initBodyWidget();
@@ -92,7 +96,7 @@ private:
     bool removeSocketLayout(bool bInput, const QString& sockName);
     void addOnlySocketToLayout(ZGraphicsLayout* pSocketLayout, const QModelIndex& paramIdx);
     SocketBackgroud* addSocket(const QModelIndex& idx, bool bInput);
-    void markNodeStatus(zeno::NodeRunStatus status);
+    void markNodeStatus(QmlNodeRunStatus::Value status);
 
     QVector<ZSocketLayout*> getSocketLayouts(bool bInput) const;
     QVector<ZenoSocketItem*> getSocketItems(bool bInput) const;
@@ -103,18 +107,20 @@ private:
     ZSocketLayout* getSocketLayout(bool bInput, int idx) const;
 
 private:
-    ZEditableTextItem* m_NameItem;
+    ZEditableTextItem* m_nameEditor;    //有图标时左边的编辑框
     ZSimpleTextItem* m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
-    StatusGroup* m_pStatusWidgets;
+    LeftStatusBtnGroup* m_pStatusWidgets1;
+    RightStatusBtnGroup* m_pStatusWidgets2;
     ZenoImageItem* m_errorTip;
+    ZenoImageItem* m_frameNodeMark;
     QGraphicsPolygonItem* m_statusMarker;
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
 
     ZLayoutBackground* m_dirtyMarker;
 
-    NodeNameItem* m_nameItem;       //�����Ϊ��
+    NodeNameItem* m_nameItem;       //没有图标时，正中间的文本编辑
 
     ZGraphicsLayout* m_bodyLayout;
     ZGraphicsLayout* m_inputObjSockets;
@@ -122,9 +128,10 @@ private:
     ZGraphicsLayout* m_inputsLayout;
     ZGraphicsLayout* m_outputsLayout;
 
-    zeno::NodeRunStatus m_nodeStatus;
+    QmlNodeRunStatus::Value m_nodeStatus;
 
     QPointF _cache_name_move;
+    QPointF _cache_origin_pos;
 };
 
 #endif

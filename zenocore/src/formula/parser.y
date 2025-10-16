@@ -55,11 +55,11 @@
 
 }
 
-/*¶¨Òåparser´«¸øscannerµÄ²ÎÊı*/
+/*å®šä¹‰parserä¼ ç»™scannerçš„å‚æ•°*/
 %lex-param { zeno::Scanner &scanner }
 %lex-param { zeno::Formula &driver }
 
-/*¶¨Òådriver´«¸øparserµÄ²ÎÊı*/
+/*å®šä¹‰driverä¼ ç»™parserçš„å‚æ•°*/
 %parse-param { zeno::Scanner &scanner }
 %parse-param { zeno::Formula &driver }
 
@@ -67,7 +67,7 @@
 %define parse.trace
 %define parse.error verbose
 
-/*Í¨¹ızeno::Parser::make_XXX(loc)¸øtokenÌí¼ÓÇ°×º*/
+/*é€šè¿‡zeno::Parser::make_XXX(loc)ç»™tokenæ·»åŠ å‰ç¼€*/
 %define api.token.prefix {TOKEN_}
 
 %token RPAREN
@@ -92,7 +92,7 @@
 
 //%nonassoc ABS "|"
 
-%nonassoc NEG // ¸ººÅ¾ßÓĞ×î¸ßÓÅÏÈ¼¶µ«Ã»ÓĞ½áºÏĞÔ
+%nonassoc NEG // è´Ÿå·å…·æœ‰æœ€é«˜ä¼˜å…ˆçº§ä½†æ²¡æœ‰ç»“åˆæ€§
 
 %left <string>LPAREN
 
@@ -152,7 +152,7 @@ func-content: LPAREN funcargs RPAREN {
     };
 
 parencontent: LPAREN exp RPAREN { $$ = $2; $$->paren_match = Match_Exactly; }
-    /* À¨ºÅ²»È«µÄÇé¿ö²»ÓèÒÔÊ¶±ğ£¬·ñÔòparserÎŞ·¨Ê¶±ğÈ«À¨ºÅµÄÇé¿ö
+    /* æ‹¬å·ä¸å…¨çš„æƒ…å†µä¸äºˆä»¥è¯†åˆ«ï¼Œå¦åˆ™parseræ— æ³•è¯†åˆ«å…¨æ‹¬å·çš„æƒ…å†µ
     | LPAREN exp { driver.debugASTNode($2); $$ = $2; $$->paren_match = Match_LeftPAREN; }
     | LPAREN { $$ = driver.makeEmptyNode(); $$->paren_match = Match_LeftPAREN; };
     */

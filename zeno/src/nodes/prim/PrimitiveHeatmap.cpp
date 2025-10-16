@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/HeatmapObject.h>
@@ -9,64 +10,32 @@
 namespace zeno {
 struct MakeHeatmap : zeno::INode {
     virtual void apply() override {
-        //auto nres = get_param<int>("nres");
-        //auto ramps = get_param<std::string>("_RAMPS");
-        //std::stringstream ss(ramps);
-        //std::vector<std::pair<float, zeno::vec3f>> colors;
-        //int count;
-        //ss >> count;
-        //for (int i = 0; i < count; i++) {
-        //    float f = 0.f, x = 0.f, y = 0.f, z = 0.f;
-        //    ss >> f >> x >> y >> z;
-        //    //printf("%f %f %f %f\n", f, x, y, z);
-        //    colors.emplace_back(
-        //            f, zeno::vec3f(x, y, z));
-        //}
-
-        //auto heatmap = std::make_shared<HeatmapObject>();
-        //for (int i = 0; i < nres; i++) {
-        //    float fac = i * (1.f / nres);
-        //    zeno::vec3f clr;
-        //    for (int j = 0; j < colors.size(); j++) {
-        //        auto [f, rgb] = colors[j];
-        //        if (f >= fac) {
-        //            if (j != 0) {
-        //                auto [last_f, last_rgb] = colors[j - 1];
-        //                auto intfac = (fac - last_f) / (f - last_f);
-        //                //printf("%f %f %f %f\n", fac, last_f, f, intfac);
-        //                clr = zeno::mix(last_rgb, rgb, intfac);
-        //            } else {
-        //                clr = rgb;
-        //            }
-        //            break;
-        //        }
-        //    }
-        //    heatmap->colors.push_back(clr);
-        //}
-        auto heatmap = get_input2<HeatmapObject>("heatmap");
-        set_output("heatmap", std::move(heatmap));
+        HeatmapData heatmap = zeno::reflect::any_cast<HeatmapData>(ZImpl(get_param_result("heatmap")));
+        ZImpl(set_primitive_output("heatmap", heatmap));
     }
 };
 
-ZENDEFNODE(MakeHeatmap,
-        { /* inputs: */ {{gParamType_Heatmap, "heatmap", "", zeno::NoSocket, zeno::Heatmap},
-        }, /* outputs: */ {
-            {gParamType_Heatmap, "heatmap"},
-        }, /* params: */ {
-        //{gParamType_Int, "nres", "1024"},
-        //{gParamType_String, "_RAMPS", "0 0 0.8 0.8 0.8 1"},
-        }, /* category: */ {
-        "visualize",
-        }});
+ZENDEFNODE(MakeHeatmap, {
+    {
+        {gParamType_Heatmap, "heatmap", "", zeno::NoSocket, zeno::Heatmap},
+        {gParamType_Int, "nres", "1024"}
+    },
+    {
+        {gParamType_Heatmap, "heatmap"},
+    },
+    {}, 
+    {"visualize"}
+    }
+);
 
 struct HeatmapFromImage : zeno::INode {
     virtual void apply() override {
-        auto image = get_input<zeno::PrimitiveObject>("image");
-        int w = image->userData().get2<int>("w");
-        auto heatmap = std::make_shared<HeatmapObject>();
+        auto image = ZImpl(get_input<zeno::PrimitiveObject>("image"));
+        int w = image->userData()->get_int("w");
+        auto heatmap = std::make_unique<HeatmapObject>();
 
-        auto spos = get_input<NumericObject>("startPos")->get<int>();
-        auto epos = get_input<NumericObject>("endPos")->get<int>();
+        auto spos = ZImpl(get_input<NumericObject>("startPos"))->get<int>();
+        auto epos = ZImpl(get_input<NumericObject>("endPos"))->get<int>();
         int start = 0;
         int end = w;
         if ( spos >= 0 && spos < epos && epos <= w)
@@ -78,7 +47,7 @@ struct HeatmapFromImage : zeno::INode {
         for (auto i = start; i < end; i++) {
             heatmap->colors.push_back(image->verts[i]);
         }
-        set_output("heatmap", std::move(heatmap));
+        ZImpl(set_output("heatmap", std::move(heatmap)));
     }
 };
 
@@ -96,12 +65,12 @@ ZENDEFNODE(HeatmapFromImage,
 
 struct HeatmapFromImage2 : zeno::INode {
     virtual void apply() override {
-        auto image = get_input<zeno::PrimitiveObject>("image");
-        int w = image->userData().get2<int>("w");
-        auto heatmap = std::make_shared<HeatmapObject>();
+        auto image = ZImpl(get_input<zeno::PrimitiveObject>("image"));
+        int w = image->userData()->get_int("w");
+        auto heatmap = std::make_unique<HeatmapObject>();
 
-        auto spos = get_input2<float>("startPos");
-        auto epos = get_input2<float>("endPos");
+        auto spos = ZImpl(get_input2<float>("startPos"));
+        auto epos = ZImpl(get_input2<float>("endPos"));
         int start = zeno::clamp(spos, 0.0f, 1.0f) * w;
         int end = zeno::clamp(epos, 0.0f, 1.0f) * w;
         std::vector<vec3f> temp;
@@ -109,7 +78,7 @@ struct HeatmapFromImage2 : zeno::INode {
             temp.push_back(image->verts[i]);
         }
 
-        auto resample = get_input2<int>("resample");
+        auto resample = ZImpl(get_input2<int>("resample"));
         if (0 < resample && resample < w) {
             for (auto i = 0; i < resample; i++) {
                 float x = i / float(resample);
@@ -125,7 +94,7 @@ struct HeatmapFromImage2 : zeno::INode {
             heatmap->colors = temp;
         }
 
-        set_output("heatmap", std::move(heatmap));
+        ZImpl(set_output("heatmap", std::move(heatmap)));
     }
 };
 
@@ -144,16 +113,16 @@ ZENDEFNODE(HeatmapFromImage2,
 
 struct HeatmapFromPrimAttr : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        int attrNum = get_input2<int>("attrNum");
-        auto heatmap = std::make_shared<HeatmapObject>();
-        auto attrName = get_input2<std::string>("attrName");
-        bool reverse = get_input2<bool>("reverse Result");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        int attrNum = ZImpl(get_input2<int>("attrNum"));
+        auto heatmap = std::make_unique<HeatmapObject>();
+        auto attrName = ZImpl(get_input2<std::string>("attrName"));
+        bool reverse = ZImpl(get_input2<bool>("reverse Result"));
         std::vector<vec3f> temp;
         for (auto i = 0; i < attrNum; i++) {
             temp.push_back(prim->attr<zeno::vec3f>(attrName)[i]);
         }
-        auto resample = get_input2<int>("resample");
+        auto resample = ZImpl(get_input2<int>("resample"));
         if (0 < resample && resample < attrNum) {
             for (auto i = 0; i < resample; i++) {
                 float x = i / float(resample);
@@ -171,7 +140,7 @@ struct HeatmapFromPrimAttr : zeno::INode {
         if (reverse) {
             std::reverse(heatmap->colors.begin(), heatmap->colors.end());
         }
-        set_output("heatmap", std::move(heatmap));
+        ZImpl(set_output("heatmap", std::move(heatmap)));
     }
 };
 
@@ -189,46 +158,54 @@ ZENDEFNODE(HeatmapFromPrimAttr,
                    "visualize",
                }});
 
+static zeno::vec3f interp(const std::vector<zeno::vec3f>& colors, float x) {
+    if (x <= 0) return colors[0];
+    if (x >= 1) return colors[colors.size() - 1];
+    x = zeno::clamp(x, 0, 1) * (colors.size() - 1);
+    int i = (int)zeno::floor(x);
+    float f = x - i;
+    return zeno::mix(colors[i], colors[i + 1], f);
+}
+
 struct PrimitiveColorByHeatmap : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto heatmap = get_input<HeatmapObject>("heatmap");
-        std::string attrName;
-        if (has_input("attrName2")) {
-            attrName = get_input2<std::string>("attrName2");
+        auto prim = clone_input_Geometry("prim");
+        auto heatmap = zeno::reflect::any_cast<HeatmapData>(ZImpl(get_param_result("heatmap")));
+        zeno::String attrName;
+        if (ZImpl(has_input("attrName2"))) {
+            attrName = get_input2_string("attrName2");
         } else {
-            attrName = get_param<std::string>("attrName");
+            attrName = get_input2_string("attrName");
         }
 
-        float maxv = 1.0f;
-        float minv = 0.0f;
-        if(has_input("max"))
-            maxv = get_input<NumericObject>("max")->get<float>();
-        if(has_input("min"))
-            minv = get_input<NumericObject>("min")->get<float>();
-        auto &clr = prim->add_attr<zeno::vec3f>("clr");
-        auto &src = prim->attr<float>(attrName);
+        std::vector<zeno::vec3f> heatmap_clrs = heatmap.toVecColors(1024);
+
+        float maxv = get_input2_float("max");
+        float minv = get_input2_float("min");
+        std::vector<zeno::vec3f> clr(prim->npoints());
+        auto &src = prim->get_float_attr(ATTR_POINT, attrName);
         #pragma omp parallel for //ideally this could be done in opengl
         for (int i = 0; i < src.size(); i++) {
             auto x = (src[i]-minv)/(maxv-minv);
             // src[i] = (src[i]-minv)/(maxv-minv);
-            clr[i] = heatmap->interp(x);
+            clr[i] = interp(heatmap_clrs, x);
         }
-
+        prim->set_point_attr("clr", clr);
         set_output("prim", std::move(prim));
     }
 };
 
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
-            {gParamType_Primitive, "prim", "", zeno::Socket_ReadOnly},
+            {gParamType_Geometry, "prim", "", zeno::Socket_ReadOnly},
             {gParamType_String,"attrName2"},
             {gParamType_Heatmap, "heatmap", "", zeno::Socket_Primitve, zeno::Heatmap},
             {gParamType_Float, "min", "0"},
             {gParamType_Float, "max", "1"},
-        }, /* outputs: */ {
-{gParamType_Primitive, "prim"},
-}, /* params: */ {
+        }, 
+        /* outputs: */ {
+            {gParamType_Geometry, "prim"},
+        }, /* params: */ {
             {gParamType_String, "attrName", "rho"},
         }, /* category: */ {
             "visualize",
@@ -236,15 +213,15 @@ ZENDEFNODE(PrimitiveColorByHeatmap,
         
 struct PrimSample1D : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto srcChannel = get_input2<std::string>("srcChannel");
-        auto dstChannel = get_input2<std::string>("dstChannel");
-        auto heatmap = get_input<HeatmapObject>("heatmap");
-        auto remapMin = get_input2<float>("remapMin");
-        auto remapMax = get_input2<float>("remapMax");
-        primSampleHeatmap(prim, srcChannel, dstChannel, heatmap, remapMin, remapMax);
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto srcChannel = ZImpl(get_input2<std::string>("srcChannel"));
+        auto dstChannel = ZImpl(get_input2<std::string>("dstChannel"));
+        auto heatmap = ZImpl(get_input<HeatmapObject>("heatmap"));
+        auto remapMin = ZImpl(get_input2<float>("remapMin"));
+        auto remapMax = ZImpl(get_input2<float>("remapMax"));
+        primSampleHeatmap(prim.get(), srcChannel, dstChannel, heatmap.get(), remapMin, remapMax);
 
-        set_output("outPrim", std::move(prim));
+        ZImpl(set_output("outPrim", std::move(prim)));
     }
 };
 ZENDEFNODE(PrimSample1D, {
@@ -263,10 +240,10 @@ ZENDEFNODE(PrimSample1D, {
     {"primitive"},
 });
 void primSampleHeatmap(
-        std::shared_ptr<PrimitiveObject> prim,
+        PrimitiveObject* prim,
         const std::string &srcChannel,
         const std::string &dstChannel,
-        std::shared_ptr<HeatmapObject> heatmap,
+        HeatmapObject* heatmap,
         float remapMin,
         float remapMax
 ) {

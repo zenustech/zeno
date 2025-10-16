@@ -55,16 +55,19 @@ struct VDBGrid : zeno::IObject {
   
   virtual const openvdb::math::Transform& getTransform() = 0;
   virtual void setTransform(openvdb::math::Transform::Ptr const &trans) = 0;
+#if 0
   virtual std::string method_node(std::string const &op) override {
       if (op == "view") {
           return "INTERN_PreViewVDB";
       }
       return {};
   }
+#endif
 
   // using GeneralVdbGrid = variant<typename SomeGrid::Ptr, >;
   // virtual GeneralVdbGrid getGrid() = 0;
   virtual openvdb::CoordBBox evalActiveVoxelBoundingBox() = 0;
+  virtual openvdb::Coord evalActiveVoxelDim() = 0;
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
   virtual void setName(std::string const &name) = 0;
@@ -72,15 +75,21 @@ struct VDBGrid : zeno::IObject {
   virtual std::string getType() const =0;
   virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
+  virtual void Delete() override {
+      //delete this;
+  }
 
-  virtual ~VDBGrid() override = default;
+  //virtual ~VDBGrid() override = default;
 };
 
 template <typename GridT>
 struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
   typename GridT::Ptr m_grid;
 
-  virtual ~VDBGridWrapper() override = default;
+  //virtual ~VDBGridWrapper() override = default;
+  virtual void Delete() override {
+      //delete this;
+  }
 
   VDBGridWrapper() { m_grid = GridT::create(); }
 
@@ -106,6 +115,9 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 
   openvdb::CoordBBox evalActiveVoxelBoundingBox() override {
     return m_grid->evalActiveVoxelBoundingBox();
+  }
+  openvdb::Coord evalActiveVoxelDim() override {
+    return m_grid->evalActiveVoxelDim();
   }
   openvdb::Vec3d indexToWorld(openvdb::Coord &c) override {
     return m_grid->transform().indexToWorld(c);
@@ -195,8 +207,10 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
     return *m_packedGrid;
   }
   ///
-
-  virtual ~VDBGridWrapper() override = default;
+  void Delete() override {
+      //delete this;
+  }
+  //virtual ~VDBGridWrapper() override = default;
 
   VDBGridWrapper() { m_grid = GridT::create(); }
 
@@ -226,6 +240,9 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
 
   openvdb::CoordBBox evalActiveVoxelBoundingBox() override {
     return m_grid->evalActiveVoxelBoundingBox();
+  }
+  openvdb::Coord evalActiveVoxelDim() override {
+    return m_grid->evalActiveVoxelDim();
   }
   openvdb::Vec3d indexToWorld(openvdb::Coord &c) override {
     return m_grid->transform().indexToWorld(c);

@@ -1,11 +1,10 @@
 #include "zpathedit.h"
 #include "zlineedit.h"
 #include "uicommon.h"
-#include <zeno/extra/TempNode.h>
-#include <zeno/extra/assetDir.h>
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "model/graphsmanager.h"
+
 
 ZPathEdit::ZPathEdit(zeno::ParamControl ctrl, QWidget *parent)
     : ZLineEdit(parent)

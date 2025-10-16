@@ -1,120 +1,91 @@
 #pragma once
 
-#include <zeno/core/Session.h>  //屏蔽这句竟然会导致 GlobalVarible.obj没法link INode Graph，真是神奇
+#include <zeno/core/coredata.h>
 #include <zeno/utils/api.h>
-#include <zeno/utils/safe_dynamic_cast.h>
-#include <zeno/utils/uuid.h>
-#include <string>
-#include <memory>
-#include <any>
+#include <memory>   //abi problem
 
 namespace zeno {
 
-struct UserData;
+    struct ZENO_API IUserData {
+        virtual std::unique_ptr<IUserData> clone() = 0;
+        virtual ~IUserData() = default;
 
-struct IObject {
-    using polymorphic_base_type = IObject;
+        virtual bool has(const String& key) = 0;
+        virtual size_t size() const = 0;
+        virtual Vector<String> keys() const = 0;
 
-    std::string listitemNameIndex;      //记录在list中的nodeid构成的层级索引，如果不是某个list下元素则为自身nodeid
-    std::string listitemNumberIndex;    //记录在list中的序号构成的层级索引，如果不是某个list下元素则为空
-    std::string nodeId;     //该对象来自哪个node
+        virtual String get_string(const String& key, String defl = "") const = 0;
+        virtual void set_string(const String& key, const String& sval) = 0;
+        virtual bool has_string(const String& key) const = 0;
 
-    IObject* m_parent = nullptr;
+        virtual int get_int(const String& key, int defl = 0) const = 0;
+        virtual void set_int(const String& key, int iVal) = 0;
+        virtual bool has_int(const String& key) const = 0;
 
-    mutable std::any m_userData;
+        virtual float get_float(const String& key, float defl = 0.f) const = 0;
+        virtual void set_float(const String& key, float fVal) = 0;
+        virtual bool has_float(const String& key) const = 0;
 
-#ifndef ZENO_APIFREE
-    ZENO_API IObject();
-    ZENO_API IObject(IObject const &);
-    ZENO_API IObject(IObject &&);
-    ZENO_API IObject &operator=(IObject const &);
-    ZENO_API IObject &operator=(IObject &&);
-    ZENO_API virtual ~IObject();
+        virtual Vec2f get_vec2f(const String& key, Vec2f defl = Vec2f()) const = 0;
+        virtual void set_vec2f(const String& key, const Vec2f& vec) = 0;
+        virtual bool has_vec2f(const String& key) const = 0;
 
-    ZENO_API virtual std::shared_ptr<IObject> clone() const;
-    ZENO_API virtual std::shared_ptr<IObject> move_clone();
-    ZENO_API virtual bool assign(IObject const *other);
-    ZENO_API virtual bool move_assign(IObject *other);
-    ZENO_API virtual std::string method_node(std::string const &op);
-    ZENO_API virtual std::string key();
-    ZENO_API virtual bool update_key(const std::string& key);
-    ZENO_API virtual void set_parent(IObject* spParent);
-    ZENO_API virtual IObject* get_parent() const;
-    ZENO_API UserData &userData() const;
-#else
-    virtual ~IObject() = default;
-    virtual std::shared_ptr<IObject> clone() const { return nullptr; }
-    virtual std::shared_ptr<IObject> move_clone() { return nullptr; }
-    virtual bool assign(IObject const *other) { return false; }
-    virtual bool move_assign(IObject *other) { return false; }
-    ZENO_API virtual std::string method_node(std::string name) { return {}; }
+        virtual Vec2i get_vec2i(const String& key) const = 0;
+        virtual void set_vec2i(const String& key, const Vec2i& vec) = 0;
+        virtual bool has_vec2i(const String& key) const = 0;
 
-    UserData &userData() { return *reinterpret_cast<UserData *>(0); }
-#endif
+        virtual Vec3f get_vec3f(const String& key, Vec3f defl = Vec3f()) const = 0;
+        virtual void set_vec3f(const String& key, const Vec3f& vec) = 0;
+        virtual bool has_vec3f(const String& key) const = 0;
 
-    template <class T>
-    [[deprecated("use std::make_shared<T>")]]
-    static std::shared_ptr<T> make() { return std::make_shared<T>(); }
+        virtual Vec3i get_vec3i(const String& key) const = 0;
+        virtual void set_vec3i(const String& key, const Vec3i& vec) = 0;
+        virtual bool has_vec3i(const String& key) const = 0;
 
-    template <class T>
-    [[deprecated("use dynamic_cast<T *>")]]
-    T *as() { return zeno::safe_dynamic_cast<T>(this); }
+        virtual Vec4f get_vec4f(const String& key) const = 0;
+        virtual void set_vec4f(const String& key, const Vec4f& vec) = 0;
+        virtual bool has_vec4f(const String& key) const = 0;
 
-    template <class T>
-    [[deprecated("use dynamic_cast<const T *>")]]
-    const T *as() const { return zeno::safe_dynamic_cast<T>(this); }
-};
+        virtual Vec4i get_vec4i(const String& key) const = 0;
+        virtual void set_vec4i(const String& key, const Vec4i& vec) = 0;
+        virtual bool has_vec4i(const String& key) const = 0;
 
+        virtual bool get_bool(const String& key, bool defl = false) const = 0;
+        virtual void set_bool(const String& key, bool val = false) = 0;
+        virtual bool has_bool(const String& key) const = 0;
 
-template <class Derived, class CustomBase = IObject>
-struct IObjectClone : CustomBase {
-    //using has_iobject_clone = std::true_type;
+        virtual void del(String const& name) = 0;
+    };
 
-    IObjectClone() {
-    }
+    struct ZENO_API IObject {
+        IObject();
+        IObject(const IObject& rhs);
+        IObject& operator=(const IObject& rhs);
+        virtual ~IObject();     // don't consider abi problem right now.
+        virtual std::unique_ptr<zeno::IObject> clone() const = 0; //TODO锛歛bi compatible for shared_ptr
+        virtual String key() const;
+        virtual void update_key(const String& key);
+        IUserData* userData();
+        virtual void Delete();  //TODO: for abi compatiblity when dtor cann't be mark virutal.
 
-    IObjectClone(const IObjectClone& rhs) : CustomBase(rhs) {
-    }
+        String m_key;
+        std::unique_ptr<IUserData> m_usrData;   //TODO: abi unique_ptr
+    };
 
-    virtual std::shared_ptr<IObject> clone() const override {
-        auto spClonedObj = std::make_shared<Derived>(static_cast<Derived const &>(*this));
-        return spClonedObj;
-    }
+    template <class Derived, class CustomBase = IObject>
+    struct IObjectClone : CustomBase {
 
-    virtual std::shared_ptr<IObject> move_clone() override {
-        return std::make_shared<Derived>(static_cast<Derived &&>(*this));
-    }
+        virtual std::unique_ptr<IObject> clone() const override {
+            auto spClonedObj = std::make_unique<Derived>(static_cast<Derived const&>(*this));
+            spClonedObj->m_usrData = std::move(m_usrData->clone());
+            return spClonedObj;
+        }
 
-    virtual std::string key() override {
-        return m_key;
-    }
+        void Delete() override {
+            //CustomBase::Delete();
+            //delete this;
+        }
+    };
 
-    virtual bool update_key(const std::string& key) override {
-        m_key = key;
-        return true;
-    }
-
-    virtual bool assign(IObject const *other) override {
-        auto src = dynamic_cast<Derived const *>(other);
-        if (!src)
-            return false;
-        auto dst = static_cast<Derived *>(this);
-        *dst = *src;
-        return true;
-    }
-
-    virtual bool move_assign(IObject *other) override {
-        auto src = dynamic_cast<Derived *>(other);
-        if (!src)
-            return false;
-        auto dst = static_cast<Derived *>(this);
-        *dst = std::move(*src);
-        return true;
-    }
-
-    std::string m_key;
-};
-
-using zany = std::shared_ptr<IObject>;
-
+    using zany = std::unique_ptr<zeno::IObject>;
 }

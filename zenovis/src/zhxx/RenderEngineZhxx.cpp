@@ -2,7 +2,6 @@
 #include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
-#include <zenovis/ObjectsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/vao.h>
 #include <zenovis/opengl/scope.h>
@@ -30,19 +29,6 @@ struct GraphicsManager {
     zeno::MapStablizer<std::map<std::string, std::unique_ptr<ZxxGraphic>>> graphics;
 
     explicit GraphicsManager(Scene *scene) : scene(scene) {
-    }
-
-    bool load_objects(std::vector<std::pair<std::string, std::shared_ptr<zeno::IObject>>> const &objs) {
-        auto ins = graphics.insertPass();
-        for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
-                zeno::log_debug("zxx_load_object: loading graphics [{}]", key);
-                auto ig = std::make_unique<ZxxGraphic>(key, obj);
-                zeno::log_debug("zxx_load_object: loaded graphics to {}", ig.get());
-                ins.try_emplace(key, std::move(ig));
-            }
-        }
-        return ins.has_changed();
     }
 };
 
@@ -74,11 +60,6 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
 
         zenvis::initialize();
         zenvis::setup_env_map("Default");
-    }
-
-    void update() override {
-        if (graphicsMan->load_objects(scene->objectsMan->pairsShared()))
-            giNeedUpdate = true;
     }
 
     void draw(bool _) override {
@@ -133,9 +114,27 @@ struct RenderEngineZhxx : RenderEngine, zeno::disable_copy {
     void cleanupWhenExit() override {
 
     }
+
+    void assetLoad() override {
+
+    }
+
+    void run() override {
+
+    }
+
+    void beginFrameLoading(int frameid) override {
+
+    }
+
+    void endFrameLoading(int frameid) override {
+
+    }
+
 };
 
 static auto definer = RenderManager::registerRenderEngine<RenderEngineZhxx>("zhxx");
 
 }
 #endif
+

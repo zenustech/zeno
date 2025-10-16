@@ -8,7 +8,7 @@
 #include <zeno/types/DictObject.h>
 
 #include "assimp/scene.h"
-
+#include <any>
 #include "Definition.h"
 
 #include <glm/vec4.hpp>
@@ -20,7 +20,7 @@ struct ExtractFBXData : zeno::INode {
 
     virtual void apply() override {
 
-        auto fbxData = get_input<FBXData>("data");
+        auto fbxData = zeno::safe_dynamic_cast<FBXData>(get_input("data"));
 
         set_output("vertices", std::move(fbxData->iVertices.clone()));
         set_output("indices", std::move(fbxData->iIndices.clone()));
@@ -50,9 +50,9 @@ ZENDEFNODE(ExtractFBXData,
 struct ExtractMatName : zeno::INode {
 
     virtual void apply() override {
-        auto mat = get_input<IMaterial>("material");
-        auto key = get_input<zeno::StringObject>("key")->get();
-        auto name = std::make_shared<zeno::StringObject>();
+        auto mat = zeno::safe_dynamic_cast<IMaterial>(get_input("material"));
+        auto key = zsString2Std(get_input2_string("key"));
+        auto name = std::make_unique<zeno::StringObject>();
 
         if(mat->value.find(key) == mat->value.end()){
             zeno::log_error("FBX: ExtractMat {} Not Found", key);
@@ -88,19 +88,19 @@ ZENDEFNODE(ExtractMatName,
 struct ExtractMatTexList : zeno::INode {
 
     virtual void apply() override {
-        auto mat = get_input<SMaterial>("material");
+        auto mat = zeno::safe_dynamic_cast<SMaterial>(get_input("material"));
 
         //zeno::log_info(">>>>> Get Key {}", key);
         //zeno::log_info(">>>>> Get Mat Name {}", mat->value.at(key).matName);
 
-        auto name = std::make_shared<zeno::StringObject>();
+        auto name = std::make_unique<zeno::StringObject>();
 
-        auto lo = std::make_shared<zeno::ListObject>();
+        auto lo = std::make_unique<zeno::ListObject>();
         auto tl = mat->getTexList();
         for(auto&p: tl){
-            auto s = std::make_shared<zeno::StringObject>();
+            auto s = std::make_unique<zeno::StringObject>();
             s->value = p;
-            lo->emplace_back(s);
+            lo->push_back(std::move(s));
         }
 
         //for(auto&l: lo->arr){
@@ -133,13 +133,13 @@ ZENDEFNODE(ExtractMatTexList,
 struct ExtractMatDict : zeno::INode {
 
     virtual void apply() override {
-        auto mat = get_input<IMaterial>("material");
-        auto mats = std::make_shared<zeno::DictObject>();
+        auto mat = zeno::safe_dynamic_cast<IMaterial>(get_input("material"));
+        auto mats = zeno::create_DictObject();
         for(auto& m:mat->value){
             auto name = m.second.matName;
             if(mats->lut.find(name) == mats->lut.end()){
-                auto sm = std::make_shared<SMaterial>(m.second);
-                mats->lut[name] = sm;
+                auto sm = std::make_unique<SMaterial>(m.second);
+                mats->lut[name] = std::move(sm);
             }
         }
         set_output("mats", std::move(mats));
@@ -164,22 +164,22 @@ ZENDEFNODE(ExtractMatDict,
 struct ExtractMatData : zeno::INode {
 
     virtual void apply() override {
-        auto data = get_input<MatData>("data");
-        auto datas = std::make_shared<zeno::ListObject>();
-        auto matName = std::make_shared<zeno::StringObject>();
+        auto data = zeno::safe_dynamic_cast<MatData>(get_input("data"));
+        auto datas = zeno::create_ListObject();
+        auto matName = std::make_unique<zeno::StringObject>();
 
 //        TIMER_START(MakeDatas)
         for(auto [k, v]: data->iFbxData.value){
-            datas->push_back(v);
+            datas->push_back(std::move(v->clone()));
         }
         matName->set(data->sMaterial.matName);
 //        TIMER_END(MakeDatas)
 
         // Make Zeno Objects
-        auto texLists = std::make_shared<zeno::ListObject>();
-        auto texMaps = std::make_shared<zeno::DictObject>();
-        auto texUvs = std::make_shared<zeno::DictObject>();
-        auto matValues = std::make_shared<zeno::DictObject>();
+        auto texLists = std::make_unique<zeno::ListObject>();
+        auto texMaps = std::make_unique<zeno::DictObject>();
+        auto texUvs = std::make_unique<zeno::DictObject>();
+        auto matValues = std::make_unique<zeno::DictObject>();
 
         // Get Texture List And Prop-Index And Mat Params Value
         std::vector<std::string> texList{};
@@ -192,24 +192,24 @@ struct ExtractMatData : zeno::INode {
 
         // Set Data -> Zeno Object
         for(auto& path: texList){
-            auto strObj = std::make_shared<zeno::StringObject>();
+            auto strObj = std::make_unique<zeno::StringObject>();
             strObj->value = path;
-            texLists->emplace_back(strObj);
+            texLists->push_back(std::move(strObj));
         }
         for(auto&[matPropName, index]: texMap){
-            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            auto numeric_obj = std::make_unique<zeno::NumericObject>();
             numeric_obj->set(index);
             texMaps->lut[matPropName] = std::move(numeric_obj);
         }
 
         for(auto&[matPropName, uvTrans]: texUv){
-            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            auto numeric_obj = std::make_unique<zeno::NumericObject>();
             numeric_obj->set(zeno::vec4f(uvTrans.mScaling.x, uvTrans.mScaling.y, uvTrans.mTranslation.x, uvTrans.mTranslation.y));
             texUvs->lut[matPropName] = std::move(numeric_obj);
         }
 
         for(auto& [matPropName, matPropValue]: matValue){
-            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            auto numeric_obj = std::make_unique<zeno::NumericObject>();
             numeric_obj->set(zeno::vec3f(matPropValue.r, matPropValue.g, matPropValue.b));
             matValues->lut[matPropName] = std::move(numeric_obj);
         }
@@ -247,23 +247,23 @@ ZENDEFNODE(ExtractMatData,
 struct ExtractCameraData : zeno::INode {
 
     virtual void apply() override {
-        auto icam = get_input<ICamera>("camobject");
-        auto key = get_input<zeno::StringObject>("key")->get();
+        auto icam = zeno::safe_dynamic_cast<ICamera>(get_input("camobject"));
+        auto key = zsString2Std(get_input2_string("key"));
         if(icam->value.find(key) == icam->value.end()){
             throw zeno::makeError("Camera Not Found");
         }
 
         auto cam = icam->value.at(key);
 
-        auto pos = std::make_shared<zeno::NumericObject>();
-        auto up = std::make_shared<zeno::NumericObject>();
-        auto view = std::make_shared<zeno::NumericObject>();
-        auto focL = std::make_shared<zeno::NumericObject>();
-        auto filmW = std::make_shared<zeno::NumericObject>();
-        auto filmH = std::make_shared<zeno::NumericObject>();
-        auto haov = std::make_shared<zeno::NumericObject>();
-        auto waov = std::make_shared<zeno::NumericObject>();
-        auto hfov = std::make_shared<zeno::NumericObject>();
+        auto pos = std::make_unique<zeno::NumericObject>();
+        auto up = std::make_unique<zeno::NumericObject>();
+        auto view = std::make_unique<zeno::NumericObject>();
+        auto focL = std::make_unique<zeno::NumericObject>();
+        auto filmW = std::make_unique<zeno::NumericObject>();
+        auto filmH = std::make_unique<zeno::NumericObject>();
+        auto haov = std::make_unique<zeno::NumericObject>();
+        auto waov = std::make_unique<zeno::NumericObject>();
+        auto hfov = std::make_unique<zeno::NumericObject>();
         pos->set<zeno::vec3f>(cam.pos);
         up->set<zeno::vec3f>(cam.up);
         view->set<zeno::vec3f>(cam.view);
@@ -324,38 +324,40 @@ ZENDEFNODE(ExtractCameraData,
 struct ExchangeFBXData : zeno::INode {
 
     virtual void apply() override {
-        auto animinfo = get_input<AnimInfo>("animinfo");
-        auto nodetree = get_input<NodeTree>("nodetree");
-        auto bonetree = get_input<BoneTree>("bonetree");
+        auto animinfo = zeno::safe_uniqueptr_cast<AnimInfo>(clone_input("animinfo"));
+        auto nodetree = zeno::safe_uniqueptr_cast<NodeTree>(clone_input("nodetree"));
+        auto bonetree = zeno::safe_uniqueptr_cast<BoneTree>(clone_input("bonetree"));
 
-        auto paramDType = get_param<std::string>("dType");
+        auto paramDType = get_param_string("dType");
         std::string dType;
         if(paramDType == "DATA"){
-            auto data = get_input<FBXData>("d");
-            data->nodeTree = nodetree;
-            data->boneTree = bonetree;
-            data->animInfo = animinfo;
+            auto data = zeno::safe_uniqueptr_cast<FBXData>(clone_input("d"));
+            data->nodeTree = std::move(nodetree);
+            data->boneTree = std::move(bonetree);
+            data->animInfo = std::move(animinfo);
             set_output("d", std::move(data));
-        }else if(paramDType == "DATAS"){
-            auto datas = get_input<zeno::DictObject>("d");
+        }
+        else if(paramDType == "DATAS"){
+            auto datas = get_input_DictObject("d");
             for (auto &[k, v]: datas->lut) {
-                auto vc = zeno::safe_dynamic_cast<FBXData>(v.get());
-                vc->animInfo = animinfo;
-                vc->boneTree = bonetree;
-                vc->nodeTree = nodetree;
+                auto vc = zeno::safe_uniqueptr_cast<FBXData>(v->clone());
+                vc->animInfo = std::move(animinfo);
+                vc->boneTree = std::move(bonetree);
+                vc->nodeTree = std::move(nodetree);
             }
-            set_output("d", std::move(datas));
-        }else if(paramDType == "MATS"){
-            auto mats = get_input<zeno::DictObject>("d");
+            set_output("d", datas->clone());
+        }
+        else if(paramDType == "MATS"){
+            auto mats = get_input_DictObject("d");
             for (auto &[k, v]: mats->lut) {
                 auto vc = zeno::safe_dynamic_cast<MatData>(v.get());
                 for(auto &[_k, _v]: vc->iFbxData.value){
-                    _v->animInfo = animinfo;
-                    _v->nodeTree = nodetree;
-                    _v->boneTree = bonetree;
+                    _v->animInfo = std::move(animinfo);
+                    _v->nodeTree = std::move(nodetree);
+                    _v->boneTree = std::move(bonetree);
                 }
             }
-            set_output("d", std::move(mats));
+            set_output("d", mats->clone());
         }
     }
 };

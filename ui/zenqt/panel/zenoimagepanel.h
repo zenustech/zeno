@@ -5,8 +5,11 @@
 #ifndef ZENO_ZENOIMAGEPANEL_H
 #define ZENO_ZENOIMAGEPANEL_H
 
+//TODO: image can show on the property panel, no need to show it on a panel.
+#if 1
 #include <QtWidgets>
 #include "widgets/zcombobox.h"
+#include <zeno/core/data.h>
 
 class ZenoImageView: public QGraphicsView {
     Q_OBJECT
@@ -100,8 +103,12 @@ class ZenoImagePanel : public QWidget {
 public:
     ZenoImagePanel(QWidget* parent = nullptr);
     void clear();
-    void setPrim(std::string primid);
+    void reload(const zeno::render_reload_info& info);
+
+private:
+    zeno::render_reload_info m_info;
 };
+#endif
 
 
 #endif //ZENO_ZENOIMAGEPANEL_H

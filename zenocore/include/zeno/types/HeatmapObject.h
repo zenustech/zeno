@@ -10,6 +10,11 @@
 
 namespace zeno {
     struct HeatmapObject : IObjectClone<HeatmapObject> {
+
+        void Delete() override {
+            //delete this;
+        }
+
         std::vector<zeno::vec3f> colors;
         zeno::vec3f interp(float x) const {
             if(x <= 0) return colors[0];
@@ -21,48 +26,17 @@ namespace zeno {
         }
     };
     void primSampleHeatmap(
-            std::shared_ptr<PrimitiveObject> prim,
+            PrimitiveObject* prim,
             const std::string &srcChannel,
             const std::string &dstChannel,
-            std::shared_ptr<HeatmapObject> heatmap,
+            HeatmapObject* heatmap,
             float remapMin,
             float remapMax
     );
-    std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path);
-    ZENO_API std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path);
-    ZENO_API std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path);
-    ZENO_API void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image);
-    ZENO_API void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image);
-    void primSampleTexture(
-        std::shared_ptr<PrimitiveObject> prim,
-        const std::string &srcChannel,
-        const std::string &srcSource,
-        const std::string &dstChannel,
-        std::shared_ptr<PrimitiveObject> img,
-        const std::string &wrap,
-        vec3f borderColor,
-        float remapMin,
-        float remapMax
-    );
-    void primSampleTexture(
-        std::shared_ptr<PrimitiveObject> prim,
-        const std::string &srcChannel,
-        const std::string &uvSource,
-        const std::string &dstChannel,
-        std::shared_ptr<PrimitiveObject> img,
-        const std::string &wrap,
-        const std::string &filter,
-        vec3f borderColor,
-        float remapMin,
-        float remapMax
-    );
 
-    struct HeatmapData {
-        //TODO
-        std::vector<zeno::vec3f> colors;
-    };
 
-    struct ZPRIMITIVE() HeatmapData2 {
+
+    struct HeatmapData2 {
         //TODO
         std::vector<zeno::vec3f> colors;
     };

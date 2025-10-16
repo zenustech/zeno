@@ -14,6 +14,18 @@ namespace zenoio
         m_bDelayReadGraphData = bDelay;
     }
 
+    static int _statistic_nodes(const rapidjson::Value& graph) {
+        const auto& nodes = graph["nodes"];
+        if (nodes.IsNull())
+            return 0;
+
+        int cnt = 0;
+        for (const auto& node : nodes.GetObject()) {
+            cnt++;
+        }
+        return cnt;
+    }
+
     bool ZdaReader::_parseMainGraph(const rapidjson::Document& doc, zeno::GraphData& ret) {
         if (!doc.HasMember("name") ||
             !doc.HasMember("version") ||
@@ -43,7 +55,10 @@ namespace zenoio
         }
 
         zeno::AssetsData assets;
-        if (!m_bDelayReadGraphData)
+        if (m_bDelayReadGraphData) {
+            m_num_of_nodes = _statistic_nodes(doc["graph"]);
+        }
+        else
         {
             if (!_parseGraph(doc["graph"], assets, ret))
                 return false;

@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.5.0)
+
+add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050F00)
+
+find_package(Qt5 REQUIRED COMPONENTS Core Quick Qml Quick QuickControls2 REQUIRED)
+message("Building QuickQanava with Qt5")
+

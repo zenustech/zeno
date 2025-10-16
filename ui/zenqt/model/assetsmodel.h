@@ -5,7 +5,6 @@
 #include <zeno/core/data.h>
 #include <QQuickItem>
 #include "uicommon.h"
-#include <zeno/core/Assets.h>
 
 class GraphModel;
 

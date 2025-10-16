@@ -9,7 +9,7 @@
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, QStringList& graphPath);
+    AddNodeCommand(const QString& cate, zeno::NodeData& nodedata, const QStringList& graphPath);
     ~AddNodeCommand();
     void redo() override;
     void undo() override;
@@ -26,7 +26,7 @@ private:
 class RemoveNodeCommand : public QUndoCommand
 {
 public:
-    RemoveNodeCommand(zeno::NodeData& nodeData, QStringList& graphPath);
+    RemoveNodeCommand(zeno::NodeData& nodeData, const QStringList& graphPath);
     ~RemoveNodeCommand();
     void redo() override;
     void undo() override;
@@ -41,21 +41,24 @@ private:
 class LinkCommand : public QUndoCommand
 {
 public:
-    LinkCommand(bool bAddLink, const zeno::EdgeInfo& link, QStringList& graphPath);
+    LinkCommand(bool bAddLink, const zeno::EdgeInfo& link, const QStringList& graphPath);
     void redo() override;
     void undo() override;
 
 private:
     const bool m_bAdd;
     const zeno::EdgeInfo m_link;
+
     GraphModel* m_model;
     QStringList m_graphPath;
+
+    QString m_lastViewNodeName;
 };
 
 class ModelDataCommand : public QUndoCommand
 {
 public:
-    ModelDataCommand(const QModelIndex& index, const QVariant& oldData, const QVariant& newData, int role, QStringList& graphPath);
+    ModelDataCommand(const QModelIndex& index, const QVariant& oldData, const QVariant& newData, int role, const QStringList& graphPath);
     void redo() override;
     void undo() override;
 
@@ -73,13 +76,15 @@ private:
 class NodeStatusCommand : public QUndoCommand
 {
 public:
-    NodeStatusCommand(bool isSetView, const QString& name, bool bOn, QStringList& graphPath);
+    NodeStatusCommand(zeno::NodeStatus status, const QString& name, bool bOn, const QStringList& graphPath);
     void redo() override;
     void undo() override;
 
 private:
-    bool m_isSetView;
-    bool m_On;
+    zeno::NodeStatus m_status;
+    QString m_lastViewNodeName;
+
+    bool m_bOn;
     QStringList m_graphPath;
 
     GraphModel* m_model;

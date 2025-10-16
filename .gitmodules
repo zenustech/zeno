@@ -34,9 +34,30 @@
 [submodule "projects/CUDA/projects/CUDA/zpc_jit"]
 	path = projects/CUDA/zpc_jit
 	url = https://github.com/zenustech/POC_zpc_jit.git
+[submodule "projects/phmap"]
+	path = projects/phmap
+	url = https://github.com/greg7mdp/parallel-hashmap.git
+[submodule "projects/ordered-map"]
+	path = projects/ordered-map
+	url = https://github.com/Tessil/ordered-map.git
+[submodule "projects/optix-toolkit"]
+	path = projects/optix-toolkit
+	url = https://github.com/NVIDIA/optix-toolkit.git
 [submodule "ui/3rdparty/Qt-Advanced-Docking-System"]
 	path = ui/3rdparty/Qt-Advanced-Docking-System
 	url = https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System.git
 [submodule "reflect"]
 	path = reflect
 	url = https://github.com/DarcJC/ZenoReflect.git
+[submodule "zenovis/freeglut"]
+	path = zenovis/freeglut
+	url = https://github.com/legobadman/freeglut.git
+[submodule "ui/3rdparty/QuickQanava-2.4"]
+	path = ui/3rdparty/QuickQanava-2.4
+	url = https://github.com/legobadman/QuickQanava-2.4.git
+[submodule "ui/3rdparty/QuickScintilla"]
+	path = ui/3rdparty/QuickScintilla
+	url = https://github.com/legobadman/QuickScintilla.git
+[submodule "zenocore/pybind11"]
+	path = api/python/pybind11
+	url = https://github.com/pybind/pybind11.git

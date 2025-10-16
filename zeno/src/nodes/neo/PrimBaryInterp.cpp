@@ -31,10 +31,10 @@ static void BarycentricInterp(PrimitiveObject *_dst, const PrimitiveObject *_src
 }
 struct PrimBarycentricInterp : INode {
     virtual void apply() override {
-        auto points = get_input<PrimitiveObject>("Particles");
-        auto prim = get_input<PrimitiveObject>("MeshPrim");
-        auto idTag = get_input2<std::string>("triIdTag");
-        auto weightTag = get_input2<std::string>("weightTag");
+        auto points = ZImpl(get_input<PrimitiveObject>("Particles"));
+        auto prim = ZImpl(get_input<PrimitiveObject>("MeshPrim"));
+        auto idTag = ZImpl(get_input2<std::string>("triIdTag"));
+        auto weightTag = ZImpl(get_input2<std::string>("weightTag"));
 
         auto triIndex = points->attr<float>(idTag);
         auto wIndex = points->attr<zeno::vec3f>(weightTag);
@@ -57,7 +57,7 @@ struct PrimBarycentricInterp : INode {
             BarycentricInterp(points.get(), prim.get(), index, v0, v1, v2, points->verts[index], w, idTag, weightTag);
         }
 
-        set_output("Particles", get_input("Particles"));
+        ZImpl(set_output("Particles", ZImpl(clone_input("Particles"))));
     }
 };
 

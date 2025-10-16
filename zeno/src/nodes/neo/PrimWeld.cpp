@@ -20,9 +20,9 @@ static void revamp_vector(std::vector<T> &arr, std::vector<int> const &revamp) {
 
 struct PrimWeld : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto tagAttr = get_input<StringObject>("tagAttr")->get();
-        auto isAverage = get_input<StringObject>("method")->get() == "average";
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+        auto isAverage = ZImpl(get_input<StringObject>("method"))->get() == "average";
 
         std::unordered_multimap<int, int> lut;
         auto &tag = prim->verts.attr<int>(tagAttr);
@@ -152,7 +152,7 @@ struct PrimWeld : INode {
 
         prim->resize(nrevamp);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

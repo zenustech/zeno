@@ -7,6 +7,7 @@
 #include "widgets/zcheckbox.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
+#include "dpiscale.h"
 
 
 ZenoStyle::ZenoStyle()
@@ -28,6 +29,9 @@ qreal ZenoStyle::dpiScaled(qreal value)
         qreal dpi = screen->logicalDotsPerInch();
         scale = dpi / 96.0;
     }
+#ifdef ENABLE_HIGHDPI_SCALE
+    scale = 1.0;
+#endif
     return value * scale;
 }
 

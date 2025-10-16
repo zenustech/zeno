@@ -14,11 +14,11 @@ namespace zeno {
 
 struct PrimitiveScatter : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto npoints = get_input<NumericObject>("npoints")->get<int>();
-        auto seed = get_input<NumericObject>("seed")->get<int>();
-        auto type = get_param<std::string>("type");
-        auto retprim = std::make_shared<PrimitiveObject>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto npoints = ZImpl(get_input<NumericObject>("npoints"))->get<int>();
+        auto seed = ZImpl(get_input<NumericObject>("seed"))->get<int>();
+        auto type = ZImpl(get_param<std::string>("type"));
+        auto retprim = std::make_unique<PrimitiveObject>();
 
         if (type == "tris" && prim->tris.size()) {
             float total = 0;
@@ -110,9 +110,8 @@ struct PrimitiveScatter : INode {
             }
 
         }
-        
 
-        set_output("points", std::move(retprim));
+        ZImpl(set_output("points", std::move(retprim)));
     }
 };
 

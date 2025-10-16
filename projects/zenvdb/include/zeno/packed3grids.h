@@ -12,6 +12,9 @@ struct packed_FloatGrid3 : zeno::IObject {
 		m_transform = openvdb::math::Transform::createLinearTransform(1.0f);
 		m_gridclass = openvdb::GridClass::GRID_STAGGERED;
 	}
+	zeno::zany clone() const override {
+		return nullptr;
+	}
 	~packed_FloatGrid3() = default;
 	void setName(std::string name);
 	void from_vec3(openvdb::Vec3fGrid::Ptr in_v, bool topologycopy = false);

@@ -2,7 +2,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/CoreParam.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/utils/helper.h>
 #include <zeno/formula/formula.h>
@@ -23,7 +23,7 @@ namespace zeno {
 
     void ReferManager::removeReference(const std::string& uuid_path, const std::string& param)
     {
-        //ÈôÉ¾³ıµÄ½Úµã/²ÎÊı±»ÒıÓÃÁË
+        //è‹¥åˆ é™¤çš„èŠ‚ç‚¹/å‚æ•°è¢«å¼•ç”¨äº†
         std::set<std::string> updateParams;
         bool bRemoveNode = param.empty();
 
@@ -46,7 +46,7 @@ namespace zeno {
 
     void ReferManager::addReferInfo(const std::set<std::pair<std::string, std::string>>& referSources, const std::string& referPath)
     {
-        //referPathµÄ¸ñÊ½ÊÇ£º uuid-path-of-node/param.
+        //referPathçš„æ ¼å¼æ˜¯ï¼š uuid-path-of-node/param.
         for (const auto& param : referSources)
         {
             const std::string& source_node_uuid = param.first;
@@ -109,7 +109,7 @@ namespace zeno {
             auto uuid_path = uuid_param.substr(0, idx);
             auto param = uuid_param.substr(idx + 1, uuid_param.size() - idx);
             auto objPath = zeno::strToObjPath(uuid_path);
-            auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+            auto spNode = getSession().getNodeByUuidPath(objPath);
             assert(spNode);
             bool bExist = false;
             ParamPrimitive primparam = spNode->get_input_prim_param(param, &bExist);
@@ -203,12 +203,12 @@ namespace zeno {
                     auto nodePath = path.substr(0, idx);
                     auto param = path.substr(idx + 1, path.size() - idx);
                     auto objPath = zeno::strToObjPath(nodePath);
-                    auto spNode = getSession().mainGraph->getNodeByUuidPath(objPath);
+                    auto spNode = getSession().getNodeByUuidPath(objPath);
                     assert(spNode);
                     if (!spNode->is_dirty())
                     {
                         spNode->mark_dirty(true);
-                        //¸Ã½Úµã±»ÆäËû²ÎÊıÒıÓÃµÄÇé¿öÏÂ£¬Ò²Òª±êÔà
+                        //è¯¥èŠ‚ç‚¹è¢«å…¶ä»–å‚æ•°å¼•ç”¨çš„æƒ…å†µä¸‹ï¼Œä¹Ÿè¦æ ‡è„
                         updateDirty(nodePath, param);
                     }
                 }
@@ -232,7 +232,7 @@ namespace zeno {
                 if (absolutePath.find(oldVal) != std::string::npos)
                 {
                     std::regex num_rgx("[0-9]+");
-                    //Èç¹ûÊÇÊı×Ö£¬ĞèÒª½«Õû¸öreferÌæ»»
+                    //å¦‚æœæ˜¯æ•°å­—ï¼Œéœ€è¦å°†æ•´ä¸ªreferæ›¿æ¢
                     if (std::regex_match(newVal, num_rgx))
                     {
                         arg = newVal;
@@ -259,7 +259,7 @@ namespace zeno {
         assert(adjustParamVal.has_value());
         ParamType type = adjustParamVal.type().hash_code();
         if (type == zeno::types::gParamType_PrimVariant) {
-            PrimVar& var = zeno::reflect::any_cast<PrimVar>(adjustParamVal);
+            PrimVar var = zeno::reflect::any_cast<PrimVar>(adjustParamVal);
             std::visit([&](auto& arg) {
                 using T = std::decay_t<decltype(arg)>;
                 if constexpr (std::is_same_v<T, std::string>) {

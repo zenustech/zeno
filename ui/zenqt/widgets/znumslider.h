@@ -25,7 +25,7 @@ signals:
     void slideFinished();
 
 private:
-    bool activateLabel(QPoint& pos, bool pressed = false);
+    bool activateLabel(const QPoint& pos, bool pressed = false);
 
     QVector<qreal> m_scales;
     QPoint m_lastPos;

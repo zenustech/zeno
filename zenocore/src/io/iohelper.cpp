@@ -6,10 +6,13 @@
 #include <zeno/utils/helper.h>
 #include <filesystem>
 #include <zeno/io/iotags.h>
+#include <regex>
 #include "zeno_types/reflect/reflection.generated.hpp"
 
 
 using namespace zeno::reflect;
+
+//static const std::regex refStrPattern(R"(.*"[\.]?(\/\s*[a-zA-Z0-9\.]+\s*)+".*)");
 
 namespace zenoio
 {
@@ -301,7 +304,7 @@ namespace zenoio
         return curves;
     }
 
-    ZENO_API zeno::ZSG_VERSION getVersion(const std::string& fn)
+    ZENO_API zeno::ZSG_VERSION getVersion(const std::wstring& fn)
     {
         std::filesystem::path filePath(fn);
         if (!std::filesystem::exists(filePath)) {
@@ -364,9 +367,6 @@ namespace zenoio
         }
         else if (sockType == iotags::params::socket_primitive) {
             return zeno::Socket_Primitve;
-        }
-        else if (sockType == iotags::params::socket_wildcard) {
-            return zeno::Socket_WildCard;
         }
     }
 
@@ -469,7 +469,7 @@ namespace zenoio
             }
             else if (val.IsString()) {
                 std::string sval(val.GetString());
-                if (hasRef && sval.find("ref(") != std::string::npos) {
+                if (hasRef && sval.find("ref") != std::string::npos) {
                     *hasRef = true;
                 }
                 if (!sval.empty())
@@ -478,7 +478,9 @@ namespace zenoio
                     defl = 0;
             }
             else {
-                zeno::log_error("error type");
+                //å¯èƒ½æœ‰è¯»ç›˜é”™è¯¯ï¼Œè€ƒè™‘åˆ°asset, subnetå„ç§ioçš„å¤æ‚æƒ…å†µï¼Œåœ¨è¿™é‡Œç›´æ¥å®¹é”™ç®—äº†
+                //zeno::log_error("error type");
+                defl = 0;
             }
             break;
         }
@@ -493,7 +495,7 @@ namespace zenoio
             else if (val.IsString())
             {
                 std::string sval(val.GetString());
-                if (hasRef && sval.find("ref(") != std::string::npos) {
+                if (hasRef && sval.find("ref") != std::string::npos) {
                     *hasRef = true;
                 }
                 if (!sval.empty())
@@ -501,8 +503,10 @@ namespace zenoio
                 else
                     defl = (float)0.0;
             }
-            else
-                zeno::log_error("error type");
+            else {
+                defl = 0.f;
+                //zeno::log_error("error type");
+            }
             break;
         }
         case gParamType_Bool:
@@ -514,17 +518,20 @@ namespace zenoio
             else if (val.IsFloat())
                 defl = val.GetFloat() != 0;
             else
-                zeno::log_error("error type");
+                defl = false;
             break;
         }
         case gParamType_String:
         {
             if (val.IsString()) {
                 std::string sval = (std::string)val.GetString();
-                if (hasRef && sval.find("ref(") != std::string::npos) {
+                if (hasRef && sval.find("ref") != std::string::npos) {
                     *hasRef = true;
                 }
                 defl = sval;
+            }
+            else {
+                defl = "";
             }
             break;
         }
@@ -579,7 +586,7 @@ namespace zenoio
                        may be we just want to k-frame for only one component.
                      */
                     std::string sval(arr[i].GetString());
-                    if (hasRef && sval.find("ref(") != std::string::npos) {
+                    if (hasRef && sval.find("ref") != std::string::npos) {
                         *hasRef = true;
                     }
                     editvec.push_back(sval);
@@ -590,6 +597,21 @@ namespace zenoio
                 }
             }
             defl = editvec;
+            break;
+        }
+        case gParamType_Matrix4:
+        {
+            auto arr = val.GetArray();
+            assert(4 == arr.Size());
+            auto r1 = arr[0].GetArray(); assert(4 == r1.Size());
+            auto r2 = arr[1].GetArray(); assert(4 == r2.Size());
+            auto r3 = arr[2].GetArray(); assert(4 == r3.Size());
+            auto r4 = arr[3].GetArray(); assert(4 == r4.Size());
+            defl = glm::mat4(
+                r1[0].GetFloat(), r2[0].GetFloat(), r3[0].GetFloat(), r4[0].GetFloat(),
+                r1[1].GetFloat(), r2[1].GetFloat(), r3[1].GetFloat(), r4[1].GetFloat(),
+                r1[2].GetFloat(), r2[2].GetFloat(), r3[2].GetFloat(), r4[2].GetFloat(),
+                r1[3].GetFloat(), r2[3].GetFloat(), r3[3].GetFloat(), r4[3].GetFloat());
             break;
         }
         case gParamType_Curve:
@@ -606,6 +628,24 @@ namespace zenoio
             break;
         }
         case gParamType_Heatmap: {
+            zeno::HeatmapData hd;
+            if (val.IsObject()) {
+                const auto& facArray = val["fac"].GetArray();
+                const auto& clrArray = val["color"].GetArray();
+                for (int i = 0; i < facArray.Size(); i++) {
+                    float fac = facArray[i].GetFloat();
+                    hd.facs.push_back(fac);
+                }
+                for (int i = 0; i < clrArray.Size(); i++) {
+                    auto clr = clrArray[i].GetArray();
+                    zeno::vec3f vec3;
+                    vec3[0] = clr[0].GetFloat();
+                    vec3[1] = clr[1].GetFloat();
+                    vec3[2] = clr[2].GetFloat();
+                    hd.colors.push_back(vec3);
+                }
+            }
+            defl = hd;
             break;
         }
         case Param_Null:
@@ -629,10 +669,17 @@ namespace zenoio
         }
         }
         if (zeno::isPrimVarType(type)) {
-            if (type == gParamType_Int) {
-                defl = zeno::reflect::make_any<zeno::PrimVar>(zeno::reflect::any_cast<int>(defl));
-            } else if (type == gParamType_Float) {
-                defl = zeno::reflect::make_any<zeno::PrimVar>(zeno::reflect::any_cast<float>(defl));
+            if (type == gParamType_Int || type == gParamType_Float) {
+                zeno::ParamType deftype = defl.type().hash_code();
+                if (deftype == gParamType_Int) {
+                    defl = zeno::reflect::make_any<zeno::PrimVar>(zeno::reflect::any_cast<int>(defl));
+                }
+                else if (deftype == gParamType_Float) {
+                    defl = zeno::reflect::make_any<zeno::PrimVar>(zeno::reflect::any_cast<float>(defl));
+                }
+                else if (deftype == gParamType_String) {
+                    defl = zeno::reflect::make_any<zeno::PrimVar>(zeno::any_cast_to_string(defl));
+                }
             }
         }
         return defl;
@@ -995,6 +1042,9 @@ namespace zenoio
                         if constexpr (std::is_same_v<T, int>) {
                             writer.Int(arg);
                         }
+                        else if constexpr (std::is_same_v<T, float>) {
+                            writer.Int(arg);
+                        }
                         else if constexpr (std::is_same_v<T, std::string>) {
                             writer.String(arg.c_str());
                         }
@@ -1043,22 +1093,99 @@ namespace zenoio
             }
             case gParamType_String:
             {
-                assert(anyType == gParamType_String);
-                writer.String(any_cast<std::string>(any).c_str());
+                //assert(anyType == gParamType_String); //ä¹Ÿæœ‰å¯èƒ½æ˜¯const char*
+                writer.String(zeno::any_cast_to_string(any).c_str());
+                break;
+            }
+            case gParamType_AnyNumeric:
+            {
+                if (anyType == gParamType_Int) { writer.Int(any_cast<int>(any)); }
+                else if (anyType == gParamType_Float) { writer.Double(any_cast<float>(any)); }
+                else if (anyType == gParamType_String) { writer.String(zeno::any_cast_to_string(any).c_str()); }
+                else if (anyType == gParamType_Vec2f) {
+                    writer.StartArray();
+                    zeno::vec2f vec = any_cast<zeno::vec2f>(any);
+                    writer.Double(vec[0]);
+                    writer.Double(vec[1]);
+                    writer.EndArray();
+                }
+                else if (anyType == gParamType_Vec2i) {
+                    writer.StartArray();
+                    zeno::vec2i vec = any_cast<zeno::vec2i>(any);
+                    writer.Int(vec[0]);
+                    writer.Int(vec[1]);
+                    writer.EndArray();
+                }
+                else if (anyType == gParamType_Vec3f) {
+                    writer.StartArray();
+                    zeno::vec3f vec = any_cast<zeno::vec3f>(any);
+                    writer.Double(vec[0]);
+                    writer.Double(vec[1]);
+                    writer.Double(vec[2]);
+                    writer.EndArray();
+                }
+                else if (anyType == gParamType_Vec3i) {
+                    writer.StartArray();
+                    zeno::vec3i vec = any_cast<zeno::vec3i>(any);
+                    writer.Int(vec[0]);
+                    writer.Int(vec[1]);
+                    writer.Int(vec[2]);
+                    writer.EndArray();
+                }
+                else if (anyType == gParamType_Vec4f) {
+                    writer.StartArray();
+                    zeno::vec4f vec = any_cast<zeno::vec4f>(any);
+                    writer.Double(vec[0]);
+                    writer.Double(vec[1]);
+                    writer.Double(vec[2]);
+                    writer.Double(vec[3]);
+                    writer.EndArray();
+                }
+                else if (anyType == gParamType_Vec4i) {
+                    writer.StartArray();
+                    zeno::vec4i vec = any_cast<zeno::vec4i>(any);
+                    writer.Int(vec[0]);
+                    writer.Int(vec[1]);
+                    writer.Int(vec[2]);
+                    writer.Int(vec[3]);
+                    writer.EndArray();
+                }
+                else {
+                    assert(false);
+                    writer.Null();
+                }
                 break;
             }
             case gParamType_Curve:
             {
                 if (auto pCurves = zeno::reflect::any_cast<zeno::CurvesData>(&any)) {
-                    //ºóĞø»á²ÉÓÃĞòÁĞ»¯½øĞĞ¶ÁĞ´£¬ÏÖÔÚÏÈ×ªÎªjson×Ö·û´®´¢´æ£¬ÒÔ±ã¸´ÓÃÒÔÇ°µÄ´úÂë
+                    //åç»­ä¼šé‡‡ç”¨åºåˆ—åŒ–è¿›è¡Œè¯»å†™ï¼Œç°åœ¨å…ˆè½¬ä¸ºjsonå­—ç¬¦ä¸²å‚¨å­˜ï¼Œä»¥ä¾¿å¤ç”¨ä»¥å‰çš„ä»£ç 
                     dumpCurves(pCurves, writer);
                 }
                 break;
             }
             case gParamType_Heatmap:
             {
-                //TODO:
-                writer.Null();
+                auto heatmap = zeno::reflect::any_cast<zeno::HeatmapData>(any);
+                writer.StartObject();
+                writer.Key("fac");
+                writer.StartArray();
+                for (auto fac : heatmap.facs) {
+                    writer.Double(fac);
+                }
+                writer.EndArray();
+
+                writer.Key("color");
+                writer.StartArray();
+                for (auto clr : heatmap.colors) {
+                    writer.StartArray();
+                    writer.Double(clr[0]);
+                    writer.Double(clr[1]);
+                    writer.Double(clr[2]);
+                    writer.EndArray();
+                }
+                writer.EndArray();
+                writer.EndObject();
                 break;
             }
             case gParamType_Vec2i:
@@ -1091,10 +1218,49 @@ namespace zenoio
                     writer.EndArray();
                 }
                 else {
-                    //ÆäÊµdefl¿Ï¶¨¶¼ÊÇeditÀàĞÍµÄ
+                    //å…¶å®deflè‚¯å®šéƒ½æ˜¯editç±»å‹çš„
                     assert(false);
                     writer.Null();
                 }
+                break;
+            }
+            case gParamType_Matrix4:
+            {
+                const glm::mat4& mat = any_cast<glm::mat4&>(any);
+                writer.StartArray();
+                {
+                    writer.StartArray();
+                    writer.Double(mat[0][0]);
+                    writer.Double(mat[1][0]);
+                    writer.Double(mat[2][0]);
+                    writer.Double(mat[3][0]);
+                    writer.EndArray();
+                }
+                {
+                    writer.StartArray();
+                    writer.Double(mat[0][1]);
+                    writer.Double(mat[1][1]);
+                    writer.Double(mat[2][1]);
+                    writer.Double(mat[3][1]);
+                    writer.EndArray();
+                }
+                {
+                    writer.StartArray();
+                    writer.Double(mat[0][2]);
+                    writer.Double(mat[1][2]);
+                    writer.Double(mat[2][2]);
+                    writer.Double(mat[3][2]);
+                    writer.EndArray();
+                }
+                {
+                    writer.StartArray();
+                    writer.Double(mat[0][3]);
+                    writer.Double(mat[1][3]);
+                    writer.Double(mat[2][3]);
+                    writer.Double(mat[3][3]);
+                    writer.EndArray();
+                }
+                writer.EndArray();
                 break;
             }
             default:
@@ -1274,7 +1440,46 @@ namespace zenoio
         }
     }
 
-    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl, zeno::reflect::Any& props)
+    bool importControlProps(const rapidjson::Value& controlPropsObj, zeno::reflect::Any& props)
+    {
+        if (!controlPropsObj.IsObject())
+            return false;
+
+        if (controlPropsObj.HasMember("items") && controlPropsObj["items"].IsArray()) {
+            auto arr = controlPropsObj["items"].GetArray();
+            std::vector<std::string> items;
+            for (int i = 0; i < arr.Size(); i++)
+            {
+                items.push_back(arr[i].GetString());
+            }
+            props = items;
+            return true;
+        }
+        else if (controlPropsObj.HasMember("min") &&
+                 controlPropsObj.HasMember("max") &&
+                 controlPropsObj.HasMember("step"))
+        {
+            const auto& minObj = controlPropsObj["min"];
+            const auto& maxObj = controlPropsObj["max"];
+            const auto& stepObj = controlPropsObj["step"];
+
+            if (minObj.IsInt() && maxObj.IsInt() && stepObj.IsInt())
+            {
+                std::vector<int> items = { minObj.GetInt(), maxObj.GetInt(), stepObj.GetInt() };
+                props = items;
+                return true;
+            }
+            else if (minObj.IsFloat() && maxObj.IsFloat() && stepObj.IsFloat())
+            {
+                std::vector<float> items = { minObj.GetFloat(), maxObj.GetFloat(), stepObj.GetFloat() };
+                props = items;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    bool importControl(const rapidjson::Value& controlObj, zeno::ParamControl& ctrl)
     {
         if (!controlObj.IsObject())
             return false;
@@ -1288,33 +1493,6 @@ namespace zenoio
 
         const std::string& ctrlName = nameObj.GetString();
         ctrl = getControlByName(ctrlName);
-
-        if (controlObj.HasMember("min") && controlObj.HasMember("max") &&
-            controlObj.HasMember("step"))
-        {
-            if (controlObj["min"].IsNumber() && controlObj["max"].IsNumber() && controlObj["step"].IsNumber())
-            {
-                std::vector<float> ranges = {
-                    controlObj["min"].GetFloat(),
-                    controlObj["max"].GetFloat(),
-                    controlObj["step"].GetFloat()
-                };
-                props = ranges;
-            }
-        }
-        if (controlObj.HasMember("items"))
-        {
-            if (controlObj["items"].IsArray())
-            {
-                auto& arr = controlObj["items"].GetArray();
-                std::vector<std::string> items;
-                for (int i = 0; i < arr.Size(); i++)
-                {
-                    items.push_back(arr[i].GetString());
-                }
-                props = items;
-            }
-        }
         return true;
     }
 

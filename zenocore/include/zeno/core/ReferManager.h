@@ -29,15 +29,15 @@ namespace zeno {
         );
 
         void removeReference(const std::string& uuid_path, const std::string& param = "");
-        //µ±±»ÒıÓÃµÄ½ÚµãÃû³ÆĞŞ¸Äºó£¬ĞèÒª¸üĞÂÊı¾İ
+        //å½“è¢«å¼•ç”¨çš„èŠ‚ç‚¹åç§°ä¿®æ”¹åï¼Œéœ€è¦æ›´æ–°æ•°æ®
         void updateReferParam(const std::string& oldPath, const std::string& newPath, const std::string& uuid_path, const std::string& param = "");
         void updateDirty(const std::string& uuid_path, const std::string& param);
 
     private:
         void addReferInfo(const std::set<std::pair<std::string, std::string>>& referSources, const std::string& referPath);
-        //µ±ÒıÓÃµÄ²ÎÊıĞŞ¸Äºó£¬ĞèÒª¸üĞÂÊı¾İ
+        //å½“å¼•ç”¨çš„å‚æ•°ä¿®æ”¹åï¼Œéœ€è¦æ›´æ–°æ•°æ®
 
-        //±»ÒıÓÃµÄ²ÎÊı¸üĞÂÊ±ĞèÒª¶ÔÒıÓÃµÄ½Úµã±êÔà
+        //è¢«å¼•ç”¨çš„å‚æ•°æ›´æ–°æ—¶éœ€è¦å¯¹å¼•ç”¨çš„èŠ‚ç‚¹æ ‡è„
         std::set<std::pair<std::string, std::string>> getAllReferedParams(const std::string& uuid_param) const;
 
         bool updateParamValue(
@@ -46,7 +46,7 @@ namespace zeno {
             const std::string& currentPath,
             zeno::reflect::Any& adjustParamVal) const;
 
-        //<±»ÒıÓÃ²ÎÊıuuidpath, <±»ÒıÓÃ²ÎÊı, ÒıÓÃ²ÎÊıparams>>
+        //<è¢«å¼•ç”¨å‚æ•°uuidpath, <è¢«å¼•ç”¨å‚æ•°, å¼•ç”¨å‚æ•°params>>
         std::map <std::string, std::map<std::string, std::set<std::string> > > m_referInfos; 
         bool m_bModify;
     };

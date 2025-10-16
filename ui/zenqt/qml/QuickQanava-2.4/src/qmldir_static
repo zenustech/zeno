@@ -1,0 +1,22 @@
+module QuickQanava
+
+LineGrid            2.0 LineGrid.qml
+Edge                2.0 Edge.qml
+EdgeTemplate        2.0 EdgeTemplate.qml
+Node                2.0 Node.qml
+GraphView           2.0 GraphView.qml
+Group               2.0 Group.qml
+RectNodeTemplate    2.0 RectNodeTemplate.qml
+RectSolidBackground 2.0 RectSolidBackground.qml
+RectGroupTemplate   2.0 RectGroupTemplate.qml
+CanvasNodeTemplate  2.0 CanvasNodeTemplate.qml
+VisualConnector     2.0 VisualConnector.qml
+LabelEditor         2.0 LabelEditor.qml
+SelectionItem       2.0 SelectionItem.qml
+HorizontalDock      2.0 HorizontalDock.qml
+VerticalDock        2.0 VerticalDock.qml
+Port                2.0 Port.qml
+LinearGradient      2.0 LinearGradient.qml
+OpacityMask         2.0 OpacityMask.qml
+DropShadow          2.0 DropShadow.qml
+Glow                2.0 Glow.qml

@@ -7,12 +7,13 @@
 #include <zeno/utils/log.h>
 #include "panel/zenoproppanel.h"
 #include "zassert.h"
-#include <zeno/core/IObject.h>
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "widgets/ztimeline.h"
 #include "curvemap/zcurvemapeditor.h"
 #include "nodeeditor/gv/zitemfactory.h"
+#include <zeno/core/typeinfo.h>
+#include "declmetatype.h"
 
 
 ZVecEditor::ZVecEditor(const zeno::vecvar& vec, bool bFloat, QString styleCls, QWidget* parent)
@@ -123,10 +124,12 @@ void ZVecEditor::initUI(const zeno::vecvar& vecedit) {
     m_editors.resize(n);
     for (int i = 0; i < n; i++)
     {
-        m_editors[i] = new ZLineEdit;
+        zeno::ParamType compType = m_bFloat ? ui_gParamType_Float : ui_gParamType_Int;
+
+        m_editors[i] = new ZCoreParamLineEdit(vecedit[i], compType, this);
         m_editors[i]->installEventFilter(this);
 
-        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? zeno::types::gParamType_Float : zeno::types::gParamType_Int));
+        m_editors[i]->setNumSlider(UiHelper::getSlideStep("", compType));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
         m_editors[i]->setProperty("cssClass", m_styleCls);
 
@@ -248,7 +251,7 @@ void ZVecEditor::setVec(const zeno::vecvar& editVec, bool bFloat)
     if (bFloat != m_bFloat || editVec.size() != size)
     {
         //类型大小发生了变化，应该只有子图参数才能发生
-        Q_ASSERT(m_nodeIdx.data(ROLE_NODETYPE) == zeno::Node_SubgraphNode);
+        Q_ASSERT(m_nodeIdx.data(QtRole::ROLE_NODETYPE) == zeno::Node_SubgraphNode);
         initUI(editVec);
     }
     else

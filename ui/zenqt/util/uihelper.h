@@ -1,4 +1,4 @@
-#ifndef __UI_HELPER_H__
+﻿#ifndef __UI_HELPER_H__
 #define __UI_HELPER_H__
 
 #include <rapidjson/document.h>
@@ -7,6 +7,7 @@
 #include <zeno/core/data.h>
 #include <QTabWidget>
 #include <QStandardItemModel>
+#include <QTextLayout>
 
 
 class BlockSignalScope
@@ -40,7 +41,8 @@ public:
     static uint generateUuidInt();
     static QVariant zvarToQVar(const zeno::zvariant& var);
     static zeno::zvariant qvarToZVar(const QVariant& var, const zeno::ParamType type);
-    static zeno::reflect::Any qvarToAny(const QVariant& var, const zeno::ParamType type = Param_Null);
+    static zeno::reflect::Any qvarToAny(const QVariant& var, const zeno::ParamType type = Param_Null, bool is_prim_var = false);
+    static zeno::reflect::Any qvarToAnyByType(const QVariant& var, const zeno::ParamType type, bool is_prim_var = false);
     static QVariant anyToQvar(zeno::reflect::Any any);
     static QVariant initDefaultValue(const zeno::ParamType& type);
     static QVariant parseTextValue(const zeno::ParamType& type, const QString& textValue);
@@ -60,6 +62,7 @@ public:
     static QString anyToString(const zeno::reflect::Any& any);
     static QString variantToString(const QVariant& var);
     static QString editVariantToQString(const zeno::PrimVar& var);
+    static QVariant primvarToQVariant(const zeno::PrimVar& var);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);
     static QString getSockNode(const QString& sockPath);
@@ -81,6 +84,8 @@ public:
 
     static QString gradient2colorString(const QLinearGradient& grad);
     static QLinearGradient colorString2Grad(const QString& colorStr);
+    static zeno::HeatmapData grad2heatmap(const QLinearGradient& grad);
+    static QLinearGradient heatmap2Grad(const zeno::HeatmapData& heatmap);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);
     static int tabIndexOfName(const QTabWidget* pTabWidget, const QString& name);
     static void getAllParamsIndex(const QModelIndex &nodeIdx,
@@ -89,7 +94,7 @@ public:
                                   QModelIndexList& outputs,
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
-    static QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim = -1);
+    static QString getNaiveParamPath(const QModelIndex& param, int dim = -1);
     static zeno::CurvesData getCurvesFromQVar(const QVariant& qvar, bool* bValid = nullptr);
     static QVariant getQVarFromCurves(const zeno::CurvesData& curves);
 
@@ -107,6 +112,7 @@ public:
     static QStringList stdlistToQStringList(const zeno::ObjPath& objpath);
     static QStringList findPreviousNode(GraphModel* pModel, const QString& node);
     static QStringList findSuccessorNode(GraphModel* pModel, const QString& node);
+    static QStringList findAllLinkdNodes(GraphModel* pModel, const QString& node, bool bfindInput, bool bfindOutput);
     static int getIndegree(const QModelIndex& nodeIdx);
     static PANEL_TYPE title2Type(const QString& title);
 

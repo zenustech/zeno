@@ -63,20 +63,20 @@ namespace {
 
 struct PrimPerlinNoise : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto scale = get_input2<float>("scale");
-        auto detail = get_input2<float>("detail");
-        auto roughness = get_input2<float>("roughness");
-        auto disortion = get_input2<float>("disortion");
-        auto offset = get_input2<zeno::vec3f>("offset");
-        auto average = get_input2<float>("average");
-        auto strength = get_input2<float>("strength");
-        auto outAttr = get_input2<std::string>("outAttr");
-        auto inAttr = get_input2<std::string>("inAttr");
-        auto outType = get_input2<std::string>("outType");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto scale = ZImpl(get_input2<float>("scale"));
+        auto detail = ZImpl(get_input2<float>("detail"));
+        auto roughness = ZImpl(get_input2<float>("roughness"));
+        auto disortion = ZImpl(get_input2<float>("disortion"));
+        auto offset = ZImpl(get_input2<zeno::vec3f>("offset"));
+        auto average = ZImpl(get_input2<float>("average"));
+        auto strength = ZImpl(get_input2<float>("strength"));
+        auto outAttr = ZImpl(get_input2<std::string>("outAttr"));
+        auto inAttr = ZImpl(get_input2<std::string>("inAttr"));
+        auto outType = ZImpl(get_input2<std::string>("outType"));
         primPerlinNoise(prim.get(), inAttr, outAttr, outType, scale,
                         detail, roughness, disortion, offset, average, strength);
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 

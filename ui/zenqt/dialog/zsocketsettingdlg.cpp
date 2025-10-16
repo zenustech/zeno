@@ -37,12 +37,12 @@ void ZSocketSettingDlg::initView()
 
     for (const auto& index : m_indexs)
     {
-        QString name = index.data(ROLE_PARAM_NAME).toString();
+        QString name = index.data(QtRole::ROLE_PARAM_NAME).toString();
         QStandardItem* pItem = new QStandardItem(name);
         pItem->setData(index, Qt::UserRole);
         m_pModel->appendRow(pItem);
 
-        int type = index.data(ROLE_SOCKET_TYPE).toInt();
+        int type = index.data(QtRole::ROLE_SOCKET_TYPE).toInt();
         QStandardItem* pChildItem = new QStandardItem("Socket Type");
         pItem->appendRow(pChildItem);
         ZComboBox* pComboBox = new ZComboBox(this);
@@ -94,10 +94,10 @@ void ZSocketSettingDlg::onOKClicked()
         while (parent.child(row1, 0).isValid())
         {
             int val = parent.child(row1, 0).data(Qt::UserRole).toInt();
-            int oldVal = paramIdx.data(ROLE_SOCKET_TYPE).toInt();
+            int oldVal = paramIdx.data(QtRole::ROLE_SOCKET_TYPE).toInt();
             if (oldVal != val)
             {
-                UiHelper::qIndexSetData(paramIdx, val, ROLE_SOCKET_TYPE);
+                UiHelper::qIndexSetData(paramIdx, val, QtRole::ROLE_SOCKET_TYPE);
             }
             row1++;
         }

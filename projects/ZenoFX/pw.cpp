@@ -62,8 +62,8 @@ static void vectors_wrangle
 
 struct ParticlesWrangle : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto code = get_input<zeno::StringObject>("zfxCode")->get();
+        auto prim = get_input_PrimitiveObject("prim");
+        auto code = zsString2Std(get_input2_string("zfxCode"));
 
         // BEGIN张心欣快乐自动加@IND
         if (auto pos = code.find("@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalnum(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalnum(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
@@ -85,9 +85,9 @@ struct ParticlesWrangle : zeno::INode {
             opts.define_symbol('@' + key, dim);
         });
 
-        auto params = has_input<zeno::DictObject>("params") ?
-            get_input<zeno::DictObject>("params") :
-            std::make_shared<zeno::DictObject>();
+        auto params = has_input("params") ?
+            get_input_DictObject("params") :
+            create_DictObject();
         {
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
         auto const &gs = *this->getGlobalState();
@@ -96,6 +96,7 @@ struct ParticlesWrangle : zeno::INode {
         params->lut["DT"] = objectFromLiterial(gs.frame_time);
         params->lut["T"] = objectFromLiterial(gs.frame_time * gs.getFrameId() + gs.frame_time_elapsed);
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动有$F$DT$T做参数
+#if 0
         // BEGIN心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
         for (auto const &[key, ref]: getThisGraph()->portalIns) {
             if (auto i = code.find('$' + key); i != std::string::npos) {
@@ -110,6 +111,7 @@ struct ParticlesWrangle : zeno::INode {
             }
         }
         // END心欣你也可以把这段代码加到其他wrangle节点去，这样这些wrangle也可以自动引用portal做参数
+#endif
         // BEGIN伺候心欣伺候懒得extract出变量了
         std::vector<std::string> keys;
         for (auto const &[key, val]: params->lut) {

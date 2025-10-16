@@ -158,15 +158,15 @@ namespace zeno
     {
         virtual int determineType(EmissionPass *em) override
         {
-            const auto base = get_input("base");
-            const auto baseDim = em->determineType(base.get());
-            const auto blend = get_input("blend");
-            const auto blendDim = em->determineType(blend.get());
+            const auto base = ZImpl(get_input_shader("base"));
+            const auto baseDim = em->determineType(base);
+            const auto blend = ZImpl(get_input_shader("blend"));
+            const auto blendDim = em->determineType(blend);
             if (baseDim != blendDim)
                 throw zeno::Exception("base and blend's dimension mismatch: " + std::to_string(baseDim) + ", " + std::to_string(blendDim));
 
-            const auto opacity = get_input("opacity");
-            const auto opacityDim = em->determineType(opacity.get());
+            const auto opacity = ZImpl(get_input_shader("opacity"));
+            const auto opacityDim = em->determineType(opacity);
             if (opacityDim != 1)
                 throw zeno::Exception("opacity's dimension mismatch: " + std::to_string(opacityDim));
 
@@ -175,7 +175,7 @@ namespace zeno
 
         virtual void emitCode(EmissionPass *em) override
         {
-            const auto mode = get_input2<std::string>("mode");
+            const auto mode = ZImpl(get_input2<std::string>("mode"));
             const auto mapIter = BLEND_CODE_MAP.find(mode);
             if (mapIter == std::end(BLEND_CODE_MAP))
             {
@@ -189,8 +189,8 @@ namespace zeno
             blendFunc.code = "(" + em->typeNameOf(1) + " base, " + em->typeNameOf(1) + " blend) {\n" + code + "}\n";
             const auto blendFuncName = em->addCommonFunc(std::move(blendFunc));
 
-            const auto base = get_input("base");
-            const auto baseDim = em->determineType(base.get());
+            const auto base = ZImpl(get_input_shader("base"));
+            const auto baseDim = em->determineType(base);
 
             EmissionPass::CommonFunc opacityFunc;
             switch (baseDim)
@@ -243,11 +243,11 @@ namespace zeno
             }
             const auto opacityFuncName = em->addCommonFunc(std::move(opacityFunc));
 
-            const auto baseExpr = em->determineExpr(base.get());
-            const auto blend = get_input("blend");
-            const auto blendExpr = em->determineExpr(blend.get());
-            const auto opacity = get_input("opacity");
-            const auto opacityExpr = em->determineExpr(opacity.get());
+            const auto baseExpr = em->determineExpr(base);
+            const auto blend = ZImpl(get_input_shader("blend"));
+            const auto blendExpr = em->determineExpr(blend);
+            const auto opacity = ZImpl(get_input_shader("opacity"));
+            const auto opacityExpr = em->determineExpr(opacity);
             return em->emitCode(opacityFuncName + "(" + baseExpr + ", " + blendExpr + ", " + opacityExpr + ")");
         } // emitCode
     }; // struct ShaderBlendMode
@@ -262,7 +262,7 @@ namespace zeno
                 {BLEND_ENUM_STR, "mode", "normal"},
             },
             {
-                {"shader", "out"},
+                {gParamType_Shader, "out"},
             },
             {},
             {"shader"},

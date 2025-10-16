@@ -11,20 +11,21 @@ namespace {
 
 struct VDBChangeBackground : INode{
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
-        openvdb::tools::changeBackground(p->m_grid->tree(), get_input2<float>("background"));
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
-        openvdb::tools::changeBackground(p->m_grid->tree(), vec_to_other<openvdb::Vec3f>(get_input2<zeno::vec3f>("background")));
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
+        openvdb::tools::changeBackground(p->m_grid->tree(), get_input2_float("background"));
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
+        vec3f bg = toVec3f(get_input2_vec3f("background"));
+        openvdb::tools::changeBackground(p->m_grid->tree(), vec_to_other<openvdb::Vec3f>(bg));
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 ZENO_DEFNODE(VDBChangeBackground)(
      { /* inputs: */ {
      {gParamType_VDBGrid, "grid", "", zeno::Socket_ReadOnly},
-     {gParamType_Float, "background", "", zeno::Socket_WildCard},
+     {gParamType_Float, "background", ""},
      }, /* outputs: */ {
          {gParamType_VDBGrid, "grid"},
      }, /* params: */ {
@@ -34,14 +35,14 @@ ZENO_DEFNODE(VDBChangeBackground)(
 
 struct VDBGetBackground : INode{
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid); p) {
-        set_output2("background", p->m_grid->background());
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid); p) {
-        set_output2("background", other_to_vec<3>(p->m_grid->background()));
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get()); p) {
+        set_output_float("background", p->m_grid->background());
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get()); p) {
+        set_output_vec3f("background", toAbiVec3f(other_to_vec<3>(p->m_grid->background())));
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 ZENO_DEFNODE(VDBGetBackground)(
@@ -56,7 +57,7 @@ ZENO_DEFNODE(VDBGetBackground)(
 
 struct VDBInvertSDF : INode{
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
 
     auto visitor = [&] (auto &grid) {
         auto wrangler = [&](auto &leaf, openvdb::Index leafpos) {
@@ -72,13 +73,13 @@ struct VDBInvertSDF : INode{
         openvdb::tools::prune(grid->tree());
     };
 
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid)) {
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get())) {
         visitor(p->m_grid);
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid)) {
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get())) {
         visitor(p->m_grid);
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 ZENO_DEFNODE(VDBInvertSDF)(
@@ -93,19 +94,19 @@ ZENO_DEFNODE(VDBInvertSDF)(
 
 struct VDBPruneFootprint : INode{
   virtual void apply() override {
-    auto grid = get_input<VDBGrid>("grid");
+    auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
 
     auto visitor = [&] (auto &grid) {
         openvdb::tools::prune(grid->tree());
     };
 
-    if (auto p = std::dynamic_pointer_cast<VDBFloatGrid>(grid)) {
+    if (auto p = safe_dynamic_cast<VDBFloatGrid>(grid.get())) {
         visitor(p->m_grid);
-    } else if (auto p = std::dynamic_pointer_cast<VDBFloat3Grid>(grid)) {
+    } else if (auto p = safe_dynamic_cast<VDBFloat3Grid>(grid.get())) {
         visitor(p->m_grid);
     }
 
-    set_output("grid", get_input("grid"));
+    set_output("grid", std::move(grid));
   }
 };
 

@@ -450,7 +450,7 @@ static const flex_int16_t yy_chk[65] =
     #include "parser.hpp"
     #include "location.hh"
 
-    static zeno::location loc;    //ÉùÃ÷Î»ÖÃÊµÀı
+    static zeno::location loc;    //å£°æ˜ä½ç½®å®ä¾‹
 
     using namespace std;
 
@@ -472,9 +472,8 @@ static const flex_int16_t yy_chk[65] =
     // Location class can be found in location.hh and posistion.hh files. It's just a bit too much
     // boilerplate for this small example. Bummer.
 #line 474 "scanner.cpp"
-/*ÕıÔòÊ½µÄ¸÷ÖÖ¼òĞ´£¬Ê¹³ÌĞòÓĞ²ã´Î¸Ğ¶øÏÔµÃÃ÷Îú */
 /*name    (\$)({alpha}|{dig}|[_.\-/$])*/
-#line 477 "scanner.cpp"
+#line 476 "scanner.cpp"
 
 #define INITIAL 0
 
@@ -606,15 +605,15 @@ YY_DECL
 		}
 
 	{
-#line 60 "scanner.l"
+#line 59 "scanner.l"
 
 
-#line 63 "scanner.l"
-  // C++ ¼æÈİµÄ´Ê·¨·ÖÎöÆ÷µÄ¹æÔò£¬stepº¯Êı°ÑÎ»ÖÃµÄÆğÊ¼ÖµÉèÖÃÎªÓë½áÊøÖµÏàµÈ£¬ÕâÑùÎ»ÖÃ¾ÍÖ¸ÏòÁËÉÏÒ»¸ö¼«ÉÙµÄ½áÊøÎ»ÖÃ¡£
+#line 62 "scanner.l"
+  // C++ å…¼å®¹çš„è¯æ³•åˆ†æå™¨çš„è§„åˆ™ï¼Œstepå‡½æ•°æŠŠä½ç½®çš„èµ·å§‹å€¼è®¾ç½®ä¸ºä¸ç»“æŸå€¼ç›¸ç­‰ï¼Œè¿™æ ·ä½ç½®å°±æŒ‡å‘äº†ä¸Šä¸€ä¸ªæå°‘çš„ç»“æŸä½ç½®ã€‚
   loc.step();
 
 
-#line 617 "scanner.cpp"
+#line 616 "scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -673,110 +672,110 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 67 "scanner.l"
+#line 66 "scanner.l"
 {
-                return Parser::make_NUMBER(std::strtof(yytext,0),loc); // strtofº¯Êı½«×Ö·û´®×ª»»Îª¸¡µãÊı
+                return Parser::make_NUMBER(std::strtof(yytext,0),loc); // strtofå‡½æ•°å°†å­—ç¬¦ä¸²è½¬æ¢ä¸ºæµ®ç‚¹æ•°
             }
 	YY_BREAK
 case 2:
-#line 72 "scanner.l"
+#line 71 "scanner.l"
 case 3:
 YY_RULE_SETUP
-#line 72 "scanner.l"
+#line 71 "scanner.l"
 {
-            /* Ìø¹ı×¢ÊÍºÍ¿Õ°×·ûºÅ */
-            // stepº¯Êı°ÑÎ»ÖÃµÄÆğÊ¼ÖµÉèÖÃÎªÓë½áÊøÖµÏàµÈ£¬ÕâÑùÎ»ÖÃ¾ÍÖ¸ÏòÁËÉÏÒ»¸ö¼«ÉÙµÄ½áÊøÎ»ÖÃ¡£
-            // ÓÉÓÚ×¢ÊÍºÍ¿Õ°×·ûºÅÊ¶±ğºó²¢²»»á·µ»Ø£¬¶øÇ°Ò»¸östepµÄµ÷ÓÃÊÇÔÚÉÏÒ»´Îyylex·µ»ØÊ±£¬ËùÒÔ´Ë´¦ĞèÒªÊÖ¶¯¸üĞÂ¼ÇºÅµÄÆğÊ¼Î»ÖÃ
+            /* è·³è¿‡æ³¨é‡Šå’Œç©ºç™½ç¬¦å· */
+            // stepå‡½æ•°æŠŠä½ç½®çš„èµ·å§‹å€¼è®¾ç½®ä¸ºä¸ç»“æŸå€¼ç›¸ç­‰ï¼Œè¿™æ ·ä½ç½®å°±æŒ‡å‘äº†ä¸Šä¸€ä¸ªæå°‘çš„ç»“æŸä½ç½®ã€‚
+            // ç”±äºæ³¨é‡Šå’Œç©ºç™½ç¬¦å·è¯†åˆ«åå¹¶ä¸ä¼šè¿”å›ï¼Œè€Œå‰ä¸€ä¸ªstepçš„è°ƒç”¨æ˜¯åœ¨ä¸Šä¸€æ¬¡yylexè¿”å›æ—¶ï¼Œæ‰€ä»¥æ­¤å¤„éœ€è¦æ‰‹åŠ¨æ›´æ–°è®°å·çš„èµ·å§‹ä½ç½®
             loc.step();
         }
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 79 "scanner.l"
+#line 78 "scanner.l"
 {
-            loc.lines(yyleng);  //Ê¹ÓÃlinesº¯ÊıÀ´¸üĞÂÎ»ÖÃĞÅÏ¢ÖĞµÄ·ûºÅ
+            loc.lines(yyleng);  //ä½¿ç”¨lineså‡½æ•°æ¥æ›´æ–°ä½ç½®ä¿¡æ¯ä¸­çš„ç¬¦å·
             loc.step();
             return zeno::Parser::make_EOL(zeno::location());
         }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 85 "scanner.l"
+#line 84 "scanner.l"
 { return zeno::Parser::make_ADD(loc); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 86 "scanner.l"
+#line 85 "scanner.l"
 { return zeno::Parser::make_SUB(loc); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 87 "scanner.l"
+#line 86 "scanner.l"
 { return zeno::Parser::make_MUL(loc); }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 88 "scanner.l"
+#line 87 "scanner.l"
 { return zeno::Parser::make_DIV(loc); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 89 "scanner.l"
+#line 88 "scanner.l"
 { return zeno::Parser::make_LPAREN(yytext,loc); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 90 "scanner.l"
+#line 89 "scanner.l"
 { return zeno::Parser::make_RPAREN(yytext,loc); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 91 "scanner.l"
+#line 90 "scanner.l"
 { return zeno::Parser::make_COMMA(loc); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 92 "scanner.l"
+#line 91 "scanner.l"
 { return zeno::Parser::make_LITERAL(yytext, loc); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 93 "scanner.l"
+#line 92 "scanner.l"
 { return zeno::Parser::make_UNCOMPSTR(yytext, loc); }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 94 "scanner.l"
+#line 93 "scanner.l"
 { return zeno::Parser::make_FUNC(yytext, loc); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 95 "scanner.l"
+#line 94 "scanner.l"
 { return zeno::Parser::make_DOLLAR(yytext, loc); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 96 "scanner.l"
+#line 95 "scanner.l"
 { return zeno::Parser::make_VARNAME(yytext, loc); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 97 "scanner.l"
+#line 96 "scanner.l"
 { return yyterminate(); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 98 "scanner.l"
+#line 97 "scanner.l"
 {
              cout << "Scanner: unknown character [" << yytext << "]" << endl;
           }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 102 "scanner.l"
+#line 101 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 779 "scanner.cpp"
+#line 778 "scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1737,6 +1736,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 102 "scanner.l"
+#line 101 "scanner.l"
 
 

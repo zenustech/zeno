@@ -1,4 +1,4 @@
-#ifndef __ZEDIT_PARAM_LAYOUT_DLG_H__
+﻿#ifndef __ZEDIT_PARAM_LAYOUT_DLG_H__
 #define __ZEDIT_PARAM_LAYOUT_DLG_H__
 
 /*
@@ -7,7 +7,6 @@
 
 #include <QtWidgets>
 #include "model/parammodel.h"
-#include <zeno/core/data.h>
 
 
 namespace Ui
@@ -36,9 +35,10 @@ public:
         const QModelIndex& index) const override;
 
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    void setEditorData(QWidget* editor, const QModelIndex& index) const override;
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 
-    std::function<bool(QString)> m_isGlobalUniqueFunc;
+    std::function<bool(bool, QString)> m_isGlobalUniqueFunc;
 
 private:
     QStandardItemModel* m_model;
@@ -48,7 +48,7 @@ class outputListItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    explicit outputListItemDelegate(QStandardItemModel* model, QObject* parent = nullptr);
+    explicit outputListItemDelegate(QStandardItemModel* model, zeno::NodeDataGroup group, QObject* parent = nullptr);
     ~outputListItemDelegate();
 
     // editing
@@ -57,19 +57,21 @@ public:
         const QModelIndex& index) const override;
 
     void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+    void setEditorData(QWidget* editor, const QModelIndex& index) const override;
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
-    std::function<bool(QString)> m_isGlobalUniqueFunc;
+    std::function<bool(bool, QString)> m_isGlobalUniqueFunc;
 
 private:
     QStandardItemModel* m_model;
+    zeno::NodeDataGroup m_group;
 };
 
 class ZEditParamLayoutDlg : public QDialog
 {
     Q_OBJECT
 public:
-    ZEditParamLayoutDlg(QStandardItemModel* pModel, QWidget* parent = nullptr);
+    ZEditParamLayoutDlg(CustomUIModel* pModel, QWidget* parent = nullptr);
     zeno::ParamsUpdateInfo getEdittedUpdateInfo() const;
     zeno::CustomUI getCustomUiInfo() const;
 
@@ -85,7 +87,7 @@ private slots:
     void onOk();
     void onCancel();
     void onTreeCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
-    void onOutputsListCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onOutputsListCurrentChanged(const zeno::NodeDataGroup group, const QModelIndex& current, const QModelIndex& previous);
     void onNameEditFinished();      //name lineedit.
     void onLabelEditFinished();
     void onHintEditFinished();
@@ -97,6 +99,12 @@ private slots:
     void onParamsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onOutputsViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);
     void onSocketTypeChanged(int idx);
+    void onObjTypeChanged(int idx);
+    void onOutputPrimTypeChanged(int idx);
+    void onMinEditFinished();
+    void onMaxEditFinished();
+    void onStepEditFinished();
+    void onComboTableItemsCellChanged(int row, int column);
 
 private:
     void initUI();
@@ -104,11 +112,12 @@ private:
     QIcon getIcon(const QStandardItem *pItem);
     void proxyModelSetData(const QModelIndex& index, const zeno::reflect::Any& newValue, int role);
     void switchStackProperties(int ctrl, QStandardItem *pItem);
-    void initModel(const QStandardItemModel* pModel);
+    void initModel(CustomUIModel* pModel);
+    void updateSliderInfo();
 
     QStringList getExistingNames(bool bInput, VPARAM_TYPE type) const;
 
-    std::function<bool(QString)> m_isGlobalUniqueFunc;
+    std::function<bool(bool, QString)> m_isGlobalUniqueFunc;
 
     QStandardItemModel * m_paramsLayoutM_inputs;
     QStandardItemModel * m_paramsLayoutM_outputs;

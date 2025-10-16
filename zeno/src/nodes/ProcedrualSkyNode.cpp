@@ -2,7 +2,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/fileio.h>
-#include <zeno/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <tinygltf/json.hpp>
 
 #include <zeno/utils/eulerangle.h>
@@ -12,19 +12,19 @@
 namespace zeno {
 struct ProceduralSky : INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-
-        prim->userData().set2("isRealTimeObject", std::move(1));
-        prim->userData().set2("ProceduralSky", std::move(1));
-        prim->userData().set2("sunLightDir", std::move(get_input2<zeno::vec2f>("sunLightDir")));
-        prim->userData().set2("sunLightSoftness", std::move(get_input2<float>("sunLightSoftness")));
-        prim->userData().set2("windDir", std::move(get_input2<zeno::vec2f>("windDir")));
-        prim->userData().set2("timeStart", std::move(get_input2<float>("timeStart")));
-        prim->userData().set2("timeSpeed", std::move(get_input2<float>("timeSpeed")));
-        prim->userData().set2("sunLightIntensity", std::move(get_input2<float>("sunLightIntensity")));
-        prim->userData().set2("colorTemperatureMix", std::move(get_input2<float>("colorTemperatureMix")));
-        prim->userData().set2("colorTemperature", std::move(get_input2<float>("colorTemperature")));
-        set_output("ProceduralSky", std::move(prim));
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
+        auto pUserData = dynamic_cast<UserData*>(prim->userData());
+        pUserData->set2("isRealTimeObject", std::move(1));
+        pUserData->set2("ProceduralSky", std::move(1));
+        pUserData->set2("sunLightDir", std::move(ZImpl(get_input2<zeno::vec2f>("sunLightDir"))));
+        pUserData->set2("sunLightSoftness", std::move(ZImpl(get_input2<float>("sunLightSoftness"))));
+        pUserData->set2("windDir", std::move(ZImpl(get_input2<zeno::vec2f>("windDir"))));
+        pUserData->set2("timeStart", std::move(ZImpl(get_input2<float>("timeStart"))));
+        pUserData->set2("timeSpeed", std::move(ZImpl(get_input2<float>("timeSpeed"))));
+        pUserData->set2("sunLightIntensity", std::move(ZImpl(get_input2<float>("sunLightIntensity"))));
+        pUserData->set2("colorTemperatureMix", std::move(ZImpl(get_input2<float>("colorTemperatureMix"))));
+        pUserData->set2("colorTemperature", std::move(ZImpl(get_input2<float>("colorTemperature"))));
+        ZImpl(set_output("ProceduralSky", std::move(prim)));
     }
 };
 
@@ -49,22 +49,23 @@ ZENDEFNODE(ProceduralSky, {
 
 struct HDRSky : INode {
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         std::string path = "";
-        if (has_input2<std::string>("path")) {
-             path = get_input2<std::string>("path");
+        if (ZImpl(has_input2<std::string>("path"))) {
+             path = ZImpl(get_input2<std::string>("path"));
              std::string native_path = std::filesystem::u8path(path).string();
              if (!path.empty() && !file_exists(native_path)) {
                  throw zeno::makeError("HDRSky file not exists");
              }
         }
-        prim->userData().set2("isRealTimeObject", std::move(1));
-        prim->userData().set2("HDRSky", std::move(path));
-        prim->userData().set2("evnTexRotation", std::move(get_input2<float>("rotation")));
-        prim->userData().set2("evnTex3DRotation", std::move(get_input2<zeno::vec3f>("rotation3d")));
-        prim->userData().set2("evnTexStrength", std::move(get_input2<float>("strength")));
-        prim->userData().set2("enable", std::move(get_input2<bool>("enable")));
-        set_output("HDRSky", std::move(prim));
+        auto pUserData = dynamic_cast<UserData*>(prim->userData());
+        pUserData->set2("isRealTimeObject", std::move(1));
+        pUserData->set2("HDRSky", std::move(path));
+        pUserData->set2("evnTexRotation", std::move(ZImpl(get_input2<float>("rotation"))));
+        pUserData->set2("evnTex3DRotation", std::move(ZImpl(get_input2<zeno::vec3f>("rotation3d"))));
+        pUserData->set2("evnTexStrength", std::move(ZImpl(get_input2<float>("strength"))));
+        pUserData->set2("enable", std::move(ZImpl(get_input2<bool>("enable"))));
+        ZImpl(set_output("HDRSky", std::move(prim)));
     }
 };
 
@@ -85,13 +86,17 @@ ZENDEFNODE(HDRSky, {
 });
 
 struct DistantLightWrapper : IObject{
+    zany clone() const {
+        return std::make_unique<DistantLightWrapper>(*this);
+    }
+
     DistantLightData data;
 };
 
 struct DistantLight : INode {
 
     virtual void apply() override {
-        auto dir2 = get_input2<zeno::vec2f>("Lat-Lon");
+        auto dir2 = ZImpl(get_input2<zeno::vec2f>("Lat-Lon"));
         // dir2[0] = fmod(dir2[0], 180.f);
         // dir2[1] = fmod(dir2[1], 180.f);
 
@@ -103,34 +108,38 @@ struct DistantLight : INode {
         
         dir3[2] = std::cos(dir2[0]) * std::cos(dir2[1]);
         dir3[0] = std::cos(dir2[0]) * std::sin(dir2[1]);
+        auto dir = ZImpl(get_input2<zeno::vec3f>("dir"));
+        dir3 = length(dir)>0?dir:dir3;
+        dir3 = zeno::normalize(dir3);
         
-        //dir3 = zeno::normalize(dir3);
-    
-        auto angleExtent = get_input2<float>("angleExtent");
+        auto angleExtent = ZImpl(get_input2<float>("angleExtent"));
         angleExtent = zeno::clamp(angleExtent, 0.0f, 60.0f);
 
-        auto color = get_input2<zeno::vec3f>("color");
-        auto intensity = get_input2<float>("intensity");
+        auto color = ZImpl(get_input2<zeno::vec3f>("color"));
+        auto intensity = ZImpl(get_input2<float>("intensity"));
         intensity = fmaxf(0.0, intensity);
 
-        auto result = std::make_shared<DistantLightWrapper>();
+        auto result = std::make_unique<DistantLightWrapper>();
         result->data.direction = dir3;
         result->data.angle = angleExtent;
         result->data.color = color;
         result->data.intensity = intensity;
-        set_output2("out", std::move(result) );
+        ZImpl(set_output("out", std::move(result) ));
+        ZImpl(set_output2("dir", std::move(dir3) ));
     }
 };
 
 ZENDEFNODE(DistantLight, {
     {
         {gParamType_Vec2f, "Lat-Lon", "45, 90"},
+        {gParamType_Vec3f, "dir", "0,0,0"},
         {gParamType_Float, "angleExtent", "0.5"},
         {gParamType_Vec3f, "color", "1,1,1"},
         {gParamType_Float, "intensity", "1"}
     },
     {
-        {"object", "out"},
+        {gParamType_Vec3f, "dir"},
+        {gParamType_IObject, "out"},
     },
     {
     },
@@ -140,18 +149,18 @@ ZENDEFNODE(DistantLight, {
 struct PortalLight : INode {
     virtual void apply() override {
 
-        auto pos = get_input2<zeno::vec3f>("pos");
-        auto scale = get_input2<zeno::vec2f>("scale");
-        auto rotate = get_input2<zeno::vec3f>("rotate");
-        auto size = get_input2<int>("size");
+        auto pos = ZImpl(get_input2<zeno::vec3f>("pos"));
+        auto scale = ZImpl(get_input2<zeno::vec2f>("scale"));
+        auto rotate = ZImpl(get_input2<zeno::vec3f>("rotate"));
+        auto size = ZImpl(get_input2<int>("size"));
         size = std::max(size, 180);
 
         scale = 0.5f * abs(scale);
 
-        auto order = get_input2<std::string>("EulerRotationOrder:");
+        auto order = ZImpl(get_input2<std::string>("EulerRotationOrder:"));
         auto orderTyped = magic_enum::enum_cast<EulerAngle::RotationOrder>(order).value_or(EulerAngle::RotationOrder::XYZ);
 
-        auto measure = get_input2<std::string>("EulerAngleMeasure:");
+        auto measure = ZImpl(get_input2<std::string>("EulerAngleMeasure:"));
         auto measureTyped = magic_enum::enum_cast<EulerAngle::Measure>(measure).value_or(EulerAngle::Measure::Radians);
 
         glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
@@ -163,7 +172,7 @@ struct PortalLight : INode {
         transform = transform * rotation;
         transform = glm::scale(transform, glm::vec3(scale[0], 0.5 * (scale[0] + scale[1]), scale[1]));
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
         prim->verts->resize(8);
 
         prim->verts[0] = zeno::vec3f(-1, 0, -1);
@@ -205,8 +214,8 @@ struct PortalLight : INode {
         color[6] = {0, 1, 0};
         color[7] = {0, 0, 1};
         //prim->lines.update();
-        prim->userData().set2("size", size);
-        set_output2("out", std::move(prim));
+        prim->userData()->set_int("size", size);
+        ZImpl(set_output("out", std::move(prim)));
     }
 };
 
@@ -230,10 +239,10 @@ ZENDEFNODE(PortalLight, {
 struct SkyComposer : INode {
     virtual void apply() override {
 
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto prim = std::make_unique<zeno::PrimitiveObject>();
 
-        if (has_input("dlights")) {
-            auto dlights = get_input<ListObject>("dlights")->get<DistantLightWrapper>();
+        if (ZImpl(has_input("dlights"))) {
+            auto dlights = ZImpl(get_input<ListObject>("dlights"))->m_impl->get<DistantLightWrapper>();
             if (dlights.empty()) {
                 throw zeno::makeError("Bad input for dlights");
             }
@@ -257,8 +266,9 @@ struct SkyComposer : INode {
             }
         }
 
-        if (has_input("portals")) {
-            auto portals = get_input<ListObject>("portals")->get<zeno::PrimitiveObject>();
+        auto pUserData = dynamic_cast<UserData*>(prim->userData());
+        if (ZImpl(has_input("portals"))) {
+            auto portals = ZImpl(get_input<ListObject>("portals"))->m_impl->get<zeno::PrimitiveObject>();
             if (portals.empty()) {
                 throw zeno::makeError("Bad input for portals");
             }
@@ -284,18 +294,18 @@ struct SkyComposer : INode {
                 raw[4 * i + 2] = p2;
                 raw[4 * i + 3] = p3;
 
-                auto psize = rect->userData().get2<int>("size");
+                auto psize = rect->userData()->get_int("size");
                 psizes[i] = psize;
             }
 
             json aux(raw);
-            prim->userData().set2("portals", std::move(aux.dump()));
-            prim->userData().set2("psizes", json(psizes).dump());
+            pUserData->set2("portals", std::move(aux.dump()));
+            pUserData->set2("psizes", json(psizes).dump());
         }
 
-        prim->userData().set2("SkyComposer", std::move(1));
-        prim->userData().set2("isRealTimeObject", std::move(1));
-        set_output2("out", std::move(prim));
+        pUserData->set2("SkyComposer", std::move(1));
+        pUserData->set2("isRealTimeObject", std::move(1));
+        ZImpl(set_output("out", std::move(prim)));
     }
 };
 
@@ -344,10 +354,10 @@ vec3f colorTemperatureToRGB(float temperatureInKelvins)
 
 struct Blackbody : INode {
     virtual void apply() override {
-        float temperature = get_input2<float>("temperature");
+        float temperature = ZImpl(get_input2<float>("temperature"));
         temperature = zeno::clamp(temperature, 1000.0f, 40000.0f);
         auto color = colorTemperatureToRGB(temperature);
-        set_output2("color", color);
+        ZImpl(set_output2("color", color));
     }
 };
 
@@ -363,3 +373,4 @@ ZENDEFNODE(Blackbody, {
     {"shader"},
 });
 };
+

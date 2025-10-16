@@ -1,11 +1,16 @@
 add_subdirectory(ZFX)
 
-target_include_directories(zeno PRIVATE .)
-
-target_link_libraries(zeno PRIVATE $<BUILD_INTERFACE:ZFX>)
-target_sources(zeno PRIVATE
+add_library(zfxold SHARED 
     nw.cpp pw.cpp pnw.cpp ppw.cpp p2w.cpp pmw.cpp tw.cpp ne.cpp se.cpp FDGather.cpp refutils.cpp dbg_printf.h
-    )
+)
+
+target_include_directories(zfxold PRIVATE .)
+
+target_link_libraries(zfxold PRIVATE $<BUILD_INTERFACE:ZFX>)
+target_link_libraries(zfxold PRIVATE zenocore)
+#target_sources(zeno PRIVATE
+#    nw.cpp pw.cpp pnw.cpp ppw.cpp p2w.cpp pmw.cpp tw.cpp ne.cpp se.cpp FDGather.cpp refutils.cpp dbg_printf.h
+#    )
 
 #if (ZENO_WITH_zenvdb)
     #option(ZENOFX_ENABLE_OPENVDB "Enable OpenVDB wrangler in ZenoFX" ON)
@@ -24,18 +29,18 @@ if (ZENOFX_ENABLE_OPENVDB)
     endif()
     if (ZENO_SYSTEM_OPENVDB)
         find_package(OpenVDB REQUIRED)
-        target_link_libraries(zeno PRIVATE OpenVDB::openvdb)
+        target_link_libraries(zfxold PRIVATE OpenVDB::openvdb)
     endif()
-    target_sources(zeno PRIVATE vw.cpp)
-    target_include_directories(zeno PRIVATE ../zenvdb/include)
+    target_sources(zfxold PRIVATE vw.cpp)
+    target_include_directories(zfxold PRIVATE ../zenvdb/include)
 endif()
 
 if (ZENOFX_ENABLE_LBVH)
-    target_sources(zeno PRIVATE pnbvhw.cpp LinearBvh.cpp LinearBvh.h SpatialUtils.hpp)
+    target_sources(zfxold PRIVATE pnbvhw.cpp LinearBvh.cpp LinearBvh.h SpatialUtils.hpp)
 endif()
 
 find_package(OpenMP)
 if (TARGET OpenMP::OpenMP_CXX)
     message(STATUS "found package: OpenMP::OpenMP_CXX")
-    target_link_libraries(zeno PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(zfxold PRIVATE OpenMP::OpenMP_CXX)
 endif()

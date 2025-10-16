@@ -3,6 +3,7 @@
 #include <cstring>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/IGeometryObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -10,12 +11,12 @@
 namespace zeno {
 struct MakePointPrimitive :INode{
     virtual void apply() override {
-        auto p = get_input<NumericObject>("vec3")->get<zeno::vec3f>();
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto p = ZImpl(get_input<NumericObject>("vec3"))->get<zeno::vec3f>();
+        auto prim = std::make_unique<PrimitiveObject>();
         prim->resize(1);
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         pos[0] = p;
-        set_output("prim", prim);
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 ZENDEFNODE(MakePointPrimitive,
@@ -35,15 +36,15 @@ static size_t makepositive(int i) {
 
 struct Make1DLinePrimitive : INode {
     virtual void apply() override {
-        size_t nx = makepositive(get_input<NumericObject>("n")->get<int>());
+        size_t nx = makepositive(ZImpl(get_input<NumericObject>("n"))->get<int>());
         nx = std::max(nx, (size_t)1);
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         
-        vec3f o = has_input("origin") ?
-            get_input<NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0);
+        vec3f o = ZImpl(has_input("origin")) ?
+            ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0);
         
     vec3f ax = vec3f(1,0,0);
-    auto dir = get_param<std::string>("Direction");
+    auto dir = ZImpl(get_param<std::string>("Direction"));
     if(dir == "Y")
     {
         ax = zeno::vec3f(0,ax[0],0);
@@ -52,18 +53,18 @@ struct Make1DLinePrimitive : INode {
     {
         ax = zeno::vec3f(0,0,ax[0]);
     }
-    ax = has_input("direction") ?
-            get_input<NumericObject>("direction")->get<zeno::vec3f>()
+    ax = ZImpl(has_input("direction")) ?
+            ZImpl(get_input<NumericObject>("direction"))->get<zeno::vec3f>()
             : ax;
-    if (has_input("scale")) {
-        auto scale = get_input<NumericObject>("scale")->get<float>();
+    if (ZImpl(has_input("scale"))) {
+        auto scale = ZImpl(get_input<NumericObject>("scale"))->get<float>();
         ax *= scale;
     }
-    if (get_param<bool>("isCentered"))
+    if (ZImpl(get_param<bool>("isCentered")))
         o -= (ax) / 2;
     ax *= dx;
 
-    auto prim = std::make_shared<PrimitiveObject>();
+    auto prim = std::make_unique<PrimitiveObject>();
     prim->resize(nx);
     auto &pos = prim->add_attr<zeno::vec3f>("pos");
 #pragma omp parallel for
@@ -71,7 +72,7 @@ struct Make1DLinePrimitive : INode {
       vec3f p = o + x * ax;
       pos[x] = p;
     }
-    if (get_param<bool>("hasLines")) {
+    if (ZImpl(get_param<bool>("hasLines"))) {
         prim->lines.resize((nx - 1));
 #pragma omp parallel for
         for (intptr_t x = 0; x < nx-1; x++) {
@@ -79,8 +80,8 @@ struct Make1DLinePrimitive : INode {
           prim->lines[x][1] = x + 1;
         }
     }
-    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
-    set_output("prim", std::move(prim));
+    prim->userData()->set_int("nx", (int)nx);//zhxx
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -102,28 +103,28 @@ ZENDEFNODE(Make1DLinePrimitive,
 
 struct Make2DGridPrimitive : INode {
     virtual void apply() override {
-        size_t nx = get_input<NumericObject>("nx")->get<int>();
+        size_t nx = ZImpl(get_input<NumericObject>("nx"))->get<int>();
         nx = std::max(nx, (size_t)1);
-        size_t ny = has_input("ny") ?
-            makepositive(get_input<NumericObject>("ny")->get<int>()) : 0;
+        size_t ny = ZImpl(has_input("ny")) ?
+            makepositive(ZImpl(get_input<NumericObject>("ny"))->get<int>()) : 0;
         if (!ny) ny = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
-        vec3f ax = has_input("sizeX") ?
-            get_input<NumericObject>("sizeX")->get<zeno::vec3f>()
+        vec3f ax = ZImpl(has_input("sizeX")) ?
+            ZImpl(get_input<NumericObject>("sizeX"))->get<zeno::vec3f>()
             : vec3f(1, 0, 0);
-        vec3f ay = has_input("sizeY") ?
-            get_input<NumericObject>("sizeY")->get<zeno::vec3f>()
+        vec3f ay = ZImpl(has_input("sizeY")) ?
+            ZImpl(get_input<NumericObject>("sizeY"))->get<zeno::vec3f>()
             : vec3f(0, 1, 0);
-        vec3f o = has_input("origin") ?
-            get_input<NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0);
-        if (has_input("scale")) {
-            auto obj = get_input<NumericObject>("scale");
+        vec3f o = ZImpl(has_input("origin")) ?
+            ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0);
+        if (ZImpl(has_input("scale"))) {
+            auto obj = ZImpl(get_input<NumericObject>("scale"));
             auto scale = obj->is<int>() ? obj->get<int>() : obj->get<float>();
             ax *= scale;
             ay *= scale;
         }
-        auto dir = get_param<std::string>("Direction");
+        auto dir = ZImpl(get_param<std::string>("Direction"));
         if(dir == "YZ")
         {
             ax = zeno::vec3f(0,ax[0],0);
@@ -134,15 +135,15 @@ struct Make2DGridPrimitive : INode {
             ay = zeno::vec3f(0,0,ay[1]);
         }
 
-        if (get_param<bool>("isCentered"))
+        if (ZImpl(get_param<bool>("isCentered")))
             o -= (ax + ay) / 2;
         ax *= dx; ay *= dy;
 
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto prim = std::make_unique<PrimitiveObject>();
         prim->resize(nx * ny);
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
 
-        auto layout = get_param<std::string>("Layout");
+        auto layout = ZImpl(get_param<std::string>("Layout"));
         if (layout == "Column-major") {
 #pragma omp parallel for
             for (intptr_t y = 0; y < ny; y++)
@@ -152,7 +153,7 @@ struct Make2DGridPrimitive : INode {
                     size_t i = x + y * nx;
                     pos[i] = p;
                 }
-            if (get_param<bool>("hasUV")) {
+            if (ZImpl(get_param<bool>("hasUV"))) {
                 auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
                 for (intptr_t y = 0; y < ny; y++)
                     for (intptr_t x = 0; x < nx; x++) {
@@ -160,7 +161,7 @@ struct Make2DGridPrimitive : INode {
                         uv[i] = {float(x) / float(nx - 1), float(y) / float(ny - 1), 0};
                     }
             }
-            if (get_param<bool>("hasFaces")) {
+            if (ZImpl(get_param<bool>("hasFaces"))) {
                 prim->tris.resize((nx - 1) * (ny - 1) * 2);
 #pragma omp parallel for
                 for (intptr_t y = 0; y < ny - 1; y++)
@@ -184,7 +185,7 @@ struct Make2DGridPrimitive : INode {
                     pos[i] = p;
                 }
 
-            if (get_param<bool>("hasUV")) {
+            if (ZImpl(get_param<bool>("hasUV"))) {
                 auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
                 for (intptr_t x = 0; x < nx; x++)
                     for (intptr_t y = 0; y < ny; y++) {
@@ -193,7 +194,7 @@ struct Make2DGridPrimitive : INode {
                     }
             }
 
-            if (get_param<bool>("hasFaces")) {
+            if (ZImpl(get_param<bool>("hasFaces"))) {
                 prim->tris.resize((nx - 1) * (ny - 1) * 2);
 #pragma omp parallel for
                 for (intptr_t x = 0; x < nx - 1; x++)
@@ -209,9 +210,11 @@ struct Make2DGridPrimitive : INode {
             }
         }
 
-    prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
-    prim->userData().set("ny", std::make_shared<NumericObject>((int)ny));//zhxx
-    set_output("prim", std::move(prim));
+    prim->userData()->set_int("nx", (int)nx);//zhxx
+    prim->userData()->set_int("ny", (int)ny);//zhxx
+
+    auto geom = create_GeometryObject(prim.get());
+    ZImpl(set_output("prim", std::move(geom)));
   }
 };
 
@@ -224,7 +227,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         {gParamType_Float, "scale", "1"},
         {gParamType_Vec3f, "origin", "0,0,0"},
         }, /* outputs: */ {
-        {gParamType_Primitive, "prim"},
+        {gParamType_Geometry, "prim"},
         }, /* params: */ {
         {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
         {"enum Column-major Row-major", "Layout", "Column-major"},
@@ -237,41 +240,41 @@ ZENDEFNODE(Make2DGridPrimitive,
 
 struct Make3DGridPrimitive : INode {
     virtual void apply() override {
-        size_t nx = get_input<NumericObject>("nx")->get<int>();
+        size_t nx = ZImpl(get_input<NumericObject>("nx"))->get<int>();
         nx = std::max(nx, (size_t)1);
-        size_t ny = has_input("ny") ?
-            makepositive(get_input<NumericObject>("ny")->get<int>()) : 0;
+        size_t ny = ZImpl(has_input("ny")) ?
+            makepositive(ZImpl(get_input<NumericObject>("ny"))->get<int>()) : 0;
         if (!ny) ny = nx;
-        size_t nz = has_input("nz") ?
-            makepositive(get_input<NumericObject>("nz")->get<int>()) : 0;
+        size_t nz = ZImpl(has_input("nz")) ?
+            makepositive(ZImpl(get_input<NumericObject>("nz"))->get<int>()) : 0;
         if (!nz) nz = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
         float dz = 1.f / std::max(nz - 1, (size_t)1);
-        vec3f ax = has_input("sizeX") ?
-            get_input<NumericObject>("sizeX")->get<zeno::vec3f>()
+        vec3f ax = ZImpl(has_input("sizeX")) ?
+            ZImpl(get_input<NumericObject>("sizeX"))->get<zeno::vec3f>()
             : vec3f(1, 0, 0);
-        vec3f ay = has_input("sizeY") ?
-            get_input<NumericObject>("sizeY")->get<zeno::vec3f>()
+        vec3f ay = ZImpl(has_input("sizeY")) ?
+            ZImpl(get_input<NumericObject>("sizeY"))->get<zeno::vec3f>()
             : vec3f(0, 1, 0);
-        vec3f az = has_input("sizeZ") ?
-            get_input<NumericObject>("sizeZ")->get<zeno::vec3f>()
+        vec3f az = ZImpl(has_input("sizeZ")) ?
+            ZImpl(get_input<NumericObject>("sizeZ"))->get<zeno::vec3f>()
             : vec3f(0, 0, 1);
-        vec3f o = has_input("origin") ?
-            get_input<NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0);
-        if (has_input("scale")) {
-            auto scale = get_input<NumericObject>("scale")->get<float>();
+        vec3f o = ZImpl(has_input("origin")) ?
+            ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0);
+        if (ZImpl(has_input("scale"))) {
+            auto scale = ZImpl(get_input<NumericObject>("scale"))->get<float>();
             ax *= scale;
             ay *= scale;
             az *= scale;
         }
 
 
-    if (get_param<bool>("isCentered"))
+    if (ZImpl(get_param<bool>("isCentered")))
       o -= (ax + ay + az) / 2;
     ax *= dx; ay *= dy; az *= dz;
 
-    auto prim = std::make_shared<PrimitiveObject>();
+    auto prim = std::make_unique<PrimitiveObject>();
     prim->resize(nx * ny * nz);
     auto &pos = prim->add_attr<zeno::vec3f>("pos");
     // for (size_t y = 0; y < ny; y++) {
@@ -289,7 +292,7 @@ struct Make3DGridPrimitive : INode {
       pos[index] = p;
     }
       // }
-    set_output("prim", std::move(prim));
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -314,30 +317,30 @@ ZENDEFNODE(Make3DGridPrimitive,
 
 struct Make3DGridPointsInAABB : INode {//xubenhappy
     virtual void apply() override {
-        size_t nx = makepositive(get_input<NumericObject>("nx")->get<int>());
+        size_t nx = makepositive(ZImpl(get_input<NumericObject>("nx"))->get<int>());
         nx = std::max(nx, (size_t)1);
-        size_t ny = has_input("ny") ?
-            makepositive(get_input<NumericObject>("ny")->get<int>()) : 0;
+        size_t ny = ZImpl(has_input("ny")) ?
+            makepositive(ZImpl(get_input<NumericObject>("ny"))->get<int>()) : 0;
         if (!ny) ny = nx;
-        size_t nz = has_input("nz") ?
-            makepositive(get_input<NumericObject>("nz")->get<int>()) : 0;
+        size_t nz = ZImpl(has_input("nz")) ?
+            makepositive(ZImpl(get_input<NumericObject>("nz"))->get<int>()) : 0;
         if (!nz) nz = nx;
         float dx = 1.f / std::max(nx - 1, (size_t)1);
         float dy = 1.f / std::max(ny - 1, (size_t)1);
         float dz = 1.f / std::max(nz - 1, (size_t)1);
 
-        vec3f bmin = has_input("bmin") ?
-            get_input<NumericObject>("bmin")->get<zeno::vec3f>() : vec3f(-1);
-        vec3f bmax = has_input("bmax") ?
-            get_input<NumericObject>("bmax")->get<zeno::vec3f>() : vec3f(1);
+        vec3f bmin = ZImpl(has_input("bmin")) ?
+            ZImpl(get_input<NumericObject>("bmin"))->get<zeno::vec3f>() : vec3f(-1);
+        vec3f bmax = ZImpl(has_input("bmax")) ?
+            ZImpl(get_input<NumericObject>("bmax"))->get<zeno::vec3f>() : vec3f(1);
         auto delta = (bmax - bmin) * vec3f(dx, dy, dz);
 
-        if (get_param<bool>("isStaggered")) {
+        if (ZImpl(get_param<bool>("isStaggered"))) {
             nx--, ny--, nz--;
             bmin += 0.5f * delta;
         }
 
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto prim = std::make_unique<PrimitiveObject>();
         prim->resize(nx * ny * nz);
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
 #pragma omp parallel for
@@ -348,7 +351,7 @@ struct Make3DGridPointsInAABB : INode {//xubenhappy
             vec3f p = bmin + vec3f(x, y, z) * delta;
             pos[index] = p;
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -371,18 +374,18 @@ ZENDEFNODE(Make3DGridPointsInAABB,
 // TODO: deprecate this xuben-happy node
 struct MakeCubePrimitive : INode {
     virtual void apply() override {
-        float spacing = get_input<NumericObject>("spacing")->get<float>();
-        size_t nx = get_input<NumericObject>("nx")->get<int>();
+        float spacing = ZImpl(get_input<NumericObject>("spacing"))->get<float>();
+        size_t nx = ZImpl(get_input<NumericObject>("nx"))->get<int>();
         nx = std::max(nx, (size_t)1);
-        size_t ny = has_input("ny") ?
-            get_input<NumericObject>("ny")->get<int>() : nx;
-        size_t nz = has_input("nz") ?
-            get_input<NumericObject>("nz")->get<int>() : nx;
+        size_t ny = ZImpl(has_input("ny")) ?
+            ZImpl(get_input<NumericObject>("ny"))->get<int>() : nx;
+        size_t nz = ZImpl(has_input("nz")) ?
+            ZImpl(get_input<NumericObject>("nz"))->get<int>() : nx;
 
-        vec3f o = has_input("origin") ?
-            get_input<NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0);
+        vec3f o = ZImpl(has_input("origin")) ?
+            ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0);
     
-    auto prim = std::make_shared<PrimitiveObject>();
+    auto prim = std::make_unique<PrimitiveObject>();
     prim->resize(nx * ny * nz);
     auto &pos = prim->add_attr<zeno::vec3f>("pos");
 #pragma omp parallel for
@@ -396,7 +399,7 @@ struct MakeCubePrimitive : INode {
       pos[index] = p;
       // }
     }
-    set_output("prim", std::move(prim));
+    ZImpl(set_output("prim", std::move(prim)));
   }
 };
 
@@ -417,11 +420,11 @@ ZENDEFNODE(MakeCubePrimitive,
 
 struct MakeBoxPrimitive : INode {
     virtual void apply() override {
-        float size_x = get_input<NumericObject>("size_x")->get<float>();
-        float size_y = get_input<NumericObject>("size_y")->get<float>();
-        float size_z = get_input<NumericObject>("size_z")->get<float>();
-        vec3f o = get_input<NumericObject>("origin")->get<zeno::vec3f>();
-        auto prim = std::make_shared<PrimitiveObject>();
+        float size_x = ZImpl(get_input<NumericObject>("size_x"))->get<float>();
+        float size_y = ZImpl(get_input<NumericObject>("size_y"))->get<float>();
+        float size_z = ZImpl(get_input<NumericObject>("size_z"))->get<float>();
+        vec3f o = ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>();
+        auto prim = std::make_unique<PrimitiveObject>();
         prim->resize(8);
         auto& pos = prim->add_attr<zeno::vec3f>("pos");
 
@@ -433,7 +436,7 @@ struct MakeBoxPrimitive : INode {
             pos[index] = p;
         }
 
-        if (get_param<bool>("use_quads")) {
+        if (ZImpl(get_param<bool>("use_quads"))) {
             std::vector<vec4i> cubeQuads{
             vec4i(0, 4, 5, 1),
             vec4i(4, 6, 7, 5),
@@ -442,7 +445,7 @@ struct MakeBoxPrimitive : INode {
             vec4i(1, 5, 7, 3),
             vec4i(0, 2, 6, 4), };
             prim->quads.values = cubeQuads;
-            set_output("prim", std::move(prim));
+            ZImpl(set_output("prim", std::move(prim)));
         }
         else {
             std::vector<vec3i> cubeTris{
@@ -459,7 +462,7 @@ struct MakeBoxPrimitive : INode {
             vec3i(0, 2, 3),
             vec3i(4, 0, 1) };
             prim->tris.values = cubeTris;
-            set_output("prim", std::move(prim));
+            ZImpl(set_output("prim", std::move(prim)));
         }
     }
 };

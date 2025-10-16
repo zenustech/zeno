@@ -108,20 +108,20 @@ static float perlin(float x, float y, float z) {
 
 struct PrimitivePerlinNoiseAttr : INode {
   virtual void apply() override {
-    auto prim = has_input("prim") ?
-        get_input<PrimitiveObject>("prim") :
-        std::make_shared<PrimitiveObject>();
+    auto prim = ZImpl(has_input("prim")) ?
+        ZImpl(get_input<PrimitiveObject>("prim")) :
+        std::make_unique<PrimitiveObject>();
     
 
-    //auto min = get_input<NumericObject>("min");
-    //auto max = get_input<NumericObject>("max");
+    //auto min = ZImpl(get_input<NumericObject>("min"));
+    //auto max = ZImpl(get_input<NumericObject>("max"));
     auto offset = zeno::vec3f(frand(), frand(), frand());
-    if(has_input("seed"))
-        offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
-    auto res = std::make_shared<zeno::NumericObject>();
-    float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
-    auto attrName = get_param<std::string>(("attrName"));
-    auto attrType = get_param<std::string>(("attrType"));
+    if(ZImpl(has_input("seed")))
+        offset = ZImpl(get_input<zeno::NumericObject>("seed"))->get<zeno::vec3f>();
+    auto res = std::make_unique<zeno::NumericObject>();
+    float f = ZImpl(has_input("freq"))? ZImpl(get_input<zeno::NumericObject>("freq"))->get<float>() : 1.0f;
+    auto attrName = ZImpl(get_param<std::string>("attrName"));
+    auto attrType = ZImpl(get_param<std::string>("attrType"));
     auto &pos = prim->verts;
     if (!prim->has_attr(attrName)) {
         if (attrType == "float3") prim->add_attr<zeno::vec3f>(attrName);
@@ -143,7 +143,7 @@ struct PrimitivePerlinNoiseAttr : INode {
         }
     });
 
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -163,19 +163,19 @@ ZENDEFNODE(PrimitivePerlinNoiseAttr,
 
 struct GetPerlinNoise : INode{
     virtual void apply() override {
-        auto vec = get_input<zeno::NumericObject>("vec3")->get<zeno::vec3f>();
+        auto vec = ZImpl(get_input<zeno::NumericObject>("vec3"))->get<zeno::vec3f>();
         auto offset = zeno::vec3f(frand(), frand(), frand());
-        if(has_input("seed"))
-            offset = get_input<zeno::NumericObject>("seed")->get<zeno::vec3f>();
-        auto res = std::make_shared<zeno::NumericObject>();
-        float f = has_input("freq")? get_input<zeno::NumericObject>("freq")->get<float>() : 1.0f;
+        if(ZImpl(has_input("seed")))
+            offset = ZImpl(get_input<zeno::NumericObject>("seed"))->get<zeno::vec3f>();
+        auto res = std::make_unique<zeno::NumericObject>();
+        float f = ZImpl(has_input("freq"))? ZImpl(get_input<zeno::NumericObject>("freq"))->get<float>() : 1.0f;
         zeno::vec3f p = vec*f + offset;
         p = p;
         float x = perlin(p[0], p[1],p[2]);
         float y = perlin(p[1], p[2], p[0]);
         float z = perlin(p[2], p[0], p[1]);
         res->value = zeno::vec3f(x,y,z);
-        set_output("noise", res);
+        ZImpl(set_output("noise", std::move(res)));
     }
 };
 ZENDEFNODE(GetPerlinNoise,

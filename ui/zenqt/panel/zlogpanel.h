@@ -85,7 +85,7 @@ private:
     void onSettings();
     void onSyncLogs();
 
-    Ui::LogPanel* m_ui;
+    QScopedPointer<Ui::LogPanel> m_ui;
     QStandardItemModel *m_logModel;
     CustomFilterProxyModel *m_pFilterModel;
     QMenu* m_pMenu;

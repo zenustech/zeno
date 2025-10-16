@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
 #include <vector>
 #include <string>
@@ -7,7 +8,7 @@
 
 namespace zeno {
 
-ZENO_API std::shared_ptr<IObject> decodeObject(const char *buf, size_t len);
-ZENO_API bool encodeObject(IObject const *object, std::vector<char> &buf);
+ZENO_API zany decodeObject(const char *buf, size_t len);
+ZENO_API bool encodeObject(IObject *object, std::vector<char> &buf);
 
 }

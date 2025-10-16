@@ -9,9 +9,9 @@ namespace {
 /*struct RunOnce : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = getGlobalState()->substepid == 0;
-        auto obj = std::make_shared<zeno::ConditionObject>();
+        auto obj = std::make_unique<zeno::ConditionObject>();
         obj->set(yes);
-        set_output("cond", std::move(obj));
+        ZImpl(set_output("cond", std::move(obj)));
     }
 };
 
@@ -25,9 +25,9 @@ ZENDEFNODE(RunOnce, {
 struct RunAfterFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = getGlobalState()->has_frame_completed || !getGlobalState()->time_step_integrated;
-        auto obj = std::make_shared<zeno::ConditionObject>();
+        auto obj = std::make_unique<zeno::ConditionObject>();
         obj->set(yes);
-        set_output("cond", std::move(obj));
+        ZImpl(set_output("cond", std::move(obj)));
     }
 };
 
@@ -41,9 +41,9 @@ ZENDEFNODE(RunAfterFrame, {
 struct RunBeforeFrame : zeno::INode {  // deprecated
     virtual void apply() override {
         bool yes = !getGlobalState()->has_substep_executed;
-        auto obj = std::make_shared<zeno::ConditionObject>();
+        auto obj = std::make_unique<zeno::ConditionObject>();
         obj->set(yes);
-        set_output("cond", std::move(obj));
+        ZImpl(set_output("cond", std::move(obj)));
     }
 };
 
@@ -57,8 +57,8 @@ ZENDEFNODE(RunBeforeFrame, {
 
 struct SetFrameTime : zeno::INode {
     virtual void apply() override {
-        auto time = get_input<zeno::NumericObject>("time")->get<float>();
-        getGlobalState()->frame_time = time;
+        auto time = ZImpl(get_input<zeno::NumericObject>("time"))->get<float>();
+        ZImpl(getGlobalState())->frame_time = time;
     }
 };
 
@@ -71,9 +71,9 @@ ZENDEFNODE(SetFrameTime, {
 
 struct GetFrameTime : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zeno::NumericObject>();
-        time->set(getGlobalState()->frame_time);
-        set_output("time", std::move(time));
+        auto time = std::make_unique<zeno::NumericObject>();
+        time->set(ZImpl(getGlobalState())->frame_time);
+        ZImpl(set_output("time", std::move(time)));
     }
 };
 
@@ -86,9 +86,9 @@ ZENDEFNODE(GetFrameTime, {
 
 struct GetFrameTimeElapsed : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zeno::NumericObject>();
-        time->set(getGlobalState()->frame_time_elapsed);
-        set_output("time", std::move(time));
+        auto time = std::make_unique<zeno::NumericObject>();
+        time->set(ZImpl(getGlobalState())->frame_time_elapsed);
+        ZImpl(set_output("time", std::move(time)));
     }
 };
 
@@ -101,9 +101,9 @@ ZENDEFNODE(GetFrameTimeElapsed, {
 
 struct GetFrameNum : zeno::INode {
     virtual void apply() override {
-        auto num = std::make_shared<zeno::NumericObject>();
-        num->set(getGlobalState()->getFrameId());
-        set_output("FrameNum", std::move(num));
+        auto num = std::make_unique<zeno::NumericObject>();
+        num->set(ZImpl(getGlobalState())->getFrameId());
+        ZImpl(set_output("FrameNum", std::move(num)));
     }
 };
 
@@ -116,10 +116,10 @@ ZENDEFNODE(GetFrameNum, {
 
 struct GetTime : zeno::INode {
     virtual void apply() override {
-        auto time = std::make_shared<zeno::NumericObject>();
-        time->set(getGlobalState()->getFrameId() * getGlobalState()->frame_time
-            + getGlobalState()->frame_time_elapsed);
-        set_output("time", std::move(time));
+        auto time = std::make_unique<zeno::NumericObject>();
+        time->set(ZImpl(getGlobalState())->getFrameId() * ZImpl(getGlobalState())->frame_time
+            + ZImpl(getGlobalState())->frame_time_elapsed);
+        ZImpl(set_output("time", std::move(time)));
     }
 };
 
@@ -132,9 +132,9 @@ ZENDEFNODE(GetTime, {
 
 struct GetFramePortion : zeno::INode {
     virtual void apply() override {
-        auto portion = std::make_shared<zeno::NumericObject>();
-        portion->set(getGlobalState()->frame_time_elapsed / getGlobalState()->frame_time);
-        set_output("FramePortion", std::move(portion));
+        auto portion = std::make_unique<zeno::NumericObject>();
+        portion->set(ZImpl(getGlobalState())->frame_time_elapsed / ZImpl(getGlobalState())->frame_time);
+        ZImpl(set_output("FramePortion", std::move(portion)));
     }
 };
 
@@ -147,23 +147,23 @@ ZENDEFNODE(GetFramePortion, {
 
 struct IntegrateFrameTime : zeno::INode {
     virtual void apply() override {
-        float dt = getGlobalState()->frame_time;
-        if (has_input("desired_dt")) {
-            dt = get_input<zeno::NumericObject>("desired_dt")->get<float>();
-            auto min_scale = get_param<float>("min_scale");
-            dt = std::max(std::fabs(dt), min_scale * getGlobalState()->frame_time);
+        float dt = ZImpl(getGlobalState())->frame_time;
+        if (ZImpl(has_input("desired_dt"))) {
+            dt = ZImpl(get_input<zeno::NumericObject>("desired_dt"))->get<float>();
+            auto min_scale = ZImpl(get_param<float>("min_scale"));
+            dt = std::max(std::fabs(dt), min_scale * ZImpl(getGlobalState())->frame_time);
         }
-        if (getGlobalState()->frame_time_elapsed + dt >= getGlobalState()->frame_time) {
-            dt = getGlobalState()->frame_time - getGlobalState()->frame_time_elapsed;
-            getGlobalState()->frame_time_elapsed = getGlobalState()->frame_time;
-            getGlobalState()->has_frame_completed = true;
+        if (ZImpl(getGlobalState())->frame_time_elapsed + dt >= ZImpl(getGlobalState())->frame_time) {
+            dt = ZImpl(getGlobalState())->frame_time - ZImpl(getGlobalState())->frame_time_elapsed;
+            ZImpl(getGlobalState())->frame_time_elapsed = ZImpl(getGlobalState())->frame_time;
+            ZImpl(getGlobalState())->has_frame_completed = true;
         } else {
-            getGlobalState()->frame_time_elapsed += dt;
+            ZImpl(getGlobalState())->frame_time_elapsed += dt;
         }
-        getGlobalState()->time_step_integrated = true;
-        auto ret = std::make_shared<zeno::NumericObject>();
+        ZImpl(getGlobalState())->time_step_integrated = true;
+        auto ret = std::make_unique<zeno::NumericObject>();
         ret->set(dt);
-        set_output("actual_dt", std::move(ret));
+        ZImpl(set_output("actual_dt", std::move(ret)));
     }
 };
 

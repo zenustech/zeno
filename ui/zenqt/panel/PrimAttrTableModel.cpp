@@ -44,7 +44,7 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
             return (int)(m_prim->uvs.size());
         }
         else {
-            return (int)m_prim->userData().size();
+            return (int)m_prim->userData()->size();
         }
     }
     else {
@@ -123,7 +123,8 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             return uvsData(index);
         }
         else {
-            auto it = std::next(m_prim->userData().begin(), index.row());
+            zeno::UserData* pUserData = dynamic_cast<zeno::UserData*>(m_prim->userData());
+            auto it = std::next(pUserData->begin(), index.row());
             
             auto currentData = userData(it->second);
             if (currentData.isValid()) {
@@ -205,7 +206,8 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
     else if (orientation == Qt::Vertical)
     {
         if (sel_attr == "UserData") {
-            auto it = std::next(m_prim->userData().begin(), section);
+            zeno::UserData* pUserData = dynamic_cast<zeno::UserData*>(m_prim->userData());
+            auto it = std::next(pUserData->begin(), section);
             return QString(it->first.c_str());
         }
         return section;
@@ -214,12 +216,12 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
 }
 
 
-void PrimAttrTableModel::setModelData(zeno::PrimitiveObject *prim) {
+void PrimAttrTableModel::setModelData(std::shared_ptr<zeno::PrimitiveObject> prim) {
     beginResetModel();
     if (prim)
-        m_prim = std::make_shared<zeno::PrimitiveObject>(*prim);
+        m_prim = prim;
     else
-        m_prim = nullptr;
+        m_prim.reset();
     endResetModel();
 }
 
@@ -308,39 +310,39 @@ QVariant PrimAttrTableModel::uvsData(const QModelIndex &index) const {
 
 QVariant PrimAttrTableModel::userData(const zeno::zany& object) const
 {
-    if (zeno::objectIsLiterial<float>(object)) {
+    if (zeno::objectIsLiterial<float>(object.get())) {
         auto v = zeno::objectToLiterial<float>(object);
         return v;
     }
-    else if (zeno::objectIsLiterial<int>(object)) {
+    else if (zeno::objectIsLiterial<int>(object.get())) {
         auto v = zeno::objectToLiterial<int>(object);
         return v;
     }
-    else if (zeno::objectIsLiterial<zeno::vec2f>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec2f>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec2f>(object);
         return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
-    else if (zeno::objectIsLiterial<zeno::vec2i>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec2i>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec2i>(object);
         return QString("%1, %2").arg(v[0]).arg(v[1]);
     }
-    else if (zeno::objectIsLiterial<zeno::vec3f>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec3f>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec3f>(object);
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
-    else if (zeno::objectIsLiterial<zeno::vec3i>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec3i>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec3i>(object);
         return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
     }
-    else if (zeno::objectIsLiterial<zeno::vec4f>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec4f>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec4f>(object);
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
-    else if (zeno::objectIsLiterial<zeno::vec4i>(object)) {
+    else if (zeno::objectIsLiterial<zeno::vec4i>(object.get())) {
         auto v = zeno::objectToLiterial<zeno::vec4i>(object);
         return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
     }
-    else if (zeno::objectIsLiterial<std::string>(object)) {
+    else if (zeno::objectIsLiterial<std::string>(object.get())) {
         auto v = zeno::objectToLiterial<std::string>(object);
         return QString(v.c_str());
     }

@@ -51,12 +51,12 @@ struct NumericInterpolation : zeno::INode {
     }
 
     virtual void apply() override {
-        auto src = has_input("src") ? get_input<zeno::NumericObject>("src")->value : 0.5f;
-        auto srcMin = has_input("srcMin") ? get_input<zeno::NumericObject>("srcMin")->value : 0;
-        auto srcMax = has_input("srcMax") ? get_input<zeno::NumericObject>("srcMax")->value : 1;
-        auto dstMin = has_input("dstMin") ? get_input<zeno::NumericObject>("dstMin")->value : 0;
-        auto dstMax = has_input("dstMax") ? get_input<zeno::NumericObject>("dstMax")->value : 1;
-        auto isClamped = get_param<bool>("isClamped");
+        auto src = ZImpl(has_input("src")) ? ZImpl(get_input<zeno::NumericObject>("src"))->value : 0.5f;
+        auto srcMin = ZImpl(has_input("srcMin")) ? ZImpl(get_input<zeno::NumericObject>("srcMin"))->value : 0;
+        auto srcMax = ZImpl(has_input("srcMax")) ? ZImpl(get_input<zeno::NumericObject>("srcMax"))->value : 1;
+        auto dstMin = ZImpl(has_input("dstMin")) ? ZImpl(get_input<zeno::NumericObject>("dstMin"))->value : 0;
+        auto dstMax = ZImpl(has_input("dstMax")) ? ZImpl(get_input<zeno::NumericObject>("dstMax"))->value : 1;
+        auto isClamped = ZImpl(get_param<bool>("isClamped"));
 
         zeno::NumericValue fac;
         std::visit([&fac, isClamped] (auto src, auto srcMin, auto srcMax) {
@@ -71,17 +71,17 @@ struct NumericInterpolation : zeno::INode {
             dst = interp_f(fac, dstMin, dstMax);
         }, fac, dstMin, dstMax);
 
-        auto ret = std::make_shared<zeno::NumericObject>();
+        auto ret = std::make_unique<zeno::NumericObject>();
         ret->value = dst;
-        set_output("dst", std::move(ret));
+        ZImpl(set_output("dst", std::move(ret)));
     }
 };
 
 ZENDEFNODE(NumericInterpolation, {
-    {{gParamType_Float, "src", "", zeno::Socket_WildCard}, {gParamType_Float, "srcMin", "0", zeno::Socket_WildCard},
-     {gParamType_Float, "srcMax", "1", zeno::Socket_WildCard}, {gParamType_Float, "dstMin", "0", zeno::Socket_WildCard},
-     {gParamType_Float, "dstMax", "1", zeno::Socket_WildCard}},
-    {{gParamType_Float, "dst", "", zeno::Socket_WildCard}},
+    {{gParamType_Float, "src", ""}, {gParamType_Float, "srcMin", "0"},
+     {gParamType_Float, "srcMax", "1"}, {gParamType_Float, "dstMin", "0"},
+     {gParamType_Float, "dstMax", "1"}},
+    {{gParamType_Float, "dst", ""}},
     {{gParamType_Bool, "isClamped", "0"}},
     {"numeric"},
 });

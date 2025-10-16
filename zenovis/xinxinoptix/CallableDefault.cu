@@ -6,33 +6,95 @@
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 #include "IOMat.h"
+#include "Bevel.h"
 
 //COMMON_CODE
+__device__ __forceinline__ vec4 parallaxCall(TriangleInput& attrs, cudaTextureObject_t tex, float2 uv, float2 uvtiling, vec4 h) {
 
-extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], float4* uniforms, const MatInput& attrs) {
+    //attrs.gas;
+    let pos = attrs.wldPos + params.cam.eye;
+    let v0 = transformPoint(attrs.vertices[0], attrs.objectToWorld) + params.cam.eye;
+    let v1 = transformPoint(attrs.vertices[1], attrs.objectToWorld) + params.cam.eye;
+    let v2 = transformPoint(attrs.vertices[2], attrs.objectToWorld) + params.cam.eye;
 
+    let vidx = attrs.vertex_idx;
+    let uv_ptr = attrs.uvPtr();
+    if (uv_ptr == nullptr) return {};
+    const auto& uv0 = uv_ptr[vidx.x];
+    const auto& uv1 = uv_ptr[vidx.y];
+    const auto& uv2 = uv_ptr[vidx.z];
+
+    bool forced_hit = true;
+    uint32_t& seed = attrs.seed;
+    Onb onb(attrs.objNorm);
+    float3 axis[3] = {onb.m_normal, onb.m_binormal, onb.m_tangent};
+    auto thisMat = attrs.sbtIdx;
+//    if(attrs.depth<=1&&h.z>0)//in fact shall be diffDepth
+//    {
+//        bool lost = true;
+//        char idx0 = 0, idx1 = 1, idx2 = 2;
+//        for (int i=0; i<8; ++i)
+//        {
+//            float2 uu = { rnd(seed), rnd(seed) };
+//            auto offset = pbrt::SampleUniformDiskConcentric(uu);
+//            if (lost) {
+//                idx0 = 3 * rnd(seed);
+//                idx1 = (idx0 + 1) % 3;
+//                idx2 = (idx0 + 2) % 3;
+//            }
+//            auto pos = attrs.objPos + h.z * ( axis[idx0] + axis[idx1] * offset.x + axis[idx2] * offset.y);
+//            auto len2 = 1.0f - offset.x * offset.x  - offset.y * offset.y;
+//            auto len = h.z * sqrtf(fmaxf(0.0f, len2));
+//            optixTraverse(attrs.gas, pos, -axis[idx0], fmaxf(0.0f, h.z-len), h.z+len, 0, EverythingMask,
+//                        1u<<0, RAY_TYPE_RADIANCE, RAY_TYPE_COUNT, 0);
+//
+//            if( optixHitObjectIsHit() ) {
+//                lost = false;
+//                const auto thatMat = optixHitObjectGetSbtGASIndex();
+//                if(thatMat!=thisMat)
+//                {
+//                    forced_hit = false;
+//                }
+//            } else
+//            {
+//                forced_hit = false;
+//                lost = true;
+//            }
+//        }
+//    }
+    vec3 barys3 = attrs.barys();
+    return parallax2D(tex, uv, uvtiling, barys3,
+                        uv0, uv1, uv2, v0, v1, v2,
+                        pos, -attrs.V, attrs.N,
+                        attrs.isShadowRay, attrs.pOffset, attrs.depth, h, forced_hit);
+}
+
+extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
+
+    let uniforms = params.d_uniforms;
+    let buffers = params.global_buffers;
     /* MODMA */
-    auto att_pos = attrs.pos;
-    auto att_clr = attrs.clr;
-    auto att_uv = attrs.uv;
-    auto att_nrm = attrs.nrm;
-    auto att_tang = attrs.tang;
-    auto att_instPos = attrs.instPos;
-    auto att_instNrm = attrs.instNrm;
-    auto att_instUv = attrs.instUv;
-    auto att_instClr = attrs.instClr;
-    auto att_instTang = attrs.instTang;
-    auto att_rayLength = attrs.rayLength;
+    auto att_pos = attrs.wldPos + params.cam.eye;
+    auto att_clr = attrs.clr();
+    auto att_uv = attrs.uv();
+    auto att_nrm = attrs.N;
+    auto att_tang = attrs.T;
 
-    auto att_isShadowRay = attrs.isShadowRay ? 1.0f:0.0f;
+    auto att_priIdx = attrs.priIdx;
+    auto att_instId = attrs.instId;
+    auto att_instIdx = attrs.instIdx;
+
+    auto att_rayLength = attrs.rayLength;
+    auto att_isBackFace = attrs.isBackFace;
+    auto att_isShadowRay = attrs.isShadowRay;
 
     vec3 b = normalize(cross(attrs.T, attrs.N));
     vec3 t = normalize(cross(attrs.N, b));
-    vec3 n = normalize(attrs.N);
+    vec3 n = attrs.N;
 
     auto att_N        = vec3(0.0f,0.0f,1.0f);
     auto att_T        = vec3(1.0f,0.0f,0.0f);
-    auto att_L        = normalize(vec3(dot(t, attrs.L), dot(b, attrs.L), dot(n, attrs.L)));
+    auto att_L        = vec3();
     auto att_V        = normalize(vec3(dot(t, attrs.V), dot(b, attrs.V), dot(n, attrs.V)));
     auto att_H        = vec3(0.0f,0.0f,1.0f);
     auto att_NoL      = att_L.z;
@@ -46,67 +108,10 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     auto att_camUp    = vec3(params.cam.up);
     auto att_camRight = vec3(params.cam.right);
 
-#ifndef _FALLBACK_
-
-    /** generated code here beg **/
+#ifdef __FORWARD__
     //GENERATED_BEGIN_MARK
-    /* MODME */
-    float mat_base = 1.0f;
-    vec3 mat_basecolor = vec3(1.0f, 1.0f, 1.0f);
-    float mat_roughness = 0.5f;
-    float mat_metallic = 0.0f;
-    vec3 mat_metalColor = vec3(1.0f,1.0f,1.0f);
-    float mat_specular = 0.0f;
-    float mat_specularTint = 0.0f;
-    float mat_anisotropic = 0.0f;
-    float mat_anisoRotation = 0.0f;
-
-    float mat_subsurface = 0.0f;
-    vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
-    vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
-    float mat_scatterDistance = 0.0f;
-    float mat_scatterStep = 0.0f;
-    
-    float mat_sheen = 0.0f;
-    float mat_sheenTint = 0.0f;
-
-    float mat_clearcoat = 0.0f;
-    vec3 mat_clearcoatColor = vec3(1.0f,1.0f,1.0f);
-    float mat_clearcoatRoughness = 0.0f;
-    float mat_clearcoatIOR = 1.5f;
-    float mat_opacity = 0.0f;
-
-    float mat_specTrans = 0.0f;
-    vec3 mat_transColor = vec3(1.0f,1.0f,1.0f);
-    vec3 mat_transTint = vec3(1.0f,1.0f,1.0f);
-    float mat_transTintDepth = 0.0f;
-    float mat_transDistance = 0.0f;
-    vec3 mat_transScatterColor = vec3(1.0f,1.0f,1.0f);
-    float mat_ior = 1.0f;
-
-    float mat_diffraction = 0.0f;
-    vec3  mat_diffractColor = vec3(0.0f);
-
-    float mat_flatness = 0.0f;
-    float mat_thin = 0.0f;
-    float mat_doubleSide= 0.0f;
-    float mat_smoothness = 0.0f;
-    vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
-    float mat_emissionIntensity = float(0);
-    vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
-    float mat_displacement = 0.0f;
-    float mat_shadowReceiver = 0.0f;
-    float mat_NoL = 1.0f;
-    float mat_LoV = 1.0f;
-    float mat_isHair = 0.0f;
-    vec3 mat_reflectance = att_reflectance;
-    
-    bool sssFxiedRadius = false;
-    vec3 mask_value = vec3(0, 0, 0);
 
     //GENERATED_END_MARK
-    /** generated code here end **/
-
 #else
 
     float mat_base = 1.0f;
@@ -154,6 +159,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
     float mat_displacement = 0.0f;
     float mat_shadowReceiver = 0.0f;
+    float mat_shadowTerminatorOffset = 0.0f;
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     float mat_isHair = 0.0f;
@@ -201,18 +207,41 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.diffractColor = clamp(mat_diffractColor, vec3(0.0f), vec3(1.0f));
 
     mats.opacity = mat_opacity;
-    mats.nrm = mat_normal;
     mats.emission = mat_emissionIntensity * mat_emission;
 
     mats.flatness = mat_flatness;
     mats.thin = mat_thin;
     mats.doubleSide = mat_doubleSide;
     mats.shadowReceiver = mat_shadowReceiver;
+    mats.shadowTerminatorOffset = mat_shadowTerminatorOffset;
 
     mats.smoothness = mat_smoothness;
     mats.sssFxiedRadius = sssFxiedRadius;
     mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
 
+    const bool has_nrm = mat_normal != vec3{0,0,1};
+    if (mats.smoothness > 0.0f) {
+        mats.nrm = attrs.interpNorm(mats.smoothness);
+    } else {
+        mats.nrm = attrs.wldNorm; // geometry normal
+    }
+
+    if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
+        mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
+    }
+
+    n = mats.nrm;
+    b = cross(t, n);
+    t = cross(n, b);
+
+    if (has_nrm) { // has input from node graph
+        n = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;
+        b = cross(t, n);
+        t = cross(n, b);
+    }
+    attrs.B = b;
+    attrs.T = t;
+    mats.nrm = n;
     return mats;
 }

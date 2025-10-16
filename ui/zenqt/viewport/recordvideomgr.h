@@ -2,6 +2,7 @@
 #define __RECORD_VIDEO_MGR_H__
 
 #include <QtWidgets>
+#include "uicommon.h"
 
 struct VideoRecInfo
 {
@@ -39,7 +40,7 @@ public:
 public slots:
     void cancelRecord();
     void onFrameDrawn(int);
-    void endRecToExportVideo();
+    REC_RETURN_CODE endRecToExportVideo();
 
 signals:
     void frameFinished(int);

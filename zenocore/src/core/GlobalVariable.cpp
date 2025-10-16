@@ -1,11 +1,10 @@
 #include <zeno/core/GlobalVariable.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
-#include "reflect/metadata.hpp"
-#include "reflect/registry.hpp"
-#include "reflect/container/object_proxy"
-#include "reflect/container/arraylist"
+#include <reflect/metadata.hpp>
+#include <reflect/registry.hpp>
+#include <reflect/container/arraylist>
 #include <zeno/utils/helper.h>
 
 
@@ -17,7 +16,7 @@ namespace zeno {
             return false;
         }
         GVariable oldvar;
-        cancelOverride(newvar.name, oldvar);    //记录oldvar覆盖失败时取消cancel
+        cancelOverride(newvar.name, oldvar);    //璁板綍oldvar瑕嗙洊澶辫触鏃跺彇娑坈ancel
         if (overrideVariable(newvar)) {
             return true;
         }
@@ -43,7 +42,7 @@ namespace zeno {
                 return true;
             }
             else {
-                //override时类型不一致；
+                //override鏃剁被鍨嬩笉涓�鑷达紱
             }
         }
         return false;
@@ -94,12 +93,13 @@ namespace zeno {
         return globalVariableStack.getVariable(varname);
     }
 
-    ZENO_API GlobalVariableOverride::GlobalVariableOverride(std::weak_ptr<INode> wknode, std::string gvarName, zeno::reflect::Any var): currNode(wknode)
+    ZENO_API GlobalVariableOverride::GlobalVariableOverride(NodeImpl* pNode, std::string gvarName, zeno::reflect::Any var)
+        : currNode(pNode)
     {
         gvar = GVariable(gvarName, var);
         overrideSuccess = zeno::getSession().globalVariableManager->overrideVariable(gvar);
         if (overrideSuccess) {
-            propagateDirty(currNode.lock(), gvar.name);
+            propagateDirty(currNode, gvar.name);
         }
     }
 
@@ -114,7 +114,7 @@ namespace zeno {
     ZENO_API bool GlobalVariableOverride::updateGlobalVariable(GVariable globalVariable)
     {
         if (zeno::getSession().globalVariableManager->updateVariable(globalVariable)) {
-            propagateDirty(currNode.lock(), gvar.name);
+            propagateDirty(currNode, gvar.name);
             return true;
         }
         return false;

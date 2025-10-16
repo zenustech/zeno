@@ -4,7 +4,6 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/safe_dynamic_cast.h>
 #include <zeno/funcs/ObjectCodec.h>
-#include <zeno/types/UserData.h>
 #include <set>
 #include <string>
 

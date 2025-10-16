@@ -36,17 +36,18 @@ extern void traverseABC(
     const TimeAndSamplesMap & iTimeMap,
     ObjectVisibility parent_visible,
     bool skipInvisibleObject,
-    bool outOfRangeAsEmpty
+    bool outOfRangeAsEmpty,
+    bool use_instance = 0
 );
 
 extern Alembic::AbcGeom::IArchive readABC(std::string const &path);
 
-extern std::shared_ptr<zeno::ListObject> get_xformed_prims(std::shared_ptr<zeno::ABCTree> abctree);
+extern std::unique_ptr<zeno::ListObject> get_xformed_prims(zeno::ABCTree* abctree);
 
-extern std::shared_ptr<PrimitiveObject> get_alembic_prim(std::shared_ptr<zeno::ABCTree> abctree, int index);
+extern std::unique_ptr<PrimitiveObject> get_alembic_prim(zeno::ABCTree* abctree, int index);
 
 void writeObjFile(
-    const std::shared_ptr<zeno::PrimitiveObject>& primitive,
+    const zeno::PrimitiveObject* primitive,
     const char *path,
     int32_t frameNum = 1,
     const std::pair<zeno::vec3f, zeno::vec3f>& bbox = std::make_pair(vec3f{}, vec3f{})
@@ -54,7 +55,7 @@ void writeObjFile(
 
 bool SaveEXR(const float* rgb, int width, int height, const char* outfilename);
 
-std::shared_ptr<ListObject> abc_split_by_name(std::shared_ptr<PrimitiveObject> prim, bool add_when_none = false);
+std::unique_ptr<ListObject> abc_split_by_name(PrimitiveObject* prim, bool add_when_none = false);
 }
 
 #endif //ZENO_ABCCOMMON_H

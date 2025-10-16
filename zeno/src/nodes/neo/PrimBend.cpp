@@ -16,12 +16,12 @@ namespace zeno {
 
 struct PrimBend : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto angle = get_input<zeno::NumericObject>("angle")->get<float>();
-        auto limitMin = get_input<zeno::NumericObject>("limitMin")->get<float>();
-        auto limitMax = get_input<zeno::NumericObject>("limitMax")->get<float>();
-        auto midPoint = get_input<zeno::NumericObject>("midPoint")->get<float>();
-        auto biasDir = get_input<zeno::NumericObject>("biasDir")->get<float>();
+        auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+        auto angle = ZImpl(get_input<zeno::NumericObject>("angle"))->get<float>();
+        auto limitMin = ZImpl(get_input<zeno::NumericObject>("limitMin"))->get<float>();
+        auto limitMax = ZImpl(get_input<zeno::NumericObject>("limitMax"))->get<float>();
+        auto midPoint = ZImpl(get_input<zeno::NumericObject>("midPoint"))->get<float>();
+        auto biasDir = ZImpl(get_input<zeno::NumericObject>("biasDir"))->get<float>();
         limitMin = std::min(1.f, std::max(0.f, limitMin));
         limitMax = std::min(1.f, std::max(0.f, limitMax));
         if (limitMin > limitMax)
@@ -29,9 +29,9 @@ struct PrimBend : zeno::INode {
         midPoint = std::min(limitMax, std::max(limitMin, midPoint));
         biasDir = std::min(1.f, std::max(0.f, biasDir));
 
-        auto origin = has_input("origin") ? get_input<zeno::NumericObject>("origin")->get<zeno::vec3f>() : vec3f(0, 0, 0);
-        auto tangent = has_input("tangent") ? get_input<zeno::NumericObject>("tangent")->get<zeno::vec3f>() : vec3f(0, 1, 0);
-        auto direction = has_input("direction") ? get_input<zeno::NumericObject>("direction")->get<zeno::vec3f>() : vec3f(1, 0, 0);
+        auto origin = ZImpl(has_input("origin")) ? ZImpl(get_input<zeno::NumericObject>("origin"))->get<zeno::vec3f>() : vec3f(0, 0, 0);
+        auto tangent = ZImpl(has_input("tangent")) ? ZImpl(get_input<zeno::NumericObject>("tangent"))->get<zeno::vec3f>() : vec3f(0, 1, 0);
+        auto direction = ZImpl(has_input("direction")) ? ZImpl(get_input<zeno::NumericObject>("direction"))->get<zeno::vec3f>() : vec3f(1, 0, 0);
 
         orthonormal orb(direction, tangent);
         direction = orb.normal;
@@ -49,7 +49,7 @@ struct PrimBend : zeno::INode {
                 return vec4f(tanv, tanv, dirv, dirv);
             });
 
-            if (has_input("origin")) {
+            if (ZImpl(has_input("origin"))) {
                 biasDir = (dot(direction, origin) - acc[2]) / (acc[3] - acc[2]);
                 midPoint = (dot(tangent, origin) - acc[0]) / (acc[1] - acc[0]);
             }
@@ -91,7 +91,7 @@ struct PrimBend : zeno::INode {
             });
 
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

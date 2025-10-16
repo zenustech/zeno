@@ -225,7 +225,7 @@
       </layout>
      </item>
      <item>
-      <widget class="ZenoRampBar" name="rampBarView">
+      <widget class="ZenoRampBar" name="rampBarView" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -244,23 +244,8 @@
          <height>32</height>
         </size>
        </property>
-       <property name="frameShape">
-        <enum>QFrame::Panel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Plain</enum>
-       </property>
-       <property name="lineWidth">
+       <property name="lineWidth" stdset="0">
         <number>1</number>
-       </property>
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="renderHints">
-        <set>QPainter::TextAntialiasing</set>
        </property>
       </widget>
      </item>
@@ -377,14 +362,14 @@ QSlider::handle:horizontal {
          </property>
          <property name="minimumSize">
           <size>
-           <width>64</width>
+           <width>96</width>
            <height>20</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>64</width>
-           <height>20</height>
+           <height>28</height>
           </size>
          </property>
         </widget>
@@ -913,13 +898,13 @@ QSlider::handle:horizontal {
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ZenoRampBar</class>
-   <extends>QGzraphicsView</extends>
+   <class>SVColorView</class>
+   <extends>QWidget</extends>
    <header>dialog/zenoheatmapeditor.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>SVColorView</class>
+   <class>ZenoRampBar</class>
    <extends>QWidget</extends>
    <header>dialog/zenoheatmapeditor.h</header>
    <container>1</container>

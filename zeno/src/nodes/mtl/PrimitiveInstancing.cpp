@@ -1,7 +1,7 @@
 #include <zeno/zeno.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
@@ -18,17 +18,17 @@ namespace zeno
     {
         virtual void apply() override
         {
-            auto inst = std::make_shared<zeno::InstancingObject>();
+            auto inst = std::make_unique<zeno::InstancingObject>();
 
-            auto amount = get_input<zeno::NumericObject>("amount")->get<int>();
+            auto amount = ZImpl(get_input<zeno::NumericObject>("amount"))->get<int>();
             inst->amount = amount;
             inst->modelMatrices.reserve(amount);
             inst->timeList.reserve(amount);
 
             std::size_t modelMatricesIndex = 0;
-            if (has_input("modelMatrices"))
+            if (ZImpl(has_input("modelMatrices")))
             {
-                auto modelMatrices = get_input<zeno::ListObject>("modelMatrices")->get<zeno::MatrixObject>();
+                auto modelMatrices = ZImpl(get_input<zeno::ListObject>("modelMatrices"))->m_impl->get<zeno::MatrixObject>();
                 auto modelMatricesSize = modelMatrices.size();
                 auto firstLoopCnt = std::min(static_cast<std::size_t>(amount), modelMatricesSize);
                 for (; modelMatricesIndex < firstLoopCnt; ++modelMatricesIndex)
@@ -43,9 +43,9 @@ namespace zeno
             }
 
             std::size_t timeListIndex = 0;
-            if (has_input("timeList"))
+            if (ZImpl(has_input("timeList")))
             {
-                auto timeList = get_input<zeno::ListObject>("timeList")->get<zeno::NumericObject>();
+                auto timeList = ZImpl(get_input<zeno::ListObject>("timeList"))->m_impl->get<zeno::NumericObject>();
                 auto timeListSize = timeList.size();
                 auto firstLoopCnt = std::min(static_cast<std::size_t>(amount), timeListSize);
                 for (; timeListIndex < firstLoopCnt; ++timeListIndex)
@@ -59,12 +59,12 @@ namespace zeno
                 inst->timeList.push_back(0.0f);
             }
 
-            auto deltaTime = get_input<zeno::NumericObject>("deltaTime")->get<float>();
+            auto deltaTime = ZImpl(get_input<zeno::NumericObject>("deltaTime"))->get<float>();
             inst->deltaTime = deltaTime;
 
-            if (has_input("framePrims"))
+            if (ZImpl(has_input("framePrims")))
             {
-                auto framePrims = get_input<zeno::ListObject>("framePrims")->get<zeno::PrimitiveObject>();
+                auto framePrims = ZImpl(get_input<zeno::ListObject>("framePrims"))->m_impl->get<zeno::PrimitiveObject>();
                 auto frameAmount = framePrims.size();  
                 auto &vertexFrameBuffer = inst->vertexFrameBuffer;
                 vertexFrameBuffer.resize(frameAmount);
@@ -87,7 +87,7 @@ namespace zeno
                 } 
             }
 
-            set_output("inst", std::move(inst));
+            ZImpl(set_output("inst", std::move(inst)));
         }
 
     }; // struct MakeInstancing
@@ -103,7 +103,7 @@ namespace zeno
                 {gParamType_List, "framePrims"},
             },
             {
-                {"instancing", "inst"},
+                {gParamType_Instance, "inst"},
             },
             {},
             {
@@ -116,10 +116,10 @@ namespace zeno
     {
         virtual void apply() override
         {
-            auto prim = get_input<zeno::PrimitiveObject>("prim");
-            auto inst = get_input<zeno::InstancingObject>("inst");
-            prim->inst = inst;
-            set_output("prim", std::move(prim));
+            auto prim = ZImpl(get_input<zeno::PrimitiveObject>("prim"));
+            auto inst = ZImpl(get_input<zeno::InstancingObject>("inst"));
+            prim->inst.reset(inst.release());
+            ZImpl(set_output("prim", std::move(prim)));
         }
 
     }; // struct SetInstancing
@@ -145,14 +145,14 @@ namespace zeno
     {
         virtual void apply() override
         {
-            auto obj = get_input<zeno::IObject>("object");
-            auto isInst = get_input2<int>("isInst");
-            auto instID = get_input2<std::string>("instID");
-            auto onbType = get_input2<std::string>("onbType");
+            auto obj = ZImpl(get_input<zeno::IObject>("object"));
+            auto isInst = ZImpl(get_input2<int>("isInst"));
+            auto instID = ZImpl(get_input2<std::string>("instID"));
+            auto onbType = ZImpl(get_input2<std::string>("onbType"));
 
-            obj->userData().set2("isInst", std::move(isInst));
-            obj->userData().setLiterial("instID", std::move(instID));
-            obj->userData().setLiterial("onbType", std::move(onbType));
+            obj->userData()->set_int("isInst", std::move(isInst));
+            obj->userData()->set_string("instID", stdString2zs(instID));
+            obj->userData()->set_string("onbType", stdString2zs(onbType));
 
             /* test
             auto prim = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
@@ -170,7 +170,7 @@ namespace zeno
             tang = {{0, 1, 1}, {1, 0, 1}, {1, 1, 0}};
             */
 
-            set_output("object", std::move(obj));
+            ZImpl(set_output("object", std::move(obj)));
         }
     };
 
@@ -198,12 +198,12 @@ namespace zeno
     {
         virtual void apply() override
         {
-            auto obj = get_input<zeno::IObject>("object");
-            auto instID = get_input2<std::string>("instID");
+            auto obj = ZImpl(get_input<zeno::IObject>("object"));
+            auto instID = ZImpl(get_input2<std::string>("instID"));
 
-            obj->userData().setLiterial("instID", std::move(instID));
+            obj->userData()->set_string("instID", stdString2zs(instID));
 
-            set_output("object", std::move(obj));
+            ZImpl(set_output("object", std::move(obj)));
         }
     };
 

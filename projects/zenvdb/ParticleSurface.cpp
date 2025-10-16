@@ -16,6 +16,7 @@
 #include <openvdb/tools/LevelSetFilter.h>
 #include <openvdb/tools/VolumeToMesh.h>
 #include <zeno/PrimitiveObject.h>
+#include <zeno/utils/interfaceutil.h>
 
 namespace zeno{
 class MyParticleList
@@ -140,20 +141,20 @@ static openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zeno::vec3f>
 
 struct ParticleToLevelSet : zeno::INode{
     virtual void apply() override {
-        auto par = get_input("Particles")->as<zeno::PrimitiveObject>();
-        auto radius = get_input("Radius")->as<zeno::NumericObject>()->get<float>();
+        auto par = safe_dynamic_cast<zeno::PrimitiveObject>(get_input("Particles"));
+        auto radius = get_input2_float("Radius");
         float dx = radius/2.0f;
-        if(has_input("Dx")) dx = get_input("Dx")->as<zeno::NumericObject>()->get<float>();
-        auto result = zeno::IObject::make<VDBFloatGrid>();
+        if(has_input("Dx")) dx = get_input2_float("Dx");
+        auto result = std::make_unique<VDBFloatGrid>();
         std::vector<float> pr;
         pr.resize(par->attr<zeno::vec3f>("pos").size());
-        if(get_input<StringObject>("rname")->get() != "")
+		std::string s_rname = zsString2Std(get_input2_string("rname"));
+        if (s_rname != "")
         {
-            auto rname = get_input<StringObject>("rname")->get();
 #pragma omp parallel for
             for(auto p=0; p<pr.size(); p++)
               {
-                  pr[p] = par->attr<float>(rname)[p];
+                  pr[p] = par->attr<float>(s_rname)[p];
               };
         } else
         {
@@ -164,7 +165,7 @@ struct ParticleToLevelSet : zeno::INode{
               };
         }
         result->m_grid = particleToLevelset(par->attr<zeno::vec3f>("pos"), pr, dx);
-        set_output("SurfaceSDF", result);
+		set_output("SurfaceSDF", std::move(result));
     }
 };
 ZENDEFNODE(ParticleToLevelSet, {

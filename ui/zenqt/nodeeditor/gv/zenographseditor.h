@@ -1,4 +1,4 @@
-#ifndef __ZENO_GRAPHS_EDITOR_H__
+﻿#ifndef __ZENO_GRAPHS_EDITOR_H__
 #define __ZENO_GRAPHS_EDITOR_H__
 
 #include <QtWidgets>
@@ -23,7 +23,8 @@ class ZenoGraphsEditor : public QWidget
     {
         Side_Subnet,
         Side_Tree,
-        Side_Search
+        Side_Search,
+        Side_Plugin,
     };
 
 public:
@@ -34,13 +35,15 @@ public:
     void showFloatPanel(GraphModel* subgraph, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
     ZenoSubGraphView* getCurrentSubGraphView();
+    QStringList getCurrentGraphPath();
 
     void showWelcomPage();
     bool welComPageShowed();
 
 public slots:
-    void resetMainModel();
+    void resetMainModel(bool clearExistModel);
     void resetAssetsModel();
+    void initPluginModel();
     void sideButtonToggled(bool bToggled);
     void onSideBtnToggleChanged(const QItemSelection& selected, const QItemSelection& deselected);
     void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
@@ -49,6 +52,7 @@ public slots:
     void onSearchItemClicked(const QModelIndex& index);
     void onAssetOptionClicked();
     void onSearchOptionClicked();
+    void onPluginOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onPageActivated(const QModelIndex& subgNodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
@@ -85,7 +89,7 @@ private:
     void showInGraphicalShell(const QString& pathIn);
 
     ZenoMainWindow* m_mainWin;
-    Ui::GraphsEditor* m_ui;
+    QScopedPointer<Ui::GraphsEditor> m_ui;
     //IGraphsModel* m_model;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_sideBarModel;

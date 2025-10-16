@@ -2,23 +2,26 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/utils/type_traits.h>
+#include <zeno/core/NodeImpl.h>
 #include <sstream>
 #include <cassert>
 
 namespace zeno {
 
-static std::string ftos(float x) {
+template<typename T>
+static std::string ftos(T x) {
     std::ostringstream ss;
     ss << x;
     return ss.str();
 }
 
 ZENO_API ShaderNode::ShaderNode() = default;
-ZENO_API ShaderNode::~ShaderNode() = default;
 
 ZENO_API void ShaderNode::apply() {
-    auto tree = std::make_shared<ShaderObject>(this);
-    set_output("out", std::move(tree));
+    ShaderData shader;
+    shader.data = m_pAdapter->get_uuid_path();
+    m_pAdapter->set_primitive_output("out", shader);
 }
 
 ZENO_API std::string EmissionPass::finalizeCode() {
@@ -31,40 +34,45 @@ ZENO_API std::string EmissionPass::finalizeCode() {
     return defs + code;
 }
 
-ZENO_API int EmissionPass::determineType(IObject *object) {
-    if (auto num = dynamic_cast<NumericObject *>(object)) {
-        if (auto it = constmap.find(num); it != constmap.end())
+ZENO_API int EmissionPass::determineType(const ShaderData& shader) {
+
+    if (shader.data.index() == 0) {
+        NumericValue numvalue = std::get<NumericValue>(shader.data);
+        if (auto it = constmap.find(shader.curr_param); it != constmap.end())
             return constants.at(it->second).type;
 
-        int type = std::visit([&] (auto const &value) -> int {
+        int type = std::visit([&](auto const& value) -> int {
             using T = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<float, T>) {
-                return 1;
-            } else if constexpr (std::is_same_v<vec2f, T>) {
-                return 2;
-            } else if constexpr (std::is_same_v<vec3f, T>) {
-                return 3;
-            } else if constexpr (std::is_same_v<vec4f, T>) {
-                return 4;
-            } else {
-                throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
-            }
-        }, num->value);
-        constmap[num] = constants.size();
-        constants.push_back(ConstInfo{type, num->value});
-        return type;
+            size_t typeIdx = 0;
 
-    } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
-        assert(tree->node);
-        if (auto it = varmap.find(tree->node.get()); it != varmap.end())
+            zeno::static_for<0, std::tuple_size_v<ShaderDataTypeList>>([&] (auto i) {
+                using ThisType = std::tuple_element_t<i, ShaderDataTypeList>;
+
+                if (std::is_same_v<ThisType, T>) {
+                    typeIdx = i;
+                    return true;
+                }
+                return false;
+            });
+
+            return TypeHint.at(ShaderDataTypeNames.at(typeIdx));
+        }, numvalue);
+
+        constmap[shader.curr_param] = constants.size();
+        constants.push_back(ConstInfo{type, numvalue });
+        return type;
+    }
+    else {
+        ShaderNodePath path = std::get<ShaderNodePath>(shader.data);
+        NodeImpl* pNode = zeno::getSession().getNodeByUuidPath(path);
+        assert(pNode);
+        ShaderNode* treenode = dynamic_cast<ShaderNode*>(pNode->coreNode());
+        if (auto it = varmap.find(treenode); it != varmap.end())
             return variables.at(it->second).type;
-        int type = tree->node->determineType(this);
-        varmap[tree->node.get()] = variables.size();
-        variables.push_back(VarInfo{type, tree->node.get()});
+        int type = treenode->determineType(this);
+        varmap[treenode] = variables.size();
+        variables.push_back(VarInfo{ type, treenode });
         return type;
-
-    } else {
-        throw zeno::Exception("bad tree object type: " + (std::string)typeid(*object).name());
     }
 }
 
@@ -72,9 +80,9 @@ ZENO_API int EmissionPass::currentType(ShaderNode *node) const {
     return variables[varmap.at(node)].type;
 }
 
-ZENO_API std::string EmissionPass::determineExpr(IObject *object, ShaderNode *node) const {
+ZENO_API std::string EmissionPass::determineExpr(const ShaderData& data, ShaderNode *node) const {
     auto type = currentType(node);
-    auto expr = determineExpr(object);
+    auto expr = determineExpr(data);
     duplicateIfHlsl(type, expr);
     return typeNameOf(type) + "(" + expr + ")";
 }
@@ -126,16 +134,49 @@ ZENO_API std::string EmissionPass::getCommonCode() const {
 }
 
 ZENO_API std::string EmissionPass::typeNameOf(int type) const {
-    if (type == 1) return "float";
-    else return (backend == HLSL ? "float" : "vec") + std::to_string(type);
+    return TypeHintReverse.at(type);
 }
 
 ZENO_API std::string EmissionPass::collectDefs() const {
     std::string res;
     int cnt = 0;
     for (auto const &var: constants) {
+
+        // auto type = std::visit([&] (auto const &value) -> std::string {
+        //     using T = std::decay_t<decltype(value)>;
+        //     std::string expression {};
+        //     std::string value_string = ftos(value);
+
+        //     zeno::static_for<0, std::tuple_size_v<ShaderDataTypeList>>([&] (auto i) {
+        //         using ThisType = std::tuple_element_t<i, ShaderDataTypeList>;
+
+        //         if (std::is_same_v<ThisType, T>) {
+        //             auto type_string = ShaderDataTypeNames[i];
+        //             //auto type_int = TypeHint.at(type_string);
+        //             expression = std::string(type_string) + "(" + value_string + ")";
+        //             return true;
+        //         }
+        //         return false;
+        //     });
+
+        //     return expression;
+        // }, var.value);
+
         auto expr = std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
+
+            if constexpr (std::is_same_v<bool, T>) 
+                return "bool(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<int, T>) 
+                return "int(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<unsigned int, T>) 
+                return "uint(" + ftos(value) + ")";
+
+            if constexpr (std::is_same_v<int64_t, T>) 
+                return "int64_t(" + ftos(value) + ")";
+            if constexpr (std::is_same_v<uint64_t, T>) 
+                return "uint64_t(" + ftos(value) + ")";
+
             if constexpr (std::is_same_v<float, T>) {
                 return typeNameOf(1) + "(" + ftos(value) + ")";
             } else if constexpr (std::is_same_v<vec2f, T>) {
@@ -169,13 +210,21 @@ ZENO_API std::string EmissionPass::collectCode() const {
     return res;
 }
 
-ZENO_API std::string EmissionPass::determineExpr(IObject *object) const {
-    if (auto num = dynamic_cast<NumericObject *>(object)) {
-        return "constmp" + std::to_string(constmap.at(num));
-    } else if (auto tree = dynamic_cast<ShaderObject *>(object)) {
-        return "tmp" + std::to_string(varmap.at(tree->node.get()));
-    }
-    return {};
+ZENO_API std::string EmissionPass::determineExpr(const ShaderData& shader) const {
+    return std::visit([&](auto&& value)->std::string {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, NumericValue>) {
+            return "constmp" + std::to_string(constmap.at(shader.curr_param));
+        }
+        else if constexpr (std::is_same_v<T, ShaderNodePath>) {
+            NodeImpl* pNode = zeno::getSession().getNodeByUuidPath(value);
+            ShaderNode* treenode = dynamic_cast<ShaderNode*>(pNode->coreNode());
+            return "tmp" + std::to_string(varmap.at(treenode));
+        }
+        else {
+            return {};
+        }
+    }, shader.data);
 }
 
 ZENO_API void EmissionPass::emitCode(std::string const &line) {
@@ -184,11 +233,12 @@ ZENO_API void EmissionPass::emitCode(std::string const &line) {
 }
 
 ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::pair<int, std::string>> const &keys,
-                                                std::vector<std::shared_ptr<IObject>> const &vals) {
+                                                std::vector<ShaderData> const &vals) {
     std::vector<int> vartypes;
     vartypes.reserve(keys.size());
     for (int i = 0; i < keys.size(); i++) {
-        int their_type = determineType(vals[i].get());
+        const auto& shader_data = vals[i];
+        int their_type = determineType(shader_data);
         int our_type = keys[i].first;
         if (their_type != our_type && their_type != 1)
             throw zeno::Exception("unexpected input for " + keys[i].second + " which requires "
@@ -197,7 +247,8 @@ ZENO_API std::string EmissionPass::finalizeCode(std::vector<std::pair<int, std::
     }
     auto code = finalizeCode();
     for (int i = 0; i < keys.size(); i++) {
-        auto expr = determineExpr(vals[i].get());
+        const auto& shader_data = vals[i];
+        auto expr = determineExpr(shader_data);
         int our_type = keys[i].first;
         duplicateIfHlsl(our_type, expr);
         //printf("!!!!!!!!!!!!%d %s\n", our_type, expr.c_str());
@@ -244,3 +295,4 @@ ZENO_API void EmissionPass::translateCommonCode() {
 }
 
 }
+

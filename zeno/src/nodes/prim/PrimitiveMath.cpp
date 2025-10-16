@@ -7,11 +7,11 @@ using namespace zeno;
 
 struct PlaneProjectPrimitive2DAABB : INode {
     virtual void apply() override {
-        auto origin = get_input<NumericObject>("origin")->get<zeno::vec3f>();
-        auto normal = get_input<NumericObject>("normal")->get<zeno::vec3f>();
-        auto tangent = get_input<NumericObject>("tangent")->get<zeno::vec3f>();
-        auto bitangent = get_input<NumericObject>("bitangent")->get<zeno::vec3f>();
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto origin = ZImpl(get_input<NumericObject>("origin"))->get<zeno::vec3f>();
+        auto normal = ZImpl(get_input<NumericObject>("normal"))->get<zeno::vec3f>();
+        auto tangent = ZImpl(get_input<NumericObject>("tangent"))->get<zeno::vec3f>();
+        auto bitangent = ZImpl(get_input<NumericObject>("bitangent"))->get<zeno::vec3f>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
 
         zeno::vec2f bmin(+1e6), bmax(-1e6);
         auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -30,8 +30,8 @@ struct PlaneProjectPrimitive2DAABB : INode {
                 bmax = zeno::max(bmax, coor);
             }
         }
-        set_output("boundMin2D", std::make_shared<NumericObject>(bmin));
-        set_output("boundMax2D", std::make_shared<NumericObject>(bmax));
+        ZImpl(set_output("boundMin2D", std::make_unique<NumericObject>(bmin)));
+        ZImpl(set_output("boundMax2D", std::make_unique<NumericObject>(bmax)));
     }
 };
 

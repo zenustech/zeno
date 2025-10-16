@@ -1,3 +1,4 @@
+#if 0
 #include "LinearBvh.h"
 #include <limits>
 #include <zeno/zeno.h>
@@ -1428,3 +1429,4 @@ ZENDEFNODE(ParticlesNeighborBvhRadiusWrangle,
 
 
 } // namespace
+#endif

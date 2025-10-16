@@ -163,7 +163,10 @@ void ZenoImageItem::setHovered(bool bHovered)
 void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     _base::mousePressEvent(event);
-    event->setAccepted(true);
+    if (m_bClickable) {
+        //cannot send to node item if accepted.
+        event->setAccepted(true);
+    }
 }
 
 void ZenoImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)

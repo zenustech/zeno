@@ -1,6 +1,9 @@
 //
 // Created by admin on 2022/6/17.
 //
+
+#if 0
+
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
@@ -225,3 +228,4 @@ struct NumericEval : zeno::INode {
                         });
 }
 }
+#endif

@@ -4,7 +4,7 @@
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <unordered_set>
 
 #include <random>
@@ -14,18 +14,18 @@ namespace zeno {
 struct PrimSuperFormula : zeno::INode {
 
     virtual void apply() override {
-        auto outprim = std::make_shared<zeno::PrimitiveObject>();
-        auto hasLines = get_input2<bool>("hasLines");
-        auto close = get_input2<bool>("close");
+        auto outprim = std::make_unique<zeno::PrimitiveObject>();
+        auto hasLines = ZImpl(get_input2<bool>("hasLines"));
+        auto close = ZImpl(get_input2<bool>("close"));
 
-        int segments = get_input2<int>("segments");
-        float scale = get_input2<float>("scale");
-        float a = get_input2<float>("a");
-        float b = get_input2<float>("b");
-        float m = get_input2<float>("m");
-        float n1 = get_input2<float>("n1");
-        float n2 = get_input2<float>("n2");
-        float n3 = get_input2<float>("n3");
+        int segments = ZImpl(get_input2<int>("segments"));
+        float scale = ZImpl(get_input2<float>("scale"));
+        float a = ZImpl(get_input2<float>("a"));
+        float b = ZImpl(get_input2<float>("b"));
+        float m = ZImpl(get_input2<float>("m"));
+        float n1 = ZImpl(get_input2<float>("n1"));
+        float n2 = ZImpl(get_input2<float>("n2"));
+        float n3 = ZImpl(get_input2<float>("n3"));
 
         float tau = 6.28318530718;
         float step = tau / (float)segments;
@@ -55,7 +55,7 @@ struct PrimSuperFormula : zeno::INode {
             outprim->lines.update();
         }
 
-        set_output("output", std::move(outprim));
+        ZImpl(set_output("output", std::move(outprim)));
     }
 };
 ZENDEFNODE(PrimSuperFormula, {{

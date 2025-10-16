@@ -2,14 +2,16 @@
 #include <string>
 #include <vector>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/GeometryObject.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/PrimitiveTools.h>
+#include <zeno/geo/commonutil.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/ticktock.h>
 #include <zeno/utils/vec.h>
-#include <zeno/extra/TempNode.h>
+#include <zeno/utils/helper.h>
 #include <zenovis/Camera.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/Scene.h>
@@ -18,6 +20,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/shader.h>
 #include <zenovis/opengl/texture.h>
+#include <GL/freeglut.h>
 
 namespace zenovis {
 namespace {
@@ -30,6 +33,14 @@ struct ZhxxDrawObject {
     size_t count = 0;
     Program *prog{};
 };
+
+using CHAR_VBO_DATA = std::vector<glm::vec3>;
+
+struct CHAR_VBO_INFO {
+    glm::vec3 pos;
+    CHAR_VBO_DATA m_data;
+};
+
 #if 0
 static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &obj) {
     auto const &pos = prim->attr<zeno::vec3f>("pos");
@@ -327,40 +338,46 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
 }
 
 struct ZhxxGraphicPrimitive final : IGraphicDraw {
-    Scene *scene;
+    Scene *scene = nullptr;
     std::vector<std::unique_ptr<Buffer>> vbos = std::vector<std::unique_ptr<Buffer>>(5);
-    size_t vertex_count;
-    bool draw_all_points;
+    size_t vertex_count = 0;
+    bool draw_all_points = false;
+
+    std::unique_ptr<Buffer> ptnum_vbo;
+    std::vector<CHAR_VBO_INFO> m_ptnum_data;
+    Program* ptnums_prog = nullptr;
+
+    std::unique_ptr<Buffer> facenum_vbo;
+    std::vector<CHAR_VBO_INFO> m_facenum_data;
+    Program* facenums_prog = nullptr;
 
     //Program *points_prog;
     //std::unique_ptr<Buffer> points_ebo;
-    size_t points_count;
+    size_t points_count = 0;
 
     //Program *lines_prog;
     //std::unique_ptr<Buffer> lines_ebo;
-    size_t lines_count;
+    size_t lines_count = 0;
 
     //Program *tris_prog;
     //std::unique_ptr<Buffer> tris_ebo;
-    size_t tris_count;
+    size_t tris_count = 0;
 
-    bool invisible;
-    bool custom_color;
+    bool invisible = false;
+    bool custom_color = false;
 
     ZhxxDrawObject pointObj;
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
     std::vector<std::unique_ptr<Texture>> textures;
-    std::shared_ptr<zeno::PrimitiveObject> primUnique;
-    zeno::PrimitiveObject *prim;
 
     ZhxxDrawObject polyEdgeObj = {};
     ZhxxDrawObject polyUvObj = {};
 
-    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
-        : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
-        prim = primUnique.get();
-        invisible = prim->userData().get2<bool>("invisible", 0);
+    explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *prim)
+        : scene(scene_)
+    {
+        invisible = prim->userData()->get_bool("invisible", 0);
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         {
@@ -431,6 +448,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             }
         }
 
+        if (scene->is_show_ptnum()) {
+            init_facenum_data(prim);
+        }
+
         if (!prim->attr_is<zeno::vec3f>("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
             for (size_t i = 0; i < pos.size(); i++) {
@@ -462,11 +483,12 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             zeno::log_trace("computing normal");
             zeno::primCalcNormal(&*prim, 1);
         }
-        if (int subdlevs = prim->userData().get2<int>("delayedSubdivLevels", 0)) {
+        if (int subdlevs = prim->userData()->get_int("delayedSubdivLevels", 0)) {
             // todo: zhxx, should comp normal after subd or before?
+#if 0
             zeno::log_trace("computing subdiv {}", subdlevs);
             (void)zeno::TempNodeSimpleCaller("OSDPrimSubdiv")
-                .set("prim", primUnique)
+                .set("prim", std::make_shared<zeno::PrimitiveObject>(*prim))
                 .set2<int>("levels", subdlevs)
                 .set2<std::string>("edgeCreaseAttr", "")
                 .set2<bool>("triangulate", false)
@@ -474,7 +496,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 .set2<bool>("hasLoopUVs", true)
                 .set2<bool>("delayTillIpc", false)
                 .call();  // will inplace subdiv prim
-            prim->userData().del("delayedSubdivLevels");
+            prim->userData()->del("delayedSubdivLevels");
+#endif
         }
         if (thePrmHasFaces) {
             zeno::log_trace("demoting faces");
@@ -609,13 +632,230 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
 
         draw_all_points = !points_count && !lines_count && !tris_count;
-        auto& ud = prim->userData();
-        if (ud.get2<int>("isImage", 0)) {
+        auto ud = prim->userData();
+        if (ud->get_int("isImage", 0)) {
             draw_all_points = false;
         }
         if (draw_all_points) {
             pointObj.prog = get_points_program();
         }
+        if (scene->is_show_ptnum()) {
+            init_ptnum_data(pos);
+        }
+    }
+
+    explicit ZhxxGraphicPrimitive(Scene* scene_, zeno::GeometryObject* geo)
+        : scene(scene_) {
+#if 0
+        zeno::log_trace("rendering primitive size {}", geo->npoints());
+
+        const std::vector<zeno::vec3f>& points = geo->points_pos();
+        std::vector<zeno::vec3f> clr, nrms, uv, tang;
+        std::vector<zeno::vec3i> tris;
+
+        bool any_not_triangle = !geo->is_base_triangle();
+        if (any_not_triangle) {
+            std::vector<int> edges = geo->edge_list();
+
+            polyEdgeObj.count = edges.size();
+            polyEdgeObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            polyEdgeObj.ebo->bind_data(edges.data(), edges.size() * sizeof(edges[0]));
+            auto vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+
+            vbo->bind_data(points.data(), points.size() * sizeof(points[0]));
+            polyEdgeObj.vbos.push_back(std::move(vbo));
+            polyEdgeObj.prog = get_edge_program();
+        }
+        if (geo->nfaces() > 0) {
+            //还是需要展开成三角形
+            tris = geo->tri_indice();
+        }
+
+        if (any_not_triangle && geo->has_attr(zeno::ATTR_POINT, "uvs")) {
+            //TODO: uvs
+        }
+        else {
+            std::fill(uv.begin(), uv.end(), zeno::vec3f(0.0f));
+        }
+
+        if (geo->has_attr(zeno::ATTR_POINT, "clr")) {
+            clr = geo->get_attr<zeno::vec3f>(zeno::ATTR_POINT, "clr");
+        }
+        else {
+            zeno::vec3f clr0(1.0f);
+            std::fill(clr.begin(), clr.end(), clr0);
+        }
+
+        if (geo->has_attr(zeno::ATTR_POINT, "nrm")) {
+            nrms = geo->get_attr<zeno::vec3f>(zeno::ATTR_POINT, "nrm");
+        }
+        else {
+            //TODO: calculate normals by util function.
+            std::fill(nrms.begin(), nrms.end(), zeno::vec3f(1.0f, 0.0f, 0.0f));
+        }
+
+        if (geo->has_attr(zeno::ATTR_POINT, "tang")) {
+            tang = geo->get_attr<zeno::vec3f>(zeno::ATTR_POINT, "tang");
+        }
+        else {
+            std::fill(tang.begin(), tang.end(), zeno::vec3f(0.0f));
+        }
+
+        vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[0]->bind_data(points.data(), points.size() * sizeof(points[0]));
+        vbos[1] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[1]->bind_data(clr.data(), clr.size() * sizeof(clr[0]));
+        vbos[2] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[2]->bind_data(nrms.data(), nrms.size() * sizeof(nrms[0]));
+        vbos[3] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[3]->bind_data(uv.data(), uv.size() * sizeof(uv[0]));
+        vbos[4] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[4]->bind_data(tang.data(), tang.size() * sizeof(tang[0]));
+
+        //TODO: case of points.
+
+        //TODO: case of lines.
+
+        tris_count = tris.size();
+        if (tris_count > 0) {
+            triObj.count = tris_count;
+            triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+            triObj.ebo->bind_data(tris.data(), tris_count * sizeof(tris[0]));
+            triObj.prog = get_tris_program();
+        }
+
+        draw_all_points = false;
+#endif
+    }
+
+    std::vector<CHAR_VBO_INFO> gen_vbo_info(const std::string& drawNum, const zeno::vec3f& basepos) {
+        std::vector<CHAR_VBO_INFO> arrs;
+        GLfloat arr[1024];
+        int size = 0;
+        int arr_split[64];
+        int split_size = 0;
+        glutGetStrokeString(GLUT_STROKE_MONO_ROMAN, drawNum.c_str(), arr, &size, arr_split, &split_size);
+
+        //找出整个字符串数字顶点的包围盒
+        GLfloat xmin = 100000, ymin = 100000, xmax = -10000, ymax = -10000;
+        for (int i = 0; i < size; i++) {
+            if (i % 2 == 0) {
+                xmin = std::min(arr[i], xmin);
+                xmax = std::max(arr[i], xmax);
+            }
+            else {
+                ymin = std::min(arr[i], ymin);
+                ymax = std::max(arr[i], ymax);
+            }
+        }
+        //TODO:用于缩放glut导出的字体大小，经验值设定。
+        float xscale, yscale;
+        if (drawNum.length() > 1) {
+            xscale = 0.01;
+            yscale = 0.02;
+        }
+        else {
+            xscale = 0.004;
+            yscale = 0.02;
+        }
+        GLfloat width = xmax - xmin, height = ymax - ymin;
+        for (int i = 0; i < size; i++) {
+            if (i % 2 == 0) {
+                GLfloat xp = arr[i];
+                xp -= xmin;
+                xp /= (width / 2);
+                xp *= xscale;
+                arr[i] = xp;
+            }
+            else {
+                GLfloat yp = arr[i];
+                yp -= ymin;
+                yp /= (height * 1.5);
+                yp *= yscale;
+                arr[i] = yp;
+            }
+        }
+
+        for (int j = 0; j < split_size; j++) {
+            int i_start = (j == 0) ? 0 : arr_split[j - 1];
+            int i_end = arr_split[j];
+            int mem_size = i_end - i_start;
+            assert(mem_size % 2 == 0);
+            int nVertexs = mem_size / 2;
+            CHAR_VBO_DATA mem(nVertexs);
+            for (int k = 0; k < nVertexs; k++) {
+                GLfloat xp = arr[i_start + k * 2];
+                GLfloat yp = arr[i_start + k * 2 + 1];
+                GLfloat zp = 0;
+                //先放置在原点，待会再实施旋转和平移
+                mem[k] = glm::vec3(xp, yp, zp);
+            }
+            CHAR_VBO_INFO info;
+            info.m_data = mem;
+            info.pos = glm::vec3(basepos[0], basepos[1], basepos[2]);
+            arrs.emplace_back(info);
+        }
+        return arrs;
+    }
+
+    void init_ptnum_data(const std::vector<zeno::vec3f>& pos) {
+        ptnum_vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        for (int idxPoint = 0; idxPoint < pos.size(); idxPoint++)
+        {
+            zeno::vec3f basepos = pos[idxPoint];
+//DEBUG:
+#if 0
+            if (idxPoint > 20) {
+                break;
+            }
+#endif
+
+            std::string drawNum = std::to_string(idxPoint);
+            auto vec = gen_vbo_info(drawNum, basepos);
+            m_ptnum_data.insert(m_ptnum_data.end(), vec.begin(), vec.end());
+        }
+        ptnums_prog = get_ptnum_program();
+    }
+
+    void init_facenum_data(zeno::PrimitiveObject* prim) {
+        facenum_vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        auto& pos = prim->verts;
+        if (prim->tris.size() > 0) {
+            for (int idxFace = 0; idxFace < prim->tris.size(); idxFace++) {
+                zeno::vec3i indice = prim->tris[idxFace];
+                zeno::vec3f p1(pos[indice[0]]), p2(pos[indice[1]]), p3(pos[indice[2]]);
+                zeno::vec3f basepos = (p1 + p2 + p3) / 3;
+
+                std::string drawNum = std::to_string(idxFace);
+                auto vec = gen_vbo_info(drawNum, basepos);
+                m_facenum_data.insert(m_facenum_data.end(), vec.begin(), vec.end());
+            }
+        }
+        else if (prim->loops.size() > 0) {
+            for (int idxFace = 0; idxFace < prim->polys.size(); idxFace++)
+            {
+                //DEBUG:
+#if 0
+                if (idxFace > 20) {
+                    break;
+                }
+#endif
+
+                auto& [startIdx, sz] = prim->polys[idxFace];
+                zeno::vec3f total(0, 0, 0);
+                for (int i = 0; i < sz; i++) {
+                    int idxPt = prim->loops[startIdx + i];
+                    zeno::vec3f pt = pos[idxPt];
+                    total += pt;
+                }
+                zeno::vec3f basepos = total / sz;
+
+                std::string drawNum = std::to_string(idxFace);
+                auto vec = gen_vbo_info(drawNum, basepos);
+                m_facenum_data.insert(m_facenum_data.end(), vec.begin(), vec.end());
+            }
+        }
+        facenums_prog = get_facenum_program();
     }
 
     virtual void draw() override {
@@ -691,6 +931,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             } else {
                 vbounbind(vbos);
             }
+        }
+
+        if (scene->is_show_ptnum()) {
+            draw_ptnums();
+            draw_facenums();
         }
 
         if (tris_count) {
@@ -778,6 +1023,118 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
     }
 
+    void print_help(void)
+    {
+        //TODO: 以贴图方式取代画点线
+        int i;
+        const char* s, ** text;
+
+        glPushAttrib(GL_ENABLE_BIT);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        int win_width = scene->camera->m_nx;
+        int win_height = scene->camera->m_ny;
+        glOrtho(0, win_width, 0, win_height, -1, 1);
+
+        static const char* helpprompt[] = { "Press F1 for help", 0 };
+        text = helpprompt;
+
+        for (i = 0; text[i]; i++) {
+            glColor3f(0, 0.1, 0);
+            glRasterPos2f(7, win_height - (i + 1) * 20 - 2);
+            s = text[i];
+            while (*s) {
+                glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *s++);
+            }
+            glColor3f(0, 0.9, 0);
+            glRasterPos2f(5, win_height - (i + 1) * 20);
+            s = text[i];
+            while (*s) {
+                glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *s++);
+            }
+        }
+
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+
+        glPopAttrib();
+    }
+
+    glm::mat4 get_proper_view_matrix() {
+        glm::vec3 lodfront = scene->camera->get_lodfront();
+        glm::vec3 lodup = scene->camera->get_lodup();
+        glm::vec3 cam_pos = scene->camera->getPos();
+        glm::vec3 pivot = scene->camera->getPivot();
+
+        //zeno::log_info("camera pos: x={}, y={}, z={}", cam_pos[0], cam_pos[1], cam_pos[2]);
+
+        glm::vec3 _uz = glm::normalize(cam_pos);
+        glm::vec3 _uy = glm::normalize(lodup);
+        glm::vec3 _ux = glm::normalize(glm::cross(_uy, _uz));
+
+        glm::vec4 uz(_uz[0], _uz[1], _uz[2], 0);
+        glm::vec4 uy(_uy[0], _uy[1], _uy[2], 0);
+        glm::vec4 ux(_ux[0], _ux[1], _ux[2], 0);
+
+        float scale_factor = glm::length(cam_pos) * 1.0;
+        glm::vec3 scale_cam(scale_factor);
+
+        glm::mat4 scaleM(glm::vec4(scale_factor, 0, 0, 0), glm::vec4(0, scale_factor, 0, 0),
+            glm::vec4(0, 0, scale_factor, 0), glm::vec4(0, 0, 0, 1));
+        glm::mat4 rotateM(ux, uy, uz, glm::vec4(0, 0, 0, 1));
+        glm::mat4 rsM = rotateM * scaleM;
+        return rsM;
+    }
+
+    void draw_elemnums(Program* prog, std::vector<CHAR_VBO_INFO>& vbo_datas, Buffer* pVBO) {
+        prog->use();
+        scene->camera->set_program_uniforms(prog);
+        glm::vec3 cam_pos = scene->camera->getPos();
+        glm::mat4 rsM = get_proper_view_matrix();
+
+        //zeno::log_info("camera abs pos: x={}, y={}, z={}", scale_cam[0], scale_cam[1], scale_cam[2]);
+
+        //TODO: 挪到shader
+        for (CHAR_VBO_INFO& vbo_data : vbo_datas) {
+            int n = vbo_data.m_data.size();
+            glm::vec4 trans(vbo_data.pos[0], vbo_data.pos[1], vbo_data.pos[2], 1);
+            rsM[3] = trans;
+
+            CHAR_VBO_DATA new_vbodata(n);
+            for (int i = 0; i < n; i++) {
+                auto& _pos = vbo_data.m_data[i];
+                glm::vec4 pos(_pos[0], _pos[1], _pos[2], 1);
+                glm::vec4 newpos = rsM * pos;
+                newpos += (glm::vec4(cam_pos[0], cam_pos[1], cam_pos[2], 1) - newpos) * 0.01f;   //防止遮挡
+                new_vbodata[i] = glm::vec3(newpos[0], newpos[1], newpos[2]);
+            }
+            pVBO->bind();
+            pVBO->bind_data(new_vbodata.data(), new_vbodata.size() * sizeof(new_vbodata[0]));
+            pVBO->attribute(0, 0, sizeof(GLfloat) * 3, GL_FLOAT, 3);
+            CHECK_GL(glDrawArrays(GL_LINE_STRIP, 0, new_vbodata.size()));
+            pVBO->unbind();
+        }
+    }
+
+    void draw_ptnums() {
+        if (ptnums_prog && !m_ptnum_data.empty() && ptnum_vbo) {
+            draw_elemnums(ptnums_prog, m_ptnum_data, ptnum_vbo.get());
+        }
+    }
+
+    void draw_facenums() {
+        if (facenums_prog && !m_facenum_data.empty() && facenums_prog) {
+            draw_elemnums(facenums_prog, m_facenum_data, facenum_vbo.get());
+        }
+    }
+
     Program *get_points_program() {
         auto vert = 
 #include "shader/points.vert"
@@ -812,6 +1169,26 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         return scene->shaderMan->compile_program(vert, frag);
     }
 
+    Program* get_ptnum_program() {
+        auto vert =
+#include "shader/ptnum.vert"
+            ;
+        auto frag =
+#include "shader/ptnum.frag"
+            ;
+        return scene->shaderMan->compile_program(vert, frag);
+    }
+
+    Program* get_facenum_program() {
+        auto vert =
+#include "shader/facenum.vert"
+            ;
+        auto frag =
+#include "shader/facenum.frag"
+            ;
+        return scene->shaderMan->compile_program(vert, frag);
+    }
+
     Program *get_edge_program() {
         auto vert =
 #include "shader/edge.vert"
@@ -828,6 +1205,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
 void MakeGraphicVisitor::visit(zeno::PrimitiveObject *obj) {
      this->out_result = std::make_unique<ZhxxGraphicPrimitive>(this->in_scene, obj);
+}
+
+void MakeGraphicVisitor::visit(zeno::GeometryObject_Adapter *obj) {
+    //考虑到primitive又要创建各种nrm uv，可以在这里让PrimitiveObject中转一下
+    this->out_result = std::make_unique<ZhxxGraphicPrimitive>(this->in_scene, obj->toPrimitiveObject().get());
 }
 
 } // namespace zenovis

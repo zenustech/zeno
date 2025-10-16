@@ -11,20 +11,20 @@ namespace zeno {
 
 struct MakeVisualAABBPrimitive : INode {
     virtual void apply() override {
-        auto topless = has_input("OpenTop") ? //zhxxhappy
-            get_input<NumericObject>("OpenTop")->get<int>() : 0;
-        auto dx = has_input("dx") ? //zhxxhappy
-            get_input<NumericObject>("dx")->get<float>() : 1;
-        auto a = has_input("boundMin")
-            ? get_input<NumericObject>("boundMin")->get<zeno::vec3f>()
+        auto topless = ZImpl(has_input("OpenTop")) ? //zhxxhappy
+            ZImpl(get_input<NumericObject>("OpenTop"))->get<int>() : 0;
+        auto dx = ZImpl(has_input("dx")) ? //zhxxhappy
+            ZImpl(get_input<NumericObject>("dx"))->get<float>() : 1;
+        auto a = ZImpl(has_input("boundMin"))
+            ? ZImpl(get_input<NumericObject>("boundMin"))->get<zeno::vec3f>()
             : vec3f(-0.5, -0.5, -0.5) * dx;
-        auto b = has_input("boundMax")
-            ? get_input<NumericObject>("boundMax")->get<zeno::vec3f>()
+        auto b = ZImpl(has_input("boundMax"))
+            ? ZImpl(get_input<NumericObject>("boundMax"))->get<zeno::vec3f>()
             : vec3f(+0.5, +0.5, +0.5) * dx;
         
-        auto connType = get_param<std::string>("type");
+        auto connType = ZImpl(get_param<std::string>("type"));
 
-        auto prim = std::make_shared<PrimitiveObject>();
+        auto prim = std::make_unique<PrimitiveObject>();
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         prim->resize(8);
         pos[0] = vec3f(a[0], a[1], a[2]);
@@ -97,7 +97,7 @@ struct MakeVisualAABBPrimitive : INode {
             prim->quads[4] = vec4i(0, 1, 2, 3);
         }
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

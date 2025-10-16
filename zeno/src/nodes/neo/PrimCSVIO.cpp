@@ -44,13 +44,13 @@ void dump_csv(AttrVector<T> avec, std::ostream &fout) {
 
 struct WritePrimToCSV : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto path = get_input<StringObject>("path")->get();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto path = ZImpl(get_input<StringObject>("path"))->get();
         path = create_directories_when_write_file(path);
         std::ofstream fout(path);
         auto memb = invoker_variant(array_index(
                 {"verts", "points", "lines", "tris", "quads", "loops", "polys"},
-                get_input2<std::string>("type")),
+                ZImpl(get_input2<std::string>("type"))),
             &PrimitiveObject::verts,
             &PrimitiveObject::points,
             &PrimitiveObject::lines,
@@ -61,7 +61,7 @@ struct WritePrimToCSV : INode {
         std::visit([&] (auto const &memb) {
             dump_csv(memb(*prim), fout);
         }, memb);
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

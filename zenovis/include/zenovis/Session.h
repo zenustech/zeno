@@ -7,7 +7,6 @@
 #include <vector>
 #include <set>
 #include <zeno/core/IObject.h>
-#include <zeno/core/ObjectManager.h>
 #include <zeno/utils/disable_copy.h>
 #include <zeno/utils/vec.h>
 #include <zenovis/Scene.h>
@@ -24,7 +23,6 @@ struct Session : zeno::disable_copy {
     ~Session();
 
     void new_frame();
-    bool load_objects();
     void set_safe_frames(bool bLock, int nx, int ny);
     float get_safe_frames() const;
     bool is_lock_window() const;
@@ -37,7 +35,7 @@ struct Session : zeno::disable_copy {
     void set_show_grid(bool flag);
     void set_uv_mode(bool enable);
     void look_perspective();
-    void load_objects(const zeno::RenderObjsInfo& objs);
+    void reload(const zeno::render_reload_info& info);
     void look_to_dir(float cx, float cy, float cz,
                      float dx, float dy, float dz,
                      float ux, float uy, float uz);
@@ -53,6 +51,7 @@ struct Session : zeno::disable_copy {
     void set_render_wireframe(bool render_wireframe);
     void set_render_engine(std::string const &name);
     void set_handler(std::shared_ptr<IGraphicHandler> &handler);
+    void set_show_ptnum(bool bShow);
     bool focus_on_node(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void load_opengl_api(void *procaddr);
     Scene* get_scene() const;

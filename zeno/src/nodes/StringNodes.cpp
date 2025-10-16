@@ -3,7 +3,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
@@ -17,7 +17,7 @@ namespace {
 
 struct MakeWritePath : zeno::INode {
     virtual void apply() override {
-        set_primitive_output("path", get_param<std::string>("path"));
+        ZImpl(set_primitive_output("path", ZImpl(get_param<std::string>("path"))));
     }
 };
 
@@ -30,7 +30,7 @@ ZENDEFNODE(MakeWritePath, {
 
 struct MakeReadPath : zeno::INode {
     virtual void apply() override {
-        set_primitive_output("path", get_param<std::string>("path"));
+        ZImpl(set_primitive_output("path", ZImpl(get_param<std::string>("path"))));
     }
 };
 
@@ -43,7 +43,7 @@ ZENDEFNODE(MakeReadPath, {
 
 struct MakeString : zeno::INode {
     virtual void apply() override {
-        set_primitive_output("value", get_param<std::string>("value"));
+        ZImpl(set_primitive_output("value", ZImpl(get_param<std::string>("value"))));
     }
 };
 
@@ -66,9 +66,9 @@ ZENDEFNODE(MakeMultilineString, {
 
 struct StringEqual : zeno::INode {
     virtual void apply() override {
-        auto lhs = get_input2<std::string>("lhs");
-        auto rhs = get_input2<std::string>("rhs");
-        set_output2("isEqual", lhs == rhs);
+        auto lhs = ZImpl(get_input2<std::string>("lhs"));
+        auto rhs = ZImpl(get_input2<std::string>("rhs"));
+        ZImpl(set_output2("isEqual", lhs == rhs));
     }
 };
 
@@ -81,7 +81,7 @@ ZENDEFNODE(StringEqual, {
 
 struct PrintString : zeno::INode {
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
+        auto str = ZImpl(get_input2<std::string>("str"));
         printf("%s\n", str.c_str());
     }
 };
@@ -98,9 +98,9 @@ struct FileWriteString
 {
     virtual void apply() override
     {
-        auto path = get_input<zeno::StringObject>("path")->get();
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
         path = create_directories_when_write_file(path);
-        auto str = get_input<zeno::StringObject>("str")->get();
+        auto str = ZImpl(get_input<zeno::StringObject>("str"))->get();
         zeno::file_put_content(path, str);
     }
 };
@@ -122,9 +122,9 @@ struct FileReadString
 {
     virtual void apply() override
     {
-        auto path = get_input<zeno::StringObject>("path")->get();
+        auto path = ZImpl(get_input<zeno::StringObject>("path"))->get();
         auto str = zeno::file_get_content(path);
-        set_output2("str", std::move(str));
+        ZImpl(set_output2("str", std::move(str)));
     }
 };
 
@@ -143,14 +143,14 @@ ZENDEFNODE(
 
 struct StringFormat : zeno::INode {
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
+        auto str = ZImpl(get_input2<std::string>("str"));
         for (int i = 0; i < str.size() - 1; i++) {
             if (str[i] == '$' && str[i + 1] == 'F') {
-                str.replace(i, 2, std::to_string(getGlobalState()->getFrameId()));
+                str.replace(i, 2, std::to_string(ZImpl(getGlobalState())->getFrameId()));
                 break;
             }
         }
-        set_output2("str", str);
+        ZImpl(set_output2("str", str));
     }
 };
 
@@ -163,8 +163,8 @@ ZENDEFNODE(StringFormat, {
 
 struct StringFormatNumber : zeno::INode {
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
-        auto num = get_input<zeno::NumericObject>("number");
+        auto str = ZImpl(get_input2<std::string>("str"));
+        auto num = ZImpl(get_input<zeno::NumericObject>("number"));
 
         std::string output;
         std::visit([&](const auto &v) {
@@ -180,7 +180,7 @@ struct StringFormatNumber : zeno::INode {
                 //output = str;
             //}
         }, num->value);
-        set_output2("str", output);
+        ZImpl(set_output2("str", output));
     }
 };
 
@@ -196,30 +196,64 @@ ZENDEFNODE(StringFormatNumber, {
 
 struct StringFormatNumStr : zeno::INode {
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
-        auto num_str = get_input<zeno::IObject>("num_str");
+        auto str = ZImpl(get_input2<std::string>("str"));
+        auto num_str = ZImpl(get_input<zeno::IObject>("num_str"));
+        zeno::reflect::Any val = m_pAdapter->get_param_result("num_str");
         std::string output;
 
-        std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(num_str);
-        if (num) {
-            std::visit([&](const auto &v) {
-                output = zeno::format(str, v);
-            }, num->value);
+        ParamType valType = val.type().hash_code();
+        if (gParamType_Int == valType) {
+            auto v = zeno::reflect::any_cast<int>(val);
+            output = zeno::format(str, v);
         }
-        std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(num_str);
-        if (pStr) {
-            output = zeno::format(str, pStr->get());
+        else if (gParamType_Float == valType) {
+            auto v = zeno::reflect::any_cast<float>(val);
+            output = zeno::format(str, v);
         }
-        set_output2("str", output);
+        else if (gParamType_String == valType) {
+            auto v = zeno::reflect::any_cast<std::string>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec2i == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec2i>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec2f == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec2f>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec3i == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec3i>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec3f == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec3f>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec4i == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec4i>(val);
+            output = zeno::format(str, v);
+        }
+        else if (gParamType_Vec4f == valType) {
+            auto v = zeno::reflect::any_cast<zeno::vec3f>(val);
+            output = zeno::format(str, v);
+        }
+        else {
+            throw makeError<UnimplError>("");
+        }
+
+        set_output_string("str", stdString2zs(output));
     }
 };
 
 ZENDEFNODE(StringFormatNumStr, {
     {
         {gParamType_String, "str", "{}"},
-        {"object", "num_str"},
+        {gParamType_AnyNumeric, "num_str"},
     },
-    {{gParamType_String, "str"}},
+    {
+        {gParamType_String, "str"}
+    },
     {},
     {"string"},
 });
@@ -228,10 +262,10 @@ struct StringRegexMatch : zeno::INode {
     virtual void apply() override {
         using namespace std::regex_constants;
 
-        auto str = get_input2<std::string>("str");
-        auto regex_str = get_input2<std::string>("regex");
+        auto str = ZImpl(get_input2<std::string>("str"));
+        auto regex_str = ZImpl(get_input2<std::string>("regex"));
 
-        auto case_sensitive = get_input2<bool>("case_sensitive");
+        auto case_sensitive = ZImpl(get_input2<bool>("case_sensitive"));
 
         auto default_flags = ECMAScript;
         if(!case_sensitive)
@@ -240,7 +274,7 @@ struct StringRegexMatch : zeno::INode {
         std::regex self_regex(regex_str,default_flags);
         int output = std::regex_match(str, self_regex);
 
-        set_output2("output", output);
+        ZImpl(set_output2("output", output));
     }
 };
 
@@ -261,10 +295,10 @@ struct StringRegexSearch : zeno::INode {
     virtual void apply() override {
         using namespace std::regex_constants;
 
-        auto str = get_input2<std::string>("str");
+        auto str = ZImpl(get_input2<std::string>("str"));
         
-        auto regex_str = get_input2<std::string>("regex");
-        auto case_sensitive = get_input2<bool>("case_sensitive");
+        auto regex_str = ZImpl(get_input2<std::string>("regex"));
+        auto case_sensitive = ZImpl(get_input2<bool>("case_sensitive"));
 
         std::smatch res{};
 
@@ -274,7 +308,7 @@ struct StringRegexSearch : zeno::INode {
 
         std::regex self_regex(regex_str,flags);
 
-        auto matched_substr_list = std::make_shared<zeno::ListObject>();
+        auto matched_substr_list = std::make_unique<zeno::ListObject>();
 
         // int search_success = std::regex_search(str,res,self_regex);
         int search_success = 0;
@@ -288,16 +322,16 @@ struct StringRegexSearch : zeno::INode {
                     is_first_matched = false;
                     continue;
                 }
-                auto zstr = std::make_shared<zeno::StringObject>();
+                auto zstr = std::make_unique<zeno::StringObject>();
                 zstr->set(w.str());
-                matched_substr_list->push_back(std::move(zstr));
+                matched_substr_list->m_impl->push_back(std::move(zstr));
             }
 
             str = res.suffix().str();
         }
 
-        set_output2("search_success",search_success);
-        set_output("res",std::move(matched_substr_list));
+        ZImpl(set_output2("search_success",search_success));
+        ZImpl(set_output("res",std::move(matched_substr_list)));
     }
 };
 
@@ -338,9 +372,9 @@ struct StringSplitAndMerge: zeno::INode{
         return output;
     }
     virtual void apply() override {
-        auto str = get_input2<std::string>("str");
-        auto schar = get_input2<std::string>("schar");
-        auto merge = get_input2<std::string>("merge");
+        auto str = ZImpl(get_input2<std::string>("str"));
+        auto schar = ZImpl(get_input2<std::string>("schar"));
+        auto merge = ZImpl(get_input2<std::string>("merge"));
         
         const auto &strings = split(str, schar);
         const auto &merges = split(merge, ",");
@@ -350,7 +384,7 @@ struct StringSplitAndMerge: zeno::INode{
             outputstr += strings[std::atoi(idx.c_str())];
         }
 
-        set_output2("output", outputstr);
+        ZImpl(set_output2("output", outputstr));
     }
 };
 
@@ -388,13 +422,13 @@ std::vector<std::string_view> stringsplit(std::string_view str, std::string_view
 
 struct StringSplitAndMerge2: zeno::INode{
     virtual void apply() override {
-        auto str = get_input2<std::string>("String");
-        auto separator = get_input2<std::string>("Separator");
-        auto mergeMethod = get_input2<std::string>("Merge Method");
-        auto mergeIndex = get_input2<std::string>("Merge index");
-        auto clipCountFromStart = get_input2<int>("Clip Count From Start");
-        auto clipCountFromEnd = get_input2<int>("Clip Count From End");
-        auto remainSeparator = get_input2<bool>("Remain Separator");
+        auto str = ZImpl(get_input2<std::string>("String"));
+        auto separator = ZImpl(get_input2<std::string>("Separator"));
+        auto mergeMethod = ZImpl(get_input2<std::string>("Merge Method"));
+        auto mergeIndex = ZImpl(get_input2<std::string>("Merge index"));
+        auto clipCountFromStart = ZImpl(get_input2<int>("Clip Count From Start"));
+        auto clipCountFromEnd = ZImpl(get_input2<int>("Clip Count From End"));
+        auto remainSeparator = ZImpl(get_input2<bool>("Remain Separator"));
         auto splitStr = stringsplit(str, separator);
         std::string output;
         output.reserve(str.size());
@@ -431,7 +465,7 @@ struct StringSplitAndMerge2: zeno::INode{
         else {
             throw std::runtime_error("[StringSplitAndMerge2] Unknown merge method.");
         }
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -454,25 +488,25 @@ ZENDEFNODE(StringSplitAndMerge2, {
 
 struct FormatString : zeno::INode {
     virtual void apply() override {
-        auto formatStr = get_input2<std::string>("str");
+        auto formatStr = ZImpl(get_input2<std::string>("str"));
 
-        auto list = get_input<zeno::ListObject>("args");
+        auto list = ZImpl(get_input<zeno::ListObject>("args"));
         std::string output = formatStr;
-        for (auto obj : list->get())
+        for (auto obj : list->m_impl->get())
         {
-            std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
+            auto num = dynamic_cast<zeno::NumericObject*>(obj);
             if (num) {
                 std::visit([&](const auto& v) {
                     output = zeno::format(output, v);
                     }, num->value);
             }
-            std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
+            auto pStr = dynamic_cast<zeno::StringObject*>(obj);
             if (pStr) {
                 output = zeno::format(output, pStr->get());
             }
         }
 
-        set_output2("str", output);
+        ZImpl(set_output2("str", output));
     }
 };
 
@@ -492,7 +526,7 @@ ZENDEFNODE(FormatString, {
 struct ExportPath : zeno::INode {  // deprecated
     virtual void apply() override {
         char buf[100];
-        auto ext = get_param<std::string>("ext");
+        auto ext = ZImpl(get_param<std::string>("ext"));
         sprintf(buf, "%06d", getGlobalState()->getFrameId());
         auto path = fs::path(getGlobalState()->iopath) / buf;
         if (!fs::is_directory(path)) {
@@ -503,7 +537,7 @@ struct ExportPath : zeno::INode {  // deprecated
         auto ret = std::make_unique<zeno::StringObject>();
         //printf("EXPORTPATH: %s\n", path.c_str());
         ret->set(path.string());
-        set_output("path", std::move(ret));
+        ZImpl(set_output("path", std::move(ret)));
     }
 };
 
@@ -538,15 +572,15 @@ ZENDEFNODE(EndFrame, {
 
 struct StringToNumber : zeno::INode {
     virtual void apply() override {
-        auto in_str = get_input2<std::string>("str");
-        auto type = get_input2<std::string>("type");
+        auto in_str = ZImpl(get_input2<std::string>("str"));
+        auto type = ZImpl(get_input2<std::string>("type"));
         if (type == "float") {
             float v = std::stof(in_str);
-            set_primitive_output("num_str", v);
+            ZImpl(set_primitive_output("num_str", v));
         }
         else if (type == "int") {
             int v = std::stoi(in_str);
-            set_primitive_output("num_str", v);
+            ZImpl(set_primitive_output("num_str", v));
         }
         else {
             throw zeno::makeError("Unknown type");
@@ -586,13 +620,81 @@ std::string& trim(std::string &s)
     return s;
 }
 
+struct GetStringFromList : zeno::INode {
+    virtual void apply() override {
+        const auto& vecstr = zeno::reflect::any_cast<std::vector<std::string>>(m_pAdapter->get_param_result("list"));
+        int index = get_input2_int("index");
+        if (index < 0 || index >= vecstr.size())
+            throw makeError<IndexError>(index, vecstr.size(), "GetStringFromList");
+        std::string str = vecstr[index];
+        m_pAdapter->set_primitive_output("string", str);
+    }
+};
+
+ZENDEFNODE(GetStringFromList, {
+    {
+        {gParamType_StringList, "list", ""},
+        {gParamType_Int, "index"}
+    },
+    {{gParamType_String, "string"},
+    },
+    {},
+    {"string"},
+});
+
+struct LegacyStringToList : zeno::INode {
+    virtual void apply() override {
+        auto stringlist = ZImpl(get_input2<std::string>("string"));
+        auto list = create_ListObject();
+        auto separator = ZImpl(get_input2<std::string>("Separator"));
+        auto trimoption = ZImpl(get_input2<bool>("Trim"));
+        auto keepempty = ZImpl(get_input2<bool>("KeepEmpty"));
+        std::vector<std::string> strings;
+        size_t pos = 0;
+        size_t posbegin = 0;
+        std::string word;
+        while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
+            word = stringlist.substr(posbegin, pos - posbegin);
+            if (trimoption) trim(word);
+            if (keepempty || !word.empty()) strings.push_back(word);
+            pos += separator.length();
+            posbegin = pos;
+        }
+        if (posbegin < stringlist.length()) { //push last word
+            word = stringlist.substr(posbegin);
+            if (trimoption) trim(word);
+            if (keepempty || !word.empty()) strings.push_back(word);
+        }
+        for (const auto& string : strings) {
+            auto obj = std::make_unique<StringObject>();
+            obj->set(string);
+            list->m_impl->push_back(std::move(obj));
+        }
+        ZImpl(set_output("list", std::move(list)));
+    }
+};
+
+ZENDEFNODE(LegacyStringToList, {
+    {
+        {gParamType_String, "string", ""},
+        {gParamType_String, "Separator", ""},
+        {gParamType_Bool, "Trim", "false"},
+        {gParamType_Bool, "KeepEmpty", "false"},
+    },
+    {{gParamType_List, "list"},
+    },
+    {},
+    {"string"},
+    });
+
+
 struct StringToList : zeno::INode {
     virtual void apply() override {
-        auto stringlist = get_input2<std::string>("string");
-        auto list = std::make_shared<ListObject>();
-        auto separator = get_input2<std::string>("Separator");
-        auto trimoption = get_input2<bool>("Trim");
-        auto keepempty = get_input2<bool>("KeepEmpty");
+        auto stringlist = ZImpl(get_input2<std::string>("string"));
+        auto list = create_ListObject();
+        auto separator = ZImpl(get_input2<std::string>("Separator"));
+        auto trimoption = ZImpl(get_input2<bool>("Trim"));
+        auto keepempty = ZImpl(get_input2<bool>("KeepEmpty"));
         std::vector<std::string> strings;
         size_t pos = 0;
         size_t posbegin = 0;
@@ -609,12 +711,8 @@ struct StringToList : zeno::INode {
             if(trimoption) trim(word);
             if(keepempty || !word.empty()) strings.push_back(word);
         }
-        for(const auto &string : strings) {
-            auto obj = std::make_unique<StringObject>();
-            obj->set(string);
-            list->push_back(std::move(obj));
-        }
-        set_output("list", std::move(list));
+        m_pAdapter->set_primitive_output("list", strings);
+        m_pAdapter->set_primitive_output("count", static_cast<int>(strings.size()));
     }
 };
 
@@ -625,7 +723,9 @@ ZENDEFNODE(StringToList, {
         {gParamType_Bool, "Trim", "false"},
         {gParamType_Bool, "KeepEmpty", "false"},
     },
-    {{gParamType_List, "list"},
+    {
+        {gParamType_StringList, "list"},
+        {gParamType_Int, "count"}
     },
     {},
     {"string"},
@@ -633,11 +733,11 @@ ZENDEFNODE(StringToList, {
 
 struct StringJoin : zeno::INode {//zeno string only support list for now
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("list");
-        auto stringvec = list->get2<std::string>();
-        auto separator = get_input2<std::string>("Separator");
+        auto list = ZImpl(get_input<zeno::ListObject>("list"));
+        auto stringvec = list->m_impl->get2<std::string>();
+        auto separator = ZImpl(get_input2<std::string>("Separator"));
         auto output = join_str(stringvec, separator);
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -654,9 +754,9 @@ ZENDEFNODE(StringJoin, {
 
 struct NumbertoString : zeno::INode {
     virtual void apply() override {
-        auto num = get_input<zeno::NumericObject>("number");
+        auto num = ZImpl(get_input<zeno::NumericObject>("number"));
         std::visit([&](const auto &v) {
-            set_primitive_output("string", zeno::to_string(v));
+            ZImpl(set_primitive_output("string", zeno::to_string(v)));
         }, num->value);
     }
 };
@@ -669,6 +769,40 @@ ZENDEFNODE(NumbertoString, {
     },
     {},
     {"string"},
+});
+
+struct NumberToTime : zeno::INode {
+  virtual void apply() override {
+    auto num = int(std::round(get_input2_float("number")));
+    auto obj = std::make_unique<zeno::StringObject>();
+    int h = num / 60 / 60;
+    int m = num % (60 * 60) / 60;
+    int s = num % 60;
+    if (get_input2_string("format") == "string") {
+      auto str = zeno::format("{:02}:{:02}:{:02}", h, m, s);
+      set_output_string("time", stdString2zs(str));
+    }
+    else if (get_input2_string("format") == "vec3f") {
+      auto value = vec3f(h, m, s);
+      set_output_vec3f("time", toAbiVec3f(value));
+    }
+    else if (get_input2_string("format") == "vec3i") {
+      auto value = vec3i(h, m, s);
+      set_output_vec3i("time", toAbiVec3i(value));
+    }
+  }
+};
+
+ZENDEFNODE(NumberToTime, {
+   {
+       {gParamType_Float, "number"},
+       {"enum vec3i vec3f string", "format", "string"},
+   },
+   {
+       {gParamType_AnyNumeric, "time"}
+   },
+   {},
+   {"string"},
 });
 
 std::string strreplace(std::string textToSearch, std::string_view toReplace, std::string_view replacement)
@@ -686,23 +820,23 @@ std::string strreplace(std::string textToSearch, std::string_view toReplace, std
 
 struct StringReplace : zeno::INode {
     virtual void apply() override {
-        std::string string = get_input2<std::string>("string");
-        std::string oldstr = get_input2<std::string>("old");
-        std::string newstr = get_input2<std::string>("new");
+        std::string string = ZImpl(get_input2<std::string>("string"));
+        std::string oldstr = ZImpl(get_input2<std::string>("old"));
+        std::string newstr = ZImpl(get_input2<std::string>("new"));
         if (oldstr.empty()) {
             zeno::log_error("[StringReplace] old string is empty.");
             return;
         }
         auto output = strreplace(string, oldstr, newstr);
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
 ZENDEFNODE(StringReplace, {
     {
         {gParamType_String, "string", "", Socket_Primitve, Multiline},
-        {gParamType_String, "old", ""},
-        {gParamType_String, "new", ""},
+        {gParamType_String, "old", "", Socket_Primitve, Lineedit},
+        {gParamType_String, "new", "", Socket_Primitve, Lineedit},
     },
     {{gParamType_String, "string"},
     },
@@ -712,12 +846,12 @@ ZENDEFNODE(StringReplace, {
 
 struct StringFind : zeno::INode {//return -1 if not found
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
-        auto substring = get_input2<std::string>("substring");
-        auto start = get_input2<int>("start");
+        auto string = ZImpl(get_input2<std::string>("string"));
+        auto substring = ZImpl(get_input2<std::string>("substring"));
+        auto start = ZImpl(get_input2<int>("start"));
         std::string::size_type n = string.find(substring, start);
         int output = (n == std::string::npos) ? -1 : static_cast<int>(n);
-        set_output2("Position", output);
+        ZImpl(set_output2("Position", output));
     }
 };
 
@@ -735,9 +869,9 @@ ZENDEFNODE(StringFind, {
 
 struct SubString : zeno::INode {//slice...
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
-        auto start = get_input2<int>("start");
-        auto length = get_input2<int>("length");
+        auto string = ZImpl(get_input2<std::string>("string"));
+        auto start = ZImpl(get_input2<int>("start"));
+        auto length = ZImpl(get_input2<int>("length"));
         if (start < 0) {
             start = string.size() + start;
         }
@@ -745,7 +879,7 @@ struct SubString : zeno::INode {//slice...
             throw std::runtime_error("[SubString] start is out of range.");
         }
         auto output = string.substr(start, length);
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -763,11 +897,11 @@ ZENDEFNODE(SubString, {
 
 struct StringtoLower : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
+        auto string = ZImpl(get_input2<std::string>("string"));
         std::string output = string;
         std::transform(output.begin(), output.end(), output.begin(), [] (auto c) { 
             return static_cast<char> (std::tolower (static_cast<unsigned char> (c))); });
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -783,11 +917,11 @@ ZENDEFNODE(StringtoLower, {
 
 struct StringtoUpper : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
+        auto string = ZImpl(get_input2<std::string>("string"));
         std::string output = string;
         std::transform(output.begin(), output.end(), output.begin(), [] (auto c) { 
             return static_cast<char> (std::toupper (static_cast<unsigned char> (c))); });
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -803,9 +937,9 @@ ZENDEFNODE(StringtoUpper, {
 
 struct StringLength : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
+        auto string = ZImpl(get_input2<std::string>("string"));
         int output = string.length();
-        set_output2("length", output);
+        ZImpl(set_output2("length", output));
     }
 };
 
@@ -821,8 +955,8 @@ ZENDEFNODE(StringLength, {
 
 struct StringSplitPath : zeno::INode {
     virtual void apply() override {
-        auto stringpath = get_input2<std::string>("string");
-        bool SplitExtension = get_input2<bool>("SplitExtension");
+        auto stringpath = ZImpl(get_input2<std::string>("string"));
+        bool SplitExtension = ZImpl(get_input2<bool>("SplitExtension"));
         std::string directory, filename, extension;
         std::string::size_type last_slash_pos = stringpath.find_last_of("/\\");
         std::string::size_type last_dot_pos = stringpath.find_last_of('.');
@@ -837,9 +971,9 @@ struct StringSplitPath : zeno::INode {
             extension = (last_dot_pos == std::string::npos) ? "" : stringpath.substr(last_dot_pos + 1);
         }
         if(!SplitExtension) filename += extension;//extension output is empty if SplitExtension is false
-        set_output2("directory", directory);
-        set_output2("filename", filename);
-        set_output2("extension", extension);
+        ZImpl(set_output2("directory", directory));
+        ZImpl(set_output2("filename", filename));
+        ZImpl(set_output2("extension", extension));
     }
 };
 
@@ -858,9 +992,9 @@ ZENDEFNODE(StringSplitPath, {
 
 struct StringInsert : zeno::INode {//if start is less than 0, reverse counting from the end
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
-        auto substring = get_input2<std::string>("substring");
-        auto start = get_input2<int>("start");
+        auto string = ZImpl(get_input2<std::string>("string"));
+        auto substring = ZImpl(get_input2<std::string>("substring"));
+        auto start = ZImpl(get_input2<int>("start"));
         auto output = string;
         if (start < 0) {
             start = output.size() + start + 1;
@@ -869,7 +1003,7 @@ struct StringInsert : zeno::INode {//if start is less than 0, reverse counting f
             throw std::runtime_error("[StringInsert] start is out of range.");
         }
         output.insert(start, substring);
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -887,9 +1021,9 @@ ZENDEFNODE(StringInsert, {
 
 struct StringTrim : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("string");
-        auto trimleft = get_input2<bool>("trimleft");
-        auto trimright = get_input2<bool>("trimright");
+        auto string = ZImpl(get_input2<std::string>("string"));
+        auto trimleft = ZImpl(get_input2<bool>("trimleft"));
+        auto trimright = ZImpl(get_input2<bool>("trimright"));
         std::string output = string;
         if (!output.empty()) {
             if (trimleft) {
@@ -903,7 +1037,7 @@ struct StringTrim : zeno::INode {
                 }).base(), output.end());
             }
         }
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
         
     }
 };
@@ -922,12 +1056,12 @@ ZENDEFNODE(StringTrim, {
 
 struct StringDeleteOrReplace : zeno::INode {
     virtual void apply() override {
-        std::string multiline_string = get_input2<std::string>("String");
-        std::string oldString = get_input2<std::string>("oldString");
-        std::string RefString = get_input2<std::string>("RefString");
-        auto N = get_input2<int>("N");
-        std::string newString = get_input2<std::string>("newString");
-        bool UseLastRefString = get_input2<bool>("UseLastRefString");
+        std::string multiline_string = ZImpl(get_input2<std::string>("String"));
+        std::string oldString = ZImpl(get_input2<std::string>("oldString"));
+        std::string RefString = ZImpl(get_input2<std::string>("RefString"));
+        auto N = ZImpl(get_input2<int>("N"));
+        std::string newString = ZImpl(get_input2<std::string>("newString"));
+        bool UseLastRefString = ZImpl(get_input2<bool>("UseLastRefString"));
         std::string output = multiline_string;
         if(oldString == "AllRefString") {
             output = strreplace(multiline_string, RefString, newString);
@@ -985,7 +1119,7 @@ struct StringDeleteOrReplace : zeno::INode {
                 throw std::runtime_error("[StringDeleteOrReplace] RefString not found or N is too large.");
             }
         }
-        set_output2("string", output);
+        ZImpl(set_output2("string", output));
     }
 };
 
@@ -1006,8 +1140,8 @@ ZENDEFNODE(StringDeleteOrReplace, {
 
 struct StringEditNumber : zeno::INode {
     virtual void apply() override {
-        auto string = get_input2<std::string>("String");
-        auto method = get_input2<std::string>("Method");
+        auto string = ZImpl(get_input2<std::string>("String"));
+        auto method = ZImpl(get_input2<std::string>("Method"));
         if (method == "Remove_all_numbers") {
             string.erase(std::remove_if(string.begin(), string.end(), [](char c) { return std::isdigit(c); }), string.end());
         }
@@ -1033,7 +1167,7 @@ struct StringEditNumber : zeno::INode {
             }
             string = num;
         }
-        set_output2("string", string);
+        ZImpl(set_output2("string", string));
         
     }
 };

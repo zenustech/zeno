@@ -246,15 +246,15 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
                 QModelIndex idx = pModel->nodeIndex(ident);
                 if (idx.isValid())
                 {
-                    const QString& objPath = idx.data(ROLE_OBJPATH).toString();
+                    const QString& objPath = idx.data(QtRole::ROLE_OBJPATH).toString();
                     ZenoMainWindow* pWin = zenoApp->getMainWindow();
                     ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
                     if (pEditor) {
                         pEditor->activateTab2(objPath);
                     }
 
-                    QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
-                    const QString& subgName = subgIdx.data(ROLE_CLASS_NAME).toString();
+                    QModelIndex subgIdx = idx.data(QtRole::ROLE_SUBGRAPH_IDX).toModelIndex();
+                    const QString& subgName = subgIdx.data(QtRole::ROLE_CLASS_NAME).toString();
                     
                     ZASSERT_EXIT(pWin, false);
                     
@@ -340,7 +340,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     , m_pFilterModel(nullptr)
     , m_pMenu(nullptr)
 {
-    m_ui = new Ui::LogPanel;
+    m_ui.reset(new Ui::LogPanel);
     m_ui->setupUi(this);
 
     m_ui->btnDebug->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
@@ -417,7 +417,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 
 void ZlogPanel::initModel()
 {
-    m_logModel = new QStandardItemModel;
+    m_logModel = new QStandardItemModel(this);
     m_pFilterModel = new CustomFilterProxyModel(this);
     m_pFilterModel->setSourceModel(m_logModel);
     m_pFilterModel->setFilterRole(ROLE_LOGTYPE);

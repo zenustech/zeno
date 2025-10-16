@@ -11,8 +11,8 @@ namespace zeno {
 // https://github.com/bulletphysics/bullet3/blob/master/examples/VoronoiFracture/VoronoiFractureDemo.cpp#L362
 struct PrimitiveCalcCentroid : zeno::INode {
     virtual void apply() override {
-        auto method = get_param<std::string>("method");
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto method = ZImpl(get_param<std::string>("method"));
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         auto &pos = prim->attr<zeno::vec3f>("pos");
 
         vec4f acc;
@@ -47,8 +47,8 @@ struct PrimitiveCalcCentroid : zeno::INode {
         auto centroid = acc[3] == 0 ? vec3f(0) :
             vec3f(acc[0], acc[1], acc[2]) / acc[3];
 
-        set_output2("centroid", centroid);
-        set_output2("totalArea", std::abs(acc[3]));
+        ZImpl(set_output2("centroid", centroid));
+        ZImpl(set_output2("totalArea", std::abs(acc[3])));
     }
 };
 

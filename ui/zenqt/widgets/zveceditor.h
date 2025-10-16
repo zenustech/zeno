@@ -8,6 +8,7 @@
 
 class ZLineEdit;
 class ZTextEdit;
+class ZCoreParamLineEdit;
 
 class ZVecEditor : public QWidget
 {
@@ -46,7 +47,7 @@ private:
     void showMultiLineEdit(int i);
 
     zeno::vecvar m_vec;
-    QVector<ZLineEdit*> m_editors;
+    QVector<ZCoreParamLineEdit*> m_editors;
     int m_deflSize;
     QString m_styleCls;
     QPersistentModelIndex m_nodeIdx;

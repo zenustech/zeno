@@ -1,4 +1,4 @@
-#ifdef ZENO_WITH_PYTHON
+#if 0
 #include "zenopyapi.h"
 
 namespace zeno {
@@ -142,7 +142,7 @@ Node_getattr(ZNodeObject* self, char* name)
     }
     else {
         bool bExisted = false;
-        zeno::ParamPrimitive prim = spNode->get_input_prim_param(name, &bExisted);
+        zeno::ParamPrimitive prim = spNode->ZImpl(get_input_prim_param(name, &bExisted));
         if (!bExisted) {
             PyErr_SetString(PyExc_Exception, "build value failed");
             PyErr_WriteUnraisable(Py_None);
@@ -197,7 +197,7 @@ Node_setattr(ZNodeObject* self, char* name, PyObject* v)
     else
     {
         bool bExisted = false;
-        zeno::ParamPrimitive prim = spNode->get_input_prim_param(name, &bExisted);
+        zeno::ParamPrimitive prim = spNode->ZImpl(get_input_prim_param(name, &bExisted));
         if (!bExisted) {
             PyErr_SetString(PyExc_Exception, "build value failed");
             PyErr_WriteUnraisable(Py_None);

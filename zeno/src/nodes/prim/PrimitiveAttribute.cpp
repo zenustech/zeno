@@ -7,12 +7,12 @@ namespace zeno {
 
 struct PrimitiveAddAttr : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>("name");
-        auto type = get_param<std::string>("type");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto name = ZImpl(get_param<std::string>("name"));
+        auto type = ZImpl(get_param<std::string>("type"));
         if (type == "float") {
-            if (has_input("fillValue")) {
-                auto fillvalue = get_input<NumericObject>("fillValue")->get<float>();
+            if (ZImpl(has_input("fillValue"))) {
+                auto fillvalue = ZImpl(get_input<NumericObject>("fillValue"))->get<float>();
                 prim->add_attr<float>(name, fillvalue);
             }
             else {
@@ -20,8 +20,8 @@ struct PrimitiveAddAttr : zeno::INode {
             }
         }
         else if (type == "float3") {
-            if (has_input("fillValue")) {
-                auto fillvalue = get_input<NumericObject>("fillValue")->get<zeno::vec3f>();
+            if (ZImpl(has_input("fillValue"))) {
+                auto fillvalue = ZImpl(get_input<NumericObject>("fillValue"))->get<zeno::vec3f>();
                 prim->add_attr<zeno::vec3f>(name, fillvalue);
             }
             else {
@@ -32,7 +32,7 @@ struct PrimitiveAddAttr : zeno::INode {
             throw Exception("Bad attribute type: " + type);
         }
 
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 
@@ -54,8 +54,8 @@ ZENDEFNODE(PrimitiveAddAttr,
 
 struct PrimitiveDelAttr : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>("name");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto name = ZImpl(get_param<std::string>("name"));
 
 
         prim->verts.attrs.erase(name);
@@ -64,7 +64,7 @@ struct PrimitiveDelAttr : zeno::INode {
         prim->polys.attrs.erase(name);
         prim->loops.attrs.erase(name);
 
-        set_output("prim", get_input("prim"));
+        ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
     }
 };
 
@@ -83,12 +83,12 @@ ZENDEFNODE(PrimitiveDelAttr,
 
 struct PrimitiveGetAttrValue : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>(("name"));
-        auto type = get_param<std::string>(("type"));
-        auto index = get_input<zeno::NumericObject>("index")->get<int>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto name = ZImpl(get_param<std::string>(("name")));
+        auto type = ZImpl(get_param<std::string>(("type")));
+        auto index = ZImpl(get_input<zeno::NumericObject>("index"))->get<int>();
 
-        auto value = std::make_shared<zeno::NumericObject>();
+        auto value = std::make_unique<zeno::NumericObject>();
 
         if (type == "float") {
             value->set<float>(0);
@@ -107,7 +107,7 @@ struct PrimitiveGetAttrValue : zeno::INode {
         else {
             throw Exception("Bad attribute type: " + type);
         }
-        set_output("value", std::move(value));
+        ZImpl(set_output("value", std::move(value)));
     }
 };
 
@@ -128,20 +128,20 @@ ZENDEFNODE(PrimitiveGetAttrValue, {
 
 struct PrimitiveSetAttrValue : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>(("name"));
-        auto type = get_param<std::string>(("type"));
-        auto index = get_input<zeno::NumericObject>("index")->get<int>();
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto name = ZImpl(get_param<std::string>(("name")));
+        auto type = ZImpl(get_param<std::string>(("type")));
+        auto index = ZImpl(get_input<zeno::NumericObject>("index"))->get<int>();
 
         if (type == "float") {
-            auto value = get_input<zeno::NumericObject>("value")->get<float>();
+            auto value = ZImpl(get_input<zeno::NumericObject>("value"))->get<float>();
                 std::vector<float>& attr_arr = prim->add_attr<float>(name);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
                 }
         }
         else if (type == "float3") {
-            auto value = get_input<zeno::NumericObject>("value")->get<zeno::vec3f>();
+            auto value = ZImpl(get_input<zeno::NumericObject>("value"))->get<zeno::vec3f>();
                 std::vector<vec3f>& attr_arr = prim->add_attr<zeno::vec3f>(name);
                 if (index < attr_arr.size()) {
                     attr_arr[index] = value;
@@ -150,7 +150,7 @@ struct PrimitiveSetAttrValue : zeno::INode {
         else {
             throw Exception("Bad attribute type: " + type);
         }
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

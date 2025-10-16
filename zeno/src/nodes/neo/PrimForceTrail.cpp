@@ -5,8 +5,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
-#include <zeno/extra/TempNode.h>
-#include <zeno/core/INode.h>
+#include <zeno/core/NodeImpl.h>
 #include <zeno/zeno.h>
 #include <limits>
 
@@ -43,30 +42,30 @@ static vec3f lineGrad(vec3f a, vec3f b, vec3f p) {
 
 struct PrimForceTrail : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto trailPrim = get_input<PrimitiveObject>("trailPrim");
-        auto forceAttr = get_input2<std::string>("forceAttr");
-        auto attractForce = get_input2<float>("attractForce");
-        auto driftForce = get_input2<float>("driftForce");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+        auto trailPrim = ZImpl(get_input<PrimitiveObject>("trailPrim"));
+        auto forceAttr = ZImpl(get_input2<std::string>("forceAttr"));
+        auto attractForce = ZImpl(get_input2<float>("attractForce"));
+        auto driftForce = ZImpl(get_input2<float>("driftForce"));
 
-        auto attractUDFCurve = functor_variant(has_input("attractUDFCurve") ? 1 : 0, [&] {
+        auto attractUDFCurve = functor_variant(ZImpl(has_input("attractUDFCurve")) ? 1 : 0, [&] {
             return [] (float x) -> float {
                 return x;
             };
         }, [&] {
-            auto curve = get_input_prim<CurvesData>("attractUDFCurve");
+            auto curve = ZImpl(get_input_prim<CurvesData>("attractUDFCurve"));
             return [=] (float x) -> float {
-                return curve->eval(x);
+                return curve.eval(x);
             };
         });
-        auto driftCoordCurve = functor_variant(has_input("driftCoordCurve") ? 1 : 0, [&] {
+        auto driftCoordCurve = functor_variant(ZImpl(has_input("driftCoordCurve")) ? 1 : 0, [&] {
             return [] (float x) -> float {
                 return 1.f;
             };
         }, [&] {
-            auto curve = get_input_prim<CurvesData>("driftCoordCurve");
+            auto curve = ZImpl(get_input_prim<CurvesData>("driftCoordCurve"));
             return [=] (float x) -> float {
-                return curve->eval(x);
+                return curve.eval(x);
             };
         });
 
@@ -104,7 +103,7 @@ struct PrimForceTrail : INode {
             });
         }, attractUDFCurve, driftCoordCurve);
 
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

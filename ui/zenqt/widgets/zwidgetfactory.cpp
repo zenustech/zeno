@@ -16,6 +16,7 @@
 #include "variantptr.h"
 #include "zassert.h"
 #include "zspinboxslider.h"
+#include "floatslider.h"
 #include "zdicttableview.h"
 #include "nodeeditor/gv/zitemfactory.h"
 #include "widgets/zpathedit.h"
@@ -23,6 +24,10 @@
 #include "util/jsonhelper.h"
 #include "widgets/zcodeeditor.h"
 #include <zeno/utils/helper.h>
+#include <zeno/core/typeinfo.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
+#include "declmetatype.h"
 
 
 using namespace zeno::reflect;
@@ -31,19 +36,22 @@ namespace zenoui
 {
     QWidget* createWidget(
         const QModelIndex& nodeIdx,
-        const Any& value,                   //±‡º≠÷µ£¨¿Ô√Êµƒ¿‡–ÕŒ¥±ÿ «≤Œ ˝’Ê’˝µƒ¿‡–Õ£¨±»»Áπ´ Ωµƒ±‡º≠÷µ
+        const Any& value,                   //ÁºñËæëÂÄºÔºåÈáåÈù¢ÁöÑÁ±ªÂûãÊú™ÂøÖÊòØÂèÇÊï∞ÁúüÊ≠£ÁöÑÁ±ªÂûãÔºåÊØîÂ¶ÇÂÖ¨ÂºèÁöÑÁºñËæëÂÄº
         zeno::ParamControl ctrl,
-        const zeno::ParamType paramType,    //≤Œ ˝’Ê’˝µƒ¿‡–Õ
+        const zeno::ParamType paramType,    //ÂèÇÊï∞ÁúüÊ≠£ÁöÑÁ±ªÂûã
         CallbackCollection cbSet,
         const Any& controlProps
     )
     {
+        if (!value.has_value())
+            return nullptr;
+        size_t actualType = value.type().hash_code();
         switch (ctrl)
         {
             case zeno::Lineedit:
             {
                 if (paramType == gParamType_String) {
-                    QString text = QString::fromStdString(any_cast<std::string>(value));
+                    QString text = QString::fromStdString(zeno::any_cast_to_string(value));
                     ZLineEdit* pLineEdit = new ZLineEdit(text);
                     pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                     pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
@@ -55,8 +63,18 @@ namespace zenoui
                     return pLineEdit;
                 }
                 else {
-                    ZASSERT_EXIT(value.type().hash_code() == gParamType_PrimVariant, nullptr);
-                    const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
+                    zeno::PrimVar var;
+                    if (value.type().hash_code() == gParamType_Int) {
+                        var = zeno::reflect::make_any<zeno::PrimVar>(any_cast<int>(value));
+                    } else if (value.type().hash_code() == gParamType_Float) {
+                        var = zeno::reflect::make_any<zeno::PrimVar>(any_cast<float>(value));
+                    } else if (value.type().hash_code() == gParamType_String) {
+                        var = zeno::reflect::make_any<zeno::PrimVar>(zeno::any_cast_to_string(value));
+                    } else if (value.type().hash_code() == gParamType_PrimVariant) {
+                        var = any_cast<zeno::PrimVar>(value);
+                    } else {
+                        return nullptr;
+                    }
 
                     ZCoreParamLineEdit* pLineEdit = new ZCoreParamLineEdit(var, paramType);
 
@@ -78,7 +96,7 @@ namespace zenoui
                     pCheckbox->setCheckState(any_cast<bool>(value) ? Qt::Checked : Qt::Unchecked);
                 }
                 else if (typecode == gParamType_Int) {
-                    //“‘∫Û∑¥…‰∂®“Â¿Ô≤ª≈≈≥˝”√ªßª·–¥int¿‡–Õ»¥”√checkbox
+                    //‰ª•ÂêéÂèçÂ∞ÑÂÆö‰πâÈáå‰∏çÊéíÈô§Áî®Êà∑‰ºöÂÜôintÁ±ªÂûãÂç¥Áî®checkbox
                     pCheckbox->setCheckState(any_cast<int>(value) ? Qt::Checked : Qt::Unchecked);
                 }
                 else {
@@ -95,10 +113,10 @@ namespace zenoui
             case zeno::WritePathEdit:
             case zeno::DirectoryPathEdit:
             {
-                if (value.type().hash_code() != gParamType_String) {
+                if (paramType != gParamType_String) {
                     ZASSERT_EXIT(false, nullptr);
                 }
-                QString text = QString::fromStdString(any_cast<std::string>(value));
+                QString text = QString::fromStdString(zeno::any_cast_to_string(value));
                 ZPathEdit *pathLineEdit = new ZPathEdit(text, ctrl);
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
@@ -111,10 +129,10 @@ namespace zenoui
             }
             case zeno::Multiline:
             {
-                if (value.type().hash_code() != gParamType_String) {
+                if (paramType != gParamType_String) {
                     ZASSERT_EXIT(false, nullptr);
                 }
-                QString text = QString::fromStdString(any_cast<std::string>(value));
+                QString text = QString::fromStdString(zeno::any_cast_to_string(value));
 
                 ZTextEdit* pTextEdit = new ZTextEdit;
                 pTextEdit->setNodeIdx(nodeIdx);
@@ -157,39 +175,42 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Heatmap");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    //TODO
-                    /*
-                    QString val = cbSet.cbGetIndexData().toString();
-                    ZenoHeatMapEditor editor(val);
+                    const auto& qvar = cbSet.cbGetIndexData();
+                    const auto& anyVal = qvar.value<zeno::reflect::Any>();
+                    zeno::HeatmapData heatmap = any_cast<zeno::HeatmapData>(anyVal);
+                    ZenoHeatMapEditor editor(heatmap, zenoApp->getMainWindow());
                     editor.exec();
-                    QString newVal = editor.colorRamps();
-                    cbSet.cbEditFinished(QVariant::fromValue(newVal));
-                    */
+                    heatmap = editor.colorRamps();
+                    cbSet.cbEditFinished(heatmap);
                 });
                 return pBtn;
             }
             case zeno::ColorVec:
             {
-                if (value.type().hash_code() != gParamType_Vec3f) {
+                if (paramType != gParamType_Vec3f) {
                     ZASSERT_EXIT(false, nullptr);
                 }
+                ZASSERT_EXIT(value.type().hash_code() == gParamType_VecEdit, nullptr);
 
-                zeno::vec3f colorVec = any_cast<zeno::vec3f>(value);
+                const zeno::vecvar& vecvar = any_cast<zeno::vecvar&>(value);
+                zeno::vec3f colorVec(std::get<float>(vecvar[0]), std::get<float>(vecvar[1]), std::get<float>(vecvar[2]));
+
                 QColor currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
 
                 QPushButton *pBtn = new QPushButton;
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(currentColor.name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = ColorEditor::getColor(pBtn->palette().window().color());
+                    QColor color = ColorEditor::getColor(pBtn->palette().window().color(), zenoApp->getMainWindow());
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
                         if (ctrl == zeno::ColorVec) {
                             UI_VECTYPE colorVec(3);
-                            color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
-                            zeno::vec3f newVal(colorVec[0], colorVec[1], colorVec[2]);
-                            cbSet.cbEditFinished(newVal);
+                            qreal r, g, b;
+                            color.getRgbF(&r, &g, &b);
+                            zeno::vecvar newValue = { static_cast<float>(r), static_cast<float>(g), static_cast<float>(b) };
+                            cbSet.cbEditFinished(newValue);
                         }
                     }
                 });
@@ -229,12 +250,12 @@ namespace zenoui
             case zeno::Combobox:
             {
                 ZASSERT_EXIT(paramType == gParamType_String, nullptr);
-                QString text = QString::fromStdString(any_cast<std::string>(value));
+                QString text = QString::fromStdString(zeno::any_cast_to_string(value));
 
                 QStringList items;
                 if (controlProps.has_value())
                 {
-                    auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(controlProps);
+                    const auto& vec = zeno::reflect::any_cast<std::vector<std::string>>(controlProps);
                     for (auto item : vec)
                         items.push_back(QString::fromStdString(item));
                 }
@@ -242,8 +263,8 @@ namespace zenoui
                 ZComboBox *pComboBox = new ZComboBox;
                 pComboBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pComboBox->addItems(items);
-                pComboBox->setCurrentText(text);
                 pComboBox->setEditable(true);
+                pComboBox->setCurrentText(text);
                 pComboBox->setItemDelegate(new ZComboBoxItemDelegate2(pComboBox));
 
                 QObject::connect(pComboBox, &ZComboBox::_textActivated, [=](const QString& newText) {
@@ -256,19 +277,19 @@ namespace zenoui
                 QPushButton* pBtn = new QPushButton("Edit Curve");
                 pBtn->setProperty("cssClass", "proppanel");
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true);
+                    ZCurveMapEditor* pEditor = new ZCurveMapEditor(true, zenoApp->getMainWindow());
                     pEditor->setAttribute(Qt::WA_DeleteOnClose);
 
                     QObject::connect(pEditor, &ZCurveMapEditor::finished, [=](int result) {
-                        zeno::CurvesData& newVal = pEditor->curves();
-                        auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
+                        const zeno::CurvesData& newVal = pEditor->curves();
+                        const auto& anyVal = zeno::reflect::make_any<zeno::CurvesData>(newVal);
                         cbSet.cbEditFinished(anyVal);
                     });
 
                     zeno::CurvesData curves;
                     if (cbSet.cbGetIndexData)
                     {
-                        auto& qvar = cbSet.cbGetIndexData();
+                        const auto& qvar = cbSet.cbGetIndexData();
                         if (qvar.canConvert<zeno::reflect::Any>()) {
                             const auto& anyVal = qvar.value<zeno::reflect::Any>();
                             if (zeno::reflect::get_type<zeno::CurvesData>() == anyVal.type()) {
@@ -283,10 +304,46 @@ namespace zenoui
             }
             case zeno::Slider:
             {
-                ZASSERT_EXIT(paramType == gParamType_Int, nullptr);
-                int intVal = any_cast<int>(value);
+                SLIDER_INFO sliderInfo;
+                if (controlProps.has_value()) {
+                    size_t ctrlPropsType = controlProps.type().hash_code();
+                    if (zeno::types::gParamType_IntList == ctrlPropsType) {
+                        const auto& vec = zeno::reflect::any_cast<std::vector<int>>(controlProps);
+                        ZASSERT_EXIT(vec.size() == 3, nullptr);
+                        sliderInfo.min = vec[0];
+                        sliderInfo.max = vec[1];
+                        sliderInfo.step = vec[2];
+                    }
+                    else if (zeno::types::gParamType_FloatList == ctrlPropsType) {
+                        const auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                        ZASSERT_EXIT(vec.size() == 3, nullptr);
+                        sliderInfo.min = vec[0];
+                        sliderInfo.max = vec[1];
+                        sliderInfo.step = vec[2];
+                    }
+                }
 
-                QSlider* pSlider = new QSlider(Qt::Horizontal);
+                bool isIntType = false;
+                qreal currVal = 0;
+                if (actualType == gParamType_PrimVariant) {
+                    const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
+                    if (std::holds_alternative<int>(var)) {
+                        currVal = std::get<int>(var);
+                        isIntType = true;
+                    }
+                    else if (std::holds_alternative<float>(var)) {
+                        currVal = std::get<float>(var);
+                    }
+                }
+                else if (actualType == gParamType_Int) {
+                    currVal = any_cast<int>(value);
+                    isIntType = true;
+                }
+                else if (actualType == gParamType_Float) {
+                    currVal = any_cast<float>(value);
+                }
+
+                FloatSlider* pSlider = new FloatSlider(isIntType);
                 pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet("\
                     QSlider::groove:horizontal {\
                         height: 4px;\
@@ -306,45 +363,29 @@ namespace zenoui
                         background: #707D9C;\
                     }\
                 "));
-                pSlider->setValue(intVal);
-
-                SLIDER_INFO sliderInfo;
                 
-                if (controlProps.has_value()) {
-                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
-                    ZASSERT_EXIT(vec.size() == 3, nullptr);
-                    sliderInfo.min = vec[0];
-                    sliderInfo.max = vec[1];
-                    sliderInfo.step = vec[2];
-                }
-                pSlider->setSingleStep(sliderInfo.step);
-                pSlider->setRange(sliderInfo.min, sliderInfo.max);
+                pSlider->setFloatMinimum(sliderInfo.min);
+                pSlider->setFloatMaximum(sliderInfo.max);
+                pSlider->setFloatStep(sliderInfo.step);
+                pSlider->setFloatValue(currVal);
 
-                QObject::connect(pSlider, &QSlider::valueChanged, [=](int newVal) {
+                QObject::connect(pSlider, &FloatSlider::floatValueChanged, [=](float newVal) {
                     cbSet.cbEditFinished(newVal);
-                });
-
-                QObject::connect(pSlider, &QSlider::sliderPressed, [=]() {
-                    QRect rc = pSlider->rect();
-                    QPoint br = pSlider->mapToGlobal(rc.bottomRight());
-                    QPoint pos = QCursor::pos();
-                    pos.setY(br.y());
-                    QToolTip::showText(pos, QString("%1").arg(pSlider->value()), nullptr);
-                });
-
-                QObject::connect(pSlider, &QSlider::sliderMoved, [=](int value) {
-                    QRect rc = pSlider->rect();
-                    QPoint br = pSlider->mapToGlobal(rc.bottomRight());
-                    QPoint pos = QCursor::pos();
-                    pos.setY(br.y());
-                    QToolTip::showText(pos, QString("%1").arg(value), nullptr);
                 });
                 return pSlider;
             }
             case zeno::SpinBox:
             {
-                ZASSERT_EXIT(paramType == gParamType_Int, nullptr);
-                int intVal = any_cast<int>(value);
+                int intVal = 0;
+                if (paramType == gParamType_PrimVariant) {
+                    const zeno::PrimVar& var = any_cast<zeno::PrimVar>(value);
+                    if (std::holds_alternative<int>(var)) {
+                        intVal = std::get<int>(var);
+                    }
+                }
+                else if (paramType == gParamType_Int) {
+                    intVal = any_cast<int>(value);
+                }
 
                 QSpinBox* pSpinBox = new QSpinBox;
                 pSpinBox->setProperty("cssClass", "control");
@@ -352,14 +393,25 @@ namespace zenoui
                 pSpinBox->setValue(intVal);
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
-                
+
                 if (controlProps.has_value()) {
-                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
-                    ZASSERT_EXIT(vec.size() == 3, nullptr);
-                    sliderInfo.min = vec[0];
-                    sliderInfo.max = vec[1];
-                    sliderInfo.step = vec[2];
+                    size_t ctrlPropsType = controlProps.type().hash_code();
+                    if (zeno::types::gParamType_IntList == ctrlPropsType) {
+                        const auto& vec = zeno::reflect::any_cast<std::vector<int>>(controlProps);
+                        ZASSERT_EXIT(vec.size() == 3, nullptr);
+                        sliderInfo.min = vec[0];
+                        sliderInfo.max = vec[1];
+                        sliderInfo.step = vec[2];
+                    }
+                    else if (zeno::types::gParamType_FloatList == ctrlPropsType) {
+                        const auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                        ZASSERT_EXIT(vec.size() == 3, nullptr);
+                        sliderInfo.min = vec[0];
+                        sliderInfo.max = vec[1];
+                        sliderInfo.step = vec[2];
+                    }
                 }
+
                 pSpinBox->setSingleStep(sliderInfo.step);
                 pSpinBox->setRange(sliderInfo.min, sliderInfo.max);
                 QObject::connect(pSpinBox, static_cast<void (QSpinBox::*)(int)>(& QSpinBox::valueChanged),[=](int newVal) { 
@@ -378,7 +430,7 @@ namespace zenoui
                 pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 SLIDER_INFO sliderInfo;
                 if (controlProps.has_value()) {
-                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    const auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
                     ZASSERT_EXIT(vec.size() == 3, nullptr);
                     sliderInfo.min = vec[0];
                     sliderInfo.max = vec[1];
@@ -399,7 +451,7 @@ namespace zenoui
                 ZSpinBoxSlider* pSlider = new ZSpinBoxSlider;
                 SLIDER_INFO sliderInfo;
                 if (controlProps.has_value()) {
-                    auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
+                    const auto& vec = zeno::reflect::any_cast<std::vector<float>>(controlProps);
                     ZASSERT_EXIT(vec.size() == 3, nullptr);
                     sliderInfo.min = vec[0];
                     sliderInfo.max = vec[1];
@@ -416,9 +468,10 @@ namespace zenoui
             case zeno::CodeEditor:
             {
                 ZASSERT_EXIT(paramType == gParamType_String, nullptr);
-                QString text = QString::fromStdString(any_cast<std::string>(value));
+                QString text = QString::fromStdString(zeno::any_cast_to_string(value));
 
                 ZCodeEditor* pCodeEditor = new ZCodeEditor(text);
+                pCodeEditor->setNodeIndex(nodeIdx);
                 QObject::connect(pCodeEditor, &ZCodeEditor::editFinished, [=](const QString& newText) {
                     cbSet.cbEditFinished(newText.toStdString());
                 });

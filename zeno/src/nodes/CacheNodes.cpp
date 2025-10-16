@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/ConditionObject.h>
@@ -16,15 +16,15 @@ struct CachedByKey : zeno::INode {
 
     virtual void preApply() override {
         requireInput("key");
-        auto key = get_input<zeno::StringObject>("key")->get();
+        auto key = ZImpl(get_input<zeno::StringObject>("key")->get();
         if (auto it = cache.find(key); it != cache.end()) {
             auto value = it->second;
-            set_output("output", std::move(value));
+            ZImpl(set_output("output", std::move(value));
         } else {
             requireInput("input");
-            auto value = get_input("input");
+            auto value = ZImpl(clone_input("input");
             cache[key] = value;
-            set_output("output", std::move(value));
+            ZImpl(set_output("output", std::move(value));
         }
     }
 
@@ -43,9 +43,9 @@ struct CachedIf : zeno::INode {
     bool m_done = false;
 
     virtual void preApply() override {
-        if (has_input("keepCache")) {
+        if (ZImpl(has_input("keepCache")) {
             requireInput("keepCache");
-            bool keep = evaluate_condition(get_input("keepCache").get());
+            bool keep = evaluate_condition(ZImpl(clone_input("keepCache").get());
             if (!keep) {
                 m_done = false;
             }
@@ -57,8 +57,8 @@ struct CachedIf : zeno::INode {
     }
 
     virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
+        auto ptr = ZImpl(clone_input("input");
+        ZImpl(set_output("output", std::move(ptr));
     }
 };
 
@@ -81,8 +81,8 @@ struct CachedOnce : zeno::INode {
     }
 
     virtual void apply() override {
-        auto ptr = get_input("input");
-        set_output("output", std::move(ptr));
+        auto ptr = ZImpl(clone_input("input");
+        ZImpl(set_output("output", std::move(ptr));
     }
 };
 
@@ -98,10 +98,10 @@ struct CacheLastFrameBegin : zeno::INode {
 
     virtual void apply() override { 
         if (m_lastFrameCache == nullptr) {
-            m_lastFrameCache = (*get_input("input")).clone();            
+            m_lastFrameCache = (*ZImpl(clone_input("input")).clone();            
         }         
-        set_output("lastFrame", std::move(m_lastFrameCache));
-        set_output("linkFrom", std::make_shared<zeno::IObject>());
+        ZImpl(set_output("lastFrame", std::move(m_lastFrameCache));
+        ZImpl(set_output("linkFrom", std::make_unique<zeno::IObject>());
     }
 };
 
@@ -137,9 +137,9 @@ struct CacheLastFrameEnd : zeno::INode {
                 printf("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
                 abort();
             }
-            auto updatedCache = (*get_input("updateCache")).clone();
+            auto updatedCache = (*ZImpl(clone_input("updateCache")).clone();
             m_CacheLastFrameBegin->m_lastFrameCache = updatedCache;
-            set_output("output", std::move(updatedCache));
+            ZImpl(set_output("output", std::move(updatedCache));
             return;
         }
         throw zeno::Exception("CacheLastFrameEnd Node: 'linkTo' socket must be connected to CacheLastFrameBegin Node 'linkFrom' socket!\n");
@@ -162,10 +162,10 @@ ZENO_DEFNODE(CacheLastFrameEnd)(
 
 /*struct MakeMutable : zeno::INode {
     virtual void apply() override {
-        auto obj = get_input2("anyobj");
-        auto ptr = std::make_shared<MutableObject>();
+        auto obj = ZImpl(get_input2("anyobj");
+        auto ptr = std::make_unique<MutableObject>();
         ptr->set(std::move(obj));
-        set_output("mutable", std::move(ptr));
+        ZImpl(set_output("mutable", std::move(ptr));
     }
 };
 
@@ -179,10 +179,10 @@ ZENDEFNODE(MakeMutable, {
 
 struct UpdateMutable : zeno::INode {
     virtual void apply() override {
-        auto obj = get_input2("anyobj");
-        auto ptr = get_input<MutableObject>("mutable");
+        auto obj = ZImpl(get_input2("anyobj");
+        auto ptr = ZImpl(get_input<MutableObject>("mutable");
         ptr->set(std::move(obj));
-        set_output("mutable", std::move(ptr));
+        ZImpl(set_output("mutable", std::move(ptr));
     }
 };
 
@@ -196,9 +196,9 @@ ZENDEFNODE(UpdateMutable, {
 
 struct ReadMutable : zeno::INode {
     virtual void apply() override {
-        auto ptr = get_input<MutableObject>("mutable");
+        auto ptr = ZImpl(get_input<MutableObject>("mutable");
         auto obj = ptr->value;
-        set_output2("anyobj", std::move(obj));
+        ZImpl(set_output2("anyobj", std::move(obj));
     }
 };
 

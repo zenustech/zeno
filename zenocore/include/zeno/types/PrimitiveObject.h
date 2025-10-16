@@ -131,6 +131,12 @@ static void polygonDecompose(std::vector<zeno::vec3f> & verts, std::vector<int> 
 }
 
 struct PrimitiveObject : IObjectClone<PrimitiveObject> {
+
+
+    void Delete() override {
+        //delete this;
+    }
+
     AttrVector<vec3f> verts;
     AttrVector<int> points;
     AttrVector<vec2i> lines;
@@ -288,5 +294,8 @@ struct PrimitiveObject : IObjectClone<PrimitiveObject> {
     }
     // end of deprecated
 };
+
+ZENO_API PrimitiveObject* createPrimitive();
+ZENO_API PrimitiveObject* clonePrimitive(PrimitiveObject* pObj);
 
 } // namespace zeno

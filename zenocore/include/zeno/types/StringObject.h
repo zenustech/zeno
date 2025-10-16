@@ -6,22 +6,24 @@
 namespace zeno {
 
 struct StringObject : IObjectClone<StringObject> {
-  std::string value;
+    std::string value;
 
-  StringObject() = default;
-  StringObject(std::string const &value) : value(value) {}
+    StringObject() = default;
+    StringObject(std::string const &value) : value(value) {}
 
-  std::string const &get() const {
-    return value;
-  }
+    void Delete() override { }
 
-  std::string &get() {
-    return value;
-  }
+    std::string const& get() const {
+        return value;
+    }
 
-  void set(std::string const &x) {
-    value = x;
-  }
+    std::string& get() {
+        return value;
+    }
+
+    void set(std::string const& x) {
+        value = x;
+    }
 };
 
 }

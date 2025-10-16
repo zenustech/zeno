@@ -7,6 +7,7 @@
 #include "zfxparser.hpp"
 #include <regex>
 #include <zeno/core/FunctionManager.h>
+#include "../utils/zfxutil.h"
 
 
 namespace zeno
@@ -37,18 +38,31 @@ ZENO_API int ZfxExecute::parse() {
 ZENO_API int ZfxExecute::execute() {
     int ret = parse();
     if (ret != 0) {
-        zeno::log_error("parse error!");
-        return ret;
+        throw makeError<ZfxParseError>();
     }
     //TODO: error exception catch.
     if (m_root) {
-        auto& funcMgr = zeno::getSession().funcManager;
-        funcMgr->executeZfx(m_root, m_context);
+        FunctionManager funcMgr;
+        //auto& funcMgr = zeno::getSession().funcManager;
+        funcMgr.executeZfx(m_root, m_context);
     }
     else {
 
     }
     return ret;
+}
+
+zfxvariant ZfxExecute::execute_fmla() {
+    int ret = parse();
+    if (ret != 0) {
+        throw makeError<ZfxParseError>();
+    }
+    //只支持单值计算
+    ZfxElemFilter filter(1, 1);
+    //auto& funcMgr = zeno::getSession().funcManager;
+    FunctionManager funcMgr;
+    const ZfxVariable& res = funcMgr.execute(m_root, filter, m_context);
+    return zeno::zfx::getZfxVarElement(res.value, 0);
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeNewNode(nodeType type, operatorVals op, std::vector<std::shared_ptr<ZfxASTNode>> children) {
@@ -123,13 +137,13 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArr
         spNode->opVal = bArray ? TYPE_STRING_ARR : TYPE_STRING;
     }
     else if (text == "vector2") {
-        spNode->opVal = TYPE_VECTOR2;
+        spNode->opVal = bArray ? TYPE_VECTOR2_ARR : TYPE_VECTOR2;
     }
-    else if (text == "vector3") {
-        spNode->opVal = TYPE_VECTOR3;
+    else if (text == "vector3" || text == "vector") {
+        spNode->opVal = bArray ? TYPE_VECTOR3_ARR : TYPE_VECTOR3;
     }
     else if (text == "vector4") {
-        spNode->opVal = TYPE_VECTOR4;
+        spNode->opVal = bArray ? TYPE_VECTOR4_ARR : TYPE_VECTOR4;
     }
     else if (text == "matrix2") {
         spNode->opVal = TYPE_MATRIX2;
@@ -144,6 +158,13 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeTypeNode(std::string text, bool bArr
 }
 
 std::shared_ptr<ZfxASTNode> ZfxExecute::makeComponentVisit(std::shared_ptr<ZfxASTNode> pExpression, std::string component) {
+    if (pExpression->type == ZENVAR && pExpression->bAttr) {
+        std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
+        childNode->value = component;
+        pExpression->opVal = COMPVISIT;
+        pExpression->children.push_back(childNode);
+        return pExpression;
+    }
 
     std::shared_ptr<ZfxASTNode> childNode = std::make_shared<ZfxASTNode>();
     childNode->type = ATTR_VAR;
@@ -161,6 +182,15 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeQuoteStringNode(std::string text) {
     spNode->type = STRING;
     spNode->opVal = UNDEFINE_OP;
     spNode->value = text.substr(1);
+    return spNode;
+}
+
+std::shared_ptr<ZfxASTNode> ZfxExecute::makeNegativeNode(std::shared_ptr<ZfxASTNode> exp) {
+    std::shared_ptr<ZfxASTNode> spNode = std::make_shared<ZfxASTNode>();
+    spNode->type = NEGATIVE;
+    spNode->opVal = NEG;
+    if (exp)
+        spNode->children.push_back(exp);
     return spNode;
 }
 
@@ -189,6 +219,10 @@ std::shared_ptr<ZfxASTNode> ZfxExecute::makeEmptyNode() {
     n->type = PLACEHOLDER;
     n->value = 0;
     return n;
+}
+
+ZENO_API std::shared_ptr<ZfxASTNode> ZfxExecute::getASTResult() const {
+    return m_root;
 }
 
 unsigned int ZfxExecute::location() const {

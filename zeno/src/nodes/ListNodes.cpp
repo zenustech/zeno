@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/types/ListObject.h>
+#include <zeno/types/ListObject_impl.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/string.h>
@@ -9,10 +9,10 @@ namespace zeno {
 
 struct ListLength : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("list");
-        auto ret = std::make_shared<zeno::NumericObject>();
-        ret->set<int>(list->size());
-        set_output("length", std::move(ret));
+        auto list = ZImpl(get_input<zeno::ListObject>("list"));
+        auto ret = std::make_unique<zeno::NumericObject>();
+        ret->set<int>(list->m_impl->size());
+        ZImpl(set_output("length", std::move(ret)));
     }
 };
 
@@ -26,19 +26,25 @@ ZENDEFNODE(ListLength, {
 
 struct ListGetItem : zeno::INode {
     virtual void apply() override {
-        auto index = get_input<zeno::NumericObject>("index")->get<int>();
-        if (has_input<DictObject>("list")) {
-            auto dict = get_input<zeno::DictObject>("list");
+        auto index = ZImpl(get_input<zeno::NumericObject>("index"))->get<int>();
+        if (ZImpl(has_input<DictObject>("list"))) {
+            auto dict = ZImpl(get_input<zeno::DictObject>("list"));
+            if (index < 0) {
+                index += dict->lut.size();
+            }
             if (index < 0 || index >= dict->lut.size())
                 throw makeError<IndexError>(index, dict->lut.size(), "ListGetItem (for dict)");
-            auto obj = std::next(dict->lut.begin(), index)->second;
-            set_output("object", std::move(obj));
+            auto obj = std::next(dict->lut.begin(), index)->second->clone();
+            ZImpl(set_output("object", std::move(obj)));
         } else {
-            auto list = get_input<zeno::ListObject>("list");
-            if (index < 0 || index >= list->size())
-                throw makeError<IndexError>(index, list->size(), "ListGetItem");
-            auto obj = list->get(index);
-            set_output("object", std::move(obj));
+            auto list = ZImpl(get_input<zeno::ListObject>("list"));
+            if (index < 0) {
+                index += list->size();
+            }
+            if (index < 0 || index >= list->m_impl->size())
+                throw makeError<IndexError>(index, list->m_impl->size(), "ListGetItem");
+            auto obj = list->m_impl->get(index)->clone();
+            ZImpl(set_output("object", std::move(obj)));
         }
     }
 };
@@ -53,14 +59,14 @@ ZENDEFNODE(ListGetItem, {
 
 struct ExtractList : zeno::INode {
     virtual void apply() override {
-        auto inkeys = get_param<std::string>("_KEYS");
+        auto inkeys = ZImpl(get_param<std::string>("_KEYS"));
         auto keys = zeno::split_str(inkeys, '\n');
-        auto list = get_input<zeno::ListObject>("list");
+        auto list = ZImpl(get_input<zeno::ListObject>("list"));
         for (auto const& key : keys) {
             int index = std::stoi(key);
-            if (list->size() > index) {
-                auto obj = list->get(index);
-                set_output(key, std::move(obj));
+            if (list->m_impl->size() > index) {
+                auto obj = list->m_impl->get(index)->clone();
+                ZImpl(set_output(key, std::move(obj)));
             }
         }
     }
@@ -75,8 +81,8 @@ ZENDEFNODE(ExtractList, {
 
 struct EmptyList : zeno::INode {
     virtual void apply() override {
-        auto list = std::make_shared<zeno::ListObject>();
-        set_output("list", std::move(list));
+        auto list = std::make_unique<zeno::ListObject>();
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 
@@ -90,10 +96,10 @@ ZENDEFNODE(EmptyList, {
 
 struct AppendList : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("list");
-        auto obj = get_input("object");
-        list->push_back(std::move(obj));
-        set_output("list", get_input("list"));
+        auto list = ZImpl(get_input<zeno::ListObject>("list"));
+        auto obj = ZImpl(clone_input("object"));
+        list->m_impl->push_back(std::move(obj));
+        ZImpl(set_output("list", ZImpl(clone_input("list"))));
     }
 };
 
@@ -109,12 +115,12 @@ ZENDEFNODE(AppendList, {
 
 struct ExtendList : zeno::INode {
     virtual void apply() override {
-        auto list1 = get_input<zeno::ListObject>("list1");
-        auto list2 = get_input<zeno::ListObject>("list2");
-        for (auto const &ptr: list2->get()) {
-            list1->push_back(ptr);
+        auto list1 = ZImpl(get_input<zeno::ListObject>("list1"));
+        auto list2 = ZImpl(get_input<zeno::ListObject>("list2"));
+        for (auto const &ptr: list2->m_impl->get()) {
+            list1->m_impl->push_back(ptr->clone());
         }
-        set_output("list1", std::move(list1));
+        ZImpl(set_output("list1", std::move(list1)));
     }
 };
 
@@ -131,10 +137,10 @@ ZENDEFNODE(ExtendList, {
 
 struct ResizeList : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("list");
-        auto newSize = get_input<zeno::NumericObject>("newSize")->get<int>();
-        list->resize(newSize);
-        set_output("list", std::move(list));
+        auto list = ZImpl(get_input<zeno::ListObject>("list"));
+        auto newSize = ZImpl(get_input<zeno::NumericObject>("newSize")->get<int>());
+        list->m_impl->resize(newSize);
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 
@@ -148,24 +154,24 @@ ZENDEFNODE(ResizeList, {
 
 struct MakeSmallList : zeno::INode {
     virtual void apply() override {
-        auto list = std::make_shared<zeno::ListObject>();
-        auto doConcat = get_param<bool>("doConcat");
+        auto list = std::make_unique<zeno::ListObject>();
+        auto doConcat = ZImpl(get_param<bool>("doConcat"));
         for (int i = 0; i < 6; i++) {
             std::stringstream namess;
             namess << "obj" << i;
             auto name = namess.str();
-            if (!has_input(name)) break;
-            if (doConcat && has_input<ListObject>(name)) {
-                auto objlist = get_input<ListObject>(name);
-                for (auto const &obj: objlist->get()) {
-                    list->push_back(std::move(obj));
+            if (!ZImpl(has_input(name))) break;
+            if (doConcat && ZImpl(has_input<ListObject>(name))) {
+                auto objlist = ZImpl(get_input<ListObject>(name));
+                for (auto const &obj: objlist->m_impl->get()) {
+                    list->m_impl->push_back(std::move(obj->clone()));
                 }
             } else {
-                auto obj = get_input(name);
-                list->push_back(std::move(obj));
+                auto obj = ZImpl(clone_input(name));
+                list->m_impl->push_back(std::move(obj));
             }
         }
-        set_output("list", std::move(list));
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 
@@ -185,8 +191,8 @@ ZENDEFNODE(MakeSmallList, {
 
 struct MakeList : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<zeno::ListObject>("objs");
-        set_output("list", std::move(list));
+        auto list = ZImpl(get_input<zeno::ListObject>("objs"));
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 
@@ -198,16 +204,44 @@ ZENDEFNODE(MakeList, {
     });
 
 
+struct MergeList : zeno::INode {
+    virtual void apply() override {
+        auto list1 = ZImpl(get_input<zeno::ListObject>("list1"));
+        auto list2 = ZImpl(get_input<zeno::ListObject>("list2"));
+        auto lst = create_ListObject();
+        for (const auto& inobj : list1->get()) {
+            lst->push_back(inobj->clone());
+        }
+        for (const auto& inobj : list2->get()) {
+            lst->push_back(inobj->clone());
+        }
+        set_output("list", std::move(lst));
+    }
+};
+
+ZENDEFNODE(MergeList, {
+    {
+        {gParamType_List, "list1"},
+        {gParamType_List, "list2"}
+    },
+    {
+        {gParamType_List, "list"}
+    },
+    {},
+    {"list"},
+    });
+
+
 struct NumericRangeList : zeno::INode {
     virtual void apply() override {
-        auto list = std::make_shared<zeno::ListObject>();
-        auto start = get_input2<int>("start");
-        auto end = get_input2<int>("end");
-        auto skip = get_input2<int>("skip");
+        auto list = std::make_unique<zeno::ListObject>();
+        auto start = ZImpl(get_input2<int>("start"));
+        auto end = ZImpl(get_input2<int>("end"));
+        auto skip = ZImpl(get_input2<int>("skip"));
         for (int i = start; i < end; i += skip) {
-            list->emplace_back(std::make_shared<NumericObject>(i));
+            list->m_impl->emplace_back(std::make_unique<NumericObject>(i));
         }
-        set_output("list", std::move(list));
+        ZImpl(set_output("list", std::move(list)));
     }
 };
 
@@ -220,11 +254,11 @@ ZENDEFNODE(NumericRangeList, {
 
 struct IsList : zeno::INode {
     virtual void apply() override {
-        auto result = std::make_shared<zeno::NumericObject>();
+        auto result = std::make_unique<zeno::NumericObject>();
         result->value = 0;
-        if (has_input<zeno::ListObject>("list")) 
+        if (ZImpl(has_input<zeno::ListObject>("list")))
             result->value = 1;
-        set_output("result", std::move(result));
+        ZImpl(set_output("result", std::move(result)));
     } 
 };
 
@@ -240,8 +274,8 @@ ZENDEFNODE(IsList, {
 /*#ifdef ZENO_VISUALIZATION
 struct ToVisualize_ListObject : zeno::INode {
     virtual void apply() override {
-        auto list = get_input<ListObject>("list");
-        auto path = get_param<std::string>("path");
+        auto list = ZImpl(get_input<ListObject>("list");
+        auto path = ZImpl(get_param<std::string>("path");
         for (int i = 0; i < list->size(); i++) {
             auto const &obj = list->arr[i];
             std::stringstream ss;
@@ -265,3 +299,4 @@ ZENO_DEFOVERLOADNODE(ToVisualize, _ListObject, typeid(ListObject).name())({
 #endif*/
 
 }
+

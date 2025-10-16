@@ -487,14 +487,14 @@ namespace {
 
 struct PrimFilter : INode {
   virtual void apply() override {
-    auto prim = get_input<PrimitiveObject>("prim");
-    auto tagAttr = get_input<StringObject>("tagAttr")->get();
-    auto revampAttrO = get_input<StringObject>("revampAttrO")->get();
-    auto tagValue = get_input<NumericObject>("tagValue")->get<int>();
-    auto isInversed = get_input<NumericObject>("isInversed")->get<bool>();
-    auto method = get_input<StringObject>("method")->get();
+    auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
+    auto tagAttr = ZImpl(get_input<StringObject>("tagAttr"))->get();
+    auto revampAttrO = ZImpl(get_input<StringObject>("revampAttrO"))->get();
+    auto tagValue = ZImpl(get_input<NumericObject>("tagValue"))->get<int>();
+    auto isInversed = ZImpl(get_input<NumericObject>("isInversed"))->get<bool>();
+    auto method = ZImpl(get_input<StringObject>("method"))->get();
     primFilterVerts(prim.get(), tagAttr, tagValue, isInversed, revampAttrO, method);
-    set_output("prim", get_input("prim"));
+    ZImpl(set_output("prim", ZImpl(clone_input("prim"))));
   }
 };
 
@@ -517,9 +517,9 @@ ZENDEFNODE(PrimFilter, {
 
 struct PrimKillDeadVerts : INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         primKillDeadVerts(prim.get());
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

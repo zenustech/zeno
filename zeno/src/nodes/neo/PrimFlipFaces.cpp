@@ -46,9 +46,9 @@ ZENO_API void primFlipFaces(PrimitiveObject *prim, bool only_face) {
 
 struct PrimFlipFaces : zeno::INode {
     virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim = ZImpl(get_input<PrimitiveObject>("prim"));
         primFlipFaces(prim.get(), false);
-        set_output("prim", std::move(prim));
+        ZImpl(set_output("prim", std::move(prim)));
     }
 };
 

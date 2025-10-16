@@ -8,31 +8,30 @@ namespace zeno {
 
 struct MakeVDBGrid : zeno::INode {
   virtual void apply() override {
-    //auto dx = get_param<float>(("dx"));
+    //auto dx = get_param_float("dx");
     float dx=0.08f;
     if(has_input("Dx"))
     {
-      dx = get_input("Dx")->as<NumericObject>()->get<float>();
+        dx = get_input2_float("Dx");
     }
-    auto type = get_param<std::string>(("type"));
-    auto structure = get_param<std::string>(("structure"));
-    auto name = get_param<std::string>(("name"));
-    std::shared_ptr<VDBGrid> data;
+    auto type = zsString2Std(get_param_string("type"));
+    auto structure = zsString2Std(get_param_string("structure"));
+    auto name = zsString2Std(get_param_string("name"));
+    std::unique_ptr<VDBGrid> data;
     if (type == "float") {
-      auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloatGrid>()
-          : std::make_shared<VDBFloatGrid>(openvdb::FloatGrid::create(
-                  get_input("background")->as<NumericObject>()->get<float>()));
+      auto tmp = !has_input("background") ? std::make_unique<VDBFloatGrid>()
+          : std::make_unique<VDBFloatGrid>(openvdb::FloatGrid::create(
+                  get_input2_float("background")));
       auto transform = openvdb::math::Transform::createLinearTransform(dx);
-      if(structure==std::string("vertex"))
+      if(structure== "vertex")
         transform->postTranslate(openvdb::Vec3d{ -0.5,-0.5,-0.5 }*double(dx));
       tmp->m_grid->setTransform(transform);
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "float3") {
-      auto tmp = !has_input("background") ? zeno::IObject::make<VDBFloat3Grid>()
-          : std::make_shared<VDBFloat3Grid>(openvdb::Vec3fGrid::create(
-                  zeno::vec_to_other<openvdb::Vec3f>(get_input("background")
-                                                     ->as<NumericObject>()->get<zeno::vec3f>())));
+      auto tmp = !has_input("background") ? std::make_unique<VDBFloat3Grid>()
+          : std::make_unique<VDBFloat3Grid>(openvdb::Vec3fGrid::create(
+                  zeno::vec_to_other<openvdb::Vec3f>(toVec3f(get_input2_vec3f("background")))));
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       if (structure == "Staggered") {
@@ -40,17 +39,17 @@ struct MakeVDBGrid : zeno::INode {
       }
       data = std::move(tmp);
     } else if (type == "int") {
-      auto tmp = zeno::IObject::make<VDBIntGrid>();
+      auto tmp = std::make_unique<VDBIntGrid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "int3") {
-      auto tmp = zeno::IObject::make<VDBInt3Grid>();
+      auto tmp = std::make_unique<VDBInt3Grid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
     } else if (type == "points") {
-      auto tmp = zeno::IObject::make<VDBPointsGrid>();
+      auto tmp = std::make_unique<VDBPointsGrid>();
       tmp->m_grid->setTransform(openvdb::math::Transform::createLinearTransform(dx));
       tmp->m_grid->setName(name);
       data = std::move(tmp);
@@ -58,7 +57,7 @@ struct MakeVDBGrid : zeno::INode {
       printf("%s\n", type.c_str());
       assert(0 && "bad VDBGrid type");
     }
-    set_output("data", data);
+    set_output("data", std::move(data));
   }
 };
 
@@ -81,8 +80,8 @@ static int defMakeVDBGrid = zeno::defNodeClass<MakeVDBGrid>(
 
 struct SetVDBGridName : zeno::INode {
     virtual void apply() override {
-        auto grid = get_input<VDBGrid>("grid");
-        auto name = get_param<std::string>("name");
+        auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+        auto name = zsString2Std(get_param_string("name"));
         grid->setName(name);
         set_output("grid", std::move(grid));
     }
@@ -106,8 +105,8 @@ static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridNam
 
 struct SetVDBGridClass : zeno::INode {
     virtual void apply() override {
-        auto grid = get_input<VDBGrid>("grid");
-        auto VDBGridClass = get_input2<std::string>("VDBGridClass");
+        auto grid = safe_uniqueptr_cast<VDBGrid>(clone_input("grid"));
+        auto VDBGridClass = zsString2Std(get_input2_string("VDBGridClass"));
 
         grid->setGridClass(VDBGridClass);
         set_output("grid", std::move(grid));

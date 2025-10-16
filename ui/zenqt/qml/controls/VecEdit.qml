@@ -1,33 +1,48 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.0
 
-Item{
-    width: 64
-    height: 26
+Rectangle {
+    id: container
+    implicitWidth: inputField.width
+    implicitHeight: inputField.height
+    property alias text: inputField.text
+    color: "transparent"
+    border.color: inputField.activeFocus ? "#4B9EF4" : "gray"  // 焦点时改变边框颜色
+    border.width: inputField.activeFocus ? 2 : 1
 
-    property alias text: textInput.text
+    signal editingFinished
 
-    TextField{
-        id : textInput
-        //anchors.margins: 0
+    TextInput {
+        id: inputField
         anchors.fill: parent
-        //verticalAlignment: TextInput.AlignVCenter
-        clip:true
-        padding: 0
 
-        color: "#FFF"
-        selectionColor: "#0078D7"
-        font.pointSize: 12
-        font.family: "Consolas"
+        verticalAlignment: Text.AlignVCenter
 
-        focus: true
-        selectByMouse: true
-        Keys.onEscapePressed: focus = false
+        width: 48
+        height: 24
 
-        background:Rectangle {
-            id: backGround
-            color: "#191D21"
-            //border.color: "grey"
+        topPadding: 5
+        bottomPadding: 5
+        leftPadding: 5
+        rightPadding: 5
+        font.pixelSize: 14
+        color: "white"
+        focus: true // 确保输入框可以获得焦点
+        selectByMouse: true // 启用鼠标选择文本功能
+        selectionColor: "#4B9EF4"  // 选中的背景色
+        clip: true
+
+        onTextChanged: {
+                    
+        }
+
+        Keys.onReturnPressed: {
+                // 按下回车键时失去焦点
+            focus = false;
+        }
+
+        onEditingFinished: {
+            container.editingFinished()
         }
     }
 }

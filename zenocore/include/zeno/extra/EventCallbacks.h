@@ -18,13 +18,22 @@ struct EventCallbacks {
     std::map<std::string, std::vector<std::function<void(ParameterType)>>> callbacks;
 
     int hookEvent(std::string const &key, std::function<void(ParameterType)> f) {
+        int id = callbacks[key].size();
         callbacks[key].push_back(std::move(f));
-        return 1;
+        return id;
     }
 
     int hookEvent(std::string const &key, std::function<void()> f) { // why zhouhang dicks never care backward compatibility
+        int id = callbacks[key].size();
         callbacks[key].push_back([f = std::move(f)] (std::any &&) { f(); });
-        return 1;
+        return id;
+    }
+
+    int unhookEvent(std::string const& key, int idx) {
+        if (callbacks.find(key) == callbacks.end()) return -1;
+        auto& cbs = callbacks[key];
+        cbs.erase(cbs.begin() + idx);
+        return 0;
     }
 
     template <typename ...Args>

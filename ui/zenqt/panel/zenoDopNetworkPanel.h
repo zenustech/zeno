@@ -2,10 +2,6 @@
 
 #include <QtWidgets>
 
-namespace zeno {
-    struct INode;
-}
-
 class zenoDopNetworkPanel  : public QTabWidget
 {
     Q_OBJECT
