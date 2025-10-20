@@ -58,6 +58,7 @@ glm::quat CameraControl::getRotation() {
     return scene->camera->m_rotation;
 }
 void CameraControl::setRotation(glm::quat value) {
+    value = glm::normalize(value);
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->m_rotation = value;
 }
@@ -353,8 +354,16 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             {
                 auto rot = getRotation();
                 auto beforeMat = glm::toMat3(rot);
-                rot = glm::angleAxis(-dx, glm::vec3(0, 1, 0)) * rot;
-                rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
+                if (glm::abs(getRightDir().y) < 0.001) {
+                    rot = glm::angleAxis(-dx, glm::vec3(0, 1, 0)) * rot;
+                    rot = rot * glm::angleAxis(-dy, glm::vec3(1, 0, 0));
+                }
+                else {
+                    auto ref_z = glm::normalize(glm::cross(getRightDir(), glm::vec3(0, 1, 0)));
+                    auto ref_y = glm::normalize(glm::cross(ref_z, getRightDir()));
+                    rot = glm::angleAxis(-dy, getRightDir()) * rot;
+                    rot = glm::angleAxis(-dx, ref_y) * rot;
+                }
                 setRotation(rot);
                 auto afterMat = glm::toMat3(rot);
                 if (zeno::getSession().userData().get2<bool>("viewport-FPN-navigation", false)) {

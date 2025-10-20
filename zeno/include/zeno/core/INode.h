@@ -36,6 +36,7 @@ public:
 
     bool bTmpCache = false;
     std::string objRunType;
+    bool bEnableTimer = false;
 
     ZENO_API INode();
     ZENO_API virtual ~INode();
@@ -51,6 +52,7 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
     ZENO_API bool getTmpCache();
     ZENO_API void writeTmpCaches();
+    ZENO_API void handleObjruntypeStampUd();
 
 protected:
     ZENO_API virtual void complete();

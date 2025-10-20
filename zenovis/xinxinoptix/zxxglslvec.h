@@ -1521,7 +1521,25 @@ __forceinline__ __device__ float half_to_float(ushort1 in)
     half x = reinterpret_cast<half&>(in);
     return __half2float(x);
 }
-
+__forceinline__ __device__ float RgbToY(const float3& c) {
+  float3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+  return dot(y_weight, c);
+}
+__forceinline__ __device__ float RgbToY(const vec3& c) {
+  vec3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+  return dot(y_weight, c);
+}
+__forceinline__ __device__ bool is_black(const vec3 &a)
+{
+   return dot(abs(a),vec3(1))<1e-12;
+}
+__forceinline__ __device__ vec3 safe_divide_spectrum(const vec3 &a, const vec3 &b)
+{
+    vec3 c;
+    c.x = fabs(b.x)<__FLT_MIN__?0:a.x/b.x;
+    c.y = fabs(b.y)<__FLT_MIN__?0:a.y/b.y;
+    c.z = fabs(b.z)<__FLT_MIN__?0:a.z/b.z;
+}
 #define SH_C0 0.28209479177387814f
 
 #define SH_C1 0.4886025119029199f
@@ -1633,5 +1651,4 @@ namespace GS{
         color = clamp(color,vec3(0,0,0),vec3(1,1,1));
         return color;
     }
-
 }

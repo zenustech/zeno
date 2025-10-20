@@ -16,6 +16,7 @@
 
 class ZenoDockWidget;
 class DisplayWidget;
+class zenoBenchmark;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
@@ -48,6 +49,7 @@ public:
     DisplayWidget* getCurrentViewport() const;
     DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
+    zenoBenchmark* getAnyBenchmark() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
 
     void doFrameUpdate(int frame);

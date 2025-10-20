@@ -100,7 +100,7 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
     return bad? true : lengthSquared(vector) == 0.0f;
 }
 
-void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& _attenuation) {
+void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
     
     const auto& vol = prd.vol;
     // if (vol.homo_t1 <= vol.homo_t0) return;
@@ -146,8 +146,8 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
     shadowPRD.radiance *= weight;
 
-    result += _attenuation * shadowPRD.radiance * expf(-extinction * dt);
-    _attenuation *= expf(-extinction * tmax);
+    result = shadowPRD.radiance * expf(-extinction * dt);
+    attenuation = expf(-extinction * tmax);
 };
 
 extern "C" __global__ void __raygen__rg()
@@ -337,6 +337,7 @@ extern "C" __global__ void __raygen__rg()
 
         prd.depth = 0;
         prd.diffDepth = 0;
+        prd.alphaDepth = 0;
         prd.isSS = false;
         prd.curMatIdx = 0;
         prd.test_distance = false;
@@ -405,8 +406,17 @@ extern "C" __global__ void __raygen__rg()
         {
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
-            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0)
-                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, result, _attenuation);
+
+
+            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+                float3 vol_lighting;
+                float3 vol_attenuation;
+                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);
+                result += vol_lighting * _attenuation;
+
+                _attenuation *= vol_attenuation;
+                prd.attenuation *= vol_attenuation;
+            }
             
             prd.vol = {};
             prd._tmin_ = _tmin_;
@@ -451,8 +461,8 @@ extern "C" __global__ void __raygen__rg()
             }
 
 
-            if(prd.diffDepth > 1)
-                _mask_ &= ~VolumeMaskAnalytics;
+//            if(prd.diffDepth > 1)
+//                _mask_ &= ~VolumeMaskAnalytics;
             prd._tmin_ = _tmin_;
             do {
                 _attenuation = prd.attenuation;
@@ -587,14 +597,14 @@ extern "C" __global__ void __miss__radiance()
 
         envPdf *= params.skyLightProbablity();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf,1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
         misWeight = prd->depth>=1?misWeight:1.0f;
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
         
-        prd->radiance = misWeight * skysample;
+        prd->radiance = skysample*misWeight;
 
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
@@ -612,14 +622,15 @@ extern "C" __global__ void __miss__radiance()
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax() - prd->_tmin_);
+        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+
     } else {
-        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax() - prd->_tmin_, false);
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->attenuation2*= transmittance;
-    prd->origin += prd->direction * ( optixGetRayTmax() - prd->_tmin_);
+
+    prd->origin += prd->direction * ( optixGetRayTmax());
     prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
@@ -630,8 +641,9 @@ extern "C" __global__ void __miss__radiance()
         prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
-        prd->maxDistance =
-            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+//        prd->maxDistance =
+//            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, channelPDF);
+        prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,sigma_t*ss_alpha,sigma_t,prd->seed,channelPDF);
         prd->channelPDF = channelPDF;
     }
 

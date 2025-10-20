@@ -83,13 +83,16 @@ struct RadiancePRD : CommonPRD {
     unsigned int offset3 = 0;
     unsigned int vdcseed = 0;
     bool         print_info = false;
+    int          alphaDepth;
     float3       radiance;
     float3       aov[3];
     float3       emission;
     float3       attenuation;
-    float3       attenuation2;
+    float3       sssAttenBegin;
+    float3       sssDirBegin;
     float3       origin;
     float3       direction;
+
 
     float3 tmp_albedo {};
     float3 tmp_normal {};

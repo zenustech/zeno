@@ -48,10 +48,13 @@ struct ShaderBufferGroup {
         for (const auto& [name, ref] : buffers) {
 
             auto found = source.find(name) != std::string::npos;
-            if (!found) continue;
-
+            if (!found) {
+                ++i;
+                continue;
+            }
             macro[name+"_buffer"] = "buffers["+  std::to_string(i) +"]"; 
             macro[name+"_bfsize"] = std::to_string(ref->size);
+            ++i;
         }
         return macro;
     }
@@ -69,4 +72,9 @@ static void load_buffer_group(const std::string buffer_name, ShaderBufferHostRef
     }
 
     LocalShaderBufferMap[key].buffers[buffer_name] = buffer_ref;
+}
+
+static void clear_bufer_group() {
+    globalShaderBufferGroup.reset();
+    LocalShaderBufferMap.clear();
 }

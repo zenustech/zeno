@@ -313,7 +313,8 @@ ZENDEFNODE( FormSceneTree, {
 });
 struct ConvertXformToMatrix : zeno::INode {
     void apply() override {
-        auto xform = get_input2<PrimitiveObject>("xform");
+        auto iObject = get_input2<PrimitiveObject>("xform")->clone();
+        auto xform = std::dynamic_pointer_cast<PrimitiveObject>(iObject);
         AttrVector<vec3f> verts(xform->verts.size() * 4);
         {
             auto& t_attr = xform->verts.values;

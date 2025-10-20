@@ -98,6 +98,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto visible = (light.config & zeno::LightConfigVisible);
 
     if (!visible && prd->depth == 0) {
+        prd->alphaHit = true;
         prd->_tmin_ = optixGetRayTmax();
         return;
     }
