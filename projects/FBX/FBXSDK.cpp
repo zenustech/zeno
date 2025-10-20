@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <memory>
 #include <sstream>
 #include <stack>
@@ -600,7 +600,6 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         }
     }
     if (pMesh->GetElementUVCount() > 0) {
-        zeno::log_info("GetElementUVCount: {}", pMesh->GetElementUVCount());
         auto* arr = pMesh->GetElementUV(0);
         std::string name = "uv";
         if (arr->GetMappingMode() == FbxLayerElement::EMappingMode::eByControlPoint) {
