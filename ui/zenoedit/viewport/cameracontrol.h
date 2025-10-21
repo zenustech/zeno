@@ -8,6 +8,7 @@
 #include <zenovis/Camera.h>
 
 class Zenovis;
+class ZOptixViewport;
 
 class CameraControl : public QObject
 {
@@ -41,11 +42,11 @@ public:
 
     bool fakeKeyPressEvent(int uKey);
     bool fakeKeyReleaseEvent(int uKey);
-    void fakeMousePressEvent(QMouseEvent* event);
-    void fakeMouseReleaseEvent(QMouseEvent* event);
+    void fakeMousePressEvent(QMouseEvent* event, ZOptixViewport* viewport);
+    void fakeMouseReleaseEvent(QMouseEvent* event, ZOptixViewport* viewport);
     void fakeMouseMoveEvent(QMouseEvent* event);
-    void fakeWheelEvent(QWheelEvent* event);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event);
+    void fakeWheelEvent(QWheelEvent* event, ZOptixViewport* viewport);
+    void fakeMouseDoubleClickEvent(QMouseEvent* event, ZOptixViewport* viewport);
     void focus(QVector3D center, float radius);
     [[deprecated]]
     QVector3D realPos() const;
@@ -69,6 +70,9 @@ public:
     std::optional<glm::vec3> intersectRayPlane(
             glm::vec3 ray_origin, glm::vec3 ray_direction,
             glm::vec3 plane_point, glm::vec3 plane_normal);
+
+public slots:
+
 
 private:
     QPointF m_lastMidButtonPos;

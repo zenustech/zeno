@@ -12,6 +12,12 @@ using Json = nlohmann::json;
 class Zenovis;
 class CameraControl;
 
+typedef std::tuple<std::string, std::string, uint32_t> OPTIX_CLICKID;
+Q_DECLARE_METATYPE(OPTIX_CLICKID)
+
+Q_DECLARE_METATYPE(glm::vec3)
+
+
 class OptixWorker : public QObject
 {
     Q_OBJECT
@@ -31,6 +37,9 @@ signals:
     void sig_sendToNodeEditor(QString);
     void sig_sendToOptixViewport(QString);
     void sig_sendToXformPanel(QString);
+
+    void sig_sendClickId(const OPTIX_CLICKID& ids);
+    void sig_sendClickPos(const glm::vec3& pos);
 
 public slots:
     void stop();
@@ -54,7 +63,7 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onSendOptixMessage(QString);
-
+    void on_send_clickinfo_to_optix(bool bClickPos, float x, float y);
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
 
 private:
@@ -135,8 +144,12 @@ signals:
     void sig_viewportSendToXformPanel(QString);
     void sig_sendOptixMessage(QString);
 
+    void sig_send_clickinfo_to_optix(bool bClickPos, float x, float y);
+
 public slots:
     void onFrameRunFinished(int frame);
+    void on_click_id_received(const OPTIX_CLICKID& click_ids);
+    void on_click_pos_received(const glm::vec3& pos);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

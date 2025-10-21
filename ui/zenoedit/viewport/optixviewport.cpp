@@ -711,6 +711,10 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
 
+    connect(this, &ZOptixViewport::sig_send_clickinfo_to_optix, m_worker, &OptixWorker::on_send_clickinfo_to_optix, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_sendClickId, this, &ZOptixViewport::on_click_id_received);
+    connect(m_worker, &OptixWorker::sig_sendClickPos, this, &ZOptixViewport::on_click_pos_received);
+
     setRenderSeparately(RunALL);
     m_thdOptix.start();
 }
@@ -938,8 +942,16 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
         try_axis = {};
     }
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event);
+    m_camera->fakeMouseReleaseEvent(event, this);
     update();
+}
+
+void ZOptixViewport::on_click_id_received(const OPTIX_CLICKID& click_ids) {
+
+}
+
+void ZOptixViewport::on_click_pos_received(const glm::vec3& pos) {
+
 }
 
 void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)

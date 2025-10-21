@@ -102,13 +102,14 @@ void CameraControl::setDisPlane(float disPlane) {
     scene->camera->focalPlaneDistance = disPlane;
 }
 
-void CameraControl::fakeMousePressEvent(QMouseEvent *event)
+void CameraControl::fakeMousePressEvent(QMouseEvent *event, ZOptixViewport* viewport)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
     if (event->button() == Qt::LeftButton) {
         auto &cam = scene->camera;
-        auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
+        viewport->sig_send_clickinfo_to_optix(false, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+        //auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
         if (ids.has_value()) {
             auto [obj_id, mat_id, prim_id] = ids.value();
             ZenoMainWindow *mainWin = zenoApp->getMainWindow();
@@ -119,7 +120,9 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
             auto &cam = scene->camera;
-            m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
+            viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+
+            //m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
             if (m_hit_posWS.has_value()) {
                 scene->camera->setPivot(m_hit_posWS.value());
             }
@@ -129,7 +132,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
             if (!m_hit_posWS.has_value()) {
                 auto &cam = scene->camera;
-                m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
+                viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+                //m_hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
                 if (m_hit_posWS.has_value()) {
                     scene->camera->setPivot(m_hit_posWS.value());
                 }
@@ -425,7 +429,7 @@ void CameraControl::updatePerspective() {
     m_zenovis->updatePerspective(m_res);
 }
 
-void CameraControl::fakeWheelEvent(QWheelEvent *event) {
+void CameraControl::fakeWheelEvent(QWheelEvent *event, ZOptixViewport* viewport) {
     auto &ud = zeno::getSession().userData();
     if (ud.get2<bool>("viewport-optix-pause", false)) {
         return;
@@ -476,7 +480,10 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
                 auto session = m_zenovis->getSession();
                 auto scene = session->get_scene();
                 auto &cam = scene->camera;
-                auto hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
+
+                viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+
+                //auto hit_posWS = scene->renderMan->getEngine()->getClickedPos((float)event->x()/(float)cam->m_nx, (float)event->y()/(float)cam->m_ny);
                 if (hit_posWS.has_value()) {
                     auto pivot = hit_posWS.value();
                     setPivot(pivot);
@@ -519,7 +526,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     }
 }
 
-void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
+void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event, ZOptixViewport* viewport)
 {
     ZASSERT_EXIT(m_zenovis);
     if (qobject_cast<ViewportWidget*>(m_zenovis->parent()))
@@ -573,8 +580,10 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     }else{//光追窗口
 		auto scene = m_zenovis->getSession()->get_scene();
 		auto& cam = scene->camera;
-		auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
-		if (ids.has_value()) {
+
+        viewport->sig_send_clickinfo_to_optix(false, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+        //auto ids = scene->renderMan->getEngine()->getClickedId((float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+        if (ids.has_value()) {
 			auto [obj_id, mat_id, prim_id] = ids.value();
             ZASSERT_EXIT(!mat_id.empty());
             ZenoMainWindow* pWin = zenoApp->getMainWindow();
@@ -716,7 +725,7 @@ glm::vec3 CameraControl::screenHitOnFloorWS(float x, float y) {
     return pos + dir * t;
 }
 
-void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
+void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event, ZOptixViewport* viewport) {
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = false;
     }
