@@ -42,11 +42,11 @@ public:
 
     bool fakeKeyPressEvent(int uKey);
     bool fakeKeyReleaseEvent(int uKey);
-    void fakeMousePressEvent(QMouseEvent* event, ZOptixViewport* viewport);
-    void fakeMouseReleaseEvent(QMouseEvent* event, ZOptixViewport* viewport);
+    void fakeMousePressEvent(QMouseEvent* event, ZOptixViewport* viewport = nullptr);
+    void fakeMouseReleaseEvent(QMouseEvent* event);
     void fakeMouseMoveEvent(QMouseEvent* event);
-    void fakeWheelEvent(QWheelEvent* event, ZOptixViewport* viewport);
-    void fakeMouseDoubleClickEvent(QMouseEvent* event, ZOptixViewport* viewport);
+    void fakeWheelEvent(QWheelEvent* event, ZOptixViewport* viewport = nullptr);
+    void fakeMouseDoubleClickEvent(QMouseEvent* event, ZOptixViewport* viewport = nullptr);
     void focus(QVector3D center, float radius);
     [[deprecated]]
     QVector3D realPos() const;
@@ -72,7 +72,10 @@ public:
             glm::vec3 plane_point, glm::vec3 plane_normal);
 
 public slots:
-
+    void on_click_id_prim_selected(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
+    void on_click_pos_set_pivot(std::optional<glm::vec3> hit_posWS);
+    void on_click_pos_set_pivot_and_pos(std::optional<glm::vec3> hit_posWS);
+    void on_click_pos_activate_matnode(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
 
 private:
     QPointF m_lastMidButtonPos;

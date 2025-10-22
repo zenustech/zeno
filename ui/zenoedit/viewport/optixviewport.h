@@ -1,4 +1,4 @@
-﻿#ifndef __ZOPTIX_VIEWPORT_H__
+#ifndef __ZOPTIX_VIEWPORT_H__
 #define __ZOPTIX_VIEWPORT_H__
 
 #include <QtWidgets>
@@ -12,10 +12,10 @@ using Json = nlohmann::json;
 class Zenovis;
 class CameraControl;
 
-typedef std::tuple<std::string, std::string, uint32_t> OPTIX_CLICKID;
+typedef std::optional<std::tuple<std::string, std::string, uint32_t>> OPTIX_CLICKID;
 Q_DECLARE_METATYPE(OPTIX_CLICKID)
 
-Q_DECLARE_METATYPE(glm::vec3)
+Q_DECLARE_METATYPE(std::optional<glm::vec3>)
 
 
 class OptixWorker : public QObject
@@ -39,7 +39,7 @@ signals:
     void sig_sendToXformPanel(QString);
 
     void sig_sendClickId(const OPTIX_CLICKID& ids);
-    void sig_sendClickPos(const glm::vec3& pos);
+    void sig_sendClickPos(const std::optional<glm::vec3>& pos);
 
 public slots:
     void stop();
@@ -144,12 +144,13 @@ signals:
     void sig_viewportSendToXformPanel(QString);
     void sig_sendOptixMessage(QString);
 
+    //
     void sig_send_clickinfo_to_optix(bool bClickPos, float x, float y);
+    void sig_click_id_received(const OPTIX_CLICKID& click_ids);
+    void sig_click_pos_received(const std::optional<glm::vec3>& pos);
 
 public slots:
     void onFrameRunFinished(int frame);
-    void on_click_id_received(const OPTIX_CLICKID& click_ids);
-    void on_click_pos_received(const glm::vec3& pos);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

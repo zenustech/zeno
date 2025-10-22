@@ -1765,22 +1765,13 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
 #include <mutex>
 #include <condition_variable>
 
-std::mutex click_mutex;
-std::condition_variable click_cv;
-
 glm::vec3 get_click_pos(float xf, float yf) {
     int w = state.params.width;
     int h = state.params.height;
     int x = xf * w;
     int y = yf * h;
 
-    std::unique_lock<std::mutex> lock(click_mutex);
-    state.params.click_dirty = true;
     state.params.click_coord = make_uint2(x, h - 1 - y);
-
-    click_cv.wait(lock, []{
-        return !state.params.click_dirty; 
-    });
 
     float3 click_result;
     auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
@@ -1794,13 +1785,7 @@ glm::uvec4 get_click_id(float xf, float yf) {
     int x = xf * w;
     int y = yf * h;
     
-    std::unique_lock<std::mutex> lock(click_mutex);
-    state.params.click_dirty = true;
     state.params.click_coord = make_uint2(x, h - 1 - y);
-
-    click_cv.wait(lock, []{
-        return !state.params.click_dirty; 
-    });
 
     uint4 click_meta;
     auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
@@ -1898,13 +1883,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
 
-    bool should_notify = false;
-    {
-        std::lock_guard<std::mutex> lock(click_mutex);
-        should_notify = state.params.click_dirty;
-    }
-
-    if (pause && !should_notify) {
+    if (pause) {
         return;
     }
 
@@ -1925,10 +1904,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     timer.tock();
     state.params.frame_time = timer.elapsed();
 
-    if (should_notify) {
-        state.params.click_dirty = false;
-        click_cv.notify_all();
-    }
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
