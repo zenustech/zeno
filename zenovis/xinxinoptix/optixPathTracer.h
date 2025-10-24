@@ -180,6 +180,7 @@ struct Params
 
     uint2 click_coord;
     bool pause;
+    bool click_dirty;
 
     unsigned int width;
     unsigned int height;

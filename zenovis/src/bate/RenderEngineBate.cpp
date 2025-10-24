@@ -1,4 +1,4 @@
-﻿#include <zenovis/RenderEngine.h>
+#include <zenovis/RenderEngine.h>
 #include <zenovis/DrawOptions.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/ObjectsManager.h>
@@ -127,33 +127,35 @@ struct RenderEngineBate : RenderEngine {
         primHighlight = nullptr;
         fbr = nullptr;
     }
-    std::optional<glm::vec3> getClickedPos(float _x, float _y) override {
-		auto w = scene->camera->m_nx;
-		auto h = scene->camera->m_ny;
-        int x = glm::clamp(int(_x * w), 0, w - 1);
-        int y = glm::clamp(int(_y * h), 0, h - 1);
-        auto depth = fbr->getDepth(x, y);
-        if (depth == 0) {
-            return {};
-        }
-//        zeno::log_info("depth: {}", depth);
 
-        auto fov = scene->camera->m_fov;
-        float cz = scene->camera->inf_z_near / depth;
-
-//        zeno::log_info("{} {} {} {}", x, y, w, h);
-//        zeno::log_info("fov: {}", fov);
-//        zeno::log_info("w: {}, h: {}", w, h);
-        auto u = (2.0 * x / w) - 1;
-        auto v = 1 - (2.0 * y / h);
-//        zeno::log_info("u: {}, v: {}", u, v);
-        auto cy = v * tan(glm::radians(fov) / 2) * cz;
-        auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
-        glm::vec4 cc = {cx, cy, -cz, 1};
-        auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
-        wc /= wc.w;
-        return glm::vec3(wc);
-    }
+    //似乎暂时不需要
+//    std::optional<glm::vec3> getClickedPos(float _x, float _y) override {
+//		auto w = scene->camera->m_nx;
+//		auto h = scene->camera->m_ny;
+//        int x = glm::clamp(int(_x * w), 0, w - 1);
+//        int y = glm::clamp(int(_y * h), 0, h - 1);
+//        auto depth = fbr->getDepth(x, y);
+//        if (depth == 0) {
+//            return {};
+//        }
+////        zeno::log_info("depth: {}", depth);
+//
+//        auto fov = scene->camera->m_fov;
+//        float cz = scene->camera->inf_z_near / depth;
+//
+////        zeno::log_info("{} {} {} {}", x, y, w, h);
+////        zeno::log_info("fov: {}", fov);
+////        zeno::log_info("w: {}, h: {}", w, h);
+//        auto u = (2.0 * x / w) - 1;
+//        auto v = 1 - (2.0 * y / h);
+////        zeno::log_info("u: {}, v: {}", u, v);
+//        auto cy = v * tan(glm::radians(fov) / 2) * cz;
+//        auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+//        glm::vec4 cc = {cx, cy, -cz, 1};
+//        auto wc = glm::inverse(scene->camera->get_view_matrix()) * cc;
+//        wc /= wc.w;
+//        return glm::vec3(wc);
+//    }
 };
 
 static auto definer = RenderManager::registerRenderEngine<RenderEngineBate>("bate");

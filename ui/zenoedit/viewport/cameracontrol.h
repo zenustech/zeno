@@ -9,6 +9,7 @@
 
 class Zenovis;
 class ZOptixViewport;
+struct ClickPosInfo;
 
 class CameraControl : public QObject
 {
@@ -71,11 +72,10 @@ public:
             glm::vec3 ray_origin, glm::vec3 ray_direction,
             glm::vec3 plane_point, glm::vec3 plane_normal);
 
-public slots:
-    void on_click_id_prim_selected(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
-    void on_click_pos_set_pivot(std::optional<glm::vec3> hit_posWS);
-    void on_click_pos_set_pivot_and_pos(std::optional<glm::vec3> hit_posWS);
-    void on_click_pos_activate_matnode(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
+    void click_id_prim_selected(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
+    void click_id_activate_matnode(std::optional<std::tuple<std::string, std::string, uint32_t>> ids);
+    void click_pos_set_pivot(std::optional<glm::vec3> hit_posWS);
+    void click_pos_wheel(std::optional<glm::vec3> hit_posWS, ClickPosInfo posinfo);
 
 private:
     QPointF m_lastMidButtonPos;

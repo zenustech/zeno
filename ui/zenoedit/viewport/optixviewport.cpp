@@ -518,7 +518,7 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
     }
 }
 
-void OptixWorker::on_send_clickinfo_to_optix(bool bClickPos, float x, float y)
+void OptixWorker::on_send_clickinfo_to_optix(ClickPosInfo posinfo)
 {
     ZASSERT_EXIT(m_zenoVis);
     auto session = m_zenoVis->getSession();
@@ -526,12 +526,22 @@ void OptixWorker::on_send_clickinfo_to_optix(bool bClickPos, float x, float y)
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
     if (auto engine = scene->renderMan->getEngine("optx")) {
-        if (bClickPos) {
-            auto hit_posWS = engine->getClickedPos(x, y);
-            emit sig_sendClickPos(hit_posWS);
-        } else {
-            auto ids = engine->getClickedId(x, y);
-            emit sig_sendClickId(ids);
+        if (posinfo.eventType == QEvent::MouseButtonDblClick || posinfo.eventType == QEvent::MouseButtonPress && posinfo.eventButtons & Qt::LeftButton)
+        {
+            engine->getClickedId(posinfo.eventCamx, posinfo.eventCamy, [this, scene, posinfo](std::tuple<std::string, std::string, uint32_t> ids) {
+                emit sig_sendClickId(ids, posinfo);
+            });
+        }
+        else {
+            engine->getClickedPos(posinfo.eventCamx, posinfo.eventCamy, [this, scene, posinfo](glm::vec3 posWS) {
+                auto const& cam = *scene->camera;
+                if (posWS == glm::vec3()) {
+                    emit sig_sendClickPos({}, posinfo);
+                } else {
+                    posWS += cam.m_pos;
+                    emit sig_sendClickPos(posWS, posinfo);
+                }
+            });
         }
     }
 }
@@ -731,8 +741,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
 
     connect(this, &ZOptixViewport::sig_send_clickinfo_to_optix, m_worker, &OptixWorker::on_send_clickinfo_to_optix, Qt::QueuedConnection);
-    connect(m_worker, &OptixWorker::sig_sendClickId, this, &ZOptixViewport::sig_click_id_received, Qt::QueuedConnection);
-    connect(m_worker, &OptixWorker::sig_sendClickPos, this, &ZOptixViewport::sig_click_pos_received, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_sendClickId, this, &ZOptixViewport::on_sendClickId_received, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_sendClickPos, this, &ZOptixViewport::on_sendClickPos_received, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();
@@ -859,6 +869,28 @@ void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
 void ZOptixViewport::onFrameRunFinished(int frame)
 {
     emit sig_frameRunFinished(frame);
+}
+
+void ZOptixViewport::on_sendClickId_received(const OPTIX_CLICKID& ids, ClickPosInfo posinfo)
+{
+    if (QEvent::MouseButtonPress && posinfo.eventButtons & Qt::LeftButton) {
+        m_camera->click_id_prim_selected(ids);
+    }
+    else if (posinfo.eventType == QEvent::MouseButtonDblClick) {
+        m_camera->click_id_activate_matnode(ids);
+    }
+}
+
+void ZOptixViewport::on_sendClickPos_received(const std::optional<glm::vec3>& pos, ClickPosInfo posinfo)
+{
+    if (posinfo.eventType == QEvent::Wheel)
+    {
+        m_camera->click_pos_wheel(pos, posinfo);
+    }
+    else if (QEvent::MouseButtonPress && ((posinfo.eventButtons & Qt::LeftButton) == 0))
+    {
+        m_camera->click_pos_set_pivot(pos);
+    }
 }
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)

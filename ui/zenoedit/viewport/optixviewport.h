@@ -16,7 +16,17 @@ typedef std::optional<std::tuple<std::string, std::string, uint32_t>> OPTIX_CLIC
 Q_DECLARE_METATYPE(OPTIX_CLICKID)
 
 Q_DECLARE_METATYPE(std::optional<glm::vec3>)
-
+struct ClickPosInfo {
+    float eventCamx;
+    float eventCamy;
+    float eventResx;
+    float eventResy;
+    float scale;
+    QEvent::Type eventType;
+    Qt::MouseButtons eventButtons;
+    QPoint eventPos;
+};
+Q_DECLARE_METATYPE(ClickPosInfo)
 
 class OptixWorker : public QObject
 {
@@ -38,8 +48,8 @@ signals:
     void sig_sendToOptixViewport(QString);
     void sig_sendToXformPanel(QString);
 
-    void sig_sendClickId(const OPTIX_CLICKID& ids);
-    void sig_sendClickPos(const std::optional<glm::vec3>& pos);
+    void sig_sendClickId(const OPTIX_CLICKID& ids, ClickPosInfo posinfo);
+    void sig_sendClickPos(const std::optional<glm::vec3>& pos, ClickPosInfo posinfo);
 
 public slots:
     void stop();
@@ -63,7 +73,7 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onSendOptixMessage(QString);
-    void on_send_clickinfo_to_optix(bool bClickPos, float x, float y);
+    void on_send_clickinfo_to_optix(ClickPosInfo posinfo);
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
 
 private:
@@ -145,12 +155,13 @@ signals:
     void sig_sendOptixMessage(QString);
 
     //
-    void sig_send_clickinfo_to_optix(bool bClickPos, float x, float y);
-    void sig_click_id_received(const OPTIX_CLICKID& click_ids);
-    void sig_click_pos_received(const std::optional<glm::vec3>& pos);
+    void sig_send_clickinfo_to_optix(ClickPosInfo posinfo);
 
 public slots:
     void onFrameRunFinished(int frame);
+
+    void on_sendClickId_received(const OPTIX_CLICKID& ids, ClickPosInfo posinfo);
+    void on_sendClickPos_received(const std::optional<glm::vec3>& pos, ClickPosInfo posinfo);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

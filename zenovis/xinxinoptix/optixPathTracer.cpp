@@ -1765,32 +1765,33 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
 #include <mutex>
 #include <condition_variable>
 
-glm::vec3 get_click_pos(float xf, float yf) {
+bool isPosClick = false;
+std::function<void(glm::vec3)> clickPosCallback;
+void get_click_pos(float xf, float yf, std::function<void(glm::vec3)> cbClickPosSig) {
     int w = state.params.width;
     int h = state.params.height;
     int x = xf * w;
     int y = yf * h;
 
     state.params.click_coord = make_uint2(x, h - 1 - y);
+    state.params.click_dirty = true;
 
-    float3 click_result;
-    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
-    cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
-    return glm::vec3(click_result.x, click_result.y, click_result.z);
+    clickPosCallback = std::move(cbClickPosSig);
+    isPosClick = true;
 }
 
-glm::uvec4 get_click_id(float xf, float yf) {
+std::function<void(std::tuple<std::string, std::string, uint32_t>)> clickIdCallback;
+void get_click_id(float xf, float yf, std::function<void(std::tuple<std::string, std::string, uint32_t>)> cbClickIdSig) {
     int w = state.params.width;
     int h = state.params.height;
     int x = xf * w;
     int y = yf * h;
     
     state.params.click_coord = make_uint2(x, h - 1 - y);
+    state.params.click_dirty = true;
 
-    uint4 click_meta;
-    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
-    cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
-    return glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
+    clickIdCallback = std::move(cbClickIdSig);
+    isPosClick = false;
 }
 
 static void save_exr(float3* ptr, int w, int h, std::string path) {
@@ -1903,6 +1904,37 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     output_buffer_o->unmap();
     timer.tock();
     state.params.frame_time = timer.elapsed();
+
+    if (state.params.click_dirty)
+    {
+        if (isPosClick)
+        {
+            float3 click_result;
+            auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
+            cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
+            auto posWS = glm::vec3(click_result.x, click_result.y, click_result.z);
+            clickPosCallback(posWS);
+        } else {
+            uint4 click_meta;
+            auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
+            cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
+
+            auto ids = glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
+            if (ids != glm::uvec4())
+            {
+                uint64_t obj_id = *reinterpret_cast<uint64_t*>(&ids);
+                if (defaultScene.gas_to_obj_id.count(obj_id)) {
+                    auto name = defaultScene.gas_to_obj_id.at(obj_id);
+                    auto mat_name = std::string();
+                    if (defaultScene.dc_index_to_mat.count(ids[2])) {
+                        mat_name = defaultScene.dc_index_to_mat[ids[2]];
+                    }
+                    clickIdCallback(std::tuple<std::string, std::string, uint32_t>(name, mat_name, ids[3]));
+                }
+            }
+        }
+        state.params.click_dirty = false;
+    }
 
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );

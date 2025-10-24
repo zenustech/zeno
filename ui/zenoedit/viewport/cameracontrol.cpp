@@ -103,7 +103,7 @@ void CameraControl::setDisPlane(float disPlane) {
     scene->camera->focalPlaneDistance = disPlane;
 }
 
-void CameraControl::on_click_id_prim_selected(std::optional<std::tuple<std::string, std::string, uint32_t>> ids) {
+void CameraControl::click_id_prim_selected(std::optional<std::tuple<std::string, std::string, uint32_t>> ids) {
     if (ids.has_value()) {
         auto [obj_id, mat_id, prim_id] = ids.value();
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
@@ -112,25 +112,7 @@ void CameraControl::on_click_id_prim_selected(std::optional<std::tuple<std::stri
     }
 }
 
-void CameraControl::on_click_pos_set_pivot(std::optional<glm::vec3> hit_posWS)
-{
-    m_hit_posWS = hit_posWS;
-    if (m_hit_posWS.has_value()) {
-        auto scene = m_zenovis->getSession()->get_scene();
-        scene->camera->setPivot(m_hit_posWS.value());
-    }
-}
-
-void CameraControl::on_click_pos_set_pivot_and_pos(std::optional<glm::vec3> hit_posWS)
-{
-    m_hit_posWS = hit_posWS;
-    if (m_hit_posWS.has_value()) {
-        auto scene = m_zenovis->getSession()->get_scene();
-        scene->camera->setPivot(m_hit_posWS.value());
-    }
-}
-
-void CameraControl::on_click_pos_activate_matnode(std::optional<std::tuple<std::string, std::string, uint32_t>> ids)
+void CameraControl::click_id_activate_matnode(std::optional<std::tuple<std::string, std::string, uint32_t>> ids)
 {
     if (ids.has_value()) {
         auto [obj_id, mat_id, prim_id] = ids.value();
@@ -206,34 +188,82 @@ void CameraControl::on_click_pos_activate_matnode(std::optional<std::tuple<std::
     }
 }
 
+void CameraControl::click_pos_set_pivot(std::optional<glm::vec3> hit_posWS)
+{
+    m_hit_posWS = hit_posWS;
+    if (m_hit_posWS.has_value()) {
+        auto scene = m_zenovis->getSession()->get_scene();
+        scene->camera->setPivot(m_hit_posWS.value());
+    }
+}
+
+void CameraControl::click_pos_wheel(std::optional<glm::vec3> hit_posWS, ClickPosInfo posinfo)
+{
+    auto pos = getPos();
+    if (hit_posWS.has_value()) {
+        auto pivot = hit_posWS.value();
+        setPivot(pivot);
+        auto new_pos = (pos - pivot) * posinfo.scale + pivot;
+        setPos(new_pos);
+    }
+    else {
+        auto posOnFloorWS = screenHitOnFloorWS(posinfo.eventResx, posinfo.eventResy);
+        auto pivot = posOnFloorWS;
+        if (dot((pivot - pos), getViewDir()) > 0) {
+            auto translate = (pivot - pos) * (1 - posinfo.scale);
+            if (glm::length(translate) < 0.01) {
+                translate = glm::normalize(translate) * 0.01f;
+            }
+            auto new_pos = translate + pos;
+            setPos(new_pos);
+        }
+        else {
+            auto translate = screenPosToRayWS(posinfo.eventResx, posinfo.eventResy) * getPos().y * (1 - posinfo.scale);
+            if (getPos().y < 0) {
+                translate *= -1;
+            }
+            auto new_pos = translate + pos;
+            setPos(new_pos);
+        }
+    }
+    updatePerspective();
+    if (zenoApp->getMainWindow()->lightPanel != nullptr) {
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(getAperture()));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(getDisPlane()));
+    }
+}
+
 void CameraControl::fakeMousePressEvent(QMouseEvent *event, ZOptixViewport* viewport)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
+    auto& cam = scene->camera;
+    ClickPosInfo clickInfo;
+    clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
+    clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
+    clickInfo.eventResx = event->x() / res().x();
+    clickInfo.eventResy = event->y() / res().y();
+    clickInfo.eventType = event->type();
+    clickInfo.eventButtons = event->buttons();
+    clickInfo.eventPos = event->pos();
     if (event->button() == Qt::LeftButton) {
-        auto &cam = scene->camera;
         if (viewport) {
-            connect(viewport, &ZOptixViewport::sig_click_id_received, this, &CameraControl::on_click_id_prim_selected, Qt::UniqueConnection);
-            emit viewport->sig_send_clickinfo_to_optix(false, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+            emit viewport->sig_send_clickinfo_to_optix(clickInfo);
         }
     }
     if (event->button() == Qt::MiddleButton) {
         middle_button_pressed = true;
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
-            auto &cam = scene->camera;
             if (viewport) {
-                connect(viewport, &ZOptixViewport::sig_click_pos_received, this, &CameraControl::on_click_pos_set_pivot, Qt::UniqueConnection);
-                emit viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+                emit viewport->sig_send_clickinfo_to_optix(clickInfo);
             }
         }
     }
     else if (event->button() == Qt::RightButton) {
         if (zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true)) {
             if (!m_hit_posWS.has_value()) {
-                auto &cam = scene->camera;
                 if (viewport) {
-                    connect(viewport, &ZOptixViewport::sig_click_pos_received, this, &CameraControl::on_click_pos_set_pivot, Qt::UniqueConnection);
-                    emit viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+                    emit viewport->sig_send_clickinfo_to_optix(clickInfo);
                 }
             }
         }
@@ -580,36 +610,14 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event, ZOptixViewport* viewport)
                 auto &cam = scene->camera;
 
                 if (viewport) {
-                    disconnect(viewport, &ZOptixViewport::sig_click_pos_received, this, nullptr);
-                    connect(viewport, &ZOptixViewport::sig_click_pos_received, this, [this, &pos, &scale, event](const std::optional<glm::vec3>& hit_posWS) {
-                        if (hit_posWS.has_value()) {
-                            auto pivot = hit_posWS.value();
-                            setPivot(pivot);
-                            auto new_pos = (pos - pivot) * scale + pivot;
-                            setPos(new_pos);
-                        }
-                        else {
-                            auto posOnFloorWS = screenHitOnFloorWS(event->x() / res().x(), event->y() / res().y());
-                            auto pivot = posOnFloorWS;
-                            if (dot((pivot - pos), getViewDir()) > 0) {
-                                auto translate = (pivot - pos) * (1 - scale);
-                                if (glm::length(translate) < 0.01) {
-                                    translate = glm::normalize(translate) * 0.01f;
-                                }
-                                auto new_pos = translate + pos;
-                                setPos(new_pos);
-                            }
-                            else {
-                                auto translate = screenPosToRayWS(event->x() / res().x(), event->y() / res().y()) * getPos().y * (1 - scale);
-                                if (getPos().y < 0) {
-                                    translate *= -1;
-                                }
-                                auto new_pos = translate + pos;
-                                setPos(new_pos);
-                            }
-                        }
-                    });
-                    viewport->sig_send_clickinfo_to_optix(true, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+                    ClickPosInfo clickInfo;
+                    clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
+                    clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
+                    clickInfo.eventResx = event->x() / res().x();
+                    clickInfo.eventResy = event->y() / res().y();
+                    clickInfo.scale = scale;
+                    clickInfo.eventType = event->type();
+                    viewport->sig_send_clickinfo_to_optix(clickInfo);
                 }
             }
             else {
@@ -683,8 +691,11 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event, ZOptixViewport
 		auto& cam = scene->camera;
 
         if (viewport) {
-            connect(viewport, &ZOptixViewport::sig_click_id_received, this, &CameraControl::on_click_pos_activate_matnode, Qt::UniqueConnection);
-            viewport->sig_send_clickinfo_to_optix(false, (float)event->x() / (float)cam->m_nx, (float)event->y() / (float)cam->m_ny);
+            ClickPosInfo clickInfo;
+            clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
+            clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
+            clickInfo.eventType = event->type();
+            viewport->sig_send_clickinfo_to_optix(clickInfo);
         }
     }
 }
