@@ -182,6 +182,7 @@ private:
     QTimer* m_pauseRenderDally;
 public:
     std::string hdr_sky_2;
+    std::string selected_item;
 };
 
 #endif

@@ -816,9 +816,14 @@ struct PrimEdgeCrease : INode {
         auto origin_prim = get_input2<PrimitiveObject>("prim");
         auto &polys = origin_prim->polys;
         auto &loops = origin_prim->loops;
+        auto attr_name = get_input2<std::string>("face_attr_name");
+        auto out_attr = get_input2<std::string>("out_attr_name");
         std::unordered_map<std::pair<int,int>,EdgeInfo, PairHash> edges;
         int num_lines = 0;
         auto &face_n = polys.add_attr<zeno::vec3f>("face_N");
+        auto empty = std::vector<int>();
+        auto &face_attr = polys.has_attr(attr_name)?polys.attr<int>(attr_name):empty;
+
         auto sharp_thres = get_input2<float>("sharp_threshold");
         auto corner_thres = get_input2<float>("corner_threshold");
         corner_thres = max(corner_thres,0.001);
@@ -849,6 +854,10 @@ struct PrimEdgeCrease : INode {
             }
         }
         origin_prim->lines.resize(num_lines);
+        if(out_attr != "")
+            origin_prim->lines.add_attr<float>(out_attr);
+        std::vector<float> empty_out;
+        auto &out_line_attr = origin_prim->lines.has_attr(out_attr)?origin_prim->lines.attr<float>(out_attr):empty_out;
         auto &edge_crease_weight = origin_prim->lines.add_attr<float>("edge_crease_weight");
         auto &vert_crease_weight = origin_prim->verts.add_attr<float>("vert_crease_weight");
         int line_idx = 0;
@@ -856,6 +865,7 @@ struct PrimEdgeCrease : INode {
         for(auto &key_val:edges)
         {
             float c=0.0f;
+            float mark = 0.0f;
             auto e = key_val.first;
             auto ei = key_val.second;
             if(ei.face_idx0==-1 || ei.face_idx1==-1)
@@ -877,7 +887,7 @@ struct PrimEdgeCrease : INode {
                 }else{
                     verts_e2[vid1] = e;
                 }
-
+                mark = 1.0f;
                 c = 0.0f;
             }
             else{
@@ -885,10 +895,12 @@ struct PrimEdgeCrease : INode {
                 int f1 = ei.face_idx1;
                 auto n0 = face_n[f0];
                 auto n1 = face_n[f1];
+                mark = face_attr.size()>0?(face_attr[f0]==face_attr[f1]?0.0f:1.0f):0.0f;
                 c = dot(n1,n0);
             }
             origin_prim->lines[line_idx] = zeno::vec2i(key_val.first.first,key_val.first.second);
             edge_crease_weight[line_idx] = c<sharp_thres?10:0;
+            if(out_attr != "") out_line_attr[line_idx] = mark;
             line_idx++;
         }
         for(int i=0;i<verts.size();i++)
@@ -910,7 +922,46 @@ ZENDEFNODE(PrimEdgeCrease,
 { /* inputs: */ {
     "prim",
     {"float","sharp_threshold","0.6"},
+    {"string","face_attr_name",""},
+    {"string","out_attr_name",""},
     {"float","corner_threshold","0.1"},
+}, /* outputs: */ {
+    "oPrim",
+}, /* params: */ {
+}, /* category: */ {
+    "primitive",
+}});
+struct EdgeInstance : INode {
+    void apply() override {
+        auto prim_in = get_input2<PrimitiveObject>("prim");
+        auto prim_out = std::make_shared<PrimitiveObject>();
+        auto edge_mark_name = get_input2<std::string>("edge_mark");
+        auto &lines = prim_in->lines;
+        auto &line_mark = prim_in->lines.attr<float>(edge_mark_name);
+        std::vector<zeno::vec3f> pos;
+        std::vector<zeno::vec3f> pos2;
+        pos.reserve(lines.size());
+        pos2.reserve(lines.size());
+        auto &verts = prim_in->verts;
+        for(int i=0;i<lines.size();i++)
+        {
+            if(line_mark[i]>0.5)
+            {
+                pos.push_back(verts[lines[i][0]]);
+                pos2.push_back(verts[lines[i][1]]);
+            }
+        }
+        prim_out->verts.resize(pos.size());
+        prim_out->verts.add_attr<zeno::vec3f>("pos2");
+        prim_out->verts.values = pos;
+        prim_out->verts.attr<zeno::vec3f>("pos2") = pos2;
+        set_output("oPrim", std::move(prim_out));
+    }
+};
+ZENDEFNODE(EdgeInstance,
+{ /* inputs: */ {
+    "prim",
+    {"string","edge_mark",""},
 }, /* outputs: */ {
     "oPrim",
 }, /* params: */ {

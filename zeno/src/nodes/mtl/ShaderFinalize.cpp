@@ -46,6 +46,7 @@ struct ShaderFinalize : INode {
             {1, "mat_clearcoatIOR"},
 
             {1, "mat_specTrans"},
+            {1, "mat_F0"},
             {3, "mat_transColor"},
             {3, "mat_transTint"},
             {1, "mat_transTintDepth"},
@@ -98,6 +99,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("clearcoatIOR", std::make_shared<NumericObject>(float(1.5f))),
 
             get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("specF0", std::make_shared<NumericObject>(float(0.04f))),
             get_input<IObject>("transColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTint", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(10000.0f))),
@@ -203,6 +205,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "clearcoatIOR", "1.5"},
 
         {"float", "specTrans", "0.0"},
+        {"float", "specF0", "0.04"},
         {"vec3f", "transColor", "1.0,1.0,1.0"},
         {"vec3f", "transTint", "1.0,1.0,1.0"},
         {"float", "transTintDepth", "10000.0"},

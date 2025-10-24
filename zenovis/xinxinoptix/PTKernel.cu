@@ -45,31 +45,27 @@ vec3 ACESFilm(vec3 x)
   float e = 0.14f;
   return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3(0), vec3(1));
 }
+// Function to apply creative color adjustments
 static __inline__ __device__
-vec3 ACESFitted(vec3 color, float gamma)
+vec3 applyLook(vec3 color) {
+    return color * vec3(1.1,1.05,0.9);
+}
+static __inline__ __device__
+vec3 ACESFitted(vec3 color, float gamma=1.0f)
 {
-//    const mat3x3 ACESInputMat = mat3x3
-//        (
-//            0.59719, 0.35458, 0.04823,
-//            0.07600, 0.90834, 0.01566,
-//            0.02840, 0.13383, 0.83777
-//        );
-//    mat3x3 ACESOutputMat = mat3x3
-//    (
-//        1.60475, -0.53108, -0.07367,
-//        -0.10208,  1.10813, -0.00605,
-//        -0.00327, -0.07276,  1.07602
-//    );
-    vec3 v1 = vec3(0.59719, 0.35458, 0.04823);
-    vec3 v2 = vec3(0.07600, 0.90834, 0.01566);
-    vec3 v3 = vec3(0.02840, 0.13383, 0.83777);
+
+    vec3 v1 = vec3(0.5975,  0.3546,  0.0479);
+    vec3 v2 = vec3(0.0761,  0.9009,  0.0230);
+    vec3 v3 = vec3(0.0001,  0.0292,  0.9707);
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
     // Apply RRT and ODT
-    color = RRTAndODTFit(color);
+    //color = clamp(RRTAndODTFit(color), vec3(0), vec3(1));
+    //color = applyLook(color);
+    color = ACESFilm(color);
 
-    v1 = vec3(1.60475, -0.53108, -0.07367);
-    v2 = vec3(-0.10208,  1.10813, -0.00605);
-    v3 = vec3(-0.00327, -0.07276,  1.07602);
+    v1 = vec3(1.6047, -0.5310, -0.0737);
+    v2 = vec3(-0.1020,  1.1081, -0.0061);
+    v3 = vec3(-0.0082, -0.0861,  1.0943);
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
 
     // Clamp to [0, 1]
@@ -92,7 +88,7 @@ vec3 PhysicalCamera(vec3 in,
   vec3 mapped;
   float exposure = middleGrey / ( (1000.0f / 65.0f) * aperture * aperture / (iso * shutterSpeed) );
   mapped = in * exposure;
-  return  enableExposure? (enableACES? ACESFilm(mapped):mapped ) : (enableACES? ACESFilm(in) : in);
+  return  enableExposure? (enableACES? ACESFitted(mapped):mapped ) : (enableACES? ACESFitted(in) : in);
 }
 __inline__ __device__ bool isBadVector(const float3 & vector) {
 
@@ -452,7 +448,8 @@ extern "C" __global__ void __raygen__rg()
 
             if(prd.depth > 1){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-                RRprob = min(RRprob, 0.99f);
+                RRprob = min(RRprob, 1.0f);
+                
                 if(rnd(prd.seed) > RRprob) {
                     break;
                 } else {
@@ -555,7 +552,7 @@ extern "C" __global__ void __raygen__rg()
 
     dither = (dither-0.5f);
     if (need_tone_mapping) {
-        accum_color = ACESFilm(accum_color);
+        accum_color = ACESFitted(accum_color);
     }
     auto& pixel = params.frame_buffer[image_index];
     pixel = makeSRGB( accum_color, 2.2f, dither);

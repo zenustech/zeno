@@ -168,6 +168,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     
     bool sssFxiedRadius = false;
     vec3 mask_value = vec3(0, 0, 0);
+    float mat_F0 = 0.04;
 
 #endif // _FALLBACK_
 
@@ -221,6 +222,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.sssFxiedRadius = sssFxiedRadius;
     mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
+    mats.F0 = mat_F0;
 
     const bool has_nrm = mat_normal != vec3{0,0,1};
     if (mats.smoothness > 0.0f) {

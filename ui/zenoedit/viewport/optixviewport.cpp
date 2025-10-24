@@ -671,6 +671,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
             this->hdr_sky_2 = "";
             this->local_space = true;
             this->axis_coord = std::nullopt;
+            this->selected_item = "";
         }
     });
 
@@ -1091,7 +1092,12 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
             mode = (mode != "EasyScale")? "EasyScale": "Scale";
         }
         else if(uKey == Qt::Key_R) {
-            mode = (mode == "Rotate")? "RotateScreen": "Rotate";
+            if (selected_item.find("HDRSky") != std::string::npos) {
+                mode = "SkyRot";
+            }
+            else {
+                mode = (mode == "Rotate")? "RotateScreen": "Rotate";
+            }
         }
         else if(uKey == Qt::Key_T) {
             mode = "Translate";

@@ -147,7 +147,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
-    mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
+    //mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
 
     auto opacity = mats.opacity;
     auto specTrans = mats.specTrans;
@@ -495,7 +495,7 @@ extern "C" __global__ void __closesthit__radiance()
     if (prd->denoise) {
 
         if(0.0f == mats.roughness) {
-            prd->tmp_albedo = make_float3(1.0f);
+            prd->tmp_albedo = mats.basecolor;
         } else {
             prd->tmp_albedo = mats.basecolor;
         }
@@ -508,9 +508,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     /* MODME */
     if(prd->diffDepth>=2)
-        mats.roughness = clamp(mats.roughness, 0.3,0.99);
+        mats.roughness = clamp(mats.roughness, 0.3f,0.99f);
     else if(prd->diffDepth>=1)
-        mats.roughness = clamp(mats.roughness, 0.2,0.99);
+        mats.roughness = clamp(mats.roughness, 0.1f,0.99f);
 
     if(prd->isSS == true) {
 //        if(prd->print_info)
@@ -647,6 +647,7 @@ extern "C" __global__ void __closesthit__radiance()
         
     prd->samplePdf = fPdf;
     reflectance = fPdf>0?(reflectance/fPdf):vec3(0.0f);
+    reflectance = clamp(reflectance, vec3(0),vec3(1));
     prd->done = fPdf>0?prd->done:true;
     prd->isSS = isSS;
     pdf = 1.0;
@@ -889,7 +890,8 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     ShadowPRD shadowPRD {};
-    shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
+    shadowPRD.seed = prd->seed;
+    rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);
     shadowPRD.depth = prd->depth;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;

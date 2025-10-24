@@ -408,7 +408,13 @@ namespace DisneyBSDF{
       //result = clamp(result,vec3(0.0f),vec3(1.0f));
       return result;
     }
-    
+    static __inline__ __device__  vec3 SpecularColor(const vec3 &wi, const vec3 &wo, const vec3 &specular_color, const float ior)
+    {
+        vec3 h = normalize(wo + wi);
+        float f0 = BRDFBasics::DielectricFresnel(1.0, ior);
+        float fh = (BRDFBasics::DielectricFresnel(dot(h, wo), ior) - f0) / (1.0f - f0);
+        return mix(specular_color, vec3(1.0f), fh);
+    }
     static __inline__ __device__
     vec3 EvaluateDiffuse(vec3 baseColor, float subsurface, float roughness, float sheen, vec3 Csheen, vec3 V, vec3 L, vec3 H, float &pdf){    
       pdf = 0.0f;
@@ -698,7 +704,8 @@ namespace DisneyBSDF{
             bool reflection_fromCC = false)
 
     {
-        //mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
+        mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
+        mat.clearcoatRoughness  = reflectance==false?max(0.011f, mat.clearcoatRoughness):mat.clearcoatRoughness;
         //bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
 //        if(reflectance == true)
 //        {
@@ -722,6 +729,8 @@ namespace DisneyBSDF{
         {
             wi.z = -wi.z;
         }
+        wi.z = max(0.001, abs(wi.z))*sign(wi.z);
+        wo.z = max(0.001, abs(wo.z))*sign(wo.z);
         vec3 Csheen, Cspec0;
         float F0;
 
@@ -736,11 +745,20 @@ namespace DisneyBSDF{
         float glassWt = (1.0f - mat.metallic) * mat.specTrans;
         float ccWt = 0.25 * mat.clearcoat;
 
-        float invTotalWt = 1.0f / ( dielectricWt + metalWt + glassWt + ccWt );
-        float diffPr = dielectricWt * invTotalWt;
-        float metalPr = metalWt * invTotalWt;
-        float glassPr = glassWt * invTotalWt;
-        float ccPr= ccWt * invTotalWt;
+        vec3 rho_specular = vec3(1.0f);
+        Cspec0 = 0.04f * mat.specular * rho_specular;
+        vec3 specular_color = mix(0.04f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+
+        //dielectricWt *= (1.0f - mat.specular>0?RgbToY(SpecularColor(wo*vec3(-1,-1,1), wo, specular_color,  mat.ior)):0.0f);
+        float diffPr = dielectricWt;
+        float metalPr = metalWt  * RgbToY(SpecularColor(wo*vec3(-1,-1,1), wo, specular_color,  mat.ior));
+        float glassPr = glassWt;
+        float ccPr= ccWt  * RgbToY(SpecularColor(wo*vec3(-1,-1,1), wo, vec3(1.0f), mat.clearcoatIOR));
+        float invTotalWt = 1.0f / ( diffPr + metalPr + glassPr + ccPr );
+        diffPr = diffPr * invTotalWt;
+        metalPr = metalPr * invTotalWt;
+        glassPr = glassPr * invTotalWt;
+        ccPr= ccPr * invTotalWt;
 
 
         float p0 = diffPr;
@@ -778,7 +796,6 @@ namespace DisneyBSDF{
         if(reflect){
             wm = normalize(wi + wo);
           if(diffPr > 0.0f){
-
             //vec3 d = EvaluateDiffuse(thin? mat.basecolor : mix(mat.basecolor,mat.sssColor,mat.subsurface), mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             vec3 d = BRDFBasics::EvalDisneyDiffuse(mat.basecolor, mat.subsurface, mat.roughness, mat.sheen,Csheen, wo, wi, wm, tmpPdf);
             d = d * (1.0f - sssp) * dielectricWt;
@@ -787,11 +804,8 @@ namespace DisneyBSDF{
             fPdf += tmpPdf * (1.0f - sssp) * diffPr;
           }
           if(metalPr>0.0f){
-            vec3 ks = vec3(1.0f);
-            float r0 = (mat.ior - 1.0f) / (mat.ior + 1.0f);
-            r0 = r0 * r0;
-            float r0_eta = mix(BRDFBasics::SchlickWeight(HoV), 1.0f, r0);
-            vec3 C0 = mat.specular * r0_eta * (1.0f - mat.metallic)*ks + mat.metallic * mat.basecolor;
+            float dielectricF = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.ior);
+            vec3 C0 = 0.04f * mat.specular * rho_specular * (1.0f - mat.metallic) + mat.metallic * mat.basecolor;
             vec3 F = mix(C0, vec3(1.0), BRDFBasics::SchlickWeight(HoV));
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
@@ -815,7 +829,7 @@ namespace DisneyBSDF{
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
                                           mix(vec3(0.04), vec3(1.0f), F),
                                           tmpPdf) * ccWt;
-            tmpPdf *= F;
+
             tmpPdf *= (mat.clearcoatRoughness<=0.01 && reflectance==false)? 0.0f:1.0f;
             sterm = sterm + s;
             f =  f + s;
@@ -834,10 +848,11 @@ namespace DisneyBSDF{
 
               vec3 wm = normalize(wi + wo);
               float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0f/mat.ior);
+              float Fp = mix(mat.F0,1.0,F);
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                                            mix(mix(Cspec0, mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
+                                                            mix(mix(vec3(mat.F0), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
-              tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:F;
+              tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:Fp;
               s = s * (tmpPdf>0.0f? 1.0f:0.0f);
               sterm = sterm + s;
               f = f + s;
@@ -855,15 +870,17 @@ namespace DisneyBSDF{
               }else {
                 vec3 wm = entering?-normalize(wo + mat.ior * wi) : normalize(wo + 1.0f/mat.ior * wi);
                 float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0f/mat.ior);
+                float Fp = mix(mat.F0,1.0,F);
                 float tmpPdf;
                 vec3 brdf = BRDFBasics::EvalMicrofacetRefraction(mix(sqrt(mat.transColor), mat.diffractColor, mat.diffraction),
                                                                  ax, ay,
                                                                  entering? mat.ior:1.0f/mat.ior,
                                                                  wo, wi, wm,
-                                                                 vec3(F), tmpPdf);
+                                                                 mix(mix(vec3(mat.F0), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
+                                                                 tmpPdf);
 
                 vec3 t = brdf * glassWt;
-                tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:(1.0f - F);
+                tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:(1.0f - Fp);
                 t = t * (tmpPdf>0.0f? 1.0f:0.0f);
                 tterm = tterm + t;
                 f = f + t;
@@ -890,7 +907,7 @@ namespace DisneyBSDF{
               transmit = clamp(mat.sssParam * d, vec3(0), vec3(1));
           }
 
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt ;
+          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf  *  sssp * diffPr;
@@ -1013,7 +1030,7 @@ namespace DisneyBSDF{
         float F2 = BRDFBasics::DielectricFresnel(abs(dot(woo, wm2)), mat.clearcoatIOR);
         float psss = mat.subsurface;
         float sssPortion = psss / (1.0f + psss);
-        //dielectricWt *= 1.0f - psub;
+
 
         //event probability
         float clearCtPr = 0.25f * mat.clearcoat * F2;
@@ -1278,11 +1295,21 @@ namespace DisneyBSDF{
         float glassWt = (1.0f - mat.metallic) * mat.specTrans;
         float ccWt = 0.25 * mat.clearcoat;
 
-        float invTotalWt = 1.0f / ( dielectricWt + metalWt + glassWt + ccWt );
-        float diffPr = dielectricWt * invTotalWt;
-        float metalPr = metalWt * invTotalWt;
-        float glassPr = glassWt * invTotalWt;
-        float ccPr= ccWt * invTotalWt;
+        vec3 rho_specular = vec3(1.0f);
+        Cspec0 = 0.04f * mat.specular * rho_specular;
+        vec3 specular_color = mix(0.04f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+
+
+        //dielectricWt *= (1.0f - mat.specular>0?RgbToY(SpecularColor(woo*vec3(-1,-1,1), woo, specular_color,  mat.ior)):0.0f);
+        float diffPr = dielectricWt;
+        float metalPr = metalWt  * RgbToY(SpecularColor(woo*vec3(-1,-1,1), woo, specular_color,  mat.ior));
+        float glassPr = glassWt;
+        float ccPr= ccWt  * RgbToY(SpecularColor(woo*vec3(-1,-1,1), woo, vec3(1.0f), mat.clearcoatIOR));
+        float invTotalWt = 1.0f / ( diffPr + metalPr + glassPr + ccPr );
+        diffPr = diffPr * invTotalWt;
+        metalPr = metalPr * invTotalWt;
+        glassPr = glassPr * invTotalWt;
+        ccPr= ccPr * invTotalWt;
 
 
         float p0 = diffPr;
@@ -1294,7 +1321,13 @@ namespace DisneyBSDF{
         //and offset is the "index" to "take" the random number from van der corput
         //as a result, for i'th ray in a pixel, its offset shall be subframe_index, and scrumble seed shall change between
         //events
-        float r3 = vdcrnd(prd->offset, prd->vdcseed);
+        unsigned int depth_offset = tea<4>( prd->depth, 0);
+        unsigned int perm0 = prd->vdcseed + depth_offset;
+        unsigned int perm1 = getScrumble(perm0);
+        unsigned int perm2 = getScrumble(perm1);
+        float r3 = vdcrnd(prd->offset, perm0);
+        float r4 = prd->depth<1?vdcrnd(prd->offset, perm1):rnd(prd->seed);
+        float r5 = prd->depth<1?vdcrnd(prd->offset, perm2):rnd(prd->seed);
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
         tbn.m_binormal = B;
@@ -1363,7 +1396,7 @@ namespace DisneyBSDF{
             float F = mix(BRDFBasics::SchlickWeight(abs(dot(wm, woo))), 1.0f, 0.06f);
             float sss_wt = (1.0f - mat.subsurface);
             float diffp = mix(1.0f, 0.0f, mat.subsurface);
-            if(rnd(prd->seed)<diffp || prd->fromDiff==true)
+            if(r4<diffp || prd->fromDiff==true)
             {
               prd->fromDiff = true;
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
@@ -1429,7 +1462,10 @@ namespace DisneyBSDF{
         else if(r3<p3)//specular
         {
             prd->hit_type = SPECULAR_HIT;
-            SampleSpecular(woo,wi,mat.roughness,mat.anisotropic,r1,r2);
+            float r = mat.roughness;
+            r = prd->diffDepth>1?max(r,0.1f):r;
+            r = prd->diffDepth>2?max(r,0.3f):r;
+            SampleSpecular(woo,wi,r,mat.anisotropic,r1,r2);
             tbn.inverse_transform(wi);
             wi = normalize(wi);
             w_eval = wi;
@@ -1449,8 +1485,9 @@ namespace DisneyBSDF{
           wm = entering?wm:-wm;
 
           float F = BRDFBasics::DielectricFresnel(abs(dot(wm, woo)), entering?mat.ior:1.0f/mat.ior);
+          float Fp = mix(mat.F0,1.0,F);
 
-          if(rnd(prd->seed)<F)//reflection
+          if(r5<Fp)//reflection
           {
             wi = normalize(reflect(-normalize(woo),wm));
           }else //refraction
@@ -1540,13 +1577,7 @@ namespace DisneyBSDF{
         float clearcoat_sample_weight;
     };
 
-    static __inline__ __device__  vec3 SpecularColor(const vec3 &wi, const vec3 &wo, const vec3 &specular_color, const float ior)
-    {
-        vec3 h = normalize(wo + wi);
-        float f0 = BRDFBasics::DielectricFresnel(1.0, ior);
-        float fh = (BRDFBasics::DielectricFresnel(dot(h, wo), ior) - f0) / (1.0f - f0);
-        return mix(specular_color, vec3(1.0f), fh);
-    }
+
     static __inline__ __device__ void FetchClosureSampleWeight(const vec3&wo, const PrincipledBSDF& bsdf, BSDFSampleWeight& w, MatOutput &mat)
     {
         w.diffuse_sample_weight = bsdf.enable_diffuse?RgbToY(bsdf.diffuse_weight):0;
@@ -1668,7 +1699,7 @@ namespace DisneyBSDF{
         {
             vec3 mixed_ss_base_color = mix(mat.basecolor, mat.sssColor, mat.subsurface);
             bsdf.enable_diffuse = false;
-            if(dot(mixed_ss_base_color, vec3(1.0f))/3.0f>closure_weight_cutoff){
+            if(dot(mixed_ss_base_color, vec3(1.0f/3.0f))>closure_weight_cutoff){
                 if(mat.subsurface < closure_weight_cutoff &&
                   _diffuse_weight > closure_weight_cutoff)
                 {

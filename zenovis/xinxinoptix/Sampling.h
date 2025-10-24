@@ -249,7 +249,7 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
 
     auto x = internal? dir.x:-dir.x;
 
-    auto u = 0.5f + atan2f(dir.z, x) * 0.5f / M_PIf;
+    auto u = 0.25f + atan2f(dir.z, x) * 0.5f / M_PIf;
     auto v = 0.5f + asinf(dir.y) / M_PIf;
 
     return float3 {u, v, 0.0f};

@@ -36,6 +36,22 @@ namespace HairBSDF{
         return b / a;
     }
     static __inline__ __device__ float
+    I_0_v2(float x)
+    {
+        double ret           = 0.0;
+        double m_exclamation = 1.0;
+        double x_2_2m        = 1.0;
+        const double x_2     = double(x) * 0.5;
+        for(int m=0;m<10;m++)
+        {
+            m_exclamation *= m>0?m:1;
+            double x_m = 1.0 / (m_exclamation * m_exclamation) * x_2_2m;
+            ret += x_m;
+            x_2_2m *= x_2 * x_2;
+        }
+        return float(ret);
+    }
+    static __inline__ __device__ float
     I_0(float x)
     {
         float sum = 1.0f;

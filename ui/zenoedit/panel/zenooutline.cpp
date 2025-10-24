@@ -232,8 +232,15 @@ void zenooutline::setupTreeView()
                 msg["Content"] = link;
 
                 sendOptixMessage(msg);
+                if (auto main = zenoApp->getMainWindow()) {
+                    for (DisplayWidget* view : main->viewports()) {
+                        if (ZOptixViewport* optxview = view->optixViewport()) {
+                            optxview->selected_item = link.back();
+                        }
+                    }
+                }
             }
-            else if (zeno::str_contains(link.back(), "HDRSky2")) {
+            else if (zeno::str_contains(link.back(), "HDRSky")) {
                 Json msg;
                 msg["MessageType"] = "HDRSky2";
                 msg["Content"] = link.back();
@@ -242,6 +249,7 @@ void zenooutline::setupTreeView()
                     for (DisplayWidget* view : main->viewports()) {
                         if (ZOptixViewport* optxview = view->optixViewport()) {
                             optxview->hdr_sky_2 = link.back();
+                            optxview->selected_item = link.back();
                         }
                     }
                 }

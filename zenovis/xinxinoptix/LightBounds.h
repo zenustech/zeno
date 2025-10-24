@@ -247,7 +247,7 @@ static DirectionCone Union(const DirectionCone &a, const DirectionCone &b) {
         return DirectionCone::EntireSphere(); 
     //Vector3f w = Rotate(Degrees(theta_r), wr)(a.w);
 
-    glm::mat4 rotate = glm::rotate(Degrees(theta_r), *(glm::vec3*)wr.data());
+    glm::mat4 rotate = glm::rotate(theta_r, *(glm::vec3*)wr.data());
     glm::vec4 tmp = glm::vec4(a.w[0], a.w[1], a.w[2], 0.0f); 
     tmp = rotate * tmp;
 

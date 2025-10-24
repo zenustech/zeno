@@ -10,7 +10,7 @@
 #include "Portal.h"
 
 static __inline__ __device__
-vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf, float2& uv)
+vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf, float2& uv, float r0, float r1)
 {
     if(nx*ny == 0)
     {
@@ -31,9 +31,11 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     int i = start%nx;
     int j = start/nx;
 
-    uv = { (i+0.5f)/nx, (j+0.5f)/ny };
+    uv = { (i+r0)/nx, (j+r1)/ny };
+    uv.x = clamp(uv.x, 0.5f/nx, 1.0f - 0.5f/nx);
+    uv.y = clamp(uv.y, 0.5f/ny, 1.0f - 0.5f/ny);
 
-    float theta = uv.x * 2.0f * M_PIf - M_PIf;
+    float theta = uv.x * 2.0f * M_PIf - 0.5 * M_PIf;
     float phi = uv.y * M_PIf;
     //float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sinf(phi);
     //pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
@@ -570,7 +572,7 @@ void DirectLighting(ShadowPRD& shadowPRD, const float3& shadingP, const float3& 
 
             float2 skyuv = {};
             vec3 sample_dir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
-                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf, skyuv)
+                                                            params.skynx, params.skyny, rnd(prd->seed), envpdf, skyuv, prd->rndf(), prd->rndf())
                                     : BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                     params.sunSoftness * 0.0f);
             float samplePDF;
