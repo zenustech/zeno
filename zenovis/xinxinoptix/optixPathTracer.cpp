@@ -1875,6 +1875,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 #endif
     
     bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
+    if (state.params.needAOV != enable_output_aov) {
+        resize_dirty = true;
+    }
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
     updateState( *output_buffer_o, state.params, enable_output_aov );

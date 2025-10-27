@@ -1409,6 +1409,7 @@ struct PrimsFilterInUserdata: INode {
         std::vector<std::string> filters = zeno::split_str(filter_str, {' ', '\n'});
         std::vector<std::string> filters_;
         auto out_list = std::make_shared<ListObject>();
+        auto dropped_list = std::make_shared<ListObject>();
 
         for (auto &s: filters) {
             if (s.length() > 0) {
@@ -1444,8 +1445,12 @@ struct PrimsFilterInUserdata: INode {
             if (insert) {
                 out_list->arr.push_back(p);
             }
+            else {
+                dropped_list->arr.push_back(p);
+            }
         }
         set_output("out", out_list);
+        set_output("dropped", dropped_list);
     }
 };
 
@@ -1459,6 +1464,7 @@ ZENDEFNODE(PrimsFilterInUserdata, {
     },
     {
         {"list", "out"},
+        {"list", "dropped"},
     },
     {},
     {"alembic"},

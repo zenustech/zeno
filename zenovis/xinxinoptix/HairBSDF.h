@@ -64,7 +64,7 @@ namespace HairBSDF{
     }
     static __inline__ __device__ float
     logI_0(float x){
-        return x + 0.5f * (-logf(2 * M_PIf) + logf(1 / x) + 1 / (8 * x));
+        return x>12.0f?(x + 0.5f * (-logf(2 * M_PIf) + logf(1 / x) + 1 / (8 * x))):log(I_0_v2(x));
     }
 
     /*From weta, can be repalce */
@@ -72,17 +72,16 @@ namespace HairBSDF{
     M_p_Weta(float sinTheta_i, float cosTheta_i, float sinTheta_o, float cosTheta_o, float beta)
     {
         float v = beta * beta;
-        v = max(v,0.04f);
+        v = max(v,0.01f);
         float a = cosTheta_i * cosTheta_o / v;
         float b = sinTheta_i * sinTheta_o / v;
-        //if(beta < 0.3f){
-        //    return exp(logI_0(a) - b - 1 / v + 0.6931f + log(1 / (2 * v)));
-        //}
+        if(v < 0.1f){
+            return exp(logI_0(a) - b - 1 / v + 0.6931f + log(1 / (2 * v)));
+        }
         float term1 = csch(1/v) / (2*v);
         float term2 = exp(-b);
-        float term3 = I_0(a);
+        float term3 = I_0_v2(a);
         return term1 * term2 * term3;
-
     }
     static __inline__ __device__ float
     M_p_UE(float sinTheta_i, float sinTheta_o, float beta, float alpha)
@@ -120,11 +119,18 @@ namespace HairBSDF{
         return 2 * p * gammaT - 2 * gammaO + p * M_PIf;
     }
     static __inline__ __device__ float
+    my_fmod(float a, float b)
+    {
+        return a - floor(a/b)*b;
+    }
+    static __inline__ __device__ float
     N_p(float Phi, int p, float s, float gammaO, float gammaT){
         float dphi = Phi - GetPhi(p, gammaO, gammaT);
+        dphi = my_fmod(dphi, 2.0f*M_PIf);
+        dphi -= dphi>=M_PIf? 2.0f*M_PIf : 0.0f;
     // Remap _dphi_ to $[-\pi,\pi]$
-        while (dphi > M_PIf) dphi -= 2 * M_PIf;
-        while (dphi < M_PIf) dphi += 2 * M_PIf;
+//        while (dphi > M_PIf) dphi -= 2 * M_PIf;
+//        while (dphi < M_PIf) dphi += 2 * M_PIf;
         return TrimmedLogistic(dphi, s, -M_PIf, M_PIf);
 
     }
@@ -132,8 +138,8 @@ namespace HairBSDF{
     Ap(float cosTheta_o, float ior, float h, int p, vec3 color)
     {
         float cosTheta = abs(cosTheta_o) * sqrtf(1-h*h);
-        float f = BRDFBasics::SchlickDielectic(cosTheta,ior);
-        vec3 tmp = sqrtf(1-f) * color;
+        float f = BRDFBasics::DielectricFresnel(cosTheta,ior);
+        vec3 tmp = pow(1.0f-f,2.0f) * color;
         if(p==0){
             return vec3(f);
         }else if(p==1){

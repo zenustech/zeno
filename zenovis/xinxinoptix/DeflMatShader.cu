@@ -983,8 +983,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += CUR_TOTAL_TRANS  * mats.emission;
-    if(lengthSquared(mats.emission)>0)
-    {
-      prd->done = true;
-    }
+//    if(lengthSquared(mats.emission)>0)
+//    {
+//      prd->done = true;
+//    }
 }
