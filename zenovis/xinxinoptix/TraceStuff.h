@@ -116,6 +116,7 @@ struct RadiancePRD : CommonPRD {
     uint8_t      depth;
     uint8_t      max_depth;
     uint8_t      diffDepth;
+    uint8_t      hair_depth;
 
     bool done         : 1;
     bool countEmitted : 1;

@@ -333,6 +333,7 @@ extern "C" __global__ void __raygen__rg()
 
         prd.depth = 0;
         prd.diffDepth = 0;
+        prd.hair_depth = 0;
         prd.alphaDepth = 0;
         prd.isSS = false;
         prd.curMatIdx = 0;
@@ -449,7 +450,7 @@ extern "C" __global__ void __raygen__rg()
             if(prd.depth > 1){
                 float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
                 RRprob = min(RRprob, 1.0f);
-                
+
                 if(rnd(prd.seed) > RRprob) {
                     break;
                 } else {
@@ -606,7 +607,6 @@ extern "C" __global__ void __miss__radiance()
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
         }
-
         prd->done      = true;
         prd->hit_type  = 0;
         return;

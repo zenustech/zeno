@@ -324,20 +324,17 @@ float GgxG(vec3 wo, vec3 wi, float alphaX, float alphaY) {
 static __inline__ __device__
 float DielectricFresnel(float cosThetaI, float eta)
 {
-  float sin2 = 1.0f - cosThetaI * cosThetaI;//0
-  float eta2 = eta * eta;//1.33*1.33
+    float sin2Theta_i = 1 - pbrt::Sqr(cosThetaI);
+    float sin2Theta_t = sin2Theta_i / pbrt::Sqr(eta);
+    if (sin2Theta_t >= 1)
+       return 1.f;
+    float cosTheta_t = sqrt(1 - sin2Theta_t);
 
-  float cos2t = 1.0f - sin2 / eta2;//1.0
-  if(cos2t < 0.0f) return 1.0f;
-
-  float t0 = sqrt(cos2t);//1.0
-  float t1 = eta * t0;//1.33
-  float t2 = eta * cosThetaI;//1.33
-
-  float rs = (cosThetaI - t1) / (cosThetaI + t1);//1.33-1 / 1.33+1
-  float rp = (t0 - t2) / (t0 + t2);//1.33 - 1 / 1.33 + 1
-
-  return 0.5f * (rs * rs + rp * rp);
+    float r_parl = (eta * cosThetaI - cosTheta_t) /
+               (eta * cosThetaI + cosTheta_t);
+    float r_perp = (cosThetaI - eta * cosTheta_t) /
+               (cosThetaI + eta * cosTheta_t);
+    return (pbrt::Sqr(r_parl) + pbrt::Sqr(r_perp)) / 2;
 }
 
 static __inline__ __device__ 

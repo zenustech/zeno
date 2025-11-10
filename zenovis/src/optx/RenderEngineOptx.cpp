@@ -446,6 +446,8 @@ struct GraphicsManager {
                             strands.push_back(this_segment[begin]);
                         }
                     }
+                    auto last = prim_in->lines->back();
+                    strands.push_back(last[end]+1);  // ending tip
 
                     auto abcpath = ud.get2<std::string>("abcpath_0", "Default");
                     const auto reName = prim_in->userData().get2<std::string>("ObjectName", abcpath);

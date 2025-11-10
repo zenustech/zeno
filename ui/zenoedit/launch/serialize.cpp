@@ -304,7 +304,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                             if (!bDict)
                             {
                                 //new added param `doConcat` at MakeList.
-                                AddParams("setNodeParam", mockDictList, "doConcat", 1, "bool", writer);
+                                AddParams("setNodeParam", mockDictList, "doConcat", 0, "bool", writer);
                             }
                             // add link from outside node to the mock dict/list.
                             AddStringList({ "bindNodeInput", mockDictList, keyName, newOutId, outSock }, writer);

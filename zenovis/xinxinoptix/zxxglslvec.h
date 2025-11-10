@@ -503,23 +503,26 @@ __forceinline__ __device__ vec4 log(vec4 a)
 {
     return vec4(logf(a.x), logf(a.y), logf(a.z), logf(a.w));
 }
-
+__forceinline__ __device__ float safesqrt(float a)
+{
+    return sqrt(fmaxf(a,0.0f));
+}
 __forceinline__ __device__ vec2 sqrt(vec2 a)
 {
-    return vec2(sqrtf(a.x), sqrtf(a.y));
+    return vec2(safesqrt(a.x), safesqrt(a.y));
 }
 __forceinline__ __device__ vec3 sqrt(vec3 a)
 {
-    return vec3(sqrtf(a.x), sqrtf(a.y), sqrtf(a.z));
+    return vec3(safesqrt(a.x), safesqrt(a.y), safesqrt(a.z));
 }
 __forceinline__ __device__ vec4 sqrt(vec4 a)
 {
-    return vec4(sqrtf(a.x), sqrtf(a.y), sqrtf(a.z), sqrtf(a.w));
+    return vec4(safesqrt(a.x), safesqrt(a.y), safesqrt(a.z), safesqrt(a.w));
 }
 
 #ifndef __CUDACC_RTC__
 float rsqrtf(float a) {
-    return 1.0/sqrtf(a);
+    return 1.0/safesqrt(a);
 }
 #endif
 

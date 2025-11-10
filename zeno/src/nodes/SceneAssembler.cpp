@@ -685,10 +685,15 @@ struct MergeMultiScenes : zeno::INode {
                 auto sub_list = std::make_shared<ListObject>();
                 for (auto i = 0; i < scene_list->arr.size(); i++) {
                     auto obj = scene_list->arr[i];
-                    sub_list->arr.push_back(obj);
-                    if (obj->userData().get2<std::string>("ResourceType", "") == "SceneTree") {
-                        input_scene_list->arr.push_back(sub_list);
-                        sub_list = std::make_shared<ListObject>();
+                    if (std::dynamic_pointer_cast<ListObject>(obj)) {
+                        input_scene_list->arr.push_back(obj);
+                    }
+                    else {
+                        sub_list->arr.push_back(obj);
+                        if (obj->userData().get2<std::string>("ResourceType", "") == "SceneTree") {
+                            input_scene_list->arr.push_back(sub_list);
+                            sub_list = std::make_shared<ListObject>();
+                        }
                     }
                 }
             }

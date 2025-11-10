@@ -53,7 +53,7 @@ struct LightSampleRecord {
 namespace pbrt {
     
 template <typename T>
-inline float Sqr(T v) { return v * v; }
+inline T Sqr(T v) { return v * v; }
 
 inline float SafeASin(float x) {
     DCHECK(x >= -1.0001 && x <= 1.0001);

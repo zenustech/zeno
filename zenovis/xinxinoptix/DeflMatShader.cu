@@ -89,9 +89,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     optixGetWorldToObjectTransformMatrix((float*)attrs.worldToObject);
 
 #if (_P_TYPE_==2)
-    prd->attanuation = vec3(0);
-    optixTerminateRay();
-    return;
+
 #elif (_P_TYPE_==1)
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -141,7 +139,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     optixGetWorldToObjectTransformMatrix(attrs.World2ObjectMat);
     attrs.World2ObjectMat[15] = 1.0f;
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>( dc_index, rt_data->textures, attrs );
-
     shadingNorm = mats.nrm;
     shadingNorm = faceforward( shadingNorm, -ray_dir, shadingNorm );
     
@@ -316,15 +313,19 @@ extern "C" __global__ void __closesthit__radiance()
     const float c0 = 5.9604644775390625E-8f;
     const float c1 = 1.788139769587360206060111522674560546875E-7f;
     const float c2 = 1.19209317972490680404007434844970703125E-7f;
-
+    float h = 0;
 #if (_P_TYPE_==2)
 
+    objPos = optixTransformPointFromWorldToObjectSpace(P);
     auto curveAttr = CurveAttributes( optixGetPrimitiveType(), primIdx );
     objNorm = curveAttr.normal;
     // bound object space error due to reconstruction and intersection
     vec3 objErr = FMA( vec3( c0 ), abs( curveAttr.center ), vec3( c1 * curveAttr.radius ) );
     objOffset = dot( objErr, abs( objNorm ) );
-    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
+    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, curveAttr.center, objNorm, objOffset );
+
+    wldPos = P;
+    //wldOffset = 0.0f;
 
     if (isBadVector(objNorm)) {
         prd->done = true;
@@ -332,9 +333,26 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     attrs.N = wldNorm;
-    attrs.T = normalize( optixTransformVectorFromObjectToWorldSpace(curveAttr.tangent) );
+    shadingNorm = wldNorm;
+    attrs.T = normalize( optixTransformNormalFromObjectToWorldSpace(curveAttr.tangent) );
     assert( dot(attrs.N, attrs.T) );
     attrs.B = cross(attrs.T, attrs.N);
+
+    vec3 _diff = P - (curveAttr.center - params.cam.eye);
+    auto lenN = dot(_diff, attrs.N);
+    auto lenB = dot(_diff, attrs.B);
+
+    auto len2 = pbrt::Sqr(lenN) + pbrt::Sqr(lenB);
+    curveAttr.radius;
+    //assert(len2 < pbrt::Sqr(curveAttr.radius/2));
+
+     if (prd->print_info) {
+         auto len1 = sqrtf(len2);
+         auto radius = curveAttr.radius;
+         h = 0.5 * len1 / radius;
+         //printf("len=%f radius=%f ratio=%f\n", len1, radius, len1/radius);
+     }
+
 
     auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
     auto& aux = *(CurveGroupAux*)(gas_ptr-sizeof(CurveGroupAux));
@@ -344,7 +362,7 @@ extern "C" __global__ void __closesthit__radiance()
     float  segmentU   = optixGetCurveParameter();
     float2 strand_u = aux.strand_u[primIdx];
     float u = strand_u.x + segmentU * strand_u.y;
-    //attrs.uv = {u, (float)strandIndex/ aux.strand_info.count, 0};
+    attrs.barys2 = {u, (float)strandIndex/ aux.strand_info.count};
 
 #elif (_P_TYPE_==1)
 
@@ -605,8 +623,20 @@ extern "C" __global__ void __closesthit__radiance()
     bool isSS = false;
     bool isTrans = false;
     flag = DisneyBSDF::scatterEvent;
-
+    mats.hair_h = h;
     if(prd->depth>1 && mats.roughness>0.4) mats.specular = 0.0f;
+//    if(prd->print_info && prd->depth==0)
+//    {
+//        auto t = -normalize(ray_dir);
+//        printf("TBN at sample:\n");
+//        printf("wo:%f,%f,%f\n",t.x,t.y,t.z);
+//        printf("T:%f,%f,%f\n",T.x,T.y,T.z);
+//        printf("B:%f,%f,%f\n",B.x,B.y,B.z);
+//        printf("N:%f,%f,%f\n",N.x,N.y,N.z);
+//    }
+    if(prd->hair_depth>=1) mats.hair_rough2=max(0.3f,mats.hair_rough2);
+    if(prd->hair_depth>=2) mats.hair_rough2=max(0.6f,mats.hair_rough2);
+    if(prd->hair_depth>=3) mats.hair_rough2=max(1.0f,mats.hair_rough2);
     while(DisneyBSDF::SampleDisney3(
                 prd->seed,
                 prd->eventseed,
@@ -674,7 +704,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
 
-    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
+    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth==0 && mats.isHair>0.5) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
 
 
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
@@ -869,7 +899,14 @@ extern "C" __global__ void __closesthit__radiance()
 //        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
     auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
-
+//        if(prd->print_info && prd->depth==1)
+//        {
+//            printf("TBN at lighting:\n");
+//            printf("wo:%f,%f,%f\n",_wo_.x,_wo_.y,_wo_.z);
+//            printf("T:%f,%f,%f\n",T.x,T.y,T.z);
+//            printf("B:%f,%f,%f\n",B.x,B.y,B.z);
+//            printf("N:%f,%f,%f\n",N.x,N.y,N.z);
+//        }
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
         auto& rd = reinterpret_cast<vec3&>(prd->aov[0]);
@@ -907,6 +944,9 @@ extern "C" __global__ void __closesthit__radiance()
 
     shadowPRD.origin = dot(wi, vec3(prd->geometryNormal)) > 0 ? frontPos : backPos;
     shadowPRD.origin = (isSS&&istransmission&&mats.thin<0.5&&mats.subsurface>0)?frontPos : shadowPRD.origin;
+#if _P_TYPE_==2
+    shadowPRD.origin = (mats.isHair>0.5)?backPos : shadowPRD.origin;
+#endif
     shadowPRD.origin = shadowPRD.origin + float3(bezierOff);
     auto shadingP = frontPos + params.cam.eye; // world space
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){

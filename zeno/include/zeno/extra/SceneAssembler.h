@@ -371,6 +371,12 @@ struct SceneObject : IObjectClone<SceneObject> {
                     auto mtlid = prim->userData().get2<std::string>("mtlid", "");
                     BasicRenderInstances[path]["Material"] = mtlid;
                 }
+                const bool is_curve = prim->userData().has("curve")||prim->userData().has("cyhair");
+                if(is_curve )
+                {
+                    auto mtlid = prim->userData().get2<std::string>("mtlid", "");
+                    BasicRenderInstances[path]["Material"] = mtlid;
+                }
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
 

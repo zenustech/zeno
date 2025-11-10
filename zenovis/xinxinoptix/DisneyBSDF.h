@@ -539,7 +539,7 @@ namespace DisneyBSDF{
           vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
           vec3 h = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
                                               dot(wo_t,wo),Phi,wi.z,1.55f,
-                                              extinction,mat.basecolor,
+                                              mat.basecolor,
                                               mat.roughness,0.7f,2.0f);
           fPdf += 1 / M_PIf / 4;
           dterm = dterm + h;
@@ -782,15 +782,20 @@ namespace DisneyBSDF{
           vec3 wo_t = normalize(vec3(0.0f,wo.y,wo.z));
           vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
           float Phi = acos(dot(wo_t, wi_t));
-          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
-          vec3 h = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),wo.x,
-                                              dot(wo_t,wo),Phi,wi.z,1.55f,
-                                              extinction,mat.basecolor,
-                                              mat.roughness,0.7f,2.0f);
-          fPdf += 1 / M_PIf / 4;
-          dterm = dterm + h;
-          f = f + h;
-          return f * abs(wi.z);
+          float cos_gamma = clamp(wo_t.z,-1.0f,1.0f);
+          float absh = safesqrt(1 - cos_gamma * cos_gamma);
+          float h = -sign(wo_t.y) * absh;
+
+          float Pdf;
+          vec3 H = HairBSDF::EvaluteHair2(wo, wi,
+                                           h,mat.ior,
+                                           mat.basecolor,
+                                           mat.roughness,mat.hair_rough2,2.0f, Pdf);
+
+          fPdf += Pdf;
+          dterm = dterm + H;
+          f = f + H;
+          return f;
         }
         float sssp=mat.subsurface;
         if(reflect){
@@ -1073,10 +1078,10 @@ namespace DisneyBSDF{
           vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
           float Phi = acos(dot(wo_t,wi_t));
           vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
-          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),woo.x,
-                                              dot(wo_t,woo),Phi,wi.z,1.55f,
-                                              extinction,mat.basecolor,
-                                              mat.roughness,0.7f,2.0f);
+//          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),woo.x,
+//                                              dot(wo_t,woo),Phi,wi.z,woo.z,1.55f,
+//                                              extinction,mat.basecolor,
+//                                              mat.roughness,0.7f,2.0f);
                     
           isSS = false;
           tbn.inverse_transform(wi);
@@ -1333,24 +1338,31 @@ namespace DisneyBSDF{
         tbn.m_binormal = B;
         prd->fromDiff = false;
         if(mat.isHair>0.5f){
+            prd->hair_depth += 1;
           prd->fromDiff = true;
-          wi = SampleScatterDirection(prd->seed) ;
+          //wi = SampleScatterDirection(prd->seed) ;
           vec3 wo_t = normalize(vec3(0.0f,woo.y,woo.z));
-          vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
-          float Phi = acos(dot(wo_t,wi_t));
-          vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
-          reflectance = HairBSDF::EvaluteHair(wi.x,dot(wi_t,wi),woo.x,
-                                              dot(wo_t,woo),Phi,wi.z,1.55f,
-                                              extinction,mat.basecolor,
-                                              mat.roughness,0.7f,2.0f);
+          //vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
+          //float Phi = acos(dot(wo_t,wi_t));
+          //vec3 extinction = CalculateExtinction(mat.sssParam,1.0f);
+
+          float cos_gamma = clamp(wo_t.z,-1.0f,1.0f);
+          float absh = safesqrt(1 - cos_gamma * cos_gamma);
+          float h = -sign(wo_t.y) * absh;
+          if(prd->print_info&&prd->depth==0)
+              printf("h:%f\n",h);
+          float pdf;
+          reflectance = HairBSDF::SampleHair2(woo, wi,prd->seed,
+                                               h,mat.ior,
+                                               mat.basecolor,
+                                               mat.roughness,1.0,2.0f, pdf);
 
           isSS = false;
           tbn.inverse_transform(wi);
           wi = normalize(wi);
 
 
-          float pdf, pdf2;
-          pdf = 1 / M_PIf / 4;
+
           vec3 rd, rs, rt;
           fPdf = pdf>1e-5?pdf:0.0f;
           reflectance = pdf>1e-5?reflectance:vec3(0.0f);

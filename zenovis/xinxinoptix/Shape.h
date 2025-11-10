@@ -211,6 +211,7 @@ struct TriangleShape {
             if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
                 lsr->PDF = lsr->dist * lsr->dist * areaPDF() / fabsf(lsr->NoL);
             }
+            return;
         } // uniform area sampling
 
         float pdf = 1.0f;

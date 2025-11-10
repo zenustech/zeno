@@ -847,6 +847,10 @@
         <source>Compose video</source>
         <translation type="finished">合成视频</translation>
     </message>
+	<message>
+        <source>Run script</source>
+        <translation type="finished">运行脚本</translation>
+    </message>
     <message>
         <source>Undo</source>
         <translation type="unfinished">撤销</translation>
@@ -3185,9 +3189,13 @@
         <source>alreday has same layout</source>
         <translation type="vanished">已经有同名布局了</translation>
     </message>
-    <message>
+	<message>
         <source>Custom Layout</source>
         <translation type="vanished">自定义布局</translation>
+    </message>
+	<message>
+        <source>No Python scripts found</source>
+        <translation type="finished">未找到pyhton脚本</translation>
     </message>
     <message>
         <source>English / Chinese</source>

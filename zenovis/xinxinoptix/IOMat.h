@@ -53,10 +53,12 @@ struct MatOutput {
     float shadowTerminatorOffset;
     float emissionOnly;
     float isHair;
+    float hair_rough2;
     vec3  mask_value;
 
     vec3 nrm;
     vec3 emission;
+    float hair_h = 0;
 };
 
 __forceinline__ float3 transformPoint(float3 p, const float4* matrix) {
@@ -249,6 +251,28 @@ struct SphereInput : MatInput {
     }
 };
 
+struct CurveInput : MatInput {
+
+    inline vec3 interpNorm(float smooth=0.0f) const {
+        return N;
+    }
+    inline vec3 interpTang() const {
+        return T;
+    }
+    inline vec3 uv() const {
+        return {barys2.x, barys2.y, 0.0};
+    }
+    inline vec3 clr() const {
+        return {}; 
+    }
+    inline float area(bool local=false) const {
+        return 0.0f;
+    }
+    inline float3 els(bool local=false) const {
+        return {};
+    }
+};
+
 template<typename Func>
 inline auto dispatch(const MatInput* input, int16_t ptype, Func&& func) {
     switch (ptype) {
@@ -256,10 +280,8 @@ inline auto dispatch(const MatInput* input, int16_t ptype, Func&& func) {
             return func(*reinterpret_cast<const TriangleInput*>(input));
         case OPTIX_PRIMITIVE_TYPE_SPHERE:
             return func(*reinterpret_cast<const SphereInput*>(input));
-        default: {
-            using ReturnT = decltype(func(*reinterpret_cast<const SphereInput*>(input)));
-            return ReturnT{};
-        }
+        default: // Curve
+            return func(*reinterpret_cast<const CurveInput*>(input));
     }
 }
 

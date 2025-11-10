@@ -164,6 +164,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     float mat_isHair = 0.0f;
+    float mat_HairRough2 = 1.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
@@ -222,6 +223,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.sssFxiedRadius = sssFxiedRadius;
     mats.mask_value = mask_value;
     mats.isHair = mat_isHair;
+    mats.hair_rough2 = mat_HairRough2;
     mats.F0 = mat_F0;
 
     const bool has_nrm = mat_normal != vec3{0,0,1};
@@ -235,9 +237,11 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
         mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
     }
 
+if (mats.nrm != n) {
     n = mats.nrm;
     b = cross(t, n);
     t = cross(n, b);
+}
 
     if (has_nrm) { // has input from node graph
         n = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;

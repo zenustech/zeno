@@ -134,8 +134,7 @@ struct ExtractMaterialShader : zeno::INode
           },
       });
 
-  struct BindMaterial
-      : zeno::INode
+  struct BindMaterial : zeno::INode
   {
     virtual void apply() override
     {

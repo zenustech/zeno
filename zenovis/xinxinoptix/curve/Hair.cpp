@@ -219,6 +219,8 @@ std::vector<uint> Hair::segments(zeno::CurveType curveType) const
 
 void Hair::prepareWidths( )
 {
+    if( hasThickness() ) return;
+    
     const float r = m_thickness[0];
     for( auto strand = m_strands.begin(); strand != m_strands.end() - 1; ++strand )
     {
