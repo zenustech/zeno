@@ -111,6 +111,12 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        int *uvs_1 = prim->loops.attr_is<int>("uvs_1")? prim->loops.attr<int>("uvs_1").data(): nullptr;
+        int *uvs_2 = prim->loops.attr_is<int>("uvs_2")? prim->loops.attr<int>("uvs_2").data(): nullptr;
+        int *uvs_3 = prim->loops.attr_is<int>("uvs_3")? prim->loops.attr<int>("uvs_3").data(): nullptr;
+        vec3i* auv1 = uvs_1? prim->tris.add_attr<vec3i>("auv_1").data(): nullptr;
+        vec3i* auv2 = uvs_2? prim->tris.add_attr<vec3i>("auv_2").data(): nullptr;
+        vec3i* auv3 = uvs_3? prim->tris.add_attr<vec3i>("auv_3").data(): nullptr;
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
@@ -125,6 +131,15 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                 uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                 uv1[scanbase] = {uvs[loop_uv[start + 1]][0], uvs[loop_uv[start + 1]][1], 0};
                 uv2[scanbase] = {uvs[loop_uv[start + 2]][0], uvs[loop_uv[start + 2]][1], 0};
+                if (uvs_1) {
+                    auv1[scanbase] = {uvs_1[start], uvs_1[start + 1], uvs_1[start + 2]};
+                }
+                if (uvs_2) {
+                    auv2[scanbase] = {uvs_2[start], uvs_2[start + 1], uvs_2[start + 2]};
+                }
+                if (uvs_3) {
+                    auv3[scanbase] = {uvs_3[start], uvs_3[start + 1], uvs_3[start + 2]};
+                }
                 prim->tris[scanbase] = vec3i(
                         prim->loops[start],
                         prim->loops[start + 1],
@@ -135,6 +150,15 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                     uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                     uv1[scanbase] = {uvs[loop_uv[start + j - 1]][0], uvs[loop_uv[start + j - 1]][1], 0};
                     uv2[scanbase] = {uvs[loop_uv[start + j]][0], uvs[loop_uv[start + j]][1], 0};
+                    if (uvs_1) {
+                        auv1[scanbase] = {uvs_1[start], uvs_1[start + j - 1], uvs_1[start + j]};
+                    }
+                    if (uvs_2) {
+                        auv2[scanbase] = {uvs_2[start], uvs_2[start + j - 1], uvs_2[start + j]};
+                    }
+                    if (uvs_3) {
+                        auv3[scanbase] = {uvs_3[start], uvs_3[start + j - 1], uvs_3[start + j]};
+                    }
                     prim->tris[scanbase] = vec3i(
                             prim->loops[start],
                             prim->loops[start + j - 1],
