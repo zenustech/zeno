@@ -517,6 +517,35 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
         engine->outlineInit(msg);
     }
 }
+
+void OptixWorker::on_send_clickinfo_to_optix(ClickPosInfo posinfo)
+{
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+    if (auto engine = scene->renderMan->getEngine("optx")) {
+        if (posinfo.eventType == QEvent::MouseButtonDblClick || posinfo.eventType == QEvent::MouseButtonPress && posinfo.eventButtons & Qt::LeftButton)
+        {
+            engine->getClickedId(posinfo.eventCamx, posinfo.eventCamy, [this, scene, posinfo](std::tuple<std::string, std::string, uint32_t> ids) {
+                emit sig_sendClickId(ids, posinfo);
+            });
+        }
+        else {
+            engine->getClickedPos(posinfo.eventCamx, posinfo.eventCamy, [this, scene, posinfo](glm::vec3 posWS) {
+                auto const& cam = *scene->camera;
+                if (posWS == glm::vec3()) {
+                    emit sig_sendClickPos({}, posinfo);
+                } else {
+                    posWS += cam.m_pos;
+                    emit sig_sendClickPos(posWS, posinfo);
+                }
+            });
+        }
+    }
+}
+
 static void modify_hdrsky_value(const std::string &node_uuid, glm::vec3 rot_value) {
     if (node_uuid.empty()) {
         return;
@@ -712,8 +741,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
 
     connect(this, &ZOptixViewport::sig_send_clickinfo_to_optix, m_worker, &OptixWorker::on_send_clickinfo_to_optix, Qt::QueuedConnection);
-    connect(m_worker, &OptixWorker::sig_sendClickId, this, &ZOptixViewport::on_click_id_received);
-    connect(m_worker, &OptixWorker::sig_sendClickPos, this, &ZOptixViewport::on_click_pos_received);
+    connect(m_worker, &OptixWorker::sig_sendClickId, this, &ZOptixViewport::on_sendClickId_received, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_sendClickPos, this, &ZOptixViewport::on_sendClickPos_received, Qt::QueuedConnection);
 
     setRenderSeparately(RunALL);
     m_thdOptix.start();
@@ -842,6 +871,28 @@ void ZOptixViewport::onFrameRunFinished(int frame)
     emit sig_frameRunFinished(frame);
 }
 
+void ZOptixViewport::on_sendClickId_received(const OPTIX_CLICKID& ids, ClickPosInfo posinfo)
+{
+    if (QEvent::MouseButtonPress && posinfo.eventButtons & Qt::LeftButton) {
+        m_camera->click_id_prim_selected(ids);
+    }
+    else if (posinfo.eventType == QEvent::MouseButtonDblClick) {
+        m_camera->click_id_activate_matnode(ids);
+    }
+}
+
+void ZOptixViewport::on_sendClickPos_received(const std::optional<glm::vec3>& pos, ClickPosInfo posinfo)
+{
+    if (posinfo.eventType == QEvent::Wheel)
+    {
+        m_camera->click_pos_wheel(pos, posinfo);
+    }
+    else if (QEvent::MouseButtonPress && ((posinfo.eventButtons & Qt::LeftButton) == 0))
+    {
+        m_camera->click_pos_set_pivot(pos);
+    }
+}
+
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
 {
     emit sig_updateCameraProp(aperture, disPlane, skipParam);
@@ -926,7 +977,7 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
-    m_camera->fakeMousePressEvent(event);
+    m_camera->fakeMousePressEvent(event, this);
     update();
 }
 
@@ -942,16 +993,8 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
         try_axis = {};
     }
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event, this);
+    m_camera->fakeMouseReleaseEvent(event);
     update();
-}
-
-void ZOptixViewport::on_click_id_received(const OPTIX_CLICKID& click_ids) {
-
-}
-
-void ZOptixViewport::on_click_pos_received(const glm::vec3& pos) {
-
 }
 
 void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
@@ -1012,7 +1055,7 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 void ZOptixViewport::mouseDoubleClickEvent(QMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseDoubleClickEvent(event);
+    m_camera->fakeMouseDoubleClickEvent(event, this);
     update();
 }
 
@@ -1023,7 +1066,7 @@ void ZOptixViewport::wheelEvent(QWheelEvent* event)
     setSimpleRenderOption();
 
     _base::wheelEvent(event);
-    m_camera->fakeWheelEvent(event);
+    m_camera->fakeWheelEvent(event, this);
     update();
 }
 

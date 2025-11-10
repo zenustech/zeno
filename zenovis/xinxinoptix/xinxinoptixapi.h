@@ -125,8 +125,8 @@ void set_physical_camera_param(float aperture, float shutter_speed, float iso, i
 void set_perspective_by_fov(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, int fov_type, float L, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 void set_perspective_by_focal_length(float const *U, float const *V, float const *W, float const *E, float aspect, float focal_length, float w, float h, float focal_distance, float aperture, float pitch, float yaw, float h_shift, float v_shift);
 
-glm::vec3 get_click_pos(float x, float y);
-glm::uvec4 get_click_id(float x, float y);
+void get_click_pos(float x, float y, std::function<void(glm::vec3)> cbClickPosSig);
+void get_click_id(float x, float y, std::function<void(std::tuple<std::string, std::string, uint32_t>)> cbClickIdSig);
 
 struct LightDat {
     std::vector<float> v0;
