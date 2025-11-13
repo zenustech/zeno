@@ -790,7 +790,7 @@ namespace DisneyBSDF{
           vec3 H = HairBSDF::EvaluteHair2(wo, wi,
                                            h,mat.ior,
                                            mat.basecolor,
-                                           mat.roughness,mat.hair_rough2,mat.m0_rough,2.0f, Pdf);
+                                           mat.roughness,mat.hair_rough2,mat.m0_rough,2.0f, mat.hairAmp, Pdf);
 
           fPdf += Pdf;
           dterm = dterm + H;
@@ -1340,7 +1340,7 @@ namespace DisneyBSDF{
         if(mat.isHair>0.5f){
             prd->hair_depth += 1;
           prd->fromDiff = true;
-          //wi = SampleScatterDirection(prd->seed) ;
+          wi = SampleScatterDirection(prd->seed) ;
           vec3 wo_t = normalize(vec3(0.0f,woo.y,woo.z));
           //vec3 wi_t = normalize(vec3(0.0f,wi.y,wi.z));
           //float Phi = acos(dot(wo_t,wi_t));
@@ -1350,14 +1350,15 @@ namespace DisneyBSDF{
           float absh = safesqrt(1 - cos_gamma * cos_gamma);
           float h = sign(wo_t.y) * absh;
           float pdf;
-          reflectance = HairBSDF::SampleHair2(woo, wi,prd->seed,
+          reflectance = HairBSDF::SampleHair2(woo, wi,prd->seed,prd,
                                                h,mat.ior,
                                                mat.basecolor,
-                                               mat.roughness,1.0,mat.m0_rough,2.0f, pdf);
+                                               mat.roughness,1.0,mat.m0_rough,2.0f, mat.hairAmp, pdf);
 
           isSS = false;
           tbn.inverse_transform(wi);
           wi = normalize(wi);
+
 
 
 

@@ -166,6 +166,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     float mat_isHair = 0.0f;
     float mat_HairRough2 = 1.0f;
     float mat_FurCoat = 0.0f;
+    float mat_hairAmp = 1.0f;
     vec3 mat_reflectance = att_reflectance;
     
     bool sssFxiedRadius = false;
@@ -226,6 +227,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.isHair = mat_isHair;
     mats.hair_rough2 = mat_HairRough2;
     mats.m0_rough = 1.0f - mat_FurCoat;
+    mats.hairAmp = mat_hairAmp;
     mats.F0 = mat_F0;
 
     const bool has_nrm = mat_normal != vec3{0,0,1};

@@ -54,7 +54,6 @@ struct vec4{
 
 struct vec3{
     float x, y, z;
-
     __forceinline__ __device__ float& operator[](unsigned int index) {
         auto ptr= &this->x;
         ptr += index;
@@ -1540,12 +1539,12 @@ __forceinline__ __device__ float half_to_float(ushort1 in)
     half x = reinterpret_cast<half&>(in);
     return __half2float(x);
 }
-__forceinline__ __device__ float RgbToY(const float3& c) {
-  float3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+__forceinline__ __device__ float RgbToY(const vec3 c) {
+  vec3 y_weight = {0.212671f, 0.715160f, 0.072169f};
   return dot(y_weight, c);
 }
-__forceinline__ __device__ float RgbToY(const vec3& c) {
-  vec3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+__forceinline__ __device__ float RgbToY(const float3 c) {
+  float3 y_weight = {0.212671f, 0.715160f, 0.072169f};
   return dot(y_weight, c);
 }
 __forceinline__ __device__ bool is_black(const vec3 &a)
