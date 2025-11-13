@@ -150,8 +150,6 @@ __device__ __inline__ auto EvalVolume(uint32_t& seed, float* m16, float sigma_t,
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-
-    prd->countEmitted = false;
     prd->radiance = vec3(0);
 
     const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );

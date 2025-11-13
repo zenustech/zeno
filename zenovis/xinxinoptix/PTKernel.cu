@@ -341,7 +341,6 @@ extern "C" __global__ void __raygen__rg()
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
-        prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;
         prd.eventseed    = eventseed;
@@ -444,7 +443,7 @@ extern "C" __global__ void __raygen__rg()
             ray_origin = prd.origin;
             ray_direction = prd.direction;
 
-            if(prd.countEmitted==false || prd.depth>0) {
+            {
                 auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
@@ -459,10 +458,6 @@ extern "C" __global__ void __raygen__rg()
             }
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
-
-            if(prd.countEmitted==true && prd.depth>0){
-                prd.done = true;
-            }
 
             if( prd.done || prd.depth>prd.max_depth){
                 break;
@@ -593,7 +588,6 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-    prd->countEmitted = false;
     prd->radiance *= 0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
