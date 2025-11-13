@@ -227,8 +227,9 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.isHair = mat_isHair;
     mats.hair_rough2 = mat_HairRough2;
     mats.m0_rough = 1.0f - mat_FurCoat;
-    mats.hairAmp = mat_hairAmp;
+    mats.hairAmp = 1.0;
     mats.F0 = mat_F0;
+    mats.doubleSide = mats.isHair>0.5?1.0f:mats.doubleSide;
 
     const bool has_nrm = mat_normal != vec3{0,0,1};
     if (mats.smoothness > 0.0f) {

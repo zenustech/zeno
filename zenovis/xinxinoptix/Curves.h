@@ -19,6 +19,7 @@ __forceinline__ __device__ float3 getHitPoint()
 struct CurveAttr {
     float3 normal, tangent;
     float radius; float3 center;
+    float2 uv;
 };
 
 // Compute surface normal of quadratic pimitive in world space.

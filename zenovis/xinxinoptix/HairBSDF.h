@@ -22,17 +22,11 @@ namespace HairBSDF{
     */
     static __inline__ __device__ float pow20(float x)
     {
-        float xx = x*x;
-        float x5 = xx * xx * x;
-        float x10 = x5 * x5;
-        return x10 * x10;
+        return pbrt::Sqr(pbrt::Sqr(pbrt::Sqr(pbrt::Sqr(x))*x));
     }
     static __inline__ __device__ float pow22(float x)
     {
-        float xx = x*x;
-        float x5 = xx * xx * x;
-        float x11 = x5 * x5 * x;
-        return x11 * x11;
+        return pbrt::Sqr(pbrt::Sqr(pbrt::Sqr(pbrt::Sqr(x))*x)*x);
     }
     static __inline__ __device__ float poly5(float x)
     {

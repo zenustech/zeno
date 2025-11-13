@@ -315,6 +315,8 @@ extern "C" __global__ void __closesthit__radiance()
     objPos = optixTransformPointFromWorldToObjectSpace(P);
     auto curveAttr = CurveAttributes( optixGetPrimitiveType(), primIdx );
     objNorm = curveAttr.normal;
+
+    curveAttr.uv;
     // bound object space error due to reconstruction and intersection
     vec3 objErr = FMA( vec3( c0 ), abs( curveAttr.center ), vec3( c1 * curveAttr.radius ) );
     objOffset = dot( objErr, abs( objNorm ) );
