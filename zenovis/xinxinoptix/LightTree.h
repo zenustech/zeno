@@ -351,16 +351,15 @@ struct LightTreeSampler {
             LightTreeNode& node = nodes[nodeIndex];
             if (!node.meta.isLeaf) {
                 // Compute light BVH child node importances
-                const LightTreeNode *child0 = &nodes[nodeIndex + 1];
-                const LightTreeNode *child1 = &nodes[node.meta.childOrLightIndex];
+                const LightTreeNode* children[2] {};
+                children[0] = &nodes[nodeIndex + 1];
+                children[1] = &nodes[node.meta.childOrLightIndex];
                 
                 float ci[3] = { 0.0f,
-                    child0->lightBounds.Weight(p, n, rootBounds, t),
-                    child1->lightBounds.Weight(p, n, rootBounds, t) };
+                    children[0]->lightBounds.Weight(p, n, rootBounds, t),
+                    children[1]->lightBounds.Weight(p, n, rootBounds, t) };
 
-                DCHECK(ci[1] >= 0 && ci[2] >= 0);
-                
-                if (ci[1] == 0 && ci[2] == 0)
+                if (ci[1] <= 0 && ci[2] <= 0)
                     return {};
 
                 // Randomly sample light BVH child node
@@ -380,6 +379,9 @@ struct LightTreeSampler {
                 }();
 
                 pmf *= nodePMF;
+                const auto& meta = children[child]->meta;
+                if (meta.isLeaf) return { meta.childOrLightIndex, pmf};
+
                 nodeIndex = (child == 0) ? (nodeIndex + 1) : node.meta.childOrLightIndex;
 
             } else {
