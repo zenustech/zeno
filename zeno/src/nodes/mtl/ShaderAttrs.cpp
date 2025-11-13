@@ -207,9 +207,7 @@ struct EvalSHColor : ShaderNodeClone<EvalSHColor> {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string dir = em->determineExpr(get_input("dir").get());
         int level = get_input2<int>("SH-Level");
-        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ "vec3(params.cam.eye)" + ",attrs.worldToObject"+")"+")";
-        printf("Emitcode : %s \n",code.c_str());
-        std::string test="vec3(1,0,0)";
+        std::string code=std::string("(") + "GS::EvalSH(uniforms,"+ idx +","+std::to_string(level) +","+ "vec3(params.cam.eye)" + ",(float*)attrs.worldToObject"+")"+")";
 
         return em->emitCode(code);
     }
@@ -239,9 +237,7 @@ struct EvalGSOpacity : ShaderNodeClone<EvalGSOpacity> {
         std::string idx = em->determineExpr(get_input("idx").get());
         std::string pos = em->determineExpr(get_input("pos").get());
         float clamp = get_input2<float>("clamp_radius");
-        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+std::to_string(clamp)+","+pos+ ","+"attrs.worldToObject" + "))" ;
-
-        printf("Emitcode : %s \n",code.c_str());
+        std::string code=std::string("(float)(") +"GS::EvalGSOpacity("+"uniforms," +idx+","+std::to_string(clamp)+","+pos+ ","+"(float*)attrs.worldToObject" + "))" ;
 
         return em->emitCode(code);
     }

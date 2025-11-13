@@ -482,6 +482,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         , bool output_tex_even_missing
         , std::string fbx_path
         , bool apply_transform
+        , bool geometryTransformUsePivot
     ) {
     FbxMesh* pMesh = pNode->GetMesh();
     if (!pMesh) return nullptr;
@@ -502,7 +503,8 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
 //    zeno::log_info("t {} {} {}", t[0], t[1], t[2]);
 
     FbxAMatrix Geometry;
-    {
+    Geometry.SetIdentity();
+    if (geometryTransformUsePivot) {
         FbxVector4 Translation, Rotation, Scaling;
         Translation = pNode->GetGeometricTranslation(FbxNode::eSourcePivot);
         Rotation = pNode->GetGeometricRotation(FbxNode::eSourcePivot);
@@ -1056,6 +1058,7 @@ static void TraverseNodesToGetPrim(
     , bool output_tex_even_missing
     , std::string fbx_path
     , bool apply_transform
+    , bool geometryTransformUsePivot
 ) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
@@ -1068,7 +1071,7 @@ static void TraverseNodesToGetPrim(
     if (mesh) {
         auto name = pNode->GetName();
         if (target_name == name) {
-            auto sub_prim = GetMesh(pNode, output_tex_even_missing, fbx_path, apply_transform);
+            auto sub_prim = GetMesh(pNode, output_tex_even_missing, fbx_path, apply_transform, geometryTransformUsePivot);
             if (sub_prim) {
                 prim = sub_prim;
             }
@@ -1077,7 +1080,7 @@ static void TraverseNodesToGetPrim(
     }
 
     for (int i = 0; i < pNode->GetChildCount(); i++) {
-        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim, output_tex_even_missing, fbx_path, apply_transform);
+        TraverseNodesToGetPrim(pNode->GetChild(i), target_name, prim, output_tex_even_missing, fbx_path, apply_transform, geometryTransformUsePivot);
     }
 }
 static void TraverseNodesToGetPrims(
@@ -1085,6 +1088,7 @@ static void TraverseNodesToGetPrims(
     , bool output_tex_even_missing
     , std::string fbx_path
     , bool apply_transform
+    , bool geometryTransformUsePivot
 ) {
     if (!pNode) return;
     std::string nodeName = pNode->GetName();
@@ -1095,14 +1099,14 @@ static void TraverseNodesToGetPrims(
 
     FbxMesh* mesh = pNode->GetMesh();
     if (mesh) {
-        auto sub_prim = GetMesh(pNode, output_tex_even_missing, fbx_path, apply_transform);
+        auto sub_prim = GetMesh(pNode, output_tex_even_missing, fbx_path, apply_transform, geometryTransformUsePivot);
         if (sub_prim) {
             prims.push_back(sub_prim);
         }
     }
 
     for (int i = 0; i < pNode->GetChildCount(); i++) {
-        TraverseNodesToGetPrims(pNode->GetChild(i), prims, output_tex_even_missing, fbx_path, apply_transform);
+        TraverseNodesToGetPrims(pNode->GetChild(i), prims, output_tex_even_missing, fbx_path, apply_transform, geometryTransformUsePivot);
     }
 }
 
@@ -1118,12 +1122,13 @@ struct NewFBXImportSkin : INode {
         FbxNode* lRootNode = lScene->GetRootNode();
         std::vector<std::string> availableRootNames;
         bool output_tex_even_missing = get_input2<bool>("OutputTexEvenMissing");
+        bool geometryTransformUsePivot = get_input2<bool>("GeometryTransformUsePivot");
         if(lRootNode) {
             TraverseNodesToGetNames(lRootNode, availableRootNames);
             auto rootName = get_input2<std::string>("rootName");
             if (rootName.empty()) {
                 std::vector<std::shared_ptr<PrimitiveObject>> prims;
-                TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing, "", true);
+                TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing, "", true, geometryTransformUsePivot);
 
                 std::map<std::string, int> nameMappingGlobal;
 
@@ -1173,7 +1178,7 @@ struct NewFBXImportSkin : INode {
                 }
             }
             else {
-                TraverseNodesToGetPrim(lRootNode, rootName, prim, output_tex_even_missing, "", true);
+                TraverseNodesToGetPrim(lRootNode, rootName, prim, output_tex_even_missing, "", true, geometryTransformUsePivot);
             }
         }
         if (get_input2<bool>("ConvertUnits")) {
@@ -1220,6 +1225,7 @@ ZENDEFNODE(NewFBXImportSkin, {
         {"bool", "CopyVectorsFromLoopsToVert", "1"},
         {"bool", "CopyFacesetToMatid", "1"},
         {"bool", "OutputTexEvenMissing", "0"},
+        {"bool", "GeometryTransformUsePivot", "0"},
     },
     {
         "prim",
@@ -2059,6 +2065,7 @@ struct NewFBXPrimList : INode {
     }
     virtual void apply() override {
         auto fbx_object = get_input2<FBXObject>("fbx_object");
+        auto file_path = fbx_object->userData().get2<std::string>("file_path");
         auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
@@ -2068,7 +2075,7 @@ struct NewFBXPrimList : INode {
         bool output_tex_even_missing = get_input2<bool>("OutputTexEvenMissing");
         std::vector<std::shared_ptr<PrimitiveObject>> prims;
         if(lRootNode) {
-            TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing, "", false);
+            TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing, "", false, get_input2<bool>("GeometryTransformUsePivot"));
         }
 
 
@@ -2152,6 +2159,7 @@ struct NewFBXPrimList : INode {
         }
         auto prim_list = std::make_shared<zeno::ListObject>();
         for (auto prim: prims) {
+            prim->userData().set2("file_path", file_path);
             prim_list->arr.push_back(prim);
         }
         set_output("prims", prim_list);
@@ -2167,6 +2175,7 @@ ZENDEFNODE(NewFBXPrimList, {
         {"bool", "CopyFacesetToMatid", "1"},
         {"bool", "OutputTexEvenMissing", "0"},
         {"bool", "SkipInvisibleMesh", "0"},
+        {"bool", "GeometryTransformUsePivot", "0"},
     },
     {
         "prims",

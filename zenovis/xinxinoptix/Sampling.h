@@ -69,6 +69,10 @@ inline float SafeSqrt(float x) {
     return sqrtf(fmaxf(0.f, x));
 }
 
+inline float Dot(const Vector3f& v, const Vector3f& n) {
+    return dot(v, n);
+}
+
 inline float AbsDot(const Vector3f& v, const Vector3f& n) {
     return fabsf(dot(v, n));
 }

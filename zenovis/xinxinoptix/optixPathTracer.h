@@ -183,8 +183,8 @@ struct Params
     void** global_buffers;
 
     uint2 click_coord;
-    bool click_dirty;
     bool pause;
+    bool click_dirty;
 
     unsigned int width;
     unsigned int height;

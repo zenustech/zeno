@@ -226,6 +226,19 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             json["node_to_id"] = id_json;
         }
+        {
+            Json mesh_info_json;
+            for (const auto &[obj_name, prim]: prim_list) {
+                const auto &ud = prim->userData();
+                auto fbx_path = ud.get2<std::string>("fbx_path", "");
+                auto file_path = ud.get2<std::string>("file_path", "");
+                Json item;
+                item["fbx_path"] = fbx_path;
+                item["file_path"] = file_path;
+                mesh_info_json[obj_name] = item;
+            }
+            json["mesh_info"] = mesh_info_json;
+        }
         return json.dump();
     }
 

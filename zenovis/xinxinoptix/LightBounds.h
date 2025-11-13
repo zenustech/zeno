@@ -213,6 +213,28 @@ inline DirectionCone BoundSubtendedDirections(const Bounds3f &b, Vector3f p) {
     return DirectionCone(w, cosThetaMax);
 }
 
+inline float BoundAsThin(const Vector3f &p, const Bounds3f &bbox, const Vector3f &center, const Vector3f &axis) {
+    
+    const auto link = normalize(center - p);
+    float cosTheta_b = 1;
+
+    for (int i = 0; i < 8; ++i) {
+        Vector3f corner = Vector3f {
+            (i & 1) ? bbox.pMax[0] : bbox.pMin[0],
+            (i & 2) ? bbox.pMax[1] : bbox.pMin[1],
+            (i & 4) ? bbox.pMax[2] : bbox.pMin[2] };
+        // Project corner onto emitter plane
+        float dist = pbrt::Dot(corner - center, axis);
+        Vector3f drop = corner - dist * axis;
+        Vector3f test = normalize(drop - p);
+        float cosTerm = pbrt::Dot(link, test);
+        if (cosTerm <= 0) continue;
+
+        cosTheta_b = fminf(cosTheta_b, cosTerm);
+    }
+    return cosTheta_b;
+};
+
 #ifndef __CUDACC_RTC__
 
 inline void Inverse(DirectionCone& dc) {

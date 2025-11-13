@@ -566,7 +566,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             shadowPRD.lightIdx = lighIdx;
             shadowPRD.maxDistance = lsr.dist;
             
-            traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD);
+            traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD, ~LightMatMask & EverythingMask);
             auto light_attenuation = shadowPRD.attanuation;
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
@@ -622,7 +622,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             traceOcclusion(params.handle, shadowPRD.origin, sampleDir,
                         0, // tmin
                         FLT_MAX, // tmax,
-                        &shadowPRD);
+                        &shadowPRD, ~LightMatMask & EverythingMask);
 
 
             if (nullptr==RadianceWithoutShadow && lengthSquared(shadowPRD.attanuation) == 0.0f) return;

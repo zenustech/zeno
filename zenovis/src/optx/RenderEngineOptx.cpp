@@ -1919,30 +1919,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 	void showBackground(bool bShow) override {
 		xinxinoptix::show_background(bShow);
 	}
-    std::optional<glm::vec3> getClickedPos(float x, float y) override {
-        glm::vec3 posWS = xinxinoptix::get_click_pos(x, y);
-        if (posWS == glm::vec3()) {
-            return {};
-        }
-        auto const &cam = *scene->camera;
-        posWS += cam.m_pos;
-        return posWS;
+    void getClickedPos(float x, float y, std::function<void(glm::vec3)> cbClickPosSig) override {
+        xinxinoptix::get_click_pos(x, y, cbClickPosSig);
     }
-    std::optional<std::tuple<std::string, std::string, uint32_t>> getClickedId(float x, float y) override {
-        auto ids = xinxinoptix::get_click_id(x, y);
-        if (ids == glm::uvec4()) {
-            return {};
-        }
-        uint64_t obj_id = *reinterpret_cast<uint64_t *>(&ids);
-        if (defaultScene.gas_to_obj_id.count(obj_id)) {
-            auto name = defaultScene.gas_to_obj_id.at(obj_id);
-            auto mat_name = std::string();
-            if (defaultScene.dc_index_to_mat.count(ids[2])) {
-                mat_name = defaultScene.dc_index_to_mat[ids[2]];
-            }
-            return std::tuple<std::string, std::string, uint32_t>(name, mat_name, ids[3]);
-        }
-        return {};
+    void getClickedId(float x, float y, std::function<void(std::tuple<std::string, std::string, uint32_t>)> cbClickIdSig) override {
+        xinxinoptix::get_click_id(x, y, cbClickIdSig);
     }
 
     auto setupState() {
