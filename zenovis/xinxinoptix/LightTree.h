@@ -210,15 +210,24 @@ struct CompactLightBounds {
             return sinTheta_a * cosTheta_b - cosTheta_a * sinTheta_b;
         }; // sin( theta_a - theta_b )
 
+        Vector3f axis = Vector3f(w);
         // Compute sine and cosine of angle to vector _w_, $\theta_\roman{w}$
         Vector3f wi = normalize(p - pc);
-        float cosTheta_w = dot(Vector3f(w), wi);
+        float cosTheta_w = dot(axis, wi);
         if (meta.doubleSided)
             cosTheta_w = fabsf(cosTheta_w);
         float sinTheta_w = SafeSqrt(1 - Sqr(cosTheta_w));
 
         // Compute $\cos\,\theta_\roman{\+b}$ for reference point
-        float cosTheta_b = BoundSubtendedDirections(bounds, p).cosTheta;
+        float cosTheta_b = 1.0f;
+
+        const bool isThin = isLeaf() && r2>0 && cosTheta_o==1;
+        if (isThin) {
+            cosTheta_b = BoundAsThin(p, bounds, pc, axis);
+        } else {
+            cosTheta_b = BoundSubtendedDirections(bounds, p).cosTheta;
+        }
+
         float sinTheta_b = SafeSqrt(1 - Sqr(cosTheta_b));
 
         // Compute $\cos\,\theta'$ and test against $\cos\,\theta_\roman{e}$
@@ -226,12 +235,16 @@ struct CompactLightBounds {
         float cosTheta_x = cosSubClamped(sinTheta_w, cosTheta_w, sinTheta_o, cosTheta_o);
         float sinTheta_x = sinSubClamped(sinTheta_w, cosTheta_w, sinTheta_o, cosTheta_o);
         float cosThetap  = cosSubClamped(sinTheta_x, cosTheta_x, sinTheta_b, cosTheta_b);
-        if (cosThetap <= cosTheta_e || cosThetap < 0.0f)
+        if (cosThetap <= cosTheta_e)
             return 0;
 
-        // Return final importance at reference point
-        float importance = phi * cosThetap / d2;
-        DCHECK(importance >= -1e-3f);
+        float cosTerm = cosThetap;
+        if(cosTheta_e > 0) {
+            cosTerm = smoothstep(cosTheta_e, 1.0f, cosThetap);
+            // if (isThin && cosTheta_w<0) // area light back
+            //     cosTerm = 0.f;
+        }
+        float importance = phi * cosTerm / d2;
 
         if (n[0]!=0 && n[1]!=0 && n[2]!=0) {
 
