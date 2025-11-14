@@ -6,16 +6,6 @@
 #include <cuda/curve.h>
 #include "GeometryAux.h"
 
-// Get curve hit-point in world coordinates.
-__forceinline__ __device__ float3 getHitPoint()
-{
-    const float  t            = optixGetRayTmax();
-    const float3 rayOrigin    = optixGetWorldRayOrigin();
-    const float3 rayDirection = optixGetWorldRayDirection();
-
-    return rayOrigin + t * rayDirection;
-}
-
 struct CurveAttr {
     float3 normal, tangent;
     float radius; float3 center;
@@ -23,7 +13,7 @@ struct CurveAttr {
 };
 
 // Compute surface normal of quadratic pimitive in world space.
-static __forceinline__ __device__ CurveAttr attrLinear( const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr attrLinear( float3& objPos, const int primitiveIndex )
 {
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
@@ -34,17 +24,15 @@ static __forceinline__ __device__ CurveAttr attrLinear( const int primitiveIndex
     LinearInterpolator interpolator;
     interpolator.initialize(controlPoints);
 
-    float3 hitPoint = optixTransformPointFromWorldToObjectSpace( getHitPoint() );
-
     const auto u = optixGetCurveParameter();
-    const float3 normal = surfaceNormal( interpolator, u, hitPoint );
+    const float3 normal = surfaceNormal( interpolator, u, objPos );
     const float3 tangent = curveTangent( interpolator, u );
     
     return { normal, tangent, interpolator.radius(u), interpolator.position3(u) };
 }
 
 // Compute surface normal of quadratic pimitive in world space.
-static __forceinline__ __device__ CurveAttr attrQuadratic( const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr attrQuadratic( float3& objPos, const int primitiveIndex )
 {
     const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
     const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
@@ -55,17 +43,15 @@ static __forceinline__ __device__ CurveAttr attrQuadratic( const int primitiveIn
     QuadraticInterpolator interpolator;
     interpolator.initializeFromBSpline(controlPoints);
 
-    float3 hitPoint = optixTransformPointFromWorldToObjectSpace( getHitPoint() );
-
     const auto u = optixGetCurveParameter();
-    const float3 normal = surfaceNormal( interpolator, u, hitPoint );
+    const float3 normal = surfaceNormal( interpolator, u, objPos );
     const float3 tangent = curveTangent( interpolator, u );
     
     return { normal, tangent, interpolator.radius(u), interpolator.position3(u) };
 }
 
 // Compute surface normal of cubic b-spline pimitive in world space.
-static __forceinline__ __device__ CurveAttr attrCubic( const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr attrCubic( float3& objPos, const int primitiveIndex )
 {
     const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
     const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
@@ -76,17 +62,15 @@ static __forceinline__ __device__ CurveAttr attrCubic( const int primitiveIndex 
     CubicInterpolator interpolator;
     interpolator.initializeFromBSpline(controlPoints);
 
-    float3 hitPoint = optixTransformPointFromWorldToObjectSpace( getHitPoint() );
-
     const auto u = optixGetCurveParameter();
-    const float3 normal = surfaceNormal( interpolator, u, hitPoint );
+    const float3 normal = surfaceNormal( interpolator, u, objPos );
     const float3 tangent = curveTangent( interpolator, u );
     
     return { normal, tangent, interpolator.radius(u), interpolator.position3(u) };
 }
 
 // Compute surface normal of Catmull-Rom pimitive in world space.
-static __forceinline__ __device__ CurveAttr attrCatrom( const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr attrCatrom( float3& objPos, const int primitiveIndex )
 {
     const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
     const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
@@ -97,17 +81,15 @@ static __forceinline__ __device__ CurveAttr attrCatrom( const int primitiveIndex
     CubicInterpolator interpolator;
     interpolator.initializeFromCatrom(controlPoints);
 
-    float3 hitPoint = optixTransformPointFromWorldToObjectSpace( getHitPoint() );
-
     const auto u = optixGetCurveParameter();
-    const float3 normal = surfaceNormal( interpolator, u, hitPoint );
+    const float3 normal = surfaceNormal( interpolator, u, objPos );
     const float3 tangent = curveTangent( interpolator, u );
     
     return { normal, tangent, interpolator.radius(u), interpolator.position3(u) };
 }
 
 // Compute surface normal of Catmull-Rom pimitive in world space.
-static __forceinline__ __device__ CurveAttr attrBezier( const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr attrBezier( float3& objPos, const int primitiveIndex )
 {
     const OptixTraversableHandle gas         = optixGetGASTraversableHandle();
     const unsigned int           gasSbtIndex = optixGetSbtGASIndex();
@@ -117,11 +99,9 @@ static __forceinline__ __device__ CurveAttr attrBezier( const int primitiveIndex
 
     CubicInterpolator interpolator;
     interpolator.initializeFromBezier(controlPoints);
-
-    float3 hitPoint = optixTransformPointFromWorldToObjectSpace( getHitPoint() );
     
     const auto u = optixGetCurveParameter();
-    const float3 normal = surfaceNormal( interpolator, u, hitPoint );
+    const float3 normal = surfaceNormal( interpolator, u, objPos );
     const float3 tangent = curveTangent( interpolator, u );
     
     return { normal, tangent, interpolator.radius(u), interpolator.position3(u) };
@@ -129,19 +109,19 @@ static __forceinline__ __device__ CurveAttr attrBezier( const int primitiveIndex
 
 // Compute normal
 //
-static __forceinline__ __device__ CurveAttr CurveAttributes( OptixPrimitiveType type, const int primitiveIndex )
+static __forceinline__ __device__ CurveAttr CurveAttributes( float3& objPos, OptixPrimitiveType type, const int primitiveIndex )
 {
     switch( type ) {
     case OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR:
-        return attrLinear( primitiveIndex );
+        return attrLinear( objPos, primitiveIndex );
     case OPTIX_PRIMITIVE_TYPE_ROUND_QUADRATIC_BSPLINE:
-        return attrQuadratic( primitiveIndex );
+        return attrQuadratic( objPos, primitiveIndex );
     case OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE:
-        return attrCubic( primitiveIndex );
+        return attrCubic( objPos, primitiveIndex );
     case OPTIX_PRIMITIVE_TYPE_ROUND_CATMULLROM:
-        return attrCatrom( primitiveIndex );
+        return attrCatrom( objPos, primitiveIndex );
     case OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BEZIER:
-        return attrBezier( primitiveIndex );
+        return attrBezier( objPos, primitiveIndex );
         
     case OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE:
         {
@@ -150,6 +130,7 @@ static __forceinline__ __device__ CurveAttr CurveAttributes( OptixPrimitiveType 
             const unsigned int           sbtGASIndex = optixGetSbtGASIndex();
             const float2                 uv          = optixGetRibbonParameters();
             auto normal = optixGetRibbonNormal( gas, prim_idx, sbtGASIndex, 0.f /*time*/, uv );
+            normal = normalize(normal);
 
             float4                       controlPoints[3];
             optixGetRibbonVertexData( gas, primitiveIndex, sbtGASIndex, 0.0f, controlPoints );
@@ -158,7 +139,7 @@ static __forceinline__ __device__ CurveAttr CurveAttributes( OptixPrimitiveType 
 
             const float3 tangent = curveTangent( interpolator, uv.x );
             const float radius = interpolator.radius(uv.x);
-            return { normal, tangent, radius, interpolator.position3(uv.x) };
+            return { normal, tangent, radius, interpolator.position3(uv.x), uv };
         }
     }
     return {};

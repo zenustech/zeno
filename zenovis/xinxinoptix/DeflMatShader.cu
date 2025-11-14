@@ -309,21 +309,20 @@ extern "C" __global__ void __closesthit__radiance()
     const float c0 = 5.9604644775390625E-8f;
     const float c1 = 1.788139769587360206060111522674560546875E-7f;
     const float c2 = 1.19209317972490680404007434844970703125E-7f;
-    float h = 0;
+
 #if (_P_TYPE_==2)
 
     objPos = optixTransformPointFromWorldToObjectSpace(P);
-    auto curveAttr = CurveAttributes( optixGetPrimitiveType(), primIdx );
+    auto curveAttr = CurveAttributes( objPos, optixGetPrimitiveType(), primIdx );
     objNorm = curveAttr.normal;
 
-    curveAttr.uv;
     // bound object space error due to reconstruction and intersection
     vec3 objErr = FMA( vec3( c0 ), abs( curveAttr.center ), vec3( c1 * curveAttr.radius ) );
     objOffset = dot( objErr, abs( objNorm ) );
-    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, curveAttr.center, objNorm, objOffset );
+    SelfIntersectionAvoidance::transformSafeSpawnOffset( wldPos, wldNorm, wldOffset, objPos, objNorm, objOffset );
 
-    wldPos = P;
-    //wldOffset = 0.0f;
+    // wldPos = P;
+    // wldOffset = 0.0f;
 
     if (isBadVector(objNorm)) {
         prd->done = true;
@@ -332,36 +331,41 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.N = wldNorm;
     shadingNorm = wldNorm;
-    attrs.T = normalize( optixTransformNormalFromObjectToWorldSpace(curveAttr.tangent) );
+    attrs.T = normalize( optixTransformVectorFromObjectToWorldSpace(curveAttr.tangent) );
     assert( dot(attrs.N, attrs.T) );
     attrs.B = cross(attrs.T, attrs.N);
-
-    vec3 _diff = P - (curveAttr.center - params.cam.eye);
-    auto lenN = dot(_diff, attrs.N);
-    auto lenB = dot(_diff, attrs.B);
-
-    auto len2 = pbrt::Sqr(lenN) + pbrt::Sqr(lenB);
-    curveAttr.radius;
-    //assert(len2 < pbrt::Sqr(curveAttr.radius/2));
-
-     if (prd->print_info) {
-         auto len1 = sqrtf(len2);
-         auto radius = curveAttr.radius;
-         h = 0.5 * len1 / radius;
-         //printf("len=%f radius=%f ratio=%f\n", len1, radius, len1/radius);
-     }
-
 
     auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
     auto& aux = *(CurveGroupAux*)(gas_ptr-sizeof(CurveGroupAux));
 
     uint strandIndex = aux.strand_i[primIdx].x;
 
-    float  segmentU   = optixGetCurveParameter();
+    float segmentU;
+    if (optixGetPrimitiveType() == OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE) {
+        segmentU = curveAttr.uv.x;
+    } else {
+        segmentU = optixGetCurveParameter();
+    }
     float2 strand_u = aux.strand_u[primIdx];
     float u = strand_u.x + segmentU * strand_u.y;
-    attrs.barys2 = {u, (float)strandIndex/ aux.strand_info.count};
+    curveAttr.uv.x = u;
 
+    if (optixGetPrimitiveType() != OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE) {
+        
+        auto btang = cross(curveAttr.tangent, curveAttr.normal);
+        auto dir = optixTransformVectorFromWorldToObjectSpace(ray_dir);
+        dir = normalize(-dir);
+        
+        auto dotN = dot(dir, curveAttr.normal);
+        auto dotB = dot(dir, btang);
+        
+        auto sinGamma = sqrtf(1.0f - pbrt::Sqr(dotN));
+        auto h = copysignf(sinGamma, -dotB);
+        curveAttr.uv.y = h; //[-1 ~ +1]
+    }
+    attrs.barys2 = curveAttr.uv;
+    //attrs.barys2 = {u, (float)strandIndex/ aux.strand_info.count};
+    
 #elif (_P_TYPE_==1)
 
     float4 q;
@@ -615,7 +619,7 @@ extern "C" __global__ void __closesthit__radiance()
     bool isSS = false;
     bool isTrans = false;
     flag = DisneyBSDF::scatterEvent;
-    mats.hair_h = h;
+
     if(prd->depth>1 && mats.roughness>0.4) mats.specular = 0.0f;
 //    if(prd->print_info && prd->depth==0)
 //    {

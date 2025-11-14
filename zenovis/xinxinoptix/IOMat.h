@@ -60,7 +60,6 @@ struct MatOutput {
 
     vec3 nrm;
     vec3 emission;
-    float hair_h = 0;
 };
 
 __forceinline__ float3 transformPoint(float3 p, const float4* matrix) {
