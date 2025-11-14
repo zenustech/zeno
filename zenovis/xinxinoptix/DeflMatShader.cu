@@ -559,8 +559,6 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
-    prd->countEmitted = false;
-
     if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
@@ -882,7 +880,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->medium = next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : (prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic);
-    prd->countEmitted = false;
     prd->attenuation *= reflectance;
     if(mats.subsurface>0 && (mats.thin>0.5 || mats.doubleSide>0.5) && istransmission){
         CUR_TOTAL_TRANS *= reflectance;
