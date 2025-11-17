@@ -12,7 +12,7 @@
 #include <cuda_fp16.h>
 #include <volume.h>
 #include <Light.h>
-#include <HUD.h>
+#include <OSD.h>
 
 #ifndef __CUDACC_RTC__
 #define __AOV__ 1
