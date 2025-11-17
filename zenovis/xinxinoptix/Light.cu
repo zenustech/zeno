@@ -217,6 +217,7 @@ extern "C" __global__ void __closesthit__radiance()
     const auto rgba = cihouLightEmission(lsr, light, prd->depth);
     if (rgba.w<1.0f && prd->rndf()>rgba.w) {
         prd->alphaHit = true;
+        prd->maxDistance = FLT_MAX;
         prd->_tmin_ = optixGetRayTmax();
         return;
     }
@@ -228,8 +229,17 @@ extern "C" __global__ void __closesthit__radiance()
     if (light.falloffExponent != 2.0f) {
         lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
     }
-    prd->done = true;
-    prd->_tmax_ = optixGetRayTmax();
+
+    if (visible && 0==prd->depth ) {
+                
+        prd->radiance = emission;
+        prd->_tmax_ = optixGetRayTmax();
+
+        prd->done = true;
+        prd->depth = 1;
+        prd->attenuation = vec3(1.0f); 
+        return;
+    }
 
     const float _SKY_PROB_ = params.skyLightProbablity();
     if (lsr.NoL > _FLT_EPL_) {
@@ -244,15 +254,6 @@ extern "C" __global__ void __closesthit__radiance()
 
         if (lightPickPDF < 0.0f || !isfinite(lightPickPDF)) {
             lightPickPDF = 0.0f;
-        }
-
-        if (0 == prd->depth) {
-            if (light.config & zeno::LightConfigVisible) {
-                prd->radiance = emission;
-            }
-            prd->depth = 1;
-            prd->attenuation = vec3(1.0f); 
-            return;
         }
         
         float lightPDF = lightPickPDF * lsr.PDF;
@@ -269,6 +270,11 @@ extern "C" __global__ void __closesthit__radiance()
         // }
         auto tmp = float3{1, 1, 1};
         prd->updateAttenuation(tmp);
+
+        if (!prd->alphaHit) { // non block for secondary
+            prd->_tmin_ = optixGetRayTmax();
+            prd->_tmax_ = FLT_MAX;
+        }
     }
     return;
 }
