@@ -68,5 +68,5 @@ inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
         bevel_nrm = input.objNorm;
     }
     bevel_nrm = transformVector(bevel_nrm, input.worldToObject);
-    return bevel_nrm;
+    return normalize(bevel_nrm);
 }
