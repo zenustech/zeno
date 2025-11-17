@@ -575,7 +575,7 @@ extern "C" __global__ void __raygen__rg()
     pixel = makeSRGB( accum_color, 2.2f, dither);
 
     if (params.frame_time > 0) {
-        drawHUD((uchar3*)&pixel, params.frame_time, uv/make_float2(w/16, 20));
+        drawOSD((uchar3*)&pixel, params.frame_time, uv, 20);
     }
 }
 
