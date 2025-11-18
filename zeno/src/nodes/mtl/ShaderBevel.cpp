@@ -20,8 +20,8 @@ struct ShaderBevel : ShaderNodeClone<ShaderBevel> {
 
 ZENDEFNODE(ShaderBevel, {
     {
-        {"float", "radius", "1"},
         {"int",   "sample", "4"},
+        {"float", "radius", "0.01"},
     },
     {
         {"shader", "out"}
