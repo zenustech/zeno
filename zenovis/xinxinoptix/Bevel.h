@@ -7,15 +7,38 @@
 
 #include "IOMat.h"
 #include "TraceStuff.h"
+inline float distancePointToLine(const float3& line_s, const float3& line_e, const float3& point) {
+
+    float3 line = line_e - line_s;
+    float3 diff = point - line_s;
+    
+    float proj = dot(line, diff) / dot(line, line);
+    proj = clamp(proj, 0.0f, 1.0f);
+    float3 vert = line_s + line * proj;
+    auto tmp = point - vert;
+    return length(tmp);
+}
+
+inline bool circleInsideTriangle(float3 center, float radius, float3* vertices) {
+    if (nullptr == vertices) return true;
+    #pragma unrolll
+    for(char i=0; i<3; ++i) {
+        auto X = vertices[i];
+        auto Y = vertices[(i+1) % 3];
+        auto t = distancePointToLine(X, Y, center);
+        if (t < radius) return false;     
+    }
+    return true;
+}
 
 inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
     if (input.isShadowRay || radius == 0.0f || sample_count<=1) { return input.wldNorm; };
 
+    bool inside = circleInsideTriangle(input.objPos, radius, input.vertices);
+    if (inside) return input.wldNorm;
+
     float3 bevel_nrm {};
     uint32_t& seed = input.seed;
-
-    auto ray_dir = transformVector(input.V, input.worldToObject);
-    ray_dir = normalize(ray_dir);
 
     Onb onb(input.objNorm);
     float3 axis[3] = {onb.m_normal, onb.m_binormal, onb.m_tangent};
@@ -26,7 +49,7 @@ inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
     //float3 axis[3]{}; axis[0] = objNorm;
     //pbrt::CoordinateSystem(axis[0], axis[2], axis[3]);
     auto count = 0;
-    auto count_miss = true;
+    auto count_miss = false;
     int idx0 = 0, idx1 = 1, idx2 = 2;
 
     for (int i=0; i<sample_count; ++i) {
@@ -66,9 +89,6 @@ inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
         }
         count += 1;
 
-        if (dot(hit_nrm, ray_dir) < 0.0f) {
-            hit_nrm = -hit_nrm;
-        }
         /* Probability densities for local frame axes. */
         float pdf_0 = pick_pdf[idx0] * fabsf(dot(axis[idx0], hit_nrm));
         float pdf_1 = pick_pdf[idx1] * fabsf(dot(axis[idx1], hit_nrm));
