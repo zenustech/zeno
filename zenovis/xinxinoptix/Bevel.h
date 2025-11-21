@@ -31,34 +31,38 @@ inline bool circleInsideTriangle(float3 center, float radius, float3* vertices) 
     return true;
 }
 
-inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
-    if (input.isShadowRay || radius == 0.0f || sample_count<=1) { return input.wldNorm; };
+template<bool MIS=true>
+inline float3 bevel(MatInput&input, float radius=0.01f, uint sample=8, uint retry=0) {
+    if (input.isShadowRay || radius == 0.0f || sample<=1) { return input.wldNorm; };
 
     bool inside = circleInsideTriangle(input.objPos, radius, input.vertices);
     if (inside) return input.wldNorm;
 
-    float3 bevel_nrm {};
     uint32_t& seed = input.seed;
 
     Onb onb(input.objNorm);
     float3 axis[3] = {onb.m_normal, onb.m_binormal, onb.m_tangent};
-    float pick_pdf[3] = {0.5f, 0.25f, 0.25f};
-
-    auto Sqr = [](float v) { return v * v; };
-
     //float3 axis[3]{}; axis[0] = objNorm;
     //pbrt::CoordinateSystem(axis[0], axis[2], axis[3]);
-    auto count = 0;
-    auto count_miss = false;
+    auto Sqr = [](float v) { return v * v; };
+    
+    // --- 3-bin accumulators ---
+    uint16_t bins[3] {};
+    float3   nrms[3] {};
+
+    bool lost = false;
     int idx0 = 0, idx1 = 1, idx2 = 2;
 
-    for (int i=0; i<sample_count; ++i) {
-
+    for (int i=0; i<sample; ++i) {
         float2 uu = { rnd(seed), rnd(seed) };
         auto offset = pbrt::SampleUniformDiskConcentric(uu);
-
-        auto prob = rnd(seed);
-        idx0 = prob<0.5f? 0:(prob<0.75f? 1:2);
+        
+        if (lost) {
+            idx0 = (idx0 + 1) % 3;
+        } else {
+            auto prob = rnd(seed);
+            idx0 = prob<0.5f? 0:(prob<0.75f? 1:2);
+        }
         idx1 = (idx0 + 1) % 3;
         idx2 = (idx0 + 2) % 3;
 
@@ -73,38 +77,58 @@ inline float3 bevel(MatInput&input, float radius=0.01f, uint sample_count=8) {
         float3 hit_nrm = input.objNorm;
 
         if( optixHitObjectIsHit() ) {
+            lost = false;
 
             const auto pid = optixHitObjectGetPrimitiveIndex();
             if (pid != input.priIdx) {
-                float3 _vertices_[3];
-                optixGetTriangleVertexData( input.gas, pid, input.sbtIdx,0, _vertices_ );
-                const float3& v0 = _vertices_[0];
-                const float3& v1 = _vertices_[1];
-                const float3& v2 = _vertices_[2];
-
-                hit_nrm = normalize( cross(v1-v0, v2-v0) );
+                float3 V[3] {};
+                optixGetTriangleVertexData( input.gas, pid, input.sbtIdx,0, V );
+                hit_nrm = normalize( cross(V[1]-V[0], V[2]-V[0]) );
             }
         } else {
-            if (!count_miss) continue;
+            if (retry>0) { retry--; i--;}
+            lost = true;
+            continue;
         }
-        count += 1;
 
-        /* Probability densities for local frame axes. */
-        float pdf_0 = pick_pdf[idx0] * fabsf(dot(axis[idx0], hit_nrm));
-        float pdf_1 = pick_pdf[idx1] * fabsf(dot(axis[idx1], hit_nrm));
-        float pdf_2 = pick_pdf[idx2] * fabsf(dot(axis[idx2], hit_nrm));
-
-        float MIS = (pdf_0) / (Sqr(pdf_0) + Sqr(pdf_1) + Sqr(pdf_2));
-
-        bevel_nrm += MIS * hit_nrm;
+        // record hit
+        bins[idx0]++;
+        nrms[idx0]+=hit_nrm;
     }
 
-    if (count > 0) {
-        bevel_nrm /= count;
-        bevel_nrm = normalize(bevel_nrm);
-    } else {
-        bevel_nrm = input.objNorm;
+    uint32_t count = bins[0] + bins[1] + bins[2];
+    if (count == 0) return input.wldNorm;
+
+    // --- compute empirical selection pdf ---
+    float weight[3] = {0,0,0};
+    weight[0] = float(bins[0]) / count;
+    weight[1] = float(bins[1]) / count;
+    weight[2] = float(bins[2]) / count;
+
+    // --- compute average normal per axis ---
+    for (char i=0; i<3; ++i) {
+        nrms[i] = (bins[i] > 0) ? normalize(nrms[i] / bins[i]) : float3{};
     }
+    if constexpr (MIS) {
+        // --- MIS weight calculation using axis-averaged normals ---
+        float pdf0 = weight[0] * fabsf(dot(axis[0], nrms[0]));
+        float pdf1 = weight[1] * fabsf(dot(axis[1], nrms[1]));
+        float pdf2 = weight[2] * fabsf(dot(axis[2], nrms[2]));
+
+        float denom = Sqr(pdf0) + Sqr(pdf1) + Sqr(pdf2);
+        if (denom > 1e-12f) {
+            weight[0] = Sqr(pdf0) / denom;
+            weight[1] = Sqr(pdf1) / denom;
+            weight[2] = Sqr(pdf2) / denom;
+        }
+    }
+
+    // final bevel normal
+    float3 bevel_nrm = weight[0] * nrms[0] + weight[1] * nrms[1] + weight[2] * nrms[2];
+    bevel_nrm = normalize(bevel_nrm);
+
+    if (dot(bevel_nrm, input.objNorm) <= 0)
+        bevel_nrm = normalize(bevel_nrm + input.objNorm);
 
     bevel_nrm = transformVector(bevel_nrm, input.worldToObject);
     return normalize(bevel_nrm);
