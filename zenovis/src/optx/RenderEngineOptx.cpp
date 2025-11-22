@@ -78,6 +78,13 @@ float norm_infvec2(zeno::vec3f &p1,  zeno::vec3f &p2)
 {
     return std::max(abs(p1[0] - p2[0]), abs(p1[1] - p2[1]) );
 }
+struct topoinfo{
+    std::vector<std::vector<zeno::vec2i>> idx_mapping;
+    std::vector<zeno::vec3i> idxBuffer;
+    std::vector<std::vector<zeno::vec3f>> vert_uv;
+    int count;
+};
+std::map<std::string, topoinfo> topoMap;
 static CppTimer timer, localTimer;
 static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &verts,
@@ -94,50 +101,56 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
   std::vector<std::vector<zeno::vec2i>> idx_mapping;
   vert_uv.resize(prim->verts.size());
   idx_mapping.resize(prim->verts.size());
+  auto prim_name = prim->userData().get2<std::string>("ObjectName");
+  bool topo_exist = topoMap.find(prim_name)!=topoMap.end();
   int count = 0;
-  for(int i=0;i<prim->tris.size();i++)
+  if(prim->userData().get2<std::string>("subChangeType","") == "ShapeChange" && topo_exist)
   {
-    //so far, all value has already averaged on verts, except uv
-    zeno::vec3i idx = prim->tris[i];
-    for(int j=0;j<3;j++)
-    {
-      std::string uv_name;
-      uv_name = "uv" + std::to_string(j);
-      auto vid = idx[j];
-      if(vert_uv[vid].size()==0)
-      {
-        vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
-        //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
-        //count++;
-      }
-      else
-      {
-        zeno::vec3f uv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
-        bool have = false;
-        for(int k=0;k<vert_uv[vid].size();k++)
-        {
-          auto & tester = vert_uv[vid][k];
-          if(norm_infvec2(tester, uv)<tol )
-          {
-            have = true;
+      idx_mapping = topoMap[prim_name].idx_mapping;
+      count = topoMap[prim_name].count;
+      vert_uv = topoMap[prim_name].vert_uv;
+  } else
+  {
+
+      for (int i = 0; i < prim->tris.size(); i++) {
+          //so far, all value has already averaged on verts, except uv
+          zeno::vec3i idx = prim->tris[i];
+          for (int j = 0; j < 3; j++) {
+              std::string uv_name;
+              uv_name = "uv" + std::to_string(j);
+              auto vid = idx[j];
+              if (vert_uv[vid].size() == 0) {
+                  vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+                  //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+                  //count++;
+              } else {
+                  zeno::vec3f uv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+                  bool have = false;
+                  for (int k = 0; k < vert_uv[vid].size(); k++) {
+                      auto &tester = vert_uv[vid][k];
+                      if (norm_infvec2(tester, uv) < tol) {
+                          have = true;
+                      }
+                  }
+                  if (have == false) {
+                      //need a push_back
+                      vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
+                      //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
+                      //count++;
+                  }
+              }
           }
-        }
-        if(have == false)
-        {
-          //need a push_back
-          vert_uv[vid].push_back(prim->tris.attr<zeno::vec3f>(uv_name)[i]);
-          //idx_mapping[vid].push_back(zeno::vec2i(vid,count));
-          //count++;
-        }
       }
-    }
-  }
-  count = 0;
-  for(int i=0;i<vert_uv.size();i++) {
-    for(int j=0;j<vert_uv[i].size();j++) {
-      idx_mapping[i].push_back(zeno::vec2i(i, count));
-      count++;
-    }
+      count = 0;
+      for (int i = 0; i < vert_uv.size(); i++) {
+          for (int j = 0; j < vert_uv[i].size(); j++) {
+              idx_mapping[i].push_back(zeno::vec2i(i, count));
+              count++;
+          }
+      }
+      topoMap[prim_name].idx_mapping = idx_mapping;
+      topoMap[prim_name].count = count;
+      topoMap[prim_name].vert_uv = vert_uv;
   }
   //first pass done
 
@@ -171,32 +184,33 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
     }
   }
 
-  idxBuffer.resize(prim->tris.size());
-  //third pass: assemble new idx map
-  for(int i=0;i<prim->tris.size();i++)
+  if(prim->userData().get2<std::string>("subChangeType","") == "ShapeChange" && topo_exist)
   {
-    zeno::vec3i idx = prim->tris[i];
-    for(int j=0;j<3;j++) {
+      idxBuffer = topoMap[prim_name].idxBuffer;
+  }else
+  {
+      idxBuffer.resize(prim->tris.size());
+      //third pass: assemble new idx map
+      for (int i = 0; i < prim->tris.size(); i++) {
+          zeno::vec3i idx = prim->tris[i];
+          for (int j = 0; j < 3; j++) {
 
-      auto old_vid = idx[j];
-      if(idx_mapping[old_vid].size()==1)
-      {
-        idxBuffer[i][j] = idx_mapping[old_vid][0][1];
-      }
-      else
-      {
-        std::string uv_name = "uv" + std::to_string(j);
-        auto &tuv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
-        for(int k=0;k<vert_uv[old_vid].size();k++)
-        {
-          auto &vuv = vert_uv[old_vid][k];
-          if(norm_infvec2(tuv, vuv)<tol)
-          {
-            idxBuffer[i][j] = idx_mapping[old_vid][k][1];
-          }
-        }
-      }
-    }
+              auto old_vid = idx[j];
+              if (idx_mapping[old_vid].size() == 1) {
+                  idxBuffer[i][j] = idx_mapping[old_vid][0][1];
+              } else {
+                  std::string uv_name = "uv" + std::to_string(j);
+                  auto &tuv = prim->tris.attr<zeno::vec3f>(uv_name)[i];
+                  for (int k = 0; k < vert_uv[old_vid].size(); k++) {
+                      auto &vuv = vert_uv[old_vid][k];
+                      if (norm_infvec2(tuv, vuv) < tol) {
+                          idxBuffer[i][j] = idx_mapping[old_vid][k][1];
+                      }
+                  }
+              }//end ifelse
+          }//end for 3 idx
+      }//end for tri size
+      topoMap[prim_name].idxBuffer = idxBuffer;
   }
 }
 struct GraphicsManager {
@@ -2585,7 +2599,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void assetLoad() {
-
+        topoMap.clear();
         defaultScene = {};
         cached_shaders = {};
         globalShaderBufferGroup.reset();

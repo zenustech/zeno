@@ -201,11 +201,14 @@ namespace DisneyBSDF{
         vec3 r = radius;
         setup_subsurface_radius(eta, albedo, r, true);
         vec3 sigma_s;
+        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
+        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
+        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
         //bssrdf_burley_setup(albedo, radius, true, 1, r);
-        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
-        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
-        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
-        alpha = sigma_s/sigma_t;
+//        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
+//        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
+//        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
+//        alpha = sigma_s/sigma_t;
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
@@ -388,8 +391,8 @@ namespace DisneyBSDF{
 //      return (hit?transmittance:sigma_s*transmittance)/dot(pdf, channelPDF);
       //vec3 apdf = abs(transmittance);
       vec3 T = Transmission(sigma_t, t);
-      if(max(max(T.x, T.y), T.z)<1e-12)
-          return vec3(0);
+//      if(max(max(T.x, T.y), T.z)<1e-12)
+//          return vec3(0);
       vec3 t_tmp = vec3(1.0f);
       if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
       {
@@ -704,6 +707,7 @@ namespace DisneyBSDF{
             bool reflection_fromCC = false)
 
     {
+        RadiancePRD *prd = getPRD();
         mat.roughness = reflectance==false?max(0.011f, mat.roughness):mat.roughness;
         mat.clearcoatRoughness  = reflectance==false?max(0.011f, mat.clearcoatRoughness):mat.clearcoatRoughness;
         //bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
@@ -784,7 +788,12 @@ namespace DisneyBSDF{
           float Phi = acos(dot(wo_t, wi_t));
           float cos_gamma = clamp(wo_t.z,-1.0f,1.0f);
           float absh = safesqrt(1 - cos_gamma * cos_gamma);
+
+#if( _P_TYPE_ == 2)
           float h = sign(wo_t.y) * absh;
+#else
+          float h = -1 + 2 * rnd(prd->seed);
+#endif
 
           float Pdf;
           vec3 H = HairBSDF::EvaluteHair2(wo, wi,
@@ -1348,7 +1357,11 @@ namespace DisneyBSDF{
 
           float cos_gamma = clamp(wo_t.z,-1.0f,1.0f);
           float absh = safesqrt(1 - cos_gamma * cos_gamma);
+#if (_P_TYPE_ == 2)
           float h = sign(wo_t.y) * absh;
+#else
+          float h = -1 + 2 * rnd(prd->seed);
+#endif
           float pdf;
           reflectance = HairBSDF::SampleHair2(woo, wi,prd->seed,prd,
                                                h,mat.ior,

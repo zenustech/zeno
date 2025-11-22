@@ -626,9 +626,9 @@ extern "C" __global__ void __closesthit__radiance()
 //        printf("B:%f,%f,%f\n",B.x,B.y,B.z);
 //        printf("N:%f,%f,%f\n",N.x,N.y,N.z);
 //    }
-    if(prd->hair_depth>=1) mats.hair_rough2=max(0.3f,mats.hair_rough2);
-    if(prd->hair_depth>=2) mats.hair_rough2=max(0.6f,mats.hair_rough2);
-    if(prd->hair_depth>=3) mats.hair_rough2=max(1.0f,mats.hair_rough2);
+//    if(prd->hair_depth>=1) mats.hair_rough2=max(0.3f,mats.hair_rough2);
+//    if(prd->hair_depth>=2) mats.hair_rough2=max(0.6f,mats.hair_rough2);
+//    if(prd->hair_depth>=3) mats.hair_rough2=max(1.0f,mats.hair_rough2);
     while(DisneyBSDF::SampleDisney3(
                 prd->seed,
                 prd->eventseed,
@@ -754,7 +754,7 @@ extern "C" __global__ void __closesthit__radiance()
                         prd->maxDistance = mats.scatterStep>0.5f? DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance) : 1e16f;
                     } else {
                         prd->sssAttenBegin = prd->attenuation;
-                        prd->sssDirBegin = ray_dir;
+                        prd->sssDirBegin = -ray_dir;
 
                         prd->attenuation *= vec3(1.0f);
 //                        float min_alpha = 0.2f;
@@ -775,6 +775,7 @@ extern "C" __global__ void __closesthit__radiance()
 //                        }
                         //prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation/prd->sssAttenBegin,prd->sigma_t*prd->ss_alpha, prd->sigma_t,prd->seed,prd->channelPDF);
+
                         going_in_to_sss = true;
                         //here is the place caused inf ray:fixed
 //                        auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
@@ -965,8 +966,9 @@ extern "C" __global__ void __closesthit__radiance()
         for (auto i=0; i<diffuse_sample_count; ++i) {
             //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.01f:make_float3(0,0,0);
             mats.subsurface = coming_out_from_sss?0:mats.subsurface;
-            mats.specular = coming_out_from_sss?0:mats.specular;
-            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+            mats.specular = coming_out_from_sss?1:mats.specular;
+            auto vdir = dot(prd->sssDirBegin,prd->geometryNormal)>0?prd->sssDirBegin:prd->direction;
+            DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-vdir:ray_dir, evalBxDF, &taskAux, dummy_prt);
         }
         float3 weight = CUR_TOTAL_TRANS * 1.0f / diffuse_sample_count * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;
@@ -980,8 +982,9 @@ extern "C" __global__ void __closesthit__radiance()
     else {
         //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
-        mats.specular = coming_out_from_sss?0:mats.specular;
-        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-prd->direction:ray_dir, evalBxDF, &taskAux, dummy_prt);
+        mats.specular = coming_out_from_sss?1:mats.specular;
+        auto vdir = dot(prd->sssDirBegin,prd->geometryNormal)>0?prd->sssDirBegin:prd->direction;
+        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-vdir:ray_dir, evalBxDF, &taskAux, dummy_prt);
 
         float3 weight = CUR_TOTAL_TRANS * (going_in_to_sss?0:1);
         prd->radiance = shadowPRD.radiance * weight;

@@ -398,7 +398,9 @@ extern "C" __global__ void __raygen__rg()
         if(params.pause) return;
         
         prd._tmin_ = 0;
-        prd.maxDistance = FLT_MAX;
+        //fuck, SSS or other scattering scheme may return a small maxDistance
+        //value, how can we set it back to FLT_MAX here????
+        //prd.maxDistance = FLT_MAX;
         
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
@@ -634,15 +636,15 @@ extern "C" __global__ void __miss__radiance()
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+        transmittance = DisneyBSDF::Transmission(sigma_t, prd->maxDistance);
 
     } else {
-        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, prd->maxDistance, false);
     }
 
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
 
-    prd->origin += prd->direction * ( optixGetRayTmax());
+    prd->origin += prd->direction * ( prd->maxDistance);
     prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
@@ -661,9 +663,9 @@ extern "C" __global__ void __miss__radiance()
 
     prd->depth++;
 
-    if(length(prd->attenuation)<1e-7f){
-        prd->done = true;
-    }
+//    if(length(prd->attenuation)<1e-7f){
+//        prd->done = true;
+//    }
 }
 
 extern "C" __global__ void __miss__occlusion()

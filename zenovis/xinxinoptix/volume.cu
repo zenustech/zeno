@@ -346,6 +346,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         if (prd->rndf() > v_density) { // null scattering
             v_density = 0.0f; continue;
         }
+        prd->max_depth = max(32, prd->max_depth);
 
         pbrt::HenyeyGreenstein hg (vol_out.anisotropy);
         float2 uu = { prd->rndf(), prd->rndf() };
