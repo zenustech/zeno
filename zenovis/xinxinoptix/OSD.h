@@ -110,10 +110,16 @@ __forceinline__ __device__ int digitLength(int v) {
     return (int)floorf(log10f((float)abs(v))) + 1;
 }
 
-inline void drawHUD(uchar3* fragColor, uint16_t value, const vec2 uv) {
+inline void drawOSD(uchar3* fragColor, uint16_t value, vec2 uv, int osd_height) {
     // parameters
-    if (uv.x > 1.0f || uv.y > 1.0f) return;
-    int maxLength = digitLength(value);
+    if (uv.y > osd_height) return;
+
+    int dg_length = digitLength(value);
+    int osd_width = osd_height * (dg_length + 2);
+
+    if (uv.x > osd_width) return;
+
+    uv = uv / vec2(osd_width, osd_height);
 
     float digitW = 0.12;
     float spacing = 0.02;
@@ -123,17 +129,17 @@ inline void drawHUD(uchar3* fragColor, uint16_t value, const vec2 uv) {
     auto index = (int)( uv.x / (digitW + spacing) );
     vec2 local_uv = uv;
 
-    if (index<maxLength) {
+    if (index<dg_length) {
 
         local_uv.x = ( uv.x - index * (digitW + spacing) ) / digitW;
 
-        int d = (value / int(powf(10.0f,float(maxLength-1-index)))) % 10;
+        int d = (value / int(powf(10.0f,float(dg_length-1-index)))) % 10;
         mask = max(mask, drawDigit(d,local_uv));
-    } else if (index==maxLength) {
+    } else if (index==dg_length) {
         local_uv.x = ( uv.x - index * (digitW + spacing) ) / (digitW + spacing);
         local_uv.y *= 1.5f;
         mask = drawLetterM(local_uv);
-    } else if (index==maxLength+1){
+    } else if (index==dg_length+1){
         local_uv.x = ( uv.x - index * (digitW + spacing) ) / (digitW * 0.5);
         local_uv.y *= 1.5f;
         mask = drawLetterS(local_uv);

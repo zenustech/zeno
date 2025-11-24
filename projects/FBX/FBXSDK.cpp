@@ -1114,6 +1114,7 @@ struct NewFBXImportSkin : INode {
     virtual void apply() override {
         auto fbx_object = get_input2<FBXObject>("fbx_object");
         auto lScene = fbx_object->lScene;
+        auto prim_list = std::make_shared<ListObject>();
 
         // Print the nodes of the scene and their attributes recursively.
         // Note that we are not printing the root node because it should
@@ -1129,6 +1130,9 @@ struct NewFBXImportSkin : INode {
             if (rootName.empty()) {
                 std::vector<std::shared_ptr<PrimitiveObject>> prims;
                 TraverseNodesToGetPrims(lRootNode, prims, output_tex_even_missing, "", true, geometryTransformUsePivot);
+                for (auto &prim: prims) {
+                    prim_list->arr.push_back(prim->clone());
+                }
 
                 std::map<std::string, int> nameMappingGlobal;
 
@@ -1211,8 +1215,13 @@ struct NewFBXImportSkin : INode {
         }
         if (get_input2<bool>("CopyFacesetToMatid")) {
             prim_copy_faceset_to_matid(prim.get());
+            for (auto &obj: prim_list->arr) {
+                auto prim = std::dynamic_pointer_cast<PrimitiveObject>(obj);
+                prim_copy_faceset_to_matid(prim.get());
+            }
         }
         set_output("prim", prim);
+        set_output("prim_list", prim_list);
     }
 };
 
@@ -1229,6 +1238,7 @@ ZENDEFNODE(NewFBXImportSkin, {
     },
     {
         "prim",
+        "prim_list",
     },
     {},
     {"FBXSDK"},
@@ -2065,7 +2075,6 @@ struct NewFBXPrimList : INode {
     }
     virtual void apply() override {
         auto fbx_object = get_input2<FBXObject>("fbx_object");
-        auto file_path = fbx_object->userData().get2<std::string>("file_path");
         auto lScene = fbx_object->lScene;
 
         // Print the nodes of the scene and their attributes recursively.
@@ -2159,7 +2168,6 @@ struct NewFBXPrimList : INode {
         }
         auto prim_list = std::make_shared<zeno::ListObject>();
         for (auto prim: prims) {
-            prim->userData().set2("file_path", file_path);
             prim_list->arr.push_back(prim);
         }
         set_output("prims", prim_list);
@@ -2470,9 +2478,25 @@ struct NewFBXBoneDeform : INode {
         }
         return mapping;
     }
-    virtual void apply() override {
+    void apply() override {
+        if (has_input2<ListObject>("GeometryToDeform")) {
+            auto geometryToDeforms = get_input2<ListObject>("GeometryToDeform");
+            auto prims = std::make_shared<ListObject>();
+            for (auto &obj: geometryToDeforms->arr) {
+                auto geometryToDeform = std::dynamic_pointer_cast<PrimitiveObject>(obj);
+                auto prim = bone_deform_prim(geometryToDeform);
+                prims->arr.push_back(prim);
+            }
+            set_output2("prim", prims);
+        }
+        else {
+            auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
+            auto prim = bone_deform_prim(geometryToDeform);
+            set_output2("prim", prim);
+        }
+    }
+    std::shared_ptr<PrimitiveObject> bone_deform_prim(std::shared_ptr<PrimitiveObject> geometryToDeform) {
         auto usingDualQuaternion = get_input2<std::string>("SkinningMethod") == "DualQuaternion";
-        auto geometryToDeform = get_input2<PrimitiveObject>("GeometryToDeform");
         auto geometryToDeformBoneNames = getBoneNames(geometryToDeform.get());
         auto restPointTransformsPrim = get_input2<PrimitiveObject>("RestPointTransforms");
         auto restPointTransformsBoneNames = getBoneNames(restPointTransformsPrim.get());
@@ -2616,7 +2640,7 @@ struct NewFBXBoneDeform : INode {
             }
         }
 
-        set_output("prim", prim);
+        return prim;
     }
 };
 

@@ -1004,6 +1004,10 @@ ZENDEFNODE( SetNodeId, {
 
 struct SetSceneXform : zeno::INode {
     void apply() override {
+        if (!has_input("xformsList")) {
+            set_output("scene", get_input("scene"));
+            return;
+        }
         auto scene_tree = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
         auto xformsList = get_input<ListObject>("xformsList")->get2<std::string>();
         for (const auto &xforms_str: xformsList) {
