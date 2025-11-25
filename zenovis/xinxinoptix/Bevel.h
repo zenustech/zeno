@@ -8,6 +8,36 @@
 #include "IOMat.h"
 #include "TraceStuff.h"
 
+inline float2 sampleGaussianBoxMuller(float2& uu, float sigma)
+{
+    float a = sigma * sqrtf(-2.0f * logf(1.0f - uu.y));
+    float b = 2.0f * M_PIf * uu.x;
+
+    //a = clamp(a, 0.0f, 1.0f);
+    uu.y = a;
+
+    return float2{ cosf(b), sinf(b)} * a;
+}
+
+inline float evalGaussian2D(float dx, float dy, float sigma)                 
+{
+    float r2 = dx*dx + dy*dy;
+    
+    float sigma2 = sigma * sigma;
+    float exponent = -r2 / (2.0f * sigma2);
+    float denom = 2.0f * M_PIf * sigma2;
+    
+    return expf(exponent) / denom;
+}
+
+inline float evalGaussian1D(float d, float sigma)
+{
+    if (d < 0) return 0;
+    auto sigma2 = sigma * sigma;
+    auto exponent = -d*d / (2.0f * sigma2);
+    return (d / sigma2) * expf(exponent);
+}
+
 inline float bevel_cubic_eval(const float radius, const float r)
 {
     const float Rm = radius;
