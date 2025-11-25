@@ -13,7 +13,7 @@
 #include <cassert>
 #include <cstdio>
 #include <fstream>
-
+#include <zeno/types/UserData.h>
 namespace zeno {
 namespace {
 
@@ -38,7 +38,13 @@ static float takef(char const *&it) {
     it = eptr;
     return val;
 }
+static std::string takes(std::string &s_in)
+{
 
+    char c = s_in.c_str()[0];
+    std::string s; s = c;
+    return s;
+}
 static int takeu(char const *&it) {
     char *eptr;
     int val(std::strtoul(it, &eptr, 10));
@@ -55,8 +61,11 @@ PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
 
     // auto prim = std::make_shared<PrimitiveObject>();
     auto prim = new PrimitiveObject;
+    prim->polys.add_attr<int>("matid");
     std::vector<int> loop_uvs;
-
+    int mat_num = 0;
+    int prev_poly = 0;
+    int current_mat_id = 0;
     while (it < eit) {
         auto nit = std::find(it, eit, '\n');
         auto nnit = nit + 1;
@@ -90,6 +99,9 @@ PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
                 it = std::find_if(it, nit, [] (char c) { return c != ' '; });
             }
             prim->polys.emplace_back(beg, cnt);
+            if(prim->polys.has_attr("matid")) {
+                prim->polys.attr<int>("matid").emplace_back(current_mat_id);
+            }
 
         } else if (match(it, "l ")) {
             int x = takeu(it) - 1;
@@ -100,6 +112,16 @@ PrimitiveObject* parse_obj(const char *binData, std::size_t binSize) {
             // todo: support tag verts to be multi components of primitive
             //std::string_view o_name(it, nit - it);
 
+        }else if (match(it, "usemtl "))
+        {
+//            std::string s(it);
+            std::string mat_name = std::string(it, nit-it);
+            printf("%s\n", mat_name.c_str());
+            current_mat_id = mat_num;
+            auto matkey = "Material_"+std::to_string(mat_num);
+            prim->userData().set2(matkey, mat_name);
+            mat_num++;
+            prim->userData().set2("matNum", mat_num);
         }
         it = nnit;
     }
