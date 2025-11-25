@@ -118,6 +118,7 @@ inline bool circleInsideTriangle(float3 center, float radius, float3* vertices) 
     return true;
 }
 
+template<bool CUBIC=true>
 inline float3 bevel(MatInput&input, float radius, uint sample) {
     if (input.isShadowRay || radius == 0.0f || sample<=1) { return input.wldNorm; };
 
@@ -159,7 +160,13 @@ inline float3 bevel(MatInput&input, float radius, uint sample) {
         const auto& idx1=idx[1];
         const auto& idx2=idx[2];
 
-        auto offset = sampleCubicDisk(uu);
+        auto sigma = 1.0f / 2.448f;
+
+        float2 offset;
+        if constexpr(CUBIC)
+            offset = sampleCubicDisk(uu);
+        else
+            offset = sampleGaussianBoxMuller(uu, sigma);
 
         auto pos = input.objPos + radius * ( axis[idx0] + axis[idx1] * offset.x + axis[idx2] * offset.y);
         auto len2 = 1.0f - offset.x * offset.x - offset.y * offset.y;
@@ -192,8 +199,14 @@ inline float3 bevel(MatInput&input, float radius, uint sample) {
             }
 
             const float di = length(hit_pos - input.objPos);
-            const float Rd = bevel_cubic_pdf(radius, di);
-            const float disk_pdf = bevel_cubic_pdf(1.0f, uu.y);
+            float Rd, disk_pdf;
+            if constexpr(CUBIC) {
+                Rd = bevel_cubic_pdf(radius, di);
+                disk_pdf = bevel_cubic_pdf(1.0f, uu.y);
+            } else {
+                Rd = evalGaussian1D(di/radius, sigma);
+                disk_pdf = evalGaussian1D(uu.y, sigma);
+            }
 
             const float pdf0 = pick_pdf[idx0] * fabsf(dot(axis[idx0], hit_nrm));
             const float pdf1 = pick_pdf[idx1] * fabsf(dot(axis[idx1], hit_nrm));
@@ -214,9 +227,9 @@ inline float3 bevel(MatInput&input, float radius, uint sample) {
     return normalize(bevel_nrm);
 }
 
-template<bool TangentSpace=false>
+template<bool TangentSpace=false, bool CUBIC=true>
 inline float3 bevelCall(MatInput&input, float radius, uint sample, const float3& T, const float3& B, const float3& N) {
-    auto bevel_nrm = bevel(input, radius, sample);
+    auto bevel_nrm = bevel<CUBIC>(input, radius, sample);
 
     if constexpr(TangentSpace) {
 
