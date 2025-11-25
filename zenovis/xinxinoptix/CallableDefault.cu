@@ -235,7 +235,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     if (mats.smoothness > 0.0f) {
         mats.nrm = attrs.interpNorm(mats.smoothness);
     } else {
-        mats.nrm = attrs.wldNorm; // geometry normal
+        mats.nrm = n;
     }
 
     if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
