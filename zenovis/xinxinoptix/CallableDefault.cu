@@ -231,30 +231,31 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.F0 = mat_F0;
     mats.doubleSide = mats.isHair>0.5?1.0f:mats.doubleSide;
 
+    mats.nrm = n;
+
     const bool has_nrm = mat_normal != vec3{0,0,1};
-    if (mats.smoothness > 0.0f) {
-        mats.nrm = attrs.interpNorm(mats.smoothness);
-    } else {
-        mats.nrm = n;
-    }
-
-    if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
-        mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
-    }
-
-if (mats.nrm != n) {
-    n = mats.nrm;
-    b = cross(t, n);
-    t = cross(n, b);
-}
-
     if (has_nrm) { // has input from node graph
-        n = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;
+        mats.nrm = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;
+    } else {
+        if (mats.smoothness > 0.0f) {
+            mats.nrm = attrs.interpNorm(mats.smoothness);
+        } else {
+            mats.nrm = attrs.wldNorm;
+        }
+
+        if(mats.doubleSide>0.5f || mats.thin>0.5f) { 
+            mats.nrm = faceforward( mats.nrm, attrs.V, mats.nrm );
+        }
+    }
+
+    if (mats.nrm != n) {
+        n = mats.nrm;
         b = cross(t, n);
         t = cross(n, b);
     }
+
+    attrs.N = n;
     attrs.B = b;
     attrs.T = t;
-    mats.nrm = n;
     return mats;
 }
