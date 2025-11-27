@@ -364,6 +364,7 @@ extern "C" __global__ void __raygen__rg()
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
         prd.max_depth = 4;
+        prd.sssDepth = 0;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
     #if __AOV__ 

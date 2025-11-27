@@ -542,16 +542,9 @@ extern "C" __global__ void __closesthit__radiance()
         mats.specular = 0.0f;
         //mats.ior = 1.0f;
         if(mats.subsurface==0.0f){
-            prd->samplePdf = 1.0f;
-            prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
-            prd->readMat(prd->sigma_t, prd->ss_alpha);
-            auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-            prd->attenuation *= trans;
-            CUR_TOTAL_TRANS  *= trans;
-            //prd->origin = P;
-            prd->direction = ray_dir;
+            prd->alphaHit = true;
             prd->_tmin_ = optixGetRayTmax();
-            prd->done = true;
+            prd->origin = prd->origin;
             return;
         }
         if(mats.subsurface>0.0f && dot(normalize(ray_dir), shadingNorm)<0.0f){
@@ -633,6 +626,7 @@ extern "C" __global__ void __closesthit__radiance()
 //    if(prd->hair_depth>=1) mats.hair_rough2=max(0.3f,mats.hair_rough2);
 //    if(prd->hair_depth>=2) mats.hair_rough2=max(0.6f,mats.hair_rough2);
 //    if(prd->hair_depth>=3) mats.hair_rough2=max(1.0f,mats.hair_rough2);
+    mats.subsurface = prd->sssDepth>0?0:mats.subsurface;
     while(DisneyBSDF::SampleDisney3(
                 prd->seed,
                 prd->eventseed,
@@ -699,6 +693,7 @@ extern "C" __global__ void __closesthit__radiance()
         next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
+    prd->sssDepth+=coming_out_from_sss?1:0;
 
     prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth==0 && mats.isHair>0.5) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
 
@@ -909,7 +904,8 @@ extern "C" __global__ void __closesthit__radiance()
         auto& rs = reinterpret_cast<vec3&>(prd->aov[1]);
         auto& rt = reinterpret_cast<vec3&>(prd->aov[2]);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
-        mats.specular = coming_out_from_sss?0:mats.specular;
+        mats.specular = coming_out_from_sss?1:mats.specular;
+        mats.basecolor = coming_out_from_sss?vec3(1.0f):mats.basecolor;
         float3 lbrdf = DisneyBSDF::EvaluateDisney3(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);

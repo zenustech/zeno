@@ -126,6 +126,7 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
 
     float mat_subsurface = 0.0f;
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
+    float  mat_sssScale = 1.0f;
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
     float mat_scatterDistance = 0.0f;
     float mat_scatterStep = 0.0f;
@@ -187,8 +188,8 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.anisoRotation = clamp(mat_anisoRotation, 0.0f, 1.0f);
 
     mats.subsurface = mat_subsurface;
-    mats.sssColor = mat_sssColor;
-    mats.sssParam = mat_sssParam;
+    mats.sssColor = clamp(mat_sssColor,vec3(0.01f),vec3(0.99f));
+    mats.sssParam = clamp(mat_sssParam * mat_sssScale, vec3(0.0001f), vec3(1.0f));
     mats.scatterDistance = max(0.0f,mat_scatterDistance);
     mats.scatterStep = clamp(mat_scatterStep,0.0f,1.0f);
 

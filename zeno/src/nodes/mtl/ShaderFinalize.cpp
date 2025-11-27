@@ -33,6 +33,7 @@ struct ShaderFinalize : INode {
 
             {1, "mat_subsurface"},
             {3, "mat_sssParam"},
+            {1, "mat_sssScale"},
             {3, "mat_sssColor"},
             {1, "mat_scatterDistance"},
             {1, "mat_scatterStep"},
@@ -86,7 +87,8 @@ struct ShaderFinalize : INode {
             get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
 
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssRadius", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssScale", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("scatterDistance", std::make_shared<NumericObject>(float(10000))),
             get_input<IObject>("scatterStep", std::make_shared<NumericObject>(float(0))),
@@ -131,7 +133,7 @@ struct ShaderFinalize : INode {
         });
         auto commonCode = em.getCommonCode();
 
-        auto sssRadiusMethod = get_input2<std::string>("sssRadius");
+        auto sssRadiusMethod = get_input2<std::string>("sssType");
         if (sssRadiusMethod == "Fixed") {
             code += "bool sssFxiedRadius = true;\n";
         } else {
@@ -193,8 +195,9 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "anisoRotation", "0.0"},
 
         {"float", "subsurface", "0.0"},
-        {"enum Fixed Adaptive", "sssRadius", "Fixed"},
-        {"vec3f", "sssParam", "1.0,1.0,1.0"},
+        {"enum Fixed Adaptive", "sssType", "Fixed"},
+        {"vec3f", "sssRadius", "1.0,1.0,1.0"},
+        {"float", "sssScale", "1.0"},
         {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "scatterDistance", "10000"},
         {"float", "scatterStep", "0"},

@@ -57,7 +57,7 @@ namespace DisneyBSDF{
     setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius, bool fixedRadius)
     {
     	if (fixedRadius) {
-			radius = radius * 0.25f / M_PIf;
+			radius = radius;// * 0.25f / M_PIf;
 
 		}
 
@@ -199,16 +199,16 @@ namespace DisneyBSDF{
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
         vec3 r = radius;
-        setup_subsurface_radius(eta, albedo, r, true);
+        //setup_subsurface_radius(eta, albedo, r, false);
         vec3 sigma_s;
-        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
-        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
-        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
-        //bssrdf_burley_setup(albedo, radius, true, 1, r);
-//        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
-//        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
-//        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
-//        alpha = sigma_s/sigma_t;
+//        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
+//        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
+//        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
+        bssrdf_burley_setup(albedo, radius, false, 0, r);
+        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
+        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
+        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
+        alpha = sigma_s/sigma_t;
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
@@ -237,14 +237,10 @@ namespace DisneyBSDF{
             pdf = vec3(1.0f / 3.0f);
         }
 
-        float pdf_sum = 0.0f;
-    
-        pdf_sum += pdf.x;
-        if (rand < pdf_sum) {
+        if (rand < pdf.x) {
             return 0;
         }
-        pdf_sum += pdf.y;
-        if (rand < pdf_sum)
+        if (rand < pdf.x + pdf.y)
         {
             return 1;
         }
@@ -263,7 +259,7 @@ namespace DisneyBSDF{
     {
         float r0 = rnd(seed);
         int channel = volume_sample_channel(a, r0, channelPDF);
-        channel = clamp(channel, 0, 2);
+
         float c = sigma_t[channel];
         
         float s = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / max(c, 1e-12f);
@@ -391,21 +387,21 @@ namespace DisneyBSDF{
 //      return (hit?transmittance:sigma_s*transmittance)/dot(pdf, channelPDF);
       //vec3 apdf = abs(transmittance);
       vec3 T = Transmission(sigma_t, t);
-//      if(max(max(T.x, T.y), T.z)<1e-12)
-//          return vec3(0);
-      vec3 t_tmp = vec3(1.0f);
-      if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
-      {
-          t_tmp = exp(vec3(-sigma_t.x+sigma_t.x, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
-      }
-      if(sigma_t.y<sigma_t.x && sigma_t.y<sigma_t.z)
-      {
-          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -sigma_t.y+sigma_t.y, -sigma_t.z+sigma_t.y)*t);
-      }
-      if(sigma_t.z<sigma_t.x && sigma_t.z<sigma_t.y)
-      {
-          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -sigma_t.z+sigma_t.z)*t);
-      }
+      if(max(max(T.x, T.y), T.z)<1e-6)
+          return vec3(0);
+      vec3 t_tmp = T;
+//      if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
+//      {
+//          t_tmp = exp(vec3(0, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
+//      }
+//      if(sigma_t.y<=sigma_t.x && sigma_t.y<=sigma_t.z)
+//      {
+//          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -0, -sigma_t.z+sigma_t.y)*t);
+//      }
+//      if(sigma_t.z<sigma_t.x && sigma_t.z<sigma_t.y)
+//      {
+//          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -0)*t);
+//      }
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
       auto result = hit? (t_tmp / dot(t_tmp, channelPDF)) : ((sigma_s * t_tmp)/dot(sigma_t*t_tmp, channelPDF));
       //result = clamp(result,vec3(0.0f),vec3(1.0f));
@@ -1387,6 +1383,8 @@ namespace DisneyBSDF{
           isDiff = true;
           if(mat.thin<0.5 && woo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
+            float F = BRDFBasics::DielectricFresnel(abs(woo.z), 1.0f/mat.ior);
+            F = clamp(1-F, 0.0f, 1.0f);
             wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
@@ -1402,10 +1400,11 @@ namespace DisneyBSDF{
             MatOutput mat_new = mat;
             mat_new.specular = 0;
             mat_new.subsurface = 0;
+            mat_new.basecolor = vec3(1.0f);
             reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, -wo, T, B, N, N2, thin,
                                           is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
             fPdf = pdf>1e-5f?pdf:0.0f;
-            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+            reflectance = pdf>1e-5f? reflectance:vec3(0.0f);
 //            reflectance = vec3(1.0f);
 //            fPdf = 1.0f;
             return true;
@@ -1463,13 +1462,14 @@ namespace DisneyBSDF{
               float pdf, pdf2;
             vec3 rd, rs, rt;
             MatOutput mat_new = mat;
-            mat_new.specular = 0;
-            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
-                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
-            fPdf = pdf>1e-5f?pdf:0.0f;
-            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
-//            reflectance = vec3(1.0f);
-//            fPdf = 1.0f;
+//            mat_new.specular = 0;
+//            mat_new.basecolor = vec3(1.0f);
+//            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
+//                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
+//            fPdf = pdf>1e-5f?pdf:0.0f;
+//            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+            reflectance = vec3(1.0f);
+            fPdf = 1.0f;
             return true;
             }
           }
