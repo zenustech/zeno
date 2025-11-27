@@ -134,19 +134,23 @@ struct TriangleInput : MatInput {
         return { 1.0f-barys2.x-barys2.y, barys2.x, barys2.y };
     }
 
-    inline vec3 interpNorm(float smooth=0.0f) const {
+    inline vec3 interpNorm(float smooth=1.0f) const {
         let gas_ptr = getGasPointer();
         let nrm_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-4) );
         if (nrm_ptr == nullptr) { return wldNorm; }
 
-        float3 n0 = decodeHalf( nrm_ptr[ vertex_idx.x ] );
-        float3 n1 = decodeHalf( nrm_ptr[ vertex_idx.y ] );
-        float3 n2 = decodeHalf( nrm_ptr[ vertex_idx.z ] );
-
-        if (smooth > 0.0f) {
-            n0 = dot(n0, objNorm)>(1-smooth)?n0:objNorm;
-            n1 = dot(n1, objNorm)>(1-smooth)?n1:objNorm;
-            n2 = dot(n2, objNorm)>(1-smooth)?n2:objNorm;
+        float3 n0, n1, n2;
+        if (0.0f == smooth) {
+            n0 = n1 = n2 = objNorm; 
+        } else {
+            n0 = decodeHalf( nrm_ptr[ vertex_idx.x ] );
+            n1 = decodeHalf( nrm_ptr[ vertex_idx.y ] );
+            n2 = decodeHalf( nrm_ptr[ vertex_idx.z ] );
+            if (1.0f > smooth) {
+                n0 = dot(n0, objNorm)>(1-smooth)?n0:objNorm;
+                n1 = dot(n1, objNorm)>(1-smooth)?n1:objNorm;
+                n2 = dot(n2, objNorm)>(1-smooth)?n2:objNorm;
+            }
         }
 
         auto tmp = interp(barys2, n0, n1, n2);

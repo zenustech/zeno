@@ -1424,7 +1424,7 @@ struct ResolveTexPath : INode {
         tex_path_str = zeno::replace_all(tex_path_str, "\\", "/");
 
         std::string hint_directory = get_input2<std::string>("HintDirectory");
-        std::string oPath;
+        std::string oPath = tex_path_str;
         auto temp_path = deep_search(hint_directory, tex_path_str);
         if (temp_path.has_value()) {
             oPath = temp_path.value();
