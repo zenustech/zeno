@@ -140,7 +140,7 @@ namespace DisneyBSDF{
             s = vec3(burley_fitting5(A.x), burley_fitting5(A.y), burley_fitting5(A.z));
         }
 
-        radius_out = l/s;
+        radius_out = l;
     }
     static __inline__ __device__  void bssrdf_setup(const bool burley_radius, const bool scale_mfp,
                                         const bool use_eq5, vec3 & weight, vec3 &albedo,
@@ -184,7 +184,7 @@ namespace DisneyBSDF{
         float s = 1.9f - A + 3.5f * pow(A - 0.8f, 2.0f);
 
         alpha = a;
-        sigma_t = 1.0f / max(d * s, 1e-16f);
+        sigma_t = 1.0f / max(d, 1e-16f);
         sigma_t = sigma_t / (abs( 1 + g ) + 0.001);
         sigma_s = sigma_t * a;
     }
@@ -210,7 +210,7 @@ namespace DisneyBSDF{
 //        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
 //        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
 //        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
-        bssrdf_burley_setup(albedo, radius, false, 1, r);
+        //bssrdf_burley_setup(albedo, radius, false, 0, r);
         compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
         compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
         compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
@@ -395,18 +395,18 @@ namespace DisneyBSDF{
 //      if(max(max(T.x, T.y), T.z)<1e-12)
 //          return vec3(0);
       vec3 t_tmp = T;
-//      if(sigma_t.x<=sigma_t.y && sigma_t.x<=sigma_t.z)
-//      {
-//          t_tmp = exp(vec3(0, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
-//      }
-//      if(sigma_t.y<=sigma_t.x && sigma_t.y<=sigma_t.z)
-//      {
-//          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -0, -sigma_t.z+sigma_t.y)*t);
-//      }
-//      if(sigma_t.z<=sigma_t.x && sigma_t.z<=sigma_t.y)
-//      {
-//          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -0)*t);
-//      }
+      if(sigma_t.x<=sigma_t.y && sigma_t.x<=sigma_t.z)
+      {
+          t_tmp = exp(vec3(0, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
+      }
+      if(sigma_t.y<=sigma_t.x && sigma_t.y<=sigma_t.z)
+      {
+          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -0, -sigma_t.z+sigma_t.y)*t);
+      }
+      if(sigma_t.z<=sigma_t.x && sigma_t.z<=sigma_t.y)
+      {
+          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -0)*t);
+      }
       //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
       auto result = hit? (t_tmp / dot(t_tmp, channelPDF)) : ((sigma_s * t_tmp)/dot(sigma_t*t_tmp, channelPDF));
       //result = clamp(result,vec3(0.0f),vec3(1.0f));
@@ -1455,11 +1455,6 @@ namespace DisneyBSDF{
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
                 CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
-                if(prd->print_info)
-                {
-                    printf("alpha:%f,%f,%f\n",prd->ss_alpha.x,prd->ss_alpha.y,prd->ss_alpha.z);
-                    printf("sigma_t:%f,%f,%f\n",prd->sigma_t.x,prd->sigma_t.y,prd->sigma_t.z);
-                }
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);

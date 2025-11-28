@@ -695,7 +695,7 @@ extern "C" __global__ void __closesthit__radiance()
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
     prd->sssDepth+=coming_out_from_sss?1:0;
 
-    prd->max_depth = ((prd->depth==0 && isSS) || (prd->depth==0 && mats.isHair>0.5) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
+    prd->max_depth = ((prd->sssDepth==0 && isSS) || (prd->depth==0 && mats.isHair>0.5) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
 
 
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
