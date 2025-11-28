@@ -380,7 +380,10 @@ struct ReadObjPrim : INode {
         if (fs::exists(mtl_path)) {
             std::string native_path = mtl_path.string();
             auto content = zeno::file_get_content(native_path);
-            auto hint_dir = std::filesystem::u8path(path).parent_path().u8string();
+            auto hint_dir = get_input2<std::string>("hint_dir");
+            if (hint_dir.empty()) {
+                hint_dir = std::filesystem::u8path(path).parent_path().u8string();
+            }
             mtl_json->json = convert_mtl_to_json(content, hint_dir);
         }
 
@@ -398,7 +401,7 @@ mainG = zeno.graph("main")
 
 index = 0
 for name, mat in mats.items():
-    forknode = mainG.forkAndCreate("DefaultModelShader", "Mat_{}".format(name))
+    forknode = mainG.forkAndCreate("shader_template", name)
     forknode.mtlid = mat['name']
 
     forknode.ambient_tex = mat['ambient_tex']
@@ -421,6 +424,8 @@ for name, mat in mats.items():
     index += 1
 )";
         mtl_python = replace_all(mtl_python, "mtl_json", mtl_json->json.dump());
+        auto shader_template = get_input2<std::string>("shader_template");
+        mtl_python = replace_all(mtl_python, "shader_template", shader_template);
         set_output2("mtl_python", mtl_python);
     }
 };
@@ -428,6 +433,8 @@ for name, mat in mats.items():
 ZENDEFNODE(ReadObjPrim,
         { /* inputs: */ {
         {"readpath", "path"},
+        {"string", "hint_dir"},
+        {"string", "shader_template"},
         }, /* outputs: */ {
         {"primitive", "prim"},
         {"mtl_json"},
