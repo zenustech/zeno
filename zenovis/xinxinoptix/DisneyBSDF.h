@@ -21,11 +21,12 @@ namespace DisneyBSDF{
     float bssrdf_dipole_compute_Rd(float a, float fourthirdA)
     {
         float s = sqrtf(max(3.0f * (1.0f - a), 0.0f));
-        return 0.5f * a * (1.0f + expf(-fourthirdA * s)) * expf(-s);
+        return 0.5 * a * (1.0f + expf(-fourthirdA * s)) * expf(-s);
     }
     static __inline__ __device__
     float bssrdf_dipole_compute_alpha_prime(float rd, float fourthirdA)
     {
+        rd = max(rd, 0.01);
         /* Little Newton solver. */
         if (rd < 1e-4f) {
             return 0.0f;
@@ -38,7 +39,7 @@ namespace DisneyBSDF{
         float x1 = 1.0f;
         float xmid, fmid;
 
-        constexpr const int max_num_iterations = 12;
+        constexpr const int max_num_iterations = 24;
         for (int i = 0; i < max_num_iterations; ++i) {
             xmid = 0.5f * (x0 + x1);
             fmid = bssrdf_dipole_compute_Rd(xmid, fourthirdA);
@@ -54,7 +55,7 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__ void
-    setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius, bool fixedRadius)
+    setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius, vec3 &alpha, bool fixedRadius)
     {
     	if (fixedRadius) {
 			radius = radius;// * 0.25f / M_PIf;
@@ -69,6 +70,7 @@ namespace DisneyBSDF{
         alpha_prime.x = bssrdf_dipole_compute_alpha_prime(albedo.x, fourthirdA);
         alpha_prime.y = bssrdf_dipole_compute_alpha_prime(albedo.y, fourthirdA);
         alpha_prime.z = bssrdf_dipole_compute_alpha_prime(albedo.z, fourthirdA);
+        alpha = alpha_prime;
         radius = radius * sqrt(3.0f * abs(vec3(1.0) - alpha_prime));
     }
     static __inline__ __device__ void 
@@ -175,11 +177,13 @@ namespace DisneyBSDF{
         }
 
     }
-    static __inline__ __device__ void compute_scattering_coeff_from_albedo(float A, float d, float g, float &sigma_s, float &sigma_t)
+    static __inline__ __device__ void compute_scattering_coeff_from_albedo(float A, float d, float g, float &sigma_s, float &sigma_t, float &alpha)
     {
+
         float a = 1.0f - expf(A * (-5.09406f + A * (2.61188f - A * 4.31805f)));
         float s = 1.9f - A + 3.5f * pow(A - 0.8f, 2.0f);
 
+        alpha = a;
         sigma_t = 1.0f / max(d * s, 1e-16f);
         sigma_t = sigma_t / (abs( 1 + g ) + 0.001);
         sigma_s = sigma_t * a;
@@ -190,25 +194,26 @@ namespace DisneyBSDF{
                                                                vec3& sigma_t,
                                                                vec3& sigma_s, vec3& throughput)
     {
-        compute_scattering_coeff_from_albedo(albedo.x, radius.x, 0, sigma_s.x,sigma_t.x);
-        compute_scattering_coeff_from_albedo(albedo.y, radius.y, 0, sigma_s.y,sigma_t.y);
-        compute_scattering_coeff_from_albedo(albedo.z, radius.z, 0, sigma_s.z,sigma_t.z);
+        float alpha;
+        compute_scattering_coeff_from_albedo(albedo.x, radius.x, 0, sigma_s.x,sigma_t.x,alpha);
+        compute_scattering_coeff_from_albedo(albedo.y, radius.y, 0, sigma_s.y,sigma_t.y,alpha);
+        compute_scattering_coeff_from_albedo(albedo.z, radius.z, 0, sigma_s.z,sigma_t.z,alpha);
         throughput = safe_divide_spectrum(weight, albedo);
     }
     static __inline__ __device__
     void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta, bool fixedRadius)
     {
         vec3 r = radius;
-        //setup_subsurface_radius(eta, albedo, r, false);
+
         vec3 sigma_s;
+//        setup_subsurface_radius(1.3,albedo, r, alpha,true);
 //        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
 //        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
 //        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
-        bssrdf_burley_setup(albedo, radius, false, 0, r);
-        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x);
-        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y);
-        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z);
-        alpha = sigma_s/sigma_t;
+        bssrdf_burley_setup(albedo, radius, false, 1, r);
+        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
+        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
+        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
@@ -387,10 +392,10 @@ namespace DisneyBSDF{
 //      return (hit?transmittance:sigma_s*transmittance)/dot(pdf, channelPDF);
       //vec3 apdf = abs(transmittance);
       vec3 T = Transmission(sigma_t, t);
-      if(max(max(T.x, T.y), T.z)<1e-6)
-          return vec3(0);
+//      if(max(max(T.x, T.y), T.z)<1e-12)
+//          return vec3(0);
       vec3 t_tmp = T;
-//      if(sigma_t.x<sigma_t.y && sigma_t.x<sigma_t.z)
+//      if(sigma_t.x<=sigma_t.y && sigma_t.x<=sigma_t.z)
 //      {
 //          t_tmp = exp(vec3(0, -sigma_t.y+sigma_t.x, -sigma_t.z+sigma_t.x)*t);
 //      }
@@ -398,7 +403,7 @@ namespace DisneyBSDF{
 //      {
 //          t_tmp = exp(vec3(-sigma_t.x+sigma_t.y, -0, -sigma_t.z+sigma_t.y)*t);
 //      }
-//      if(sigma_t.z<sigma_t.x && sigma_t.z<sigma_t.y)
+//      if(sigma_t.z<=sigma_t.x && sigma_t.z<=sigma_t.y)
 //      {
 //          t_tmp = exp(vec3(-sigma_t.x+sigma_t.z, -sigma_t.y+sigma_t.z, -0)*t);
 //      }
@@ -1450,6 +1455,11 @@ namespace DisneyBSDF{
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
                 CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f, mat.sssFxiedRadius);
+                if(prd->print_info)
+                {
+                    printf("alpha:%f,%f,%f\n",prd->ss_alpha.x,prd->ss_alpha.y,prd->ss_alpha.z);
+                    printf("sigma_t:%f,%f,%f\n",prd->sigma_t.x,prd->sigma_t.y,prd->sigma_t.z);
+                }
               }
               tbn.inverse_transform(wi);
               wi = normalize(wi);
@@ -1628,7 +1638,7 @@ namespace DisneyBSDF{
     static __inline__ __device__ float sample_scatter_distance(const vec3 throughput,const vec3 sigma_s, const vec3 sigma_t,
                                                                unsigned int & seed, vec3 & channel_pdf)
     {
-        vec3 albedo = safe_divide_spectrum(sigma_s, sigma_t);
+        vec3 albedo = sigma_s/sigma_t;
         int channel = volume_sample_channel(albedo*throughput, rnd(seed), channel_pdf);
         const float sample_sigma_t = sigma_t[channel];
         float distance = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / sample_sigma_t;
