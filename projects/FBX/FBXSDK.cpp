@@ -320,6 +320,209 @@ struct FBXObject : PrimitiveObject {
     FbxScene* lScene = nullptr;
 };
 
+static Json mat_to_json(FbxSurfaceMaterial* material, bool output_tex_even_missing) {
+    Json json;
+    std::string mat_name = material->GetName();
+    json["name"] = mat_name;
+    {
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sEmissive);
+            if (output_tex_even_missing) {
+                json["emissive_tex"] = "";
+            }
+            if (property.IsValid()) {
+                FbxDouble3 value = property.Get<FbxDouble3>();
+                json["emissive_value"] = {value[0], value[1], value[2]};
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["emissive_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sAmbient);
+            if (output_tex_even_missing) {
+                json["ambient_tex"] = "";
+            }
+            if (property.IsValid()) {
+                FbxDouble3 value = property.Get<FbxDouble3>();
+                json["ambient_value"] = {value[0], value[1], value[2]};
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["ambient_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+            if (output_tex_even_missing) {
+                json["diffuse_tex"] = "";
+            }
+            if (property.IsValid()) {
+                FbxDouble3 value = property.Get<FbxDouble3>();
+                json["diffuse_value"] = {value[0], value[1], value[2]};
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["diffuse_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sSpecular);
+            if (output_tex_even_missing) {
+                json["specular_tex"] = "";
+            }
+            if (property.IsValid()) {
+                FbxDouble3 value = property.Get<FbxDouble3>();
+                json["specular_value"] = {value[0], value[1], value[2]};
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["specular_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sShininess);
+            if (output_tex_even_missing) {
+                json["shininess_tex"] = "";
+            }
+            if (property.IsValid()) {
+                double value = property.Get<double>();
+                json["shininess_value"] = value;
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["shininess_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sBump);
+            if (output_tex_even_missing) {
+                json["bump_tex"] = "";
+            }
+            if (property.IsValid()) {
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["bump_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sNormalMap);
+            if (output_tex_even_missing) {
+                json["normal_map_tex"] = "";
+            }
+            if (property.IsValid()) {
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["normal_map_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparentColor);
+            if (output_tex_even_missing) {
+                json["transparent_color_tex"] = "";
+            }
+            if (property.IsValid()) {
+                FbxDouble3 value = property.Get<FbxDouble3>();
+                json["transparent_color_value"] = {value[0], value[1], value[2]};
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["transparent_color_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparencyFactor);
+            if (output_tex_even_missing) {
+                json["opacity_tex"] = "";
+            }
+            if (property.IsValid()) {
+                double value = property.Get<double>();
+                json["opacity_value"] = value;
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["opacity_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sReflection);
+            if (output_tex_even_missing) {
+                json["reflection_tex"] = "";
+            }
+            if (property.IsValid()) {
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["reflection_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDisplacementColor);
+            if (output_tex_even_missing) {
+                json["displacement_color_tex"] = "";
+            }
+            if (property.IsValid()) {
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["displacement_color_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+        {
+            FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sVectorDisplacementColor);
+            if (output_tex_even_missing) {
+                json["vector_displacement_color_tex"] = "";
+            }
+            if (property.IsValid()) {
+                int textureCount = property.GetSrcObjectCount<FbxTexture>();
+                for (int i = 0; i < textureCount; ++i) {
+                    FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
+                    if (texture) {
+                        json["vector_displacement_color_tex"] = texture->GetFileName();
+                    }
+                }
+            }
+        }
+    }
+    return json;
+}
+
 struct ReadFBXFile: INode {
     std::shared_ptr<FBXObject> _inner_fbx_object;
     std::string usedPath;
@@ -356,6 +559,8 @@ struct ReadFBXFile: INode {
 
         // Import the contents of the file into the scene.
         lImporter->Import(fbx_object->lScene);
+        int materialCount = fbx_object->lScene->GetMaterialCount();
+        zeno::log_info("mat_count: {}", materialCount);
         FbxRootNodeUtility::RemoveAllFbxRoots(fbx_object->lScene);
 
         // The file is imported; so get rid of the importer.
@@ -365,16 +570,73 @@ struct ReadFBXFile: INode {
         _inner_fbx_object = fbx_object;
         fbx_object->userData().set2("file_path", usedPath);
 
-        set_output("fbx_object", std::move(fbx_object));
+        set_output("fbx_object", fbx_object);
+
+        auto mtl_json = std::make_shared<JsonObject>();
+        for (int i = 0; i < materialCount; ++i) {
+            FbxSurfaceMaterial* pMaterial = fbx_object->lScene->GetMaterial(i);
+            Json json_mat = mat_to_json(pMaterial, true);
+            for (auto& [key, value] : json_mat.items()) {
+                if (ends_with(key, "_tex")) {
+                    value = replace_all(value, "\\", "/");
+                }
+            }
+            std::string mat_name = pMaterial->GetName();
+            mtl_json->json[mat_name] = json_mat;
+        }
+        set_output2("mtl_json", mtl_json);
+        std::string mtl_python = R"(
+json_data = '''
+mtl_json
+'''
+
+import json
+mats = json.loads(json_data)
+
+import zeno
+mainG = zeno.graph("main")
+
+index = 0
+for name, mat in mats.items():
+    forknode = mainG.forkAndCreate("shader_template", name)
+    forknode.mtlid = mat['name']
+
+    forknode.ambient_tex = mat['ambient_tex']
+    forknode.ambient_value = mat['ambient_value']
+    forknode.diffuse_tex = mat['diffuse_tex']
+    forknode.diffuse_value = mat['diffuse_value']
+    forknode.emissive_tex = mat['emissive_tex']
+    forknode.emissive_value = mat['emissive_value']
+    forknode.shininess_tex = mat['shininess_tex']
+    forknode.shininess_value = mat['shininess_value']
+    forknode.specular_tex = mat['specular_tex']
+    forknode.specular_value = mat['specular_value']
+    forknode.opacity_tex = mat['opacity_tex']
+    forknode.opacity_value = mat['opacity_value']
+    forknode.opacity_mode = 'R' if mat['opacity_tex'] != mat['diffuse_tex'] else 'A'
+    forknode.bump_tex = mat['bump_tex']
+    forknode.normal_map_tex = mat['normal_map_tex']
+    forknode.pos = (index * 1000, 0)
+    forknode.view = True
+    index += 1
+)";
+        mtl_python = replace_all(mtl_python, "mtl_json", mtl_json->json.dump());
+        auto shader_template = get_input2<std::string>("shader_template");
+        mtl_python = replace_all(mtl_python, "shader_template", shader_template);
+        set_output2("mtl_python", mtl_python);
     }
 };
 
 ZENDEFNODE(ReadFBXFile, {
     {
         {"readpath", "path"},
+        {"string", "hint_dir"},
+        {"string", "shader_template"},
     },
     {
         "fbx_object",
+        "mtl_json",
+        "mtl_python",
     },
     {},
     {"FBXSDK"},
@@ -706,205 +968,8 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
         for (auto i = 0; i < mat_count; i++) {
             FbxSurfaceMaterial* material = pNode->GetMaterial(i);
             ud.set2(format("faceset_{}", i), material->GetName());
-            Json json;
-            std::string mat_name = material->GetName();
-            {
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sEmissive);
-                    if (output_tex_even_missing) {
-                        json["emissive_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        FbxDouble3 value = property.Get<FbxDouble3>();
-                        json["emissive_value"] = {value[0], value[1], value[2]};
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["emissive_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sAmbient);
-                    if (output_tex_even_missing) {
-                        json["ambient_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        FbxDouble3 value = property.Get<FbxDouble3>();
-                        json["ambient_value"] = {value[0], value[1], value[2]};
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["ambient_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-                    if (output_tex_even_missing) {
-                        json["diffuse_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        FbxDouble3 value = property.Get<FbxDouble3>();
-                        json["diffuse_value"] = {value[0], value[1], value[2]};
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["diffuse_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sSpecular);
-                    if (output_tex_even_missing) {
-                        json["specular_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        FbxDouble3 value = property.Get<FbxDouble3>();
-                        json["specular_value"] = {value[0], value[1], value[2]};
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["specular_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sShininess);
-                    if (output_tex_even_missing) {
-                        json["shininess_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        double value = property.Get<double>();
-                        json["shininess_value"] = value;
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["shininess_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sBump);
-                    if (output_tex_even_missing) {
-                        json["bump_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["bump_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sNormalMap);
-                    if (output_tex_even_missing) {
-                        json["normal_map_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["normal_map_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparentColor);
-                    if (output_tex_even_missing) {
-                        json["transparent_color_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        FbxDouble3 value = property.Get<FbxDouble3>();
-                        json["transparent_color_value"] = {value[0], value[1], value[2]};
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["transparent_color_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sTransparencyFactor);
-                    if (output_tex_even_missing) {
-                        json["opacity_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        double value = property.Get<double>();
-                        json["opacity_value"] = value;
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["opacity_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sReflection);
-                    if (output_tex_even_missing) {
-                        json["reflection_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["reflection_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sDisplacementColor);
-                    if (output_tex_even_missing) {
-                        json["displacement_color_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["displacement_color_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-                {
-                    FbxProperty property = material->FindProperty(FbxSurfaceMaterial::sVectorDisplacementColor);
-                    if (output_tex_even_missing) {
-                        json["vector_displacement_color_tex"] = "";
-                    }
-                    if (property.IsValid()) {
-                        int textureCount = property.GetSrcObjectCount<FbxTexture>();
-                        for (int i = 0; i < textureCount; ++i) {
-                            FbxFileTexture* texture = FbxCast<FbxFileTexture>(property.GetSrcObject<FbxTexture>(i));
-                            if (texture) {
-                                json["vector_displacement_color_tex"] = texture->GetFileName();
-                            }
-                        }
-                    }
-                }
-            }
-            ud.set2(mat_name, json.dump());
+            auto json = mat_to_json(material, output_tex_even_missing);
+            ud.set2(material->GetName(), json.dump());
         }
     }
     return prim;
