@@ -140,7 +140,7 @@ namespace DisneyBSDF{
             s = vec3(burley_fitting5(A.x), burley_fitting5(A.y), burley_fitting5(A.z));
         }
 
-        radius_out = l;
+        radius_out = l/s;
     }
     static __inline__ __device__  void bssrdf_setup(const bool burley_radius, const bool scale_mfp,
                                         const bool use_eq5, vec3 & weight, vec3 &albedo,
@@ -184,7 +184,7 @@ namespace DisneyBSDF{
         float s = 1.9f - A + 3.5f * pow(A - 0.8f, 2.0f);
 
         alpha = a;
-        sigma_t = 1.0f / max(d, 1e-16f);
+        sigma_t = 1.0f / max(d * s, 1e-16f);
         sigma_t = sigma_t / (abs( 1 + g ) + 0.001);
         sigma_s = sigma_t * a;
     }
@@ -210,7 +210,7 @@ namespace DisneyBSDF{
         subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
         subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
-        //bssrdf_burley_setup(albedo, radius, false, 0, r);
+//        bssrdf_burley_setup(albedo, radius, false, 1, r);
 //        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
 //        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
 //        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
