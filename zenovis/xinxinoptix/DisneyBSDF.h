@@ -207,13 +207,13 @@ namespace DisneyBSDF{
 
         vec3 sigma_s;
 //        setup_subsurface_radius(1.3,albedo, r, alpha,true);
-//        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
-//        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
-//        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
+        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
+        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
+        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
         //bssrdf_burley_setup(albedo, radius, false, 0, r);
-        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
-        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
-        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
+//        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
+//        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
+//        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
