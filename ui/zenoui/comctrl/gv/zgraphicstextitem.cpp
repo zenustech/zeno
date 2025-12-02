@@ -39,6 +39,9 @@ void ZGraphicsTextItem::dropEvent(QGraphicsSceneDragDropEvent* event) {
     if (event->mimeData()->hasUrls()) {
         QUrl url = event->mimeData()->urls().first();
         auto text = url.toString();
+        if (text.startsWith("file:///")) {
+            text = text.mid(8);
+        }
         setPlainText(text);
         event->setAccepted(true);
         emit editingFinished();
