@@ -29,6 +29,7 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
 
 void ZLineEdit::init()
 {
+    setAcceptDrops(true);
     connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
     connect(this, &ZLineEdit::textChanged, this, [this](const QString &text) {
         if (text.startsWith("file:///")) {
@@ -87,6 +88,31 @@ void ZLineEdit::setNumSlider(const QVector<qreal>& steps)
 void ZLineEdit::mouseReleaseEvent(QMouseEvent* event)
 {
     QLineEdit::mouseReleaseEvent(event);
+}
+
+void ZLineEdit::dropEvent(QDropEvent* event)
+{
+    const QMimeData* mimeData = event->mimeData();
+    if (mimeData->hasUrls()) {
+        QList<QUrl> urls = mimeData->urls();
+        if (!urls.isEmpty()) {
+            QUrl url = urls.first();
+            QString filePath = url.toLocalFile();
+            if (!filePath.isEmpty()) {
+                setText(filePath);
+                event->acceptProposedAction();
+            }
+        }
+    }
+}
+
+void ZLineEdit::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
 }
 
 void ZLineEdit::popupSlider()
