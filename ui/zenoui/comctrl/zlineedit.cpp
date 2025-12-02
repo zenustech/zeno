@@ -30,7 +30,11 @@ ZLineEdit::ZLineEdit(const QString& text, QWidget* parent)
 void ZLineEdit::init()
 {
     connect(this, SIGNAL(editingFinished()), this, SIGNAL(textEditFinished()));
-    //connect(this, &ZLineEdit::textChanged, this, &ZLineEdit::editingFinished);
+    connect(this, &ZLineEdit::textChanged, this, [this](const QString &text) {
+        if (text.startsWith("file:///")) {
+            this->setText(text.mid(8));
+        }
+    });
 }
 
 void ZLineEdit::setShowingSlider(bool bShow)

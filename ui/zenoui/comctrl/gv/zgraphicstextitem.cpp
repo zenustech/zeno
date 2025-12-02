@@ -457,6 +457,11 @@ void ZEditableTextItem::initUI(const QString& text)
 
     QTextDocument *pDoc = this->document();
     connect(pDoc, SIGNAL(contentsChanged()), this, SLOT(onContentsChanged()));
+    connect(this, &ZGraphicsTextItem::contentsChanged, this, [this](const QString &old_text, const QString &text) {
+        if (text.startsWith("file:///")) {
+            this->setText(text.mid(8));
+        }
+    });
 }
 
 QGraphicsView* ZEditableTextItem::_getFocusViewByCursor()
