@@ -101,6 +101,7 @@ void ZLineEdit::dropEvent(QDropEvent* event)
             if (!filePath.isEmpty()) {
                 setText(filePath);
                 event->acceptProposedAction();
+                emit editingFinished();
             }
         }
     }
