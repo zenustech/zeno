@@ -24,6 +24,8 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 signals:
     void btnClicked();
