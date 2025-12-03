@@ -1027,11 +1027,33 @@ __forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
     return 0.5 * length(cross(v1-v0, v2-v0));
 }
 
+__forceinline__ __device__ vec3 srgbToLinear(vec3 a)
+{
+//    vec3 result;
+//    result[0] = a[0] < .04045 ?  a[0] * 0.07739938 : pow((a[0]+.055) * 0.947867299 , 2.4);
+//    result[1] = a[1] < .04045 ?  a[1] * 0.07739938 : pow((a[1]+.055) * 0.947867299 , 2.4);
+//    result[2] = a[2] < .04045 ?  a[2] * 0.07739938 : pow((a[2]+.055) * 0.947867299 , 2.4);
+    vec3 result = pow(a, 2.2f);
+    return result;
+}
+__forceinline__ __device__
+vec3 linRec709ToLinAP1(vec3 c)
+{
+    vec3 rec709toACEScg0 = vec3(0.610277,   0.345424,  0.0443001);
+    vec3 rec709toACEScg1 = vec3(0.0688436,  0.934974,  -0.00381805);
+    vec3 rec709toACEScg2 = vec3(0.0241673,  0.121814,  0.854019);
+
+    // convert rec709 primaries to ACES AP1
+    vec3 result = vec3(dot(rec709toACEScg0,c), dot(rec709toACEScg1,c), dot(rec709toACEScg2,c));
+    return result;
+}
 template <typename T=float4, typename R=vec4>
-__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv, bool use_aces=false)
 {
     auto tmp = tex2D<T>(texObj, uv.x, uv.y);
-    return *(R*)&tmp;
+    vec3 a = vec3(tmp);
+    a = use_aces? linRec709ToLinAP1(srgbToLinear(vec3(a))):vec3(a);
+    return *(R*)&a;
 }
 __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, 

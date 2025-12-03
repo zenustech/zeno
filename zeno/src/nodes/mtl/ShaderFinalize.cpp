@@ -196,7 +196,7 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"float", "subsurface", "0.0"},
         {"enum Fixed Adaptive", "sssType", "Fixed"},
-        {"vec3f", "sssRadius", "1.0,1.0,1.0"},
+        {"colorvec3f", "sssRadius", "1.0,1.0,1.0"},
         {"float", "sssScale", "1.0"},
         {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "scatterDistance", "10000"},
@@ -212,11 +212,11 @@ ZENDEFNODE(ShaderFinalize, {
 
         {"float", "specTrans", "0.0"},
         {"float", "specF0", "0.04"},
-        {"vec3f", "transColor", "1.0,1.0,1.0"},
-        {"vec3f", "transTint", "1.0,1.0,1.0"},
+        {"colorvec3f", "transColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "transTint", "1.0,1.0,1.0"},
         {"float", "transTintDepth", "10000.0"},
         {"float", "transDistance", "10.0"},
-        {"vec3f", "transScatterColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "transScatterColor", "1.0,1.0,1.0"},
         {"float", "ior", "1.3"},
 
         {"float", "diffraction", "0.0"},
@@ -231,7 +231,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
         {"float", "emissionIntensity", "1"},
-        {"vec3f", "emission", "0,0,0"},
+        {"colorvec3f", "emission", "0,0,0"},
         {"float", "emission_only", "0"},
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},

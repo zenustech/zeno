@@ -360,6 +360,13 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             else {
                 em->emitCode(zeno::format("pow({}(texture2D(zenotex[{}], vec2({}) * {})),2.2f){}", type, texId, coord, uvtiling, suffix));
             }
+        }else if (postprocess == "aces"){
+            if (wrapS == "CLAMP_TO_EDGE") {
+                em->emitCode(zeno::format("({}(texture2D( zenotex[{}], saturate(vec2({}) * {}), true))){}", type, texId, coord, uvtiling, suffix));
+            }
+            else {
+                em->emitCode(zeno::format("({}(texture2D(zenotex[{}], vec2({}) * {}, true))){}", type, texId, coord, uvtiling, suffix));
+            }
         }else if (postprocess == "normal_map"){
             if (wrapS == "CLAMP_TO_EDGE") {
                 em->emitCode(zeno::format("normalize({}(texture2D(zenotex[{}], saturate(vec2({}) * {}))) * vec3({},{},1.0) - vec3(0.5*{},0.5*{},0.0)){}", type, texId, coord, uvtiling, nscale,nscale,nscale,nscale,suffix));
@@ -394,7 +401,7 @@ ZENDEFNODE(SmartTexture2D, {
         {"float", "normalScale", "1.0"},
         {"vec4f", "heightScale", "1.0,1.0,0.0,1.0"},
         {"enum float vec2 vec3 vec4 R G B A", "type", "vec3"},
-        {"enum raw srgb normal_map 1-x displacement", "post_process", "raw"},
+        {"enum raw srgb aces normal_map 1-x displacement", "post_process", "raw"},
         {"bool", "blockCompression", "false"}
     },
     {
