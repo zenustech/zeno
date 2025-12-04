@@ -22,9 +22,10 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     pGroupLayout->setSpacing(10);
     PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    UI_VECTYPE colorVec(3);
-    info.background.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
-    insertRow("background", PARAM_CONTROL::CONTROL_COLOR_VEC3F, QVariant::fromValue(colorVec), 0, pGroupLayout);
+    COLOR_VEC3F_TRANSFORM colortrans;
+    info.background.getRgbF(&colortrans.origin[0], &colortrans.origin[1], &colortrans.origin[2]);
+    info.background.getRgbF(&colortrans.transform[0], &colortrans.transform[1], &colortrans.transform[2]);
+    insertRow("background", PARAM_CONTROL::CONTROL_COLOR_VEC3F, QVariant::fromValue(colortrans), 0, pGroupLayout);
     insertRow("title", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.title, 1, pGroupLayout);
     //insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
@@ -74,8 +75,8 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
         } /*else if (desc == "content") {
             info.content = newValue.value<QString>();
         } */else if (desc == "background") {
-            auto colorVec = newValue.value<UI_VECTYPE>();
-            info.background = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+            auto colorVec = newValue.value<COLOR_VEC3F_TRANSFORM>();
+            info.background = QColor::fromRgbF(colorVec.origin[0], colorVec.origin[1], colorVec.origin[2]);
         }
         pModel->updateBlackboard(m_idx.data(ROLE_OBJID).toString(), QVariant::fromValue(info), m_subgIdx, true);
     };
