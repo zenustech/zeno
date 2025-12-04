@@ -548,6 +548,7 @@ extern "C" __global__ void __closesthit__radiance()
             return;
         }
         if(mats.subsurface>0.0f && dot(normalize(ray_dir), shadingNorm)<0.0f){
+
             prd->attenuation = make_float3(0.0f,0.0f,0.0f);
             CUR_TOTAL_TRANS  = make_float3(0.0f,0.0f,0.0f);
             prd->radiance = make_float3(0.0f,0.0f,0.0f);
@@ -884,6 +885,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->depth++;
 
+    prd->attenuation *= coming_out_from_sss?reflectance:vec3(1.0f);
+    CUR_TOTAL_TRANS  *= coming_out_from_sss?reflectance:vec3(1.0f);
 //    if(prd->depth_diff>=3)
 //        mats.roughness = clamp(mats.roughness, 0.5f,0.99f);
 
@@ -903,7 +906,7 @@ extern "C" __global__ void __closesthit__radiance()
         auto& rt = reinterpret_cast<vec3&>(prd->aov[2]);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
         mats.specular = coming_out_from_sss?0:mats.specular;
-        mats.basecolor = coming_out_from_sss?vec3(1.0f):mats.basecolor;
+        mats.basecolor = coming_out_from_sss?vec3(1.0):mats.basecolor;
         float3 lbrdf = DisneyBSDF::EvaluateDisney3(vec3(1.0f), mats, L, V, T, B, N,prd->geometryNormal,
             mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
