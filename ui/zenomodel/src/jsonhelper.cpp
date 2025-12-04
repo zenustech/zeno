@@ -229,6 +229,32 @@ namespace JsonHelper
                     ZASSERT_EXIT(false, true);
                 }
             }
+            else if (value.userType() == QMetaTypeId<COLOR_VEC3F_TRANSFORM>::qt_metatype_id())
+            {
+                COLOR_VEC3F_TRANSFORM vec = value.value<COLOR_VEC3F_TRANSFORM>();
+                if (type == "colorvec3f") {
+                    writer.StartObject();
+                    writer.Key("origin");
+                    writer.StartArray();
+                    for (int i = 0; i < vec.origin.size(); i++) {
+                        writer.Double(vec.origin[i]);
+                    }
+                    writer.EndArray();
+                    writer.Key("transform");
+                    writer.StartArray();
+                    for (int i = 0; i < vec.transform.size(); i++) {
+                        writer.Double(vec.transform[i]);
+                    }
+                    writer.EndArray();
+                    writer.Key("type");
+                    writer.String(vec.type.c_str(), vec.type.size());
+                    writer.EndObject();
+                }
+                else
+                {
+                    writer.Null();
+                }
+            }
             else
             {
                 //todo: color custom type.

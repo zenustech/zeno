@@ -9,13 +9,27 @@
 #include <QScrollArea>
 #include <QSlider>
 #include <QWidget>
+#include <optional>
+#include "zeno/utils/vec.h"
+#include <zenomodel/include/modeldata.h>
 
 //------------------------------------------- color correction -----------------------------------------------
 struct ColorCorrection
 {
+    enum ColorMode {
+        RAW,                // 默认显示sRGB
+        SRGB,     // 显示原始线性空间颜色
+        ACES                // 将线性颜色转换为ACES
+    };
     float gamma = 2.2f;
+    ColorMode mode = RAW;
+
     void correct(QColor& color);
     void correct(QImage& image);
+    void dump(QColor& color);
+
+    static zeno::vec3f srgbToLinear(zeno::vec3f c);//if srgb selected transfromed = srgbToLinear(origin);
+    static zeno::vec3f linRec709ToLinAP1(zeno::vec3f c);//if aces selected transfromed = linRec709ToLinAP1(origin);
 };
 
 //------------------------------------------- color combination ----------------------------------------------
@@ -358,14 +372,14 @@ class ColorEditor : public QDialog
     Q_OBJECT
 public:
     explicit ColorEditor(QWidget* parent = nullptr);
-    explicit ColorEditor(const QColor& initial, QWidget* parent = nullptr);
+    explicit ColorEditor(const QColor& origin, QString type, QWidget* parent = nullptr);
     ~ColorEditor();
 
-    static QColor getColor(const QColor& initial, QWidget* parent = nullptr, const QString& title = "");
+    static std::optional<COLOR_VEC3F_TRANSFORM> getColor(const QColor& origin, QString type, QWidget* parent = nullptr, const QString& title = "");
 
     void setCurrentColor(const QColor& color);
     QColor currentColor() const;
-    QColor selectedColor() const;
+    std::optional<COLOR_VEC3F_TRANSFORM> selectedColor() const;
 
     void setColorCombinations(const QVector<colorcombo::ICombination*> combinations);
 

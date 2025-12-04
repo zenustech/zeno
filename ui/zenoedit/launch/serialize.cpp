@@ -1,4 +1,4 @@
-﻿#include "serialize.h"
+#include "serialize.h"
 #include <zeno/utils/logger.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/modelrole.h>
@@ -346,8 +346,13 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 if (opStr == "setNodeInput") {
                     defl = UiHelper::parseVarByType(sockType, defl, nullptr);
                 }
-                if (!defl.isNull())
+                if (!defl.isNull()) {
+                    if (sockType == "colorvec3f") {
+                        auto transClr = defl.value<COLOR_VEC3F_TRANSFORM>();
+                        defl = QVariant::fromValue<UI_VECTYPE>(transClr.transform);
+                    }
                     AddParams(opStr, ident, inputName, defl, sockType, writer);
+                }
             }
             else
             {
@@ -400,6 +405,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             if (paramValue.isNull())
                 continue;
+            if (param_info.typeDesc == "colorvec3f") {//使用trans之后的颜色
+                auto transClr = paramValue.value<COLOR_VEC3F_TRANSFORM>();
+                paramValue = QVariant::fromValue<UI_VECTYPE>(transClr.transform);
+            }
             AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
         }
 
