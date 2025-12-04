@@ -92,6 +92,7 @@ void ZenoApplication::initMetaTypes()
 {
     QMetaType::registerEqualsComparator<UI_VECTYPE>();
     QMetaType::registerEqualsComparator<CURVES_DATA>();
+    QMetaType::registerEqualsComparator<COLOR_VEC3F_TRANSFORM>();
 }
 
 void ZenoApplication::initStyleSheets()

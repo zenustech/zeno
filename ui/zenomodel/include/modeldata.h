@@ -259,6 +259,21 @@ typedef QVector<qreal> UI_VECTYPE;
 
 Q_DECLARE_METATYPE(UI_VECTYPE);
 
+struct COLOR_VEC3F_TRANS
+{
+    UI_VECTYPE origin;
+    UI_VECTYPE transform;
+    std::string type;
+
+    COLOR_VEC3F_TRANS() : origin(3), transform(3) {}
+
+    bool operator==(const COLOR_VEC3F_TRANS& rhs) const {
+        return origin == rhs.origin && transform == rhs.transform && type == rhs.type;
+    }
+};
+typedef COLOR_VEC3F_TRANS COLOR_VEC3F_TRANSFORM;
+Q_DECLARE_METATYPE(COLOR_VEC3F_TRANSFORM);
+
 typedef QVector<QString> UI_VECSTRING;
 
 Q_DECLARE_METATYPE(UI_VECSTRING);
