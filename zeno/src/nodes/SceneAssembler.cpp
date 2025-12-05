@@ -677,7 +677,6 @@ struct MergeMultiScenes : zeno::INode {
             main_scene->node_to_matrix[root_node.matrix] = {glm::mat4(1)};
             main_scene->scene_tree[main_scene->root_name] = root_node;
         }
-        std::unordered_map<std::string, int> sub_root_names;
         if (has_input("scene_list")) {
             auto input_scene_list = std::make_shared<ListObject>();
             auto scene_list = get_input2<ListObject>("scene_list");
@@ -698,14 +697,19 @@ struct MergeMultiScenes : zeno::INode {
                 }
             }
 
+            std::unordered_map<std::string, std::shared_ptr<SceneObject>> sub_root_names;
             for (auto i = 0; i < input_scene_list->arr.size(); i++) {
                 auto sub_list = std::dynamic_pointer_cast<ListObject>(input_scene_list->arr[i]);
                 auto second_scene = get_scene_tree_from_list2(sub_list);
                 auto sub_root_name = second_scene->root_name;
-                sub_root_names[sub_root_name] += 1;
-                if (sub_root_names[sub_root_name] > 1) {
-                    zeno::log_warn("MergeMultiScenes: root_name {} is duplicate!", sub_root_name);
+                if (sub_root_names.count(sub_root_name) == 0) {
+                    sub_root_names[sub_root_name] = second_scene;
                 }
+                else {
+                    sub_root_names[sub_root_name]->force_merge(second_scene);
+                }
+            }
+            for (auto &[_, second_scene]: sub_root_names) {
                 merge_scene2_into_scene1(main_scene, second_scene, main_scene->root_name);
             }
         }

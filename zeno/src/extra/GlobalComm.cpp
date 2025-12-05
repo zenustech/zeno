@@ -1063,6 +1063,9 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                 if (json.contains("StaticRenderGroups") && !json["StaticRenderGroups"].is_null()) {
                     scene_descriptor_json["StaticRenderGroups"].update(json["StaticRenderGroups"]);
                 }
+                if (json.contains("StaticEntries") && !json["StaticEntries"].is_null()) {
+                    scene_descriptor_json["StaticEntries"] = json["StaticEntries"];
+                }
             }
             if (!dynamic_scene_descriptor.is_null()) {
                 auto &json = dynamic_scene_descriptor;
@@ -1071,6 +1074,10 @@ ZENO_API void GlobalComm::dumpFrameCache(int frameid, std::string runtype, bool 
                 }
                 if (json.contains("DynamicRenderGroups") && !json["DynamicRenderGroups"].is_null()) {
                     scene_descriptor_json["DynamicRenderGroups"].update(json["DynamicRenderGroups"]);
+                }
+
+                if (json.contains("DynamicEntries") && !json["DynamicEntries"].is_null()) {
+                    scene_descriptor_json["DynamicEntries"] = json["DynamicEntries"];
                 }
             }
             if (scene_descriptor_json.empty() == false) {

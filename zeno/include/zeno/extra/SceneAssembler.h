@@ -7,6 +7,7 @@
 #include <tinygltf/json.hpp>
 #include <glm/glm.hpp>
 #include <deque>
+#include <unordered_set>
 
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/types/ListObject.h"
@@ -35,6 +36,23 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::string root_name;
     std::string type = "static";
     std::string matrixMode = "TotalChange";
+
+    void force_merge(std::shared_ptr<SceneObject> other) {
+        auto &root_node = scene_tree[root_name];
+        auto &other_root_node = other->scene_tree[root_name];
+        std::unordered_set<std::string> root_children;
+        root_children.insert(root_node.children.begin(), root_node.children.end());
+        for (auto ochild: other_root_node.children) {
+            if (root_children.count(ochild) == 0) {
+                root_node.children.push_back(ochild);
+            }
+        }
+
+        scene_tree.merge(other->scene_tree);
+        node_to_matrix.merge(other->node_to_matrix);
+        node_to_id.merge(other->node_to_id);
+        prim_list.merge(other->prim_list);
+    }
 
     // return value is in world space
     std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
@@ -382,6 +400,9 @@ struct SceneObject : IObjectClone<SceneObject> {
 
             Json RenderGroups = Json::object();
             for (auto &[path, stn]: scene_tree) {
+                if (path == "/DynamicScene" || path == "/StaticScene") {
+                    continue;
+                }
                 Json render_group = Json();
                 for (auto &child: stn.children) {
                     render_group[child] = Json::array({path + "_m"});
@@ -396,8 +417,30 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
+                auto entries = Json::array();
+                if (root_name != "/StaticScene") {
+                    entries.push_back(root_name);
+                }
+                else {
+                    const auto &root_node = scene_tree[root_name];
+                    for (const auto &child: root_node.children) {
+                        entries.push_back(child);
+                    }
+                }
+                json["StaticEntries"] = entries;
             } else {
                 json["DynamicRenderGroups"] = RenderGroups;
+                auto entries = Json::array();
+                if (root_name != "/DynamicScene") {
+                    entries.push_back(root_name);
+                }
+                else {
+                    const auto &root_node = scene_tree[root_name];
+                    for (const auto &child: root_node.children) {
+                        entries.push_back(child);
+                    }
+                }
+                json["DynamicEntries"] = entries;
             }
             ud.set2("Scene", std::string(json.dump()));
             scene->arr.push_back(scene_descriptor);
