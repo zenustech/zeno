@@ -379,7 +379,7 @@ extern "C" __global__ void __raygen__rg()
         auto _attenuation = prd.attenuation;
         do {
             prd.alphaHit = false;
-            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, prd._mask_);
         } while (prd.alphaHit); // skip alpha
 
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
@@ -481,7 +481,7 @@ extern "C" __global__ void __raygen__rg()
             do {
                 _attenuation = prd.attenuation;
                 prd.alphaHit = false;
-                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_ & prd._mask_);
             }while(prd.alphaHit);
         }
         seed = prd.seed;
