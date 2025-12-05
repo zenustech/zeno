@@ -567,8 +567,10 @@ struct ReadFBXFile: INode {
 
         // Import the contents of the file into the scene.
         lImporter->Import(fbx_object->lScene);
+        if (get_input2<bool>("use_meter")) {
+            FbxSystemUnit::m.ConvertScene(fbx_object->lScene);
+        }
         int materialCount = fbx_object->lScene->GetMaterialCount();
-        zeno::log_info("mat_count: {}", materialCount);
         FbxRootNodeUtility::RemoveAllFbxRoots(fbx_object->lScene);
 
         // The file is imported; so get rid of the importer.
@@ -663,7 +665,8 @@ ZENDEFNODE(ReadFBXFile, {
     {
         {"readpath", "path"},
         {"string", "hint_dir"},
-        {"string", "shader_template"},
+        {"string", "shader_template", "DefaultModelShader"},
+        {"bool", "use_meter", "0"},
     },
     {
         "fbx_object",
@@ -1510,7 +1513,6 @@ struct ResolveTexPath : INode {
                     }
                 }
             } catch (const fs::filesystem_error& e) {
-                zeno::log_error("{}", e.what());
             }
             return std::nullopt;
         }
