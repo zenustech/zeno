@@ -211,7 +211,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
                     }
                 }
                 stbi_flip_vertically_on_write(false);
-                stbi_write_png(texture_path.c_str(), width, height, 3, col.data(), 0);
+                std::string native_path = std::filesystem::u8path(texture_path).string();
+                stbi_write_png(native_path.c_str(), width, height, 3, col.data(), 0);
             }
         }
         if(!std::filesystem::exists(std::filesystem::u8path(texture_path))){
