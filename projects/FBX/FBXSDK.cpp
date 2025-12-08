@@ -622,7 +622,7 @@ mainG = zeno.graph("main")
 index = 0
 for name, mat in mats.items():
     forknode = mainG.forkAndCreate("shader_template", name)
-    forknode.mtlid = mat['name']
+    forknode.mtlid = name
 
     if 'ambient_tex' in mat:
         forknode.ambient_tex = mat['ambient_tex']
@@ -1524,6 +1524,10 @@ struct ResolveTexPath : INode {
 
     void apply() override {
         auto tex_path_str = get_input2<std::string>("tex_path");
+        if (tex_path_str.empty()) {
+            set_output2("real_path", std::string());
+            return;
+        }
         tex_path_str = zeno::replace_all(tex_path_str, "\\", "/");
 
         std::string hint_directory = get_input2<std::string>("HintDirectory");
