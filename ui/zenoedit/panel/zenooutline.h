@@ -25,6 +25,8 @@ public:
     // 自定义数据操作
     void setupModelDataFromMessage(Json const& content);
     void clearModelData();
+    std::string dynamic_scene_root_name;
+    std::string static_scene_root_name;
 
 private:
     struct OutlineItem {
@@ -44,7 +46,7 @@ private:
     };
     
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
-    void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name);
+    void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name, bool skip = false);
 };
 
 class zenooutline : public QWidget

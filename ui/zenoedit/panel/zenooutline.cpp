@@ -22,8 +22,11 @@ OutlineItemModel::~OutlineItemModel()
 {
 }
 
-void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name) {
-    auto sub_node = item->addChild(QString::fromStdString(name));
+void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name, bool skip) {
+    auto sub_node = item;
+    if (skip == false) {
+        sub_node = item->addChild(QString::fromStdString(name));
+    }
     std::vector<std::string> children;
     for (auto &value: json[name]["children"]) {
         children.emplace_back(std::string(value));
@@ -44,12 +47,14 @@ void OutlineItemModel::setupModelDataFromMessage(Json const& content)
     auto* dynamicSceneItem = rootItem->addChild("DynamicScene");
 
     if (content.contains("StaticSceneTree")) {
-        std::string root_name = content["StaticSceneTree"]["root_name"];
-        set_child_node(content["StaticSceneTree"]["scene_tree"], staticSceneItem, root_name);
+        static_scene_root_name = content["StaticSceneTree"]["root_name"];
+        bool skip = static_scene_root_name == "/StaticScene";
+        set_child_node(content["StaticSceneTree"]["scene_tree"], staticSceneItem, static_scene_root_name, skip);
     }
     if (content.contains("DynamicSceneTree")) {
-        std::string root_name = content["DynamicSceneTree"]["root_name"];
-        set_child_node(content["DynamicSceneTree"]["scene_tree"], dynamicSceneItem, root_name);
+        dynamic_scene_root_name = content["DynamicSceneTree"]["root_name"];
+        bool skip = dynamic_scene_root_name == "/DynamicScene";
+        set_child_node(content["DynamicSceneTree"]["scene_tree"], dynamicSceneItem, dynamic_scene_root_name, skip);
     }
     if (content.contains("Lights")) {
         std::vector<std::string> children;
@@ -227,6 +232,12 @@ void zenooutline::setupTreeView()
         if (link.size() >= 2) {
             std::reverse(link.begin(), link.end());
             if (link[0] == "StaticScene" || link[0] == "DynamicScene") {
+                if (link[0] == "StaticScene" && m_model->static_scene_root_name == "/StaticScene") {
+                    link.insert(link.begin() + 1, "/StaticScene");
+                }
+                else if (link[0] == "DynamicScene" && m_model->dynamic_scene_root_name == "/DynamicScene") {
+                    link.insert(link.begin() + 1, "/DynamicScene");
+                }
                 Json msg;
                 msg["MessageType"] = "Select";
                 msg["Content"] = link;
