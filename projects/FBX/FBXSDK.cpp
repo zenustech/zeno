@@ -588,17 +588,21 @@ struct ReadFBXFile: INode {
         }
 
         auto mtl_json = std::make_shared<JsonObject>();
-        for (int i = 0; i < materialCount; ++i) {
-            FbxSurfaceMaterial* pMaterial = fbx_object->lScene->GetMaterial(i);
-            Json json_mat = mat_to_json(pMaterial, true);
-            for (auto& [key, value] : json_mat.items()) {
-                if (ends_with(key, "_tex")) {
-                    value = replace_all(value, "\\", "/");
-                    value = resolve_tex_path(value, hint_dir);
+        try {
+            for (int i = 0; i < materialCount; ++i) {
+                FbxSurfaceMaterial* pMaterial = fbx_object->lScene->GetMaterial(i);
+                Json json_mat = mat_to_json(pMaterial, true);
+                for (auto& [key, value] : json_mat.items()) {
+                    if (ends_with(key, "_tex")) {
+                        value = replace_all(value, "\\", "/");
+                        value = resolve_tex_path(value, hint_dir);
+                    }
                 }
+                std::string mat_name = pMaterial->GetName();
+                mtl_json->json[mat_name] = json_mat;
             }
-            std::string mat_name = pMaterial->GetName();
-            mtl_json->json[mat_name] = json_mat;
+        } catch (...) {
+            mtl_json = std::make_shared<JsonObject>();
         }
         set_output2("mtl_json", mtl_json);
         std::string mtl_python = R"(
