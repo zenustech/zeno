@@ -200,16 +200,10 @@ struct ShaderVolumeHomogeneous : INode {
 
         mtl->frag = ss.str();
 
-        auto equiangular  = get_input2<bool>("debug");
-        auto multiscatter = get_input2<bool>("multiscatter");
-
         std::string parameters = "";
         {
             nlohmann::json j;
             j["vol_depth"] = 0;
-            
-            j["equiangular"] = equiangular;
-            j["multiscatter"] = multiscatter;
 
             parameters = j.dump();
         }
@@ -229,8 +223,6 @@ ZENDEFNODE(ShaderVolumeHomogeneous, {
         {"vec3f", "extinction", "0.01,0.01,0.01"},
         {"float", "anisotropy", "0"},
         {"float", "albedoAmp", "1.0"},
-        {"bool", "debug", "false"},
-        {"bool", "multiscatter", "false"},
         {"string", "mtlid", "VolMat1"},
     },
     { {"MaterialObject", "mtl"} },

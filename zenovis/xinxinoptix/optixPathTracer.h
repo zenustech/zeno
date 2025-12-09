@@ -285,9 +285,6 @@ struct HitGroupData
     bool binaryShadowTestDirectRay;
     bool binaryShadowTestIndirectRay;
     
-    bool equiangular  = false;
-    bool multiscatter = false;
-
     cudaTextureObject_t textures[32];
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];

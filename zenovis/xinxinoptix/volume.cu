@@ -221,16 +221,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float3 weight = vec3(1.0f); 
         float dt;
 
-        if (sbt_data->multiscatter) {
-
-            auto prob = prd->rndf();
-            dt = -logf(1.0f-prob) / average(homo_out.extinction);
-
-            auto pdf = expf(-homo_out.extinction * dt) * homo_out.extinction;
-            weight = (homo_out.extinction * homo_out.albedo * homo_out.albedoAmp ) / pdf;
-
-        } else {
-
+        {
             auto total_transmittance = expf(-homo_out.extinction * t_max);
             //dt = -logf(1.0f - prd->rndf() * (1.0f - average(total_transmittance))) / average(homo_out.extinction);
             auto x = 1.0f - prd->rndf() * (1.0f - average(total_transmittance));
@@ -260,14 +251,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
             new_orig = ray_orig + (t0+dt) * ray_dir;
             transmittance = expf(-homo_out.extinction * dt);
-
-            if (sbt_data->multiscatter) {
-
-                pbrt::HenyeyGreenstein hg (homo_out.anisotropy);
-                float2 uu = { prd->rndf(), prd->rndf() };
-                auto pdf = hg.sample(-ray_dir, new_dir, uu);              
-                prd->samplePdf = pdf;
-            }
         }
 
         prd->updateAttenuation( transmittance );
@@ -299,7 +282,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
         prd->radiance += shadowPRD.radiance * weight;
 
-        if (!sbt_data->multiscatter) {
+        {
             transmittance = expf(-homo_out.extinction * (t_max-dt) );
             prd->updateAttenuation( transmittance );
             prd->_mask_ = EverythingMask ^ VolumeMatMask;

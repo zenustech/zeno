@@ -529,14 +529,6 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 if (json.contains("vol_extinction")) {
                     rec.data.vol_extinction = json["vol_extinction"];
                 }
-
-                if (json.contains("equiangular")) {
-                    rec.data.equiangular = json["equiangular"];
-                }
-
-                if (json.contains("multiscatter")) {
-                    rec.data.multiscatter = json["multiscatter"];
-                }
             }
 
             hitgroup_records[sbt_idx] = rec;
