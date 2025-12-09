@@ -120,7 +120,7 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     const float& cdf_K = cdf[K];
 
     float sa = 1.0 - rnd(seed) * cdf_K; //Sample of the survival CDF
-    float dt = -logf(sa) / sig_K;
+    float DT = -logf(sa) / sig_K;
 
     let new_orig = ray_origin + (prd.vol.homo_t0) * ray_dir;
     //let new_orig = ray_origin + (prd.vol.homo_t0 + dt) * ray_dir;
@@ -128,7 +128,7 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     ShadowPRD shadowPRD {};
     shadowPRD.seed = seed ^ 0x9e3779b9u;
     
-    shadowPRD.fog_dt = dt;
+    shadowPRD.fog_dt = DT;
     shadowPRD.fog_tmax = tmax;
     shadowPRD.ShadowNormal = ray_dir;
     shadowPRD.depth = prd.depth;
@@ -152,11 +152,22 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
         vec3 pdf = sigma_t * tr;
         pdf = pdf / cdf; // bounded pdf
 
-        thisPDF = dot(pdf, weight);
-        float3 sigma_s = fog_out.albedo * sigma_t; // cancel sigma_t in pdf
-
         pbrt::HenyeyGreenstein hg(fog_out.anisotropy);
-        return sigma_s * tr * hg.p(_wo_, _wi_);
+
+        auto distPDF = dot(pdf, weight);
+        auto phase = hg.p(_wo_, _wi_);
+
+        if (DT == dt) { // angle domain  
+            thisPDF = phase;
+        } else { // distance domain
+            thisPDF = distPDF;
+        }
+
+        float3 sigma_s = fog_out.albedo * sigma_t; // cancel sigma_t in pdf
+        if (DT == dt)
+            return sigma_s * tr * phase / distPDF;
+        else
+            return sigma_s * tr * phase * 4.0f * M_PIf;
     };
     
     DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
