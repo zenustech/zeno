@@ -417,7 +417,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
-                auto entries = Json::array();
+                std::vector<std::string> entries;
                 if (root_name != "/StaticScene") {
                     entries.push_back(root_name);
                 }
@@ -427,10 +427,30 @@ struct SceneObject : IObjectClone<SceneObject> {
                         entries.push_back(child);
                     }
                 }
-                json["StaticEntries"] = entries;
+                Json mat_json;
+                for (auto const &path: entries) {
+                    auto mat = glm::mat4(1);
+                    if (scene_tree.count(path)) {
+                        auto &node = scene_tree[path];
+                        if (node.matrix.size()) {
+                            auto matrix_name = node.matrix;
+                            if (node_to_matrix.count(matrix_name) && node_to_matrix[matrix_name].size()) {
+                                mat = node_to_matrix[matrix_name][0];
+                            }
+                        }
+                    }
+                    Json matrix = Json::array();
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            matrix.push_back(mat[i][j]);
+                        }
+                    }
+                    mat_json[path].push_back(matrix);
+                }
+                json["StaticEntries"] = mat_json;
             } else {
                 json["DynamicRenderGroups"] = RenderGroups;
-                auto entries = Json::array();
+                std::vector<std::string> entries;
                 if (root_name != "/DynamicScene") {
                     entries.push_back(root_name);
                 }
@@ -440,7 +460,27 @@ struct SceneObject : IObjectClone<SceneObject> {
                         entries.push_back(child);
                     }
                 }
-                json["DynamicEntries"] = entries;
+                Json mat_json;
+                for (auto const &path: entries) {
+                    auto mat = glm::mat4(1);
+                    if (scene_tree.count(path)) {
+                        auto &node = scene_tree[path];
+                        if (node.matrix.size()) {
+                            auto matrix_name = node.matrix;
+                            if (node_to_matrix.count(matrix_name) && node_to_matrix[matrix_name].size()) {
+                                mat = node_to_matrix[matrix_name][0];
+                            }
+                        }
+                    }
+                    Json matrix = Json::array();
+                    for (auto i = 0; i < 4; i++) {
+                        for (auto j = 0; j < 3; j++) {
+                            matrix.push_back(mat[i][j]);
+                        }
+                    }
+                    mat_json[path].push_back(matrix);
+                }
+                json["DynamicEntries"] = mat_json;
             }
             ud.set2("Scene", std::string(json.dump()));
             scene->arr.push_back(scene_descriptor);
