@@ -429,23 +429,12 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 Json mat_json;
                 for (auto const &path: entries) {
-                    auto mat = glm::mat4(1);
+                    std::string mat_name;
                     if (scene_tree.count(path)) {
                         auto &node = scene_tree[path];
-                        if (node.matrix.size()) {
-                            auto matrix_name = node.matrix;
-                            if (node_to_matrix.count(matrix_name) && node_to_matrix[matrix_name].size()) {
-                                mat = node_to_matrix[matrix_name][0];
-                            }
-                        }
+                        mat_name = node.matrix;
                     }
-                    Json matrix = Json::array();
-                    for (auto i = 0; i < 4; i++) {
-                        for (auto j = 0; j < 3; j++) {
-                            matrix.push_back(mat[i][j]);
-                        }
-                    }
-                    mat_json[path].push_back(matrix);
+                    mat_json[path].push_back(mat_name);
                 }
                 json["StaticEntries"] = mat_json;
             } else {
@@ -462,23 +451,12 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 Json mat_json;
                 for (auto const &path: entries) {
-                    auto mat = glm::mat4(1);
+                    std::string mat_name;
                     if (scene_tree.count(path)) {
                         auto &node = scene_tree[path];
-                        if (node.matrix.size()) {
-                            auto matrix_name = node.matrix;
-                            if (node_to_matrix.count(matrix_name) && node_to_matrix[matrix_name].size()) {
-                                mat = node_to_matrix[matrix_name][0];
-                            }
-                        }
+                        mat_name = node.matrix;
                     }
-                    Json matrix = Json::array();
-                    for (auto i = 0; i < 4; i++) {
-                        for (auto j = 0; j < 3; j++) {
-                            matrix.push_back(mat[i][j]);
-                        }
-                    }
-                    mat_json[path].push_back(matrix);
+                    mat_json[path].push_back(mat_name);
                 }
                 json["DynamicEntries"] = mat_json;
             }
