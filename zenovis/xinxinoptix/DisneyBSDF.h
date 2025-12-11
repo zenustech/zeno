@@ -116,9 +116,9 @@ namespace DisneyBSDF{
 
         alpha = (1.0f - blend) * A * powf(atanf(B * albedo), C) +
                 blend * D * powf(atanf(E * albedo), F);
-        alpha = clamp(alpha, 0.0f, 0.999999f);  // because of numerical precision
-        //float mfp = radius * sqrt(3.0f * abs(1.0f - alpha));
-        float sigma_t_prime = 1.0f / fmaxf(radius, 0.0001f);
+        alpha = clamp(alpha, 0.01f, 0.95f);  // because of numerical precision
+        float mfp = radius * sqrt(3.0f * abs(1.0f - alpha));
+        float sigma_t_prime = 1.0f / fmaxf(mfp, 0.0001f);
         sigma_t = sigma_t_prime / (1.0f - g);
     }
     static __inline__ __device__  float burley_fitting(float A)
@@ -208,13 +208,13 @@ namespace DisneyBSDF{
 
         vec3 sigma_s;
         //setup_subsurface_radius(1.4, albedo, r, alpha,true);
-//        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
-//        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
-//        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
+        subsurface_random_walk_remap(albedo.x, r.x,0,sigma_t.x,alpha.x);
+        subsurface_random_walk_remap(albedo.y, r.y,0,sigma_t.y,alpha.y);
+        subsurface_random_walk_remap(albedo.z, r.z,0,sigma_t.z,alpha.z);
         //bssrdf_burley_setup(albedo, radius, false, 1, r);
-        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
-        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
-        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
+//        compute_scattering_coeff_from_albedo(albedo.x, r.x, 0, sigma_s.x, sigma_t.x, alpha.x);
+//        compute_scattering_coeff_from_albedo(albedo.y, r.y, 0, sigma_s.y, sigma_t.y, alpha.y);
+//        compute_scattering_coeff_from_albedo(albedo.z, r.z, 0, sigma_s.z, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
 //        vec3 r = radius;
 //        vec3 sigma_s;
@@ -1389,12 +1389,11 @@ namespace DisneyBSDF{
           isDiff = true;
           if(mat.thin<0.5 && woo.z<0 && mat.subsurface>0)//inside, scattering, go out for sure
           {
-            float minr = min(min(mat.sssParam.x, mat.sssParam.y), mat.sssParam.z);
-            float c = (log(1.0f/minr) - log(1.0/0.01))/(log(1.0f/0.0001) - log(1.0f/0.01));
-            c = clamp(c, 0.0f,1.0f);
-            float ior = mix(mat.ior, 1.0f, c);
-            float F = BRDFBasics::DielectricFresnel(abs(woo.z), 1.0f/ior);
-            F = clamp(1-F, 0.0f, 1.0f);
+//            float minr = min(min(mat.sssParam.x, mat.sssParam.y), mat.sssParam.z);
+//            float c = (log(1.0f/minr) - log(1.0/0.01))/(log(1.0f/0.0001) - log(1.0f/0.01));
+//            c = clamp(c, 0.0f,1.0f);
+//            float ior = mix(mat.ior, 1.0f, c);
+            float F = BRDFBasics::DielectricFresnel(abs(woo.z), 1.0f/mat.ior);
             wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
@@ -1414,7 +1413,7 @@ namespace DisneyBSDF{
             reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, -wo, T, B, N, N2, thin,
                                           is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
             fPdf = pdf>1e-5f?pdf:0.0f;
-            reflectance = pdf>1e-5f? F * reflectance:vec3(0.0f);
+            reflectance = pdf>1e-5f? (F>1?0:1) * reflectance:vec3(0.0f);
             //            reflectance = vec3(F);
             //            fPdf = F>0?1.0f:0.0f;
             return true;
