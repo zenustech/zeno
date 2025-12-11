@@ -415,49 +415,35 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 RenderGroups[path] = render_group;
             }
+            std::vector<std::string> entries;
+            if (root_name != "/DynamicScene" && root_name != "/StaticScene") {
+                entries.push_back(root_name);
+            }
+            else {
+                const auto &root_node = scene_tree[root_name];
+                for (const auto &child: root_node.children) {
+                    entries.push_back(child);
+                }
+            }
+            Json mat_json;
+            for (auto const &path: entries) {
+                std::string mat_name;
+                if (scene_tree.count(path)) {
+                    auto &node = scene_tree[path];
+                    mat_name = node.matrix;
+                }
+                mat_json[path].push_back(mat_name);
+            }
+            for (const auto & entry: entries) {
+                for (const auto & child: scene_tree[entry].children) {
+                    RenderGroups[entry][child].clear();
+                }
+            }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
-                std::vector<std::string> entries;
-                if (root_name != "/StaticScene") {
-                    entries.push_back(root_name);
-                }
-                else {
-                    const auto &root_node = scene_tree[root_name];
-                    for (const auto &child: root_node.children) {
-                        entries.push_back(child);
-                    }
-                }
-                Json mat_json;
-                for (auto const &path: entries) {
-                    std::string mat_name;
-                    if (scene_tree.count(path)) {
-                        auto &node = scene_tree[path];
-                        mat_name = node.matrix;
-                    }
-                    mat_json[path].push_back(mat_name);
-                }
                 json["StaticEntries"] = mat_json;
             } else {
                 json["DynamicRenderGroups"] = RenderGroups;
-                std::vector<std::string> entries;
-                if (root_name != "/DynamicScene") {
-                    entries.push_back(root_name);
-                }
-                else {
-                    const auto &root_node = scene_tree[root_name];
-                    for (const auto &child: root_node.children) {
-                        entries.push_back(child);
-                    }
-                }
-                Json mat_json;
-                for (auto const &path: entries) {
-                    std::string mat_name;
-                    if (scene_tree.count(path)) {
-                        auto &node = scene_tree[path];
-                        mat_name = node.matrix;
-                    }
-                    mat_json[path].push_back(mat_name);
-                }
                 json["DynamicEntries"] = mat_json;
             }
             ud.set2("Scene", std::string(json.dump()));
