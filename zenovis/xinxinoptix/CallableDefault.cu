@@ -233,10 +233,10 @@ extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t z
     mats.doubleSide = mats.isHair>0.5?1.0f:mats.doubleSide;
 
     const bool has_nrm = mat_normal != vec3{0,0,1};
-    if (mats.smoothness > 0.0f) {
+    if (mats.smoothness < 1.0f) {
         mats.nrm = attrs.interpNorm(mats.smoothness);
     } else {
-        mats.nrm = attrs.wldNorm; // geometry normal
+        mats.nrm = attrs.N;
     }
 
     if(mats.doubleSide>0.5f || mats.thin>0.5f) {
