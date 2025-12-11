@@ -301,6 +301,7 @@ public:
     inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
         float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
 
+        this->cameraPos = cam;
         auto gather = [&]() {
 
             if (std::isinf(cam.x)) { cam = {}; }
@@ -325,7 +326,8 @@ public:
                 opi.instanceId = instanced.size();
                 opi.visibilityMask = EverythingMask;
                 opi.traversableHandle = dynamicRenderGroup;
-                memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
+                //memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
+                memcpy(opi.transform, IdentityMatrix.data(), sizeof(float)*12);
                 instanced.push_back(opi);
             }
 
@@ -344,6 +346,8 @@ public:
         };
 
         if (cam.x != std::numeric_limits<float>::infinity() || !sceneJson.contains(brikey) ) { 
+            if (!nodeCache.empty())
+                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, nodeDepthCache);
             gather();
             return;
         }
@@ -379,8 +383,6 @@ public:
 
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
         static const std::vector fallback_keys { "" };
-
-        std::unordered_map<std::string, Candidate> candidates {};
         
         const auto& bri = sceneJson[brikey];
         for (auto it = bri.begin(); it != bri.end(); ++it) {
@@ -452,13 +454,10 @@ public:
             cleanTasks.clear();
         }
 
-        std::function<OptixTraversableHandle(std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
-                                                decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;  
-
-        treeLook = [this, &treeLook, &context, &candidates]
-                        (std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
                             decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
         {
+            auto& candidates = this->candidates;
             if (candidates.count(obj_key)) { //leaf node
                 test_depth = 1;
                 return candidates[obj_key].handle;
@@ -562,57 +561,65 @@ public:
             return node->handle;
         };
 
-        auto groupTask = [&](std::string key, decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        groupTask = [&](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
         {
-            if (!sceneJson.contains(key)) return 0;
-            auto& rg = sceneJson[key];
+            if (!sceneJson.contains(group_key)) return 0;
+            if (!sceneJson.contains(entry_key)) return 0;
 
-            for (auto& item : rg.items()) {
-
-                auto obj_key = item.key();
-
-                uint depth = 0;
-                auto handle = treeLook(obj_key, rg, false, depth, nodeCache, nodeDepthCache);
-            } //rg
+            auto& rg = sceneJson[group_key];
+            auto& entrys = sceneJson[entry_key];
 
             std::vector<OptixInstance> instanced {};
+            instanced.reserve(entrys.size());
+
             uint instanceId = 0;
-
             uint the_depth = 0;
-            for (auto& item : rg.items()) {
 
-                auto obj_key = item.key();
-                if (nodeDepthCache[obj_key]>0) { continue; } // deeper node
-                
+            for (const auto& kv : entrys.items()) {
+
+                auto& key = kv.key();
+                auto& matrix_keys = kv.value();
+
                 uint depth = 0u;
-                auto handle = treeLook(obj_key, rg, true, depth, nodeCache, nodeDepthCache);
+                auto handle = treeLook(key, rg, true, depth, nodeCache, nodeDepthCache);
                 the_depth = max(the_depth, depth);
 
                 OptixInstance opi {};
-                opi.instanceId = instanceId++;
                 opi.visibilityMask = EverythingMask;
                 opi.traversableHandle = handle;
 
-                memcpy(opi.transform, IdentityMatrix.data(), sizeof(float)*12);
-                instanced.push_back(opi);
-            } //srg
+                //auto matrix_keys = fallback_keys;
+                for (auto& mkey : matrix_keys.items()) {
+                    const auto& mlist = matrix_map[mkey.value()];
+                    for (size_t i=0; i<mlist.size(); ++i) {
+                        auto& matrix = mlist[i];
+                        memcpy(opi.transform, matrix.data(), sizeof(float)*12);
+                        if (cameraSpace) {
+                            opi.transform[3] -= cameraPos.x;
+                            opi.transform[7] -= cameraPos.y;
+                            opi.transform[11] -= cameraPos.z;
+                        }
+                        opi.instanceId = instanceId++;
+                        instanced.push_back(opi);
+                    }
+                }
+            }
 
             if (instanced.size() == 0) return 0;
 
             auto node = std::make_shared<SceneNode>();
             xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
-            nodeCache[key] = node;
-            nodeDepthCache[key] = the_depth+1;
+            nodeCache[group_key.data()] = node;
+            nodeDepthCache[group_key.data()] = the_depth+1;
             assert(node->handle!=0);
-            
             return node->handle;
         };
 
         maxNodeDepth = 1;
         if (0 == staticRenderGroup) {
-            staticRenderGroup = groupTask("StaticRenderGroups", nodeCacheStatic, nodeDepthCacheStatic);
+            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic, nodeDepthCacheStatic);
         }
-        dynamicRenderGroup = groupTask("DynamicRenderGroups", nodeCache, nodeDepthCache);
+        dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, nodeDepthCache);
         maxNodeDepth = max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
         maxNodeDepth += 1;
         gather();
@@ -624,8 +631,17 @@ public:
     std::unordered_map<std::string, uint> nodeDepthCacheStatic {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
 
+    float3 cameraPos;
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
+    
+    std::unordered_map<std::string, Candidate> candidates {};
+
+    std::function<OptixTraversableHandle(const std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
+        decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;
+
+    std::function<OptixTraversableHandle(std::string_view group_key, std::string_view entry_key, bool cameraSpace,  
+        decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> groupTask; 
 
     void preload_mesh(std::string const &key, std::string const &mtlid,
                  float const *verts, size_t numverts, uint const *tris, size_t numtris,
