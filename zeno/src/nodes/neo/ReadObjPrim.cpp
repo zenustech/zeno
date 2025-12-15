@@ -396,30 +396,48 @@ mtl_json
 import json
 mats = json.loads(json_data)
 
+import math
+column_count = math.ceil(math.sqrt(len(mats)))
+
 import zeno
 mainG = zeno.graph("main")
 
 index = 0
 for name, mat in mats.items():
     forknode = mainG.forkAndCreate("shader_template", name)
-    forknode.mtlid = mat['name']
+    forknode.mtlid = name
 
-    forknode.ambient_tex = mat['ambient_tex']
-    forknode.ambient_value = mat['ambient_value']
-    forknode.diffuse_tex = mat['diffuse_tex']
-    forknode.diffuse_value = mat['diffuse_value']
-    forknode.emissive_tex = mat['emissive_tex']
-    forknode.emissive_value = mat['emissive_value']
-    forknode.shininess_tex = mat['shininess_tex']
-    forknode.shininess_value = mat['shininess_value']
-    forknode.specular_tex = mat['specular_tex']
-    forknode.specular_value = mat['specular_value']
-    forknode.opacity_tex = mat['opacity_tex']
-    forknode.opacity_value = mat['opacity_value']
-    forknode.opacity_mode = 'R' if mat['opacity_tex'] != mat['diffuse_tex'] else 'A'
-    forknode.bump_tex = mat['bump_tex']
-    forknode.normal_map_tex = mat['normal_map_tex']
-    forknode.pos = (index * 1000, 0)
+    if 'ambient_tex' in mat:
+        forknode.ambient_tex = mat['ambient_tex']
+    if 'ambient_value' in mat:
+        forknode.ambient_value = mat['ambient_value']
+    if 'diffuse_tex' in mat:
+        forknode.diffuse_tex = mat['diffuse_tex']
+    if 'diffuse_value' in mat:
+        forknode.diffuse_value = mat['diffuse_value']
+    if 'emissive_tex' in mat:
+        forknode.emissive_tex = mat['emissive_tex']
+    if 'emissive_value' in mat:
+        forknode.emissive_value = mat['emissive_value']
+    if 'shininess_tex' in mat:
+        forknode.shininess_tex = mat['shininess_tex']
+    if 'shininess_value' in mat:
+        forknode.shininess_value = mat['shininess_value']
+    if 'specular_tex' in mat:
+        forknode.specular_tex = mat['specular_tex']
+    if 'specular_value' in mat:
+        forknode.specular_value = mat['specular_value']
+    if 'opacity_tex' in mat:
+        forknode.opacity_tex = mat['opacity_tex']
+    if 'opacity_value' in mat:
+        forknode.opacity_value = mat['opacity_value']
+    if 'opacity_tex' in mat and 'diffuse_tex' in mat and mat['opacity_tex'] != '':
+        forknode.opacity_mode = 'R' if mat['opacity_tex'] != mat['diffuse_tex'] else 'A'
+    if 'bump_tex' in mat:
+        forknode.bump_tex = mat['bump_tex']
+    if 'normal_map_tex' in mat:
+        forknode.normal_map_tex = mat['normal_map_tex']
+    forknode.pos = (index % column_count * 1000, index // column_count * 1500)
     forknode.view = True
     index += 1
 )";
