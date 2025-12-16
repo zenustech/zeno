@@ -1214,7 +1214,7 @@ struct CreateSphere : zeno::INode {
             auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
             verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
             auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
-            nors[i] = zeno::normalize(zeno::vec3f (gn.x, gn.y, gn.z));
+            nors[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
 
         prim->verts.resize(verts.size());
