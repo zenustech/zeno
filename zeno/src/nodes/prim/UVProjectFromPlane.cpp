@@ -736,10 +736,10 @@ struct WriteImageFile_v2 : INode {
         std::vector<char> data(w * h * n);
         float gamma = get_input2<bool>("linear_to_srgb_when_save")? 1.0f/2.2f: 1.0f;
         for (int i = 0; i < w * h; i++) {
-            data[n * i + 0] = (char)(255 * pow(image->verts[i][0], gamma));
-            data[n * i + 1] = (char)(255 * pow(image->verts[i][1], gamma));
-            data[n * i + 2] = (char)(255 * pow(image->verts[i][2], gamma));
-            data[n * i + 3] = (char)(255 * alpha[i]);
+            data[n * i + 0] = (char)(255 * pow(zeno::clamp(image->verts[i][0], 0.0f, 1.0f), gamma));
+            data[n * i + 1] = (char)(255 * pow(zeno::clamp(image->verts[i][1], 0.0f, 1.0f), gamma));
+            data[n * i + 2] = (char)(255 * pow(zeno::clamp(image->verts[i][2], 0.0f, 1.0f), gamma));
+            data[n * i + 3] = (char)(255 * zeno::clamp(alpha[i], 0.0f, 1.0f));
         }
         if(type == "jpg"){
             stbi_flip_vertically_on_write(1);
