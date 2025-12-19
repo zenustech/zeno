@@ -94,28 +94,7 @@ using namespace zeno::ChiefDesignerEXR;
 #define M_PI 3.14159265358979323846
 #endif
 #include <string_view>
-struct CppTimer {
-    void tick() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    void tock() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    float elapsed() const noexcept {
-        return cur - last;
-    }
-    void tock(std::string_view tag) {
-        tock();
-        printf("%s: %f ms\n", tag.data(), elapsed());
-    }
 
-  private:
-    double last, cur;
-};
 static CppTimer timer, localTimer;
 
 namespace xinxinoptix {
@@ -152,9 +131,6 @@ using Vertex = float3;
 
 struct PathTracerState
 {
-    OptixTraversableHandle         rootHandleIAS;
-    raii<CUdeviceptr>              rootBufferIAS;
-    
     raii<CUdeviceptr>              d_uniforms;
 
     raii<CUstream>                       stream;
@@ -257,7 +233,6 @@ static void printUsageAndExit( const char* argv0 )
 static void initLaunchParams( PathTracerState& state )
 {
     auto& params = state.params;
-    params.handle = state.rootHandleIAS;
     
     auto byte_size = params.width * params.height * sizeof( float3 );
 
@@ -396,8 +371,8 @@ static void initCameraState()
 
 void updateRootIAS()
 {
-    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS, state.params.cam.eye);
-    state.params.handle = state.rootHandleIAS;
+    defaultScene.make_scene(OptixUtil::context, state.params.cam.eye);
+    state.params.handle = defaultScene.rootNode.handle;
     return;
 
     uint32_t MAX_INSTANCE_ID;
@@ -1576,7 +1551,7 @@ void configPipeline(bool shaderDirty) {
 
 void prepareScene()
 {
-    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS);
+    defaultScene.make_scene(OptixUtil::context);
 }
 
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {

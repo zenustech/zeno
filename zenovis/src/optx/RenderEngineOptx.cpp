@@ -54,26 +54,6 @@
 static bool recordedSimpleRender = false;
 namespace zenovis::optx {
 
-struct CppTimer {
-    void tick() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    void tock() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    float elapsed() const noexcept {return cur-last;}
-    void tock(std::string_view tag) {
-        tock();
-        printf("%s: %f ms\n", tag.data(), elapsed());
-    }
-
-  private:
-    double last, cur;
-};
 float norm_infvec2(zeno::vec3f &p1,  zeno::vec3f &p2)
 {
     return std::max(abs(p1[0] - p2[0]), abs(p1[1] - p2[1]) );
@@ -741,7 +721,8 @@ struct GraphicsManager {
                     }
                     auto& matids = prim_in->tris.attr<int>("matid");
 
-                    defaultScene.preload_mesh(reName, mtlid, vs, nvs, ts, nts, vtab, matids.data(), matNameList);
+                    defaultScene.preload_mesh(reName, mtlid, matNameList, matids.data(), vs, nvs, ts, nts, vtab);
+
                 } // Mesh
             } // ResourceType
 
@@ -2617,11 +2598,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void beginFrameLoading(int frameid) {
-        int a = 0;
+        defaultScene.frameid = frameid;
     }
 
     void endFrameLoading(int frameid) {
-        int a = 0;
+        defaultScene.frameid = frameid;
     }
 
     void cleanupAssets() override {
