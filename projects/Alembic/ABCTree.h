@@ -16,6 +16,12 @@ using Json = nlohmann::json;
 using Alembic::AbcGeom::ObjectVisibility;
 
 namespace zeno {
+struct JsonObject : IObjectClone<JsonObject> {
+    Json json;
+};
+struct ABCArchive : PrimitiveObject {
+    Alembic::Abc::v12::IArchive archive;
+};
 
 struct CameraInfo {
     double _far;

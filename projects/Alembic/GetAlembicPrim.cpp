@@ -15,9 +15,6 @@
 #include <utility>
 
 namespace zeno {
-struct JsonObject : IObjectClone<JsonObject> {
-    Json json;
-};
 
 int count_alembic_prims(std::shared_ptr<zeno::ABCTree> abctree) {
     int count = 0;
@@ -351,7 +348,7 @@ ZENDEFNODE(AlembicSceneInfo, {
         "json",
     },
     {},
-    {"Alembic"},
+    {"alembic"},
 });
 
 struct GetAlembicCamera : INode {

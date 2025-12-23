@@ -1150,6 +1150,87 @@ void traverseABC(
     }
 }
 
+void traverseABCNode(
+        Alembic::AbcGeom::IObject &obj,
+        ABCTree &tree,
+        int frameid,
+        std::string path,
+        const TimeAndSamplesMap & iTimeMap,
+        ObjectVisibility parent_visible,
+        int use_instance
+) {
+    if (use_instance) {
+        tree.instanceSourcePath = obj.instanceSourcePath();
+    }
+    {
+        auto const &md = obj.getMetaData();
+        tree.name = obj.getName();
+        if (tree.instanceSourcePath.size()) {
+            return;
+        }
+        path = zeno::format("{}/{}", path, tree.name);
+        auto visible_prop = obj.getProperties().getPropertyHeader("visible");
+        if (visible_prop) {
+            size_t totalSamples = 0;
+            TimeSamplingPtr timePtr =
+                    iTimeMap.get(visible_prop->getTimeSampling(), totalSamples);
+            float time_per_cycle = visible_prop->getTimeSampling()->getTimeSamplingType().getTimePerCycle();
+            double start = visible_prop->getTimeSampling()->getStoredTimes().front();
+            int start_frame = std::lround(start / time_per_cycle );
+
+            int sample_index = clamp(frameid - start_frame, 0, (int)totalSamples - 1);
+            ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+            auto visible = read_visible_attr(obj.getProperties(), iSS);
+            if (visible != -1) {
+                tree.visible = visible;
+            }
+            else {
+                tree.visible = parent_visible;
+            }
+        }
+        else {
+            tree.visible = parent_visible;
+        }
+        if (
+                Alembic::AbcGeom::IPolyMesh::matches(md)
+                || Alembic::AbcGeom::IPointsSchema::matches(md)
+                || Alembic::AbcGeom::ICurvesSchema::matches(md)
+                || Alembic::AbcGeom::ISubDSchema::matches(md)
+        ) {
+            tree.prim = std::make_shared<PrimitiveObject>();
+            tree.prim->userData().set2("_abc_name", obj.getName());
+            prim_set_abcpath(tree.prim.get(), path);
+            tree.prim->userData().set2("faceset_count", 0);
+        } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
+            Alembic::AbcGeom::IXform xfm(obj);
+            auto &cam_sch = xfm.getSchema();
+            tree.xform = foundABCXform(cam_sch, frameid);
+        } else if (Alembic::AbcGeom::ICameraSchema::matches(md)) {
+            Alembic::AbcGeom::ICamera cam(obj);
+            auto &cam_sch = cam.getSchema();
+            tree.camera_info = foundABCCamera(cam_sch, frameid);
+        }
+        if (tree.prim) {
+            tree.prim->userData().set2("vis", tree.visible);
+        }
+    }
+    if (tree.prim) {
+        return;
+    }
+
+    size_t nch = obj.getNumChildren();
+
+    for (size_t i = 0; i < nch; i++) {
+        auto const &name = obj.getChildHeader(i).getName();
+
+        Alembic::AbcGeom::IObject child(obj, name);
+
+        auto childTree = std::make_shared<ABCTree>();
+        traverseABCNode(child, *childTree, frameid,  path, iTimeMap, tree.visible, use_instance);
+        tree.children.push_back(std::move(childTree));
+    }
+}
+
 Alembic::AbcGeom::IArchive readABC(std::string const &path) {
     std::string native_path = std::filesystem::u8path(path).string();
     std::string hdr;
@@ -1252,6 +1333,75 @@ ZENDEFNODE(ReadAlembic, {
     {
         {"ABCTree", "abctree"},
         "namelist",
+    },
+    {},
+    {"alembic"},
+});
+
+struct ReadAlembicFile : INode {
+    std::shared_ptr<ABCArchive> abc_archive;
+    std::string usedPath;
+    void apply() override {
+        auto path = get_input2<std::string>("path");
+        if (usedPath != path) {
+            abc_archive = nullptr;
+        }
+        if (abc_archive == nullptr) {
+            abc_archive = std::make_shared<ABCArchive>();
+            abc_archive->archive = readABC(path);
+        }
+        usedPath = path;
+        set_output("archive", abc_archive);
+    }
+};
+
+ZENDEFNODE(ReadAlembicFile, {
+    {
+        {"readpath", "path"},
+    },
+    {
+        {"archive"}
+    },
+    {},
+    {"alembic"},
+});
+
+struct AlembicSceneInfo_v2 : INode {
+    void apply() override {
+        int frameid = getGlobalState()->frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        }
+        auto abc_archive = get_input<ABCArchive>("archive");
+        auto abctree = std::make_shared<ABCTree>();
+        {
+            Alembic::Abc::v12::IArchive &archive = abc_archive->archive;
+            auto obj = archive.getTop();
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            TimeAndSamplesMap timeMap;
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
+            int use_instance = get_input2<int>("use_instance");
+            traverseABCNode(obj, *abctree, frameid, "", timeMap, ObjectVisibility::kVisibilityDeferred, use_instance);
+        }
+        auto json_obj = std::make_shared<JsonObject>();
+        json_obj->json = abctree->get_scene_info();
+        set_output2("json", json_obj);
+        set_output2("abctree", abctree);
+    }
+};
+
+ZENDEFNODE(AlembicSceneInfo_v2, {
+    {
+        "archive",
+        "frameid",
+        {"bool", "use_instance", "1"},
+    },
+    {
+        "json",
+        "abctree",
     },
     {},
     {"alembic"},
