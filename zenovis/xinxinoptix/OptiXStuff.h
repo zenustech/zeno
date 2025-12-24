@@ -997,6 +997,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     std::function<void(void)>     cleanupTexture = [](){};
 
     std::shared_ptr<cuTexture> newTexture = nullptr;
+    std::shared_ptr<std::vector<unsigned char>> ucdata;
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -1060,7 +1061,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         ny = std::max(img->userData().get2<int>("h"), 1);
         nc = std::max(img->userData().get2<int>("channels"), 1);
 
-        auto ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
+        ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
 
         if (nc < 4) {
 
