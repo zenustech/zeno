@@ -136,7 +136,7 @@ namespace zeno
         std::string channel;
 
         enum struct ElementType {
-            Fp32, Fp16, Fp8, Fp4
+            Float4, Float3, Float, Fp16, Fp8, Fp4, Long, UInt, Int4, Int3, Int, Short
         };
         ElementType eleType;
 

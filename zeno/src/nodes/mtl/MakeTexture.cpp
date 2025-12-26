@@ -119,15 +119,16 @@ namespace zeno
 		const static inline std::string dataTypeKey = "type";
 	
 		static std::string dataTypeDefaultString() {
-			auto name = magic_enum::enum_name(TextureObjectVDB::ElementType::Fp32);
+			auto name = magic_enum::enum_name(TextureObjectVDB::ElementType::Float);
 			return std::string(name);
 		}
 
 		static std::string dataTypeListString() {
 			auto list = magic_enum::enum_names<TextureObjectVDB::ElementType>();
 
-			std::string result;
-			for (auto& ele : list) {
+			std::string result; result += list[0];
+			for (int i=1; i<list.size(); ++i) {
+				auto& ele = list[i];
 				result += " ";
 				result += ele;
 			}
@@ -143,7 +144,7 @@ namespace zeno
 
 			auto type = get_input2<std::string>(dataTypeKey);
 			auto casted = magic_enum::enum_cast<TextureObjectVDB::ElementType>(type);
-			tex->eleType = casted.value_or(TextureObjectVDB::ElementType::Fp32);
+			tex->eleType = casted.value_or(TextureObjectVDB::ElementType::Float);
 
 			set_output("tex", std::move(tex));
 		}

@@ -119,15 +119,12 @@ struct ShaderVolume : INode {
                 auto toVDB = std::make_shared<TextureObjectVDB>();
                 toVDB->path = path;
                 toVDB->channel = channel_string;
-                toVDB->eleType = TextureObjectVDB::ElementType::Fp32;
+                toVDB->eleType = TextureObjectVDB::ElementType::Float;
 
                 mtl->tex3Ds.push_back(std::move(toVDB)); 
             }
 
             std::stringstream type_string;
-
-            // using DataTypeNVDB = float; nanovdb::Fp32;
-            // using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
             for (size_t i=0; i<mtl->tex3Ds.size(); ++i) {
                 auto& tex3d = mtl->tex3Ds.at(i);
@@ -143,7 +140,7 @@ struct ShaderVolume : INode {
             
         } else {
 
-            em.commonCode += "using DataTypeNVDB0 = float; nanovdb::Fp32;             \n";
+            em.commonCode += "using DataTypeNVDB0 = float; nanovdb::Float;            \n";
             em.commonCode += "using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>; \n";
         }
 
@@ -210,7 +207,7 @@ struct ShaderVolumeHomogeneous : INode {
         mtl->parameters = parameters;
         mtl->mtlidkey = get_input2<std::string>("mtlid");
 
-        mtl->common += "using DataTypeNVDB0 = float; nanovdb::Fp32;             \n";
+        mtl->common += "using DataTypeNVDB0 = float; nanovdb::Float;            \n";
         mtl->common += "using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>; \n";
         mtl->common += "#define VolumeEmissionScale VolumeEmissionScaleType::Raw\n";
         set_output("mtl", std::move(mtl));

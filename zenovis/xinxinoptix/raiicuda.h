@@ -141,6 +141,13 @@ struct raii {
         return cudaMallocAsync((void**)&handle, byte_size, 0);
     }
 
+    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >>
+    void allocAndUpload(size_t count, const E* ptr) {
+        auto byte_size = sizeof(E) * count;
+        resize(byte_size);
+        cudaMemcpy((void*)handle, ptr, byte_size, cudaMemcpyHostToDevice);
+    }
+
     template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >, typename C=std::allocator<T>>
     void allocAndUpload(std::vector<E, C>& array) {
         auto byte_size = sizeof(E) * array.size();

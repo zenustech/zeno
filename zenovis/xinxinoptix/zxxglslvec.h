@@ -2,6 +2,10 @@
 #include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
+#ifdef _NANOVDB_
+#include <nanovdb/NanoVDB.h>
+#endif
+
 #ifndef var
 #define var auto
 #endif
@@ -26,6 +30,13 @@ __forceinline__ __device__ void swap(T& a, T& b) {
 
 struct vec4{
     float x, y, z, w;
+
+#ifdef _NANOVDB_
+    __forceinline__ __host__ __device__ vec4(const nanovdb::Vec4f &v) 
+    {
+        x = v[0]; y = v[1]; z = v[2]; w = v[3];
+    }
+#endif
     __forceinline__ __device__ vec4(const float4 &_v)
     {
         x = _v.x; z = _v.z;
@@ -73,6 +84,13 @@ struct vec3{
     __forceinline__ __device__ bool operator!=(vec3 other) const {
         return !(*this==other);
     }
+
+#ifdef _NANOVDB_
+    __forceinline__ __host__ __device__ vec3(const nanovdb::Vec3f &v) 
+    {
+        x = v[0]; y = v[1]; z = v[2]; 
+    }
+#endif
 
     __forceinline__ __host__ __device__ vec3(const float3 &_v)
     {

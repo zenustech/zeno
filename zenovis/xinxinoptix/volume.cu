@@ -12,7 +12,7 @@
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
 
-using DataTypeNVDB0 = nanovdb::Fp32;
+using DataTypeNVDB0 = nanovdb::Float;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 
 __inline__ __device__ bool rayHit(const float3& ray_ori, const float3& ray_dir, const nanovdb::BBox<nanovdb::Vec3f>& box, 

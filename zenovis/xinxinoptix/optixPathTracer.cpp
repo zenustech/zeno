@@ -485,8 +485,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                     if (defaultScene._vdb_grids_cached.count(vdb_key)==0) continue;
 
 					auto vdb_ptr = defaultScene._vdb_grids_cached.at(vdb_key);
-					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
-					rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
+					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->buffer.handle;
 				}
 
             for(uint t=0;t<32;t++)
