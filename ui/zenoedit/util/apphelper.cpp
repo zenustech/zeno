@@ -587,3 +587,28 @@ void AppHelper::generatePython(const QString& id)
     AppHelper::initLaunchCacheParam(launchParam);
     launchProgram(pModel, launchParam);
 }
+
+void AppHelper::generatePythonByGraph(IGraphsModel* pModel, const QString& id)
+{
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+
+    TIMELINE_INFO tinfo = main->timelineInfo();
+
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = tinfo.beginFrame;
+    launchParam.endFrame = tinfo.endFrame;
+    QString path = pModel->filePath();
+    path = path.left(path.lastIndexOf("/"));
+    launchParam.zsgPath = path;
+
+    launchParam.projectFps = main->timelineInfo().timelinefps;
+    launchParam.generator = id;
+
+    launchParam.fromCmd = true;
+    launchParam.cmdRmHistoryCacheBeforeRun = false;
+    launchParam.pythonRecordScript = true;
+
+    AppHelper::initLaunchCacheParam(launchParam);
+    launchProgram(pModel, launchParam);
+}

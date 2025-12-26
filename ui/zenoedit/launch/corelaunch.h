@@ -1,4 +1,4 @@
-﻿#ifndef __CORE_LAUNCHER_H__
+#ifndef __CORE_LAUNCHER_H__
 #define __CORE_LAUNCHER_H__
 
 #include <QtWidgets>
@@ -19,6 +19,7 @@ struct LAUNCH_PARAM {
     runType runtype = LoadAsset;
     bool always = false;
     QString generator;   //triggered by GenerateCommands Node to start a calc, to get the commands.
+    bool pythonRecordScript = false; //运行脚本zsg生成python分布式渲染命令时使用
     bool enableCache = false;
     bool tempDir = false;
     QString cacheDir = "";

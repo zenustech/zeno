@@ -1,4 +1,4 @@
-﻿#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 #include <cstdio>
 #include <cstring>
 #include "ztcpserver.h"
@@ -157,7 +157,8 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--zsg", param.zsgPath,
         "--projectFps", QString::number(param.projectFps),
         "--objcachedir", zenoApp->cacheMgr()->objCachePath(),
-        "--generator", param.generator
+        "--generator", param.generator,
+        "--pythonRecordScript", QString::number((int)param.pythonRecordScript)
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);

@@ -13,12 +13,15 @@ namespace Ui
 class ZPathEdit;
 class ZRecordVideoDlg : public QDialog
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	ZRecordVideoDlg(QWidget* parent = nullptr);
-	bool getInfo(VideoRecInfo &info);
+    enum { RunByPython = QDialog::Accepted + 1 };
+
+    ZRecordVideoDlg(QWidget* parent = nullptr);
+    bool getInfo(VideoRecInfo& info);
+
 private:
-	Ui::RecordVideoDlg* m_ui;
+    Ui::RecordVideoDlg* m_ui;
     ZPathEdit* m_exePath;
 };
 #endif
