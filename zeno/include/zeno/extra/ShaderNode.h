@@ -28,6 +28,24 @@ inline const auto ShaderDataTypeNames =
 
 using ShaderDataTypeList = std::tuple<bool, int32_t, vec3i, vec4i, uint32_t, vec3I, vec4I, int64_t, uint64_t, float, vec2f, vec3f, vec4f>;
 
+template<typename T, std::size_t I = 0>
+static std::string dispatchTypeName() {
+    if constexpr (I == std::tuple_size_v<ShaderDataTypeList>) {
+        return ""; // end of loop
+    } else {
+        using Type = std::tuple_element_t<I, ShaderDataTypeList>;
+        if constexpr (std::is_same_v<Type, T>) {
+            return ShaderDataTypeNames[I];
+        }
+        return dispatchTypeName<T, I+1>(); // next iteration
+    }
+}
+
+template<typename T>
+static std::string typeNameStatic() {
+    return dispatchTypeName<T>();
+}
+
 static const inline std::string ShaderDataTypeNamesString = []() {
     const auto& names = ShaderDataTypeNames;
     std::string result;

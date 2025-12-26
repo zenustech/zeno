@@ -9,10 +9,28 @@
 namespace zeno {
 
 template<typename T>
-static std::string ftos(T x) {
+static std::string vtos(const T& value) {
     std::ostringstream ss;
-    ss << x;
+    ss << std::setprecision(std::numeric_limits<T>::max_digits10);
+    ss << value;
     return ss.str();
+}
+
+template<typename T, size_t N>
+static std::string tos(const std::array<T, N>& array) {
+    std::ostringstream ss;
+    ss << std::setprecision(std::numeric_limits<T>::max_digits10);
+    ss << array[0];
+    for (int i=1; i<array.size(); ++i) {
+        ss << "," << array[i];
+    }
+    return ss.str();
+}
+
+template<typename T, size_t N>
+static std::string tos(const zeno::vec<N, T>& vec) {
+    auto& array = reinterpret_cast<const std::array<T, N>&>(vec);
+    return tos(array);
 }
 
 ZENO_API ShaderNode::ShaderNode() = default;
@@ -139,54 +157,17 @@ ZENO_API std::string EmissionPass::collectDefs() const {
     int cnt = 0;
     for (auto const &var: constants) {
 
-        // auto type = std::visit([&] (auto const &value) -> std::string {
-        //     using T = std::decay_t<decltype(value)>;
-        //     std::string expression {};
-        //     std::string value_string = ftos(value);
-
-        //     zeno::static_for<0, std::tuple_size_v<ShaderDataTypeList>>([&] (auto i) {
-        //         using ThisType = std::tuple_element_t<i, ShaderDataTypeList>;
-
-        //         if (std::is_same_v<ThisType, T>) {
-        //             auto type_string = ShaderDataTypeNames[i];
-        //             //auto type_int = TypeHint.at(type_string);
-        //             expression = std::string(type_string) + "(" + value_string + ")";
-        //             return true;
-        //         }
-        //         return false;
-        //     });
-
-        //     return expression;
-        // }, var.value);
-
         auto expr = std::visit([&] (auto const &value) -> std::string {
             using T = std::decay_t<decltype(value)>;
 
-            if constexpr (std::is_same_v<bool, T>) 
-                return "bool(" + ftos(value) + ")";
-            if constexpr (std::is_same_v<int, T>) 
-                return "int(" + ftos(value) + ")";
-            if constexpr (std::is_same_v<unsigned int, T>) 
-                return "uint(" + ftos(value) + ")";
-
-            if constexpr (std::is_same_v<int64_t, T>) 
-                return "int64_t(" + ftos(value) + ")";
-            if constexpr (std::is_same_v<uint64_t, T>) 
-                return "uint64_t(" + ftos(value) + ")";
-
-            if constexpr (std::is_same_v<float, T>) {
-                return typeNameOf(1) + "(" + ftos(value) + ")";
-            } else if constexpr (std::is_same_v<vec2f, T>) {
-                return typeNameOf(2) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ")";
-            } else if constexpr (std::is_same_v<vec3f, T>) {
-                return typeNameOf(3) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
-                + ftos(value[2]) + ")";
-            } else if constexpr (std::is_same_v<vec4f, T>) {
-                return typeNameOf(4) + "(" + ftos(value[0]) + ", " + ftos(value[1]) + ", "
-                + ftos(value[2]) + ", " + ftos(value[3]) + ")";
-            } else {
+            const auto tname = typeNameStatic<T>();
+            if (tname == "")
                 throw zeno::Exception("bad numeric object type: " + (std::string)typeid(T).name());
-            }
+            
+            if constexpr(zeno::is_vec_v<T>)
+                return tname + "(" + tos(value) + ")";
+            else
+                return tname + "(" + vtos(value) + ")";
         }, var.value);
         res += typeNameOf(var.type) + " constmp" + std::to_string(cnt) + " = " + expr + ";\n";
         cnt++;
