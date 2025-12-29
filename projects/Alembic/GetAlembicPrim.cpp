@@ -328,6 +328,153 @@ ZENDEFNODE(AlembicPrimList, {
     },
     {"prims"},
     {},
+    {"deprecated"},
+});
+
+struct AlembicPrimList_v2 : INode {
+    void apply() override {
+        int frameid = getGlobalState()->frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        }
+        auto abc_archive = get_input<ABCArchive>("archive");
+
+        auto abctree = std::make_shared<ABCTree>();
+        bool read_face_set = get_input2<bool>("read_face_set");
+        {
+            Alembic::Abc::v12::IArchive &archive = abc_archive->archive;
+            auto obj = archive.getTop();
+            bool outOfRangeAsEmpty = get_input2<bool>("outOfRangeAsEmpty");
+            bool skipInvisibleObject = get_input2<bool>("skipInvisibleObject");
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            TimeAndSamplesMap timeMap;
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
+
+            int use_instance = get_input2<int>("use_instance");
+            traverseABC(obj, *abctree, frameid, true, read_face_set, "", timeMap, ObjectVisibility::kVisibilityDeferred,
+                        skipInvisibleObject, outOfRangeAsEmpty, use_instance);
+        }
+        if (get_input2<bool>("CopyFacesetToMatid") && read_face_set) {
+            abctree->visitPrims([](auto &prim){
+                prim_copy_faceset_to_matid(prim.get());
+            });
+        }
+
+        auto prims = std::make_shared<zeno::ListObject>();
+        int use_xform = get_input2<int>("use_xform");
+        if (use_xform) {
+            prims = get_xformed_prims(abctree);
+        } else {
+            abctree->visitPrims([&] (auto const &p) {
+                auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
+                prims->arr.push_back(np);
+            });
+        }
+        auto new_prims = std::make_shared<zeno::ListObject>();
+        if (get_input2<bool>("splitByFaceset")) {
+            for (auto &prim: prims->arr) {
+                auto list = abc_split_by_name(std::dynamic_pointer_cast<PrimitiveObject>(prim), false);
+                new_prims->arr.insert(new_prims->arr.end(), list->arr.begin(), list->arr.end());
+            }
+        }
+        else {
+            new_prims = std::dynamic_pointer_cast<zeno::ListObject>(prims->clone());
+        }
+        auto pathInclude = zeno::split_str(get_input2<std::string>("pathInclude"), {' ', '\n'});
+        auto pathExclude = zeno::split_str(get_input2<std::string>("pathExclude"), {' ', '\n'});
+        auto facesetInclude = zeno::split_str(get_input2<std::string>("facesetInclude"), {' ', '\n'});
+        auto facesetExclude = zeno::split_str(get_input2<std::string>("facesetExclude"), {' ', '\n'});
+        for (auto it = new_prims->arr.begin(); it != new_prims->arr.end();) {
+            auto np = std::dynamic_pointer_cast<PrimitiveObject>(*it);
+            auto abc_path = np->userData().template get2<std::string>("abcpath_0");
+            bool contain = false;
+            if (pathInclude.empty()) {
+                contain = true;
+            }
+            else {
+                for (const auto & p: pathInclude) {
+                    if (starts_with(abc_path, p)) {
+                        contain = true;
+                    }
+                }
+            }
+            if (contain) {
+                for (const auto & p: pathExclude) {
+                    if (starts_with(abc_path, p)) {
+                        contain = false;
+                    }
+                }
+            }
+            if (contain && np->userData().template has<std::string>("faceset_0")) {
+                auto faceset = np->userData().template get2<std::string>("faceset_0");
+                contain = false;
+                if (facesetInclude.empty()) {
+                    contain = true;
+                }
+                else {
+                    for (const auto & p: facesetInclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = true;
+                        }
+                    }
+                }
+                if (contain) {
+                    for (const auto & p: facesetExclude) {
+                        if (starts_with(faceset, p)) {
+                            contain = false;
+                        }
+                    }
+                }
+            }
+            if (contain) {
+                ++it;
+            } else {
+                it = new_prims->arr.erase(it);
+            }
+        }
+        for (auto &prim: new_prims->arr) {
+            auto _prim = std::dynamic_pointer_cast<PrimitiveObject>(prim);
+            if (get_input2<bool>("flipFrontBack")) {
+                primFlipFaces(_prim.get(), true);
+            }
+            if (get_input2<bool>("splitByFaceset") && get_input2<bool>("killDeadVerts")) {
+                primKillDeadVerts(_prim.get());
+            }
+            if (get_input2<bool>("triangulate")) {
+                zeno::primTriangulate(_prim.get());
+            }
+            auto abcpath_0 = _prim->userData().get2<std::string>("abcpath_0");
+            abcpath_0 += "/mesh";
+            _prim->userData().set2("abcpath_0", abcpath_0);
+        }
+        set_output("prims", std::move(new_prims));
+    }
+};
+
+ZENDEFNODE(AlembicPrimList_v2, {
+    {
+        {"archive"},
+        {"frameid"},
+        {"bool", "use_instance", "1"},
+        {"bool", "flipFrontBack", "1"},
+        {"bool", "outOfRangeAsEmpty", "0"},
+        {"bool", "skipInvisibleObject", "1"},
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
+        {"string", "pathInclude", ""},
+        {"string", "pathExclude", ""},
+        {"bool", "read_face_set", "1"},
+        {"bool", "CopyFacesetToMatid", "1"},
+        {"bool", "splitByFaceset", "0"},
+        {"bool", "killDeadVerts", "1"},
+        {"string", "facesetInclude", ""},
+        {"string", "facesetExclude", ""},
+    },
+    {"prims"},
+    {},
     {"alembic"},
 });
 
@@ -348,7 +495,7 @@ ZENDEFNODE(AlembicSceneInfo, {
         "json",
     },
     {},
-    {"alembic"},
+    {"deprecated"},
 });
 
 struct GetAlembicCamera : INode {
@@ -424,7 +571,7 @@ ZENDEFNODE(GetAlembicCamera, {
         "far",
     },
     {},
-    {"alembic"},
+    {"deprecated"},
 });
 
 struct ImportAlembicPrim : INode {

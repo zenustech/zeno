@@ -681,6 +681,62 @@ ZENDEFNODE(ReadFBXFile, {
     {"FBXSDK"},
 });
 
+
+struct GenMaterialsFromPrims: INode {
+    void apply() override {
+        auto prims = get_input<ListObject>("prims")->get<PrimitiveObject>();
+
+        auto mtl_json = Json();
+        for (auto p: prims) {
+            auto &ud = p->userData();
+            auto matNum = ud.get2<int>("matNum", 0);
+            for (auto i = 0; i < matNum; i++) {
+                auto matName = ud.get2<std::string>(format("Material_{}", i), "MatMissing");
+                mtl_json[matName] = Json::object();
+            }
+        }
+
+        std::string mtl_python = R"(
+json_data = '''
+mtl_json
+'''
+
+import json
+mats = json.loads(json_data)
+
+import math
+column_count = math.ceil(math.sqrt(len(mats)))
+
+import zeno
+mainG = zeno.graph("main")
+
+index = 0
+for name, mat in mats.items():
+    forknode = mainG.forkAndCreate("shader_template", name)
+    forknode.mtlid = name
+    forknode.pos = (index % column_count * 1000, index // column_count * 1500)
+    forknode.view = True
+    index += 1
+)";
+        mtl_python = replace_all(mtl_python, "mtl_json", mtl_json.dump());
+        auto shader_template = get_input2<std::string>("shader_template");
+        mtl_python = replace_all(mtl_python, "shader_template", shader_template);
+        set_output2("mtl_python", mtl_python);
+    }
+};
+
+ZENDEFNODE(GenMaterialsFromPrims, {
+    {
+        {"list", "prims"},
+        {"string", "shader_template", "DefaultModelShader"},
+    },
+    {
+        "mtl_python",
+    },
+    {},
+    {"FBXSDK"},
+});
+
 /**
 * Return a string-based representation based on the attribute type.
 */

@@ -22,6 +22,8 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/scope_exit.h>
 #include <numeric>
+#include <queue>
+#include <glm/glm.hpp>
 
 #ifdef ZENO_WITH_PYTHON3
     #include <Python.h>
@@ -1389,7 +1391,6 @@ struct AlembicSceneInfo_v2 : INode {
         auto json_obj = std::make_shared<JsonObject>();
         json_obj->json = abctree->get_scene_info();
         set_output2("json", json_obj);
-        set_output2("abctree", abctree);
     }
 };
 
@@ -1401,7 +1402,101 @@ ZENDEFNODE(AlembicSceneInfo_v2, {
     },
     {
         "json",
-        "abctree",
+    },
+    {},
+    {"alembic"},
+});
+
+struct GetAlembicCamera_v2 : INode {
+    void apply() override {
+        int frameid = getGlobalState()->frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        }
+        auto abc_archive = get_input<ABCArchive>("archive");
+        auto abctree = std::make_shared<ABCTree>();
+        {
+            Alembic::Abc::v12::IArchive &archive = abc_archive->archive;
+            auto obj = archive.getTop();
+            Alembic::Util::uint32_t numSamplings = archive.getNumTimeSamplings();
+            TimeAndSamplesMap timeMap;
+            for (Alembic::Util::uint32_t s = 0; s < numSamplings; ++s)             {
+                timeMap.add(archive.getTimeSampling(s),
+                            archive.getMaxNumSamplesForTimeSamplingIndex(s));
+            }
+            int use_instance = get_input2<int>("use_instance");
+            traverseABCNode(obj, *abctree, frameid, "", timeMap, ObjectVisibility::kVisibilityDeferred, use_instance);
+        }
+
+        std::queue<std::pair<Alembic::Abc::v12::M44d, std::shared_ptr<ABCTree>>> q;
+        q.emplace(Alembic::Abc::v12::M44d(), abctree);
+        Alembic::Abc::v12::M44d mat;
+        std::optional<CameraInfo> cam_info;
+        while (q.size() > 0) {
+            auto [m, t] = q.front();
+            q.pop();
+            if (t->camera_info) {
+                mat = m;
+                cam_info = *(t->camera_info);
+                break;
+            }
+            for (auto ch: t->children) {
+                q.emplace(t->xform * m, ch);
+            }
+        }
+        if (!cam_info.has_value()) {
+            log_error("Not found camera!");
+        }
+
+        auto pos = Imath::V4d(0, 0, 0, 1) * mat;
+        auto up = Imath::V4d(0, 1, 0, 0) * mat;
+        auto right = Imath::V4d(1, 0, 0, 0) * mat;
+
+        float focal_length = cam_info.value().focal_length;
+
+        set_output("pos", std::make_shared<NumericObject>(zeno::vec3f((float)pos.x, (float)pos.y, (float)pos.z)));
+
+        auto _up = zeno::normalize(zeno::vec3f((float)up.x, (float)up.y, (float)up.z));
+        auto _right = zeno::normalize(zeno::vec3f((float)right.x, (float)right.y, (float)right.z));
+        auto view = zeno::cross(_up, _right);
+        set_output2("up", _up);
+        set_output2("right", _right);
+        set_output2("view", view);
+
+        set_output("focal_length", std::make_shared<NumericObject>(focal_length));
+        set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
+        set_output("far", std::make_shared<NumericObject>((float)cam_info.value()._far));
+        set_output("horizontalAperture", std::make_shared<NumericObject>((float)cam_info->horizontalAperture));
+        set_output("verticalAperture", std::make_shared<NumericObject>((float)cam_info->verticalAperture));
+        auto m_nx = get_input2<float>("nx");
+        auto m_ny = get_input2<float>("ny");
+        float m_ha = (float)cam_info->horizontalAperture;
+        float m_va = (float)cam_info->verticalAperture;
+        float c_aspect = m_ha/m_va;
+        float u_aspect = m_nx/m_ny;
+        float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
+        set_output("fov_y", std::make_shared<NumericObject>(fov_y));
+    }
+};
+
+ZENDEFNODE(GetAlembicCamera_v2, {
+    {
+        "archive",
+        "frameid",
+        {"int", "nx", "1920"},
+        {"int", "ny", "1080"},
+    },
+    {
+        "pos",
+        "up",
+        "view",
+        "right",
+        "fov_y",
+        "focal_length",
+        "horizontalAperture",
+        "verticalAperture",
+        "near",
+        "far",
     },
     {},
     {"alembic"},
