@@ -38,12 +38,21 @@ class zPythonRecordParams : public QDialog
     Q_OBJECT
 
 public:
-    zPythonRecordParams(QWidget *parent = nullptr);
+    zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget *parent = nullptr);
     ~zPythonRecordParams();
     
-    bool getInfo(PythonRecordInfo& info, const VideoRecInfo& videoInfo) const;
+    bool getInfo(PythonRecordInfo& info) const;
 
 private:
+    // VideoRecInfo parameters UI controls
+    QLineEdit* m_resolutionXEdit;
+    QLineEdit* m_resolutionYEdit;
+    QCheckBox* m_needDenoiseCheckBox;
+    QLineEdit* m_samplesEdit;
+    QCheckBox* m_aovsCheckBox;
+    QCheckBox* m_exportEXRCheckBox;
+
+    // Original Python parameters UI controls
     QLineEdit* m_cmdParamsJsonEdit;
     QLineEdit* m_cachePathEdit;
     QLineEdit* m_executorPathEdit;

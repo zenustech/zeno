@@ -10,12 +10,12 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 
-zPythonRecordParams::zPythonRecordParams(QWidget *parent)
+zPythonRecordParams::zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle("Python Record Parameters");
     setMinimumWidth(400);
-    setMinimumHeight(250);
+    setMinimumHeight(350); // Increased height to accommodate new controls
     
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
@@ -24,6 +24,57 @@ zPythonRecordParams::zPythonRecordParams(QWidget *parent)
     
     int row = 0;
     
+    // Add VideoRecInfo parameters section with a separator
+    formLayout->addWidget(new QLabel("<b>Video Recording Parameters</b>"), row, 0, 1, 2);
+    row++;
+
+    // Resolution X
+    formLayout->addWidget(new QLabel("Resolution X:"), row, 0);
+    m_resolutionXEdit = new QLineEdit();
+    m_resolutionXEdit->setValidator(new QIntValidator(1, 10000, this));
+    m_resolutionXEdit->setText(QString::number(videoInfo.res.x()));
+    m_resolutionXEdit->setReadOnly(true); // Make read-only as it comes from VideoRecInfo
+    formLayout->addWidget(m_resolutionXEdit, row++, 1);
+
+    // Resolution Y
+    formLayout->addWidget(new QLabel("Resolution Y:"), row, 0);
+    m_resolutionYEdit = new QLineEdit();
+    m_resolutionYEdit->setValidator(new QIntValidator(1, 10000, this));
+    m_resolutionYEdit->setText(QString::number(videoInfo.res.y()));
+    m_resolutionYEdit->setReadOnly(true); // Make read-only as it comes from VideoRecInfo
+    formLayout->addWidget(m_resolutionYEdit, row++, 1);
+
+    // Need Denoise
+    formLayout->addWidget(new QLabel("Need Denoise:"), row, 0);
+    m_needDenoiseCheckBox = new QCheckBox();
+    m_needDenoiseCheckBox->setChecked(videoInfo.needDenoise);
+    formLayout->addWidget(m_needDenoiseCheckBox, row++, 1);
+
+    // Samples (numOptix)
+    formLayout->addWidget(new QLabel("Samples:"), row, 0);
+    m_samplesEdit = new QLineEdit();
+    m_samplesEdit->setValidator(new QIntValidator(1, 1000, this));
+    m_samplesEdit->setText(QString::number(videoInfo.numOptix));
+    formLayout->addWidget(m_samplesEdit, row++, 1);
+
+    // AOVs
+    formLayout->addWidget(new QLabel("AOVs:"), row, 0);
+    m_aovsCheckBox = new QCheckBox();
+    auto& ud = zeno::getSession().userData();
+    bool aovsValue = ud.get2("output_aov", false);
+    m_aovsCheckBox->setChecked(aovsValue);
+    formLayout->addWidget(m_aovsCheckBox, row++, 1);
+
+    // Export EXR
+    formLayout->addWidget(new QLabel("Export EXR:"), row, 0);
+    m_exportEXRCheckBox = new QCheckBox();
+    m_exportEXRCheckBox->setChecked(videoInfo.bExportEXR);
+    formLayout->addWidget(m_exportEXRCheckBox, row++, 1);
+
+    // Add separator for Python parameters
+    formLayout->addWidget(new QLabel("<b>Python Execution Parameters</b>"), row, 0, 1, 2);
+    row++;
+
     // cmdParamsJson
     formLayout->addWidget(new QLabel("Command Params JSON:"), row, 0);
     m_cmdParamsJsonEdit = new QLineEdit();
@@ -86,20 +137,18 @@ zPythonRecordParams::zPythonRecordParams(QWidget *parent)
 zPythonRecordParams::~zPythonRecordParams()
 {}
 
-bool zPythonRecordParams::getInfo(PythonRecordInfo& info, const VideoRecInfo& videoInfo) const
+bool zPythonRecordParams::getInfo(PythonRecordInfo& info) const
 {
-    auto& ud = zeno::getSession().userData();
-
-    // Copy VideoRecInfo parameters
+    // Copy VideoRecInfo parameters from UI controls
     info.fstart = m_frameStart->text().toInt();
-    info.resolutionx = videoInfo.res.x();
-    info.resolutiony = videoInfo.res.y();
+    info.resolutionx = m_resolutionXEdit->text().toInt();
+    info.resolutiony = m_resolutionYEdit->text().toInt();
     //info.bitrate = videoInfo.bitrate;
-    info.needDenoise = videoInfo.needDenoise;
-    info.samples = videoInfo.numOptix;
-    info.bAov = ud.get2("output_aov", false);
+    info.needDenoise = m_needDenoiseCheckBox->isChecked();
+    info.samples = m_samplesEdit->text().toInt();
+    info.bAov = m_aovsCheckBox->isChecked();
     info.fend = m_frameEnd->text().toInt();
-    info.bExportEXR = videoInfo.bExportEXR;
+    info.bExportEXR = m_exportEXRCheckBox->isChecked();
 
     QString path = zenoApp->graphsManagment()->zsgPath();
     if (path.isEmpty())

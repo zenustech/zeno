@@ -852,11 +852,11 @@ void DisplayWidget::onRecord()
             return;
         }
 
-        zPythonRecordParams pythonParamsDlg(this);
+        zPythonRecordParams pythonParamsDlg(recInfo);
         if (pythonParamsDlg.exec() == QDialog::Accepted)
         {
             PythonRecordInfo pythonInfo;
-            if (!pythonParamsDlg.getInfo(pythonInfo, recInfo))
+            if (!pythonParamsDlg.getInfo(pythonInfo))
             {
                 QMessageBox::warning(this, tr("Python Record"), tr("Invalid zsg path."));
                 return;
@@ -865,13 +865,17 @@ void DisplayWidget::onRecord()
             IGraphsModel* pModel = zeno_model::createModel(nullptr);
             {
                 pModel->blockSignals(true);
+                QString controlRenderScriptZsg = "O:/resource/分布式执行控制.zsg";     //脚本zsg的路径
+                QString renderJobNodeName = "renderJob(1)";                         //将参数填入main图的renderJobNodeName节点
+                QString pythonNodeCls = "PythonNode";                               //执行main图的pythonnode的generate和execute
+
                 std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
-                bool ret = ZsgReader::getInstance().openFile("O:/resource/分布式执行控制.zsg", acceptor.get());
+                bool ret = ZsgReader::getInstance().openFile(controlRenderScriptZsg, acceptor.get());
                 if (ret) {
                     QModelIndex mainidx = pModel->index("main");
-                    QModelIndexList renderJobLstfst = pModel->searchInSubgraph("renderJob(1)", mainidx);
+                    QModelIndexList renderJobLstfst = pModel->searchInSubgraph(renderJobNodeName, mainidx);
                     for (auto& idx : renderJobLstfst) {
-                        if (idx.data(ROLE_OBJNAME).toString() == "renderJob(1)") {
+                        if (idx.data(ROLE_OBJNAME).toString() == renderJobNodeName) {
                             auto ident = idx.data(ROLE_OBJID).toString();
                             pModel->updateSocketDefl(ident, { "fstart", "", pythonInfo.fstart}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "resolution_x", "", pythonInfo.resolutionx}, mainidx, false);
@@ -893,7 +897,7 @@ void DisplayWidget::onRecord()
                         }
                     }
 
-                    QList<SEARCH_RESULT> pynodeLst = pModel->search("PythonNode", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY);
+                    QList<SEARCH_RESULT> pynodeLst = pModel->search(pythonNodeCls, SEARCH_NODECLS, SEARCH_MATCH_EXACTLY);
                     if (pynodeLst.empty()) {
                         return;
                     }
