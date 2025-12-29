@@ -241,6 +241,9 @@ struct SphereInput : MatInput {
     inline vec3 uv() const {
         return sphereUV(objNorm, false);
     }
+    __forceinline__ float3 barys() const {
+        return uv();
+    }
     inline vec3 clr() const {
         let gas_ptr = getGasPointer();
         let clr_ptr = (float3*)( *(gas_ptr-1) );
@@ -265,6 +268,9 @@ struct CurveInput : MatInput {
     }
     inline vec3 uv() const {
         return {barys2.x, barys2.y, 0.0};
+    }
+    __forceinline__ float3 barys() const {
+        return uv();
     }
     inline vec3 clr() const {
         return {}; 
@@ -299,6 +305,9 @@ struct WrapperInput : MatInput {
     inline vec3 uv() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.uv(); });
     }
+    __forceinline__ float3 barys() const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.barys(); });
+    }
     inline vec3 clr() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.clr(); });
     }
@@ -307,5 +316,8 @@ struct WrapperInput : MatInput {
     }
     inline float3 els(bool local=false) const {
         return dispatch(this, ptype, [&](const auto& in) { return in.els(local); });
+    }
+    inline float3 eLength(bool local=false) const {
+        return els(local);
     }
 };
