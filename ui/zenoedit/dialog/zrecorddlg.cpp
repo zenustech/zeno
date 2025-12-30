@@ -78,6 +78,11 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     connect(m_ui->m_chkSendToServer, &QCheckBox::stateChanged, this, [&]() {
         m_ui->m_sendToServerWidget->setVisible(m_ui->m_chkSendToServer->isChecked());
     });
+
+    // Connect run by python button
+    connect(m_ui->btnRunByPython, &QPushButton::clicked, this, [this]() {
+        done(RunByPython);
+    });
 }
 
 bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)

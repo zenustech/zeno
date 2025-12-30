@@ -144,6 +144,7 @@ signals:
     void alwaysModeChanged(bool bAlways);
     void runFinished();
     void runStarted();
+    void pythonRecordScriptFinished(QString command);//传递运行脚本zsg后生成的执行python脚本的命令
 
 public slots:
     void openFileDialog();

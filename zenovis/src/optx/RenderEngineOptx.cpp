@@ -2085,6 +2085,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
         replace_with_modified_matrix();
+
+        Json msg;
+        msg["MessageType"] = "Init";
+        outlineInit(msg);
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
