@@ -66,11 +66,11 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
     static std::string methodListString() {
         auto list = magic_enum::enum_names<SamplingMethod>();
-
         std::string result;
-        for (auto& ele : list) {
+        result += list[0];
+        for (int i=1; i<list.size(); ++i) {
             result += " ";
-            result += ele;
+            result += list[i];
         }
         return result;
     }
@@ -82,23 +82,19 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
             throw zeno::Exception("ShaderTexture3D expect coord to be vec3");
 
         auto type = get_input2<std::string>("type");
+        if (type.find("vec2") != std::string::npos) type = "vec2";
 
-        static const std::map<std::string, int> type_map {
-            //{"half", 0},
-            //{"float", 1},
-            {"vec2", 2},
-        };
-
-        if (type_map.count(type) == 0) {
+        if (TypeHint.count(type) == 0) {
             throw zeno::Exception("ShaderTexture3D got bad type: " + type);
         }
 
-        return type_map.at(type);            
+        return TypeHint.at(type);            
     }
 
     virtual void emitCode(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto type = get_input2<std::string>("type");
+        auto rtype = get_input2<std::string>("type");
+
         auto coord = em->determineExpr(get_input("coord").get());
 
         auto cihou = get_input2<bool>("cihou");
@@ -112,16 +108,22 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 	    auto casted = magic_enum::enum_cast<SamplingMethod>(method).value_or(SamplingMethod::Trilinear);
 
         auto order = magic_enum::enum_integer(casted);
-        std::string ORDER = std::to_string( order );
 
-        //using DataTypeNVDB0 = float; //nanovdb::Fp32;
-        //using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
         std::string sid = std::to_string(texId);
 
         std::string DataTypeNVDB = "DataTypeNVDB" + sid;
         std::string GridTypeNVDB = "GridTypeNVDB" + sid;
 
-        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + "), attrs, " + std::to_string(cihou) + "))");
+        char buff[100];
+        
+        if (rtype.find("vec2") != std::string::npos) {
+            auto temp = "XsamplingVDB<%d, %s, %d, %s>(vdb_grids[%d], %s, %s)";
+            sprintf(buff, temp, order, world_space, cihou, DataTypeNVDB.c_str(), texId, coord.c_str(), "attrs");
+        } else {
+            auto temp = "samplingVDB<%d, %s, %d, %s, %s>(vdb_grids[%d], %s, %s)";
+            sprintf(buff, temp, order, world_space, cihou, DataTypeNVDB.c_str(), rtype.c_str(), texId, coord.c_str(), "attrs");
+        }
+        em->emitCode(buff);
     }
 };
 
@@ -147,7 +149,7 @@ ZENDEFNODE(ShaderTexture3D, {
         {"vec3f", "coord", "0,0,0"},
         {"bool", "cihou", "0"},
         {"enum World Local", "space", "World"},
-        {"enum vec2", "type", "vec2"},
+        {"enum float vec2 vec3 vec4 int int3 int4 uint int64_t uint64_t", "type", "float"}, 
         
         {"enum " + ShaderTexture3D::methodListString(), "method", ShaderTexture3D::methodDefaultString()} 
     },

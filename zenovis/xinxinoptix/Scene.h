@@ -88,7 +88,6 @@ private:
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<MeshObject>> _meshes_;
 
     phmap::parallel_node_hash_set_m<std::string> meshesDirty;
-    phmap::parallel_node_hash_map_m<std::string, MeshDat> meshdats;
     phmap::parallel_flat_hash_set_m<std::string> uniqueMatsForMesh;
 
     std::unordered_map<std::string, uint64_t> gas_handles;
@@ -97,6 +96,7 @@ private:
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
     
 public:
+    uint32_t frameid;
     phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
@@ -236,6 +236,7 @@ public:
     void prepare_light_ias(OptixDeviceContext& context) {
 
         std::vector<OptixInstance> optix_instances;
+        optix_instances.reserve(3);
 
         if (lightsWrapper.lightTrianglesGas != 0)
         {
@@ -298,8 +299,7 @@ public:
         VisibilityMask vmask;
     };
 
-    inline void make_scene(OptixDeviceContext& context, xinxinoptix::raii<CUdeviceptr>& bufferRoot, OptixTraversableHandle& handleRoot, 
-        float3 cam=make_float3( std::numeric_limits<float>::infinity() ) ) {
+    inline void make_scene( OptixDeviceContext& context, float3 cam=make_float3(INFINITY) ) {
 
         this->cameraPos = cam;
         auto gather = [&]() {
@@ -312,56 +312,47 @@ public:
             CameraSapceMatrix[11] -= cam.z;
 
             std::vector<OptixInstance> instanced {};
+            instanced.reserve(3);
+
+            OptixInstance opi {};
+            memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
+
+            if (lightsWrapper.lightIasHandle != 0u) {
+                opi.instanceId = 0;
+                opi.visibilityMask = LightMatMask;
+                opi.traversableHandle = lightsWrapper.lightIasHandle;
+                instanced.push_back(opi);
+
+                maxNodeDepth = max(maxNodeDepth, 3);
+            }
 
             if (staticRenderGroup != 0u) {
-                OptixInstance opi {};
-                opi.instanceId = instanced.size();
+                opi.instanceId = 1;
                 opi.visibilityMask = EverythingMask;
                 opi.traversableHandle = staticRenderGroup;
-                memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
                 instanced.push_back(opi);
             }
             if (dynamicRenderGroup != 0u) {
-                OptixInstance opi {};
-                opi.instanceId = instanced.size();
+                opi.instanceId = 2;
                 opi.visibilityMask = EverythingMask;
                 opi.traversableHandle = dynamicRenderGroup;
-                //memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
                 memcpy(opi.transform, IdentityMatrix.data(), sizeof(float)*12);
                 instanced.push_back(opi);
             }
 
-            if (lightsWrapper.lightIasHandle != 0u) {
-                OptixInstance opi {};
-                opi.instanceId = instanced.size();
-                opi.visibilityMask = LightMatMask;
-                opi.traversableHandle = lightsWrapper.lightIasHandle;
-                memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
-                instanced.push_back(opi);
-
-                maxNodeDepth = max(maxNodeDepth, 3u);
-            }
-
-            xinxinoptix::buildIAS(context, instanced, bufferRoot, handleRoot);
+            xinxinoptix::buildIAS(context, instanced, this->rootNode);
         };
 
-        if (cam.x != std::numeric_limits<float>::infinity() || !sceneJson.contains(brikey) ) { 
+        if (cam.x != INFINITY || !sceneJson.contains(brikey) ) { 
             if (!nodeCache.empty())
-                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, nodeDepthCache);
+                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache);
             gather();
             return;
         }
 
         dynamicRenderGroup = 0;
-        nodeCache = {};
-        nodeDepthCache = {};
-
-        //if (false) {
-//            staticRenderGroup = 0;
-//            nodeCacheStatic = {};
-//            nodeDepthCacheStatic = {};
-        //}
-
+        //nodeCache = {};
+        
         if (!dirtyTasks.empty()) {
             
             for(auto& [key, task] : dirtyTasks) {
@@ -454,34 +445,44 @@ public:
             cleanTasks.clear();
         }
 
-        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
-                            decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, uint& test_depth, 
+                            decltype(nodeCache)& nodeCache) -> OptixTraversableHandle 
         {
             auto& candidates = this->candidates;
-            if (candidates.count(obj_key)) { //leaf node
-                test_depth = 1;
-                return candidates[obj_key].handle;
+            {
+                auto find = candidates.find(obj_key);
+                if (find != candidates.end()) { //leaf node
+                    test_depth = 1;
+                    return find->second.handle;
+                }
             }
 
-            if (!renderGroup.contains(obj_key)) { return 0; }
+            auto& node = nodeCache[obj_key];
+            if (nullptr == node) {
+                node = std::make_shared<SceneNode>();
+            } else {
+                if (node->frame == frameid) {
+                    test_depth = node->depth;
+                    return node->handle;
+                }
+            }
+            node->frame = frameid;
+            std::vector<OptixInstance> instanced {};
+
+            auto find_obj = renderGroup.find(obj_key);
+            if (find_obj == renderGroup.end()) { return 0; }
+            auto& ref = *find_obj;
             
-            if (nodeCache.count(obj_key)) {
-                test_depth = nodeDepthCache[obj_key];
-                return nodeCache[obj_key]->handle;
-            }
-
-            auto& ref = renderGroup[obj_key];
-            std::vector<OptixInstance> instanced {}; 
             uint instanceId = 0;
             uint maxDepth = 0;
 
             for (auto& item : ref.items()) {
-                auto item_key = item.key();
+                auto& item_key = item.key();
 
                 OptixTraversableHandle handle;
                 uint theDepth = 0;
 
-                handle = treeLook(item_key, renderGroup, true, theDepth, nodeCache, nodeDepthCache);
+                handle = treeLook(item_key, renderGroup, theDepth, nodeCache);
                 maxDepth = max(maxDepth, theDepth);
 
                 const bool leaf = candidates.count(item_key) > 0;
@@ -494,7 +495,7 @@ public:
                     auto& candi = candidates.at(item_key);
                     sbtOffset = candi.sbt;
                     vMask = candi.vmask;
-                    matrix_ptr = candidates.at(item_key).matrix;
+                    matrix_ptr = candi.matrix;
                 }
 
                 if (handle == 0u) { continue; }
@@ -503,6 +504,11 @@ public:
                 if (matrix_keys.empty()) {
                     matrix_keys = fallback_keys;
                 }
+
+                OptixInstance opi {};
+                opi.sbtOffset = sbtOffset;
+                opi.visibilityMask = vMask;
+                opi.traversableHandle = handle;
 
                 for (auto& matrix_key : matrix_keys.items()) {
 
@@ -514,14 +520,9 @@ public:
 
                     for (size_t i=0; i<matrix_list.size(); ++i) {
 
-                        OptixInstance opi {};
-
-                        opi.sbtOffset = sbtOffset;
                         if (has_custom_id) {
                             opi.instanceId = id_it->second[i];
                         }
-                        opi.visibilityMask = vMask;
-                        opi.traversableHandle = handle;
 
                         if (nullptr != matrix_ptr) {
 
@@ -550,18 +551,14 @@ public:
                     }
                 }
             }
-            if (!cache) { return 0ull; }
 
-            auto node = std::make_shared<SceneNode>();
-            xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
-            nodeCache[obj_key] = node;
-
+            xinxinoptix::buildIAS(context, instanced, *node);
             test_depth = maxDepth+1;
-            nodeDepthCache[obj_key] = test_depth;
+            node->depth = test_depth;
             return node->handle;
         };
 
-        groupTask = [&](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache) -> OptixTraversableHandle 
+        groupTask = [&](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache) -> OptixTraversableHandle 
         {
             if (!sceneJson.contains(group_key)) return 0;
             if (!sceneJson.contains(entry_key)) return 0;
@@ -573,7 +570,7 @@ public:
             instanced.reserve(entrys.size());
 
             uint instanceId = 0;
-            uint the_depth = 0;
+            uint test_depth = 0;
 
             for (const auto& kv : entrys.items()) {
 
@@ -581,8 +578,8 @@ public:
                 auto& matrix_keys = kv.value();
 
                 uint depth = 0u;
-                auto handle = treeLook(key, rg, true, depth, nodeCache, nodeDepthCache);
-                the_depth = max(the_depth, depth);
+                auto handle = treeLook(key, rg, depth, nodeCache);
+                test_depth = max(test_depth, depth);
 
                 OptixInstance opi {};
                 opi.visibilityMask = EverythingMask;
@@ -607,46 +604,47 @@ public:
 
             if (instanced.size() == 0) return 0;
 
-            auto node = std::make_shared<SceneNode>();
-            xinxinoptix::buildIAS(context, instanced, node->buffer, node->handle);
-            nodeCache[group_key.data()] = node;
-            nodeDepthCache[group_key.data()] = the_depth+1;
-            assert(node->handle!=0);
+            auto& node = nodeCache[group_key.data()];
+            if (nullptr == node) node = std::make_shared<SceneNode>();
+            xinxinoptix::buildIAS(context, instanced, *node);
+            node->depth = test_depth+1;
+            maxNodeDepth = max(node->depth, maxNodeDepth);
             return node->handle;
         };
 
         maxNodeDepth = 1;
-        if (0 == staticRenderGroup) {
-            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic, nodeDepthCacheStatic);
+        {
+            dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache);
         }
-        dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, nodeDepthCache);
-        maxNodeDepth = max(nodeDepthCacheStatic["StaticRenderGroups"], nodeDepthCache["DynamicRenderGroups"]);
+        if (0 == staticRenderGroup) {
+            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic);
+        }
         maxNodeDepth += 1;
         gather();
     }
 
-    uint maxNodeDepth = 1;
-    std::unordered_map<std::string, uint> nodeDepthCache {};
+    uint8_t maxNodeDepth = 1;
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCache {};
-    std::unordered_map<std::string, uint> nodeDepthCacheStatic {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
 
     float3 cameraPos;
+    SceneNode rootNode;
+
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
     
     std::unordered_map<std::string, Candidate> candidates {};
 
-    std::function<OptixTraversableHandle(const std::string&, nlohmann::json& renderGroup, bool cache, uint& test_depth, 
-        decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> treeLook;
+    std::function<OptixTraversableHandle(const std::string&, nlohmann::json& renderGroup, uint& test_depth, 
+        decltype(nodeCache)& nodeCache)> treeLook;
 
     std::function<OptixTraversableHandle(std::string_view group_key, std::string_view entry_key, bool cameraSpace,  
-        decltype(nodeCache)& nodeCache, decltype(nodeDepthCache)& nodeDepthCache)> groupTask; 
+        decltype(nodeCache)& nodeCache)> groupTask; 
 
-    void preload_mesh(std::string const &key, std::string const &mtlid,
-                 float const *verts, size_t numverts, uint const *tris, size_t numtris,
-                 std::map<std::string, std::pair<float const *, size_t>> const &vtab,
-                 int const *matids, std::vector<std::string> const &matNameList);
+    void preload_mesh(const std::string &key, const std::string &mtlid, 
+        const std::vector<std::string> &matNames, const int *matIds,
+        const float *verts, size_t numverts, const uint *tris, size_t numtris,
+        std::map<std::string, std::pair<float const *, size_t>> const &vtab, const GeoChange change=GeoChange::FullChange);
 
     void unload_object(std::string const &key) {
         if (cleanTasks.count(key)==0) return;

@@ -3,6 +3,8 @@
 #include <nanovdb/util/HDDA.h>
 #include <nanovdb/util/SampleFromVoxels.h>
 
+#define _NANOVDB_ true
+
 #include "volume.h"
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
@@ -16,14 +18,12 @@ enum struct VolumeEmissionScaleType {
 };
 
 #ifndef __FORWARD__
-using DataTypeNVDB0 = nanovdb::Fp32;
+using DataTypeNVDB0 = nanovdb::Float;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 #define VolumeEmissionScale VolumeEmissionScaleType::Raw
-#endif
-
-#define _USING_NANOVDB_ true
-
+#else
 //COMMON_CODE
+#endif
 
 inline int3 interp_trilinear_stochastic(const float3& P, float randu)
 {
@@ -57,6 +57,49 @@ inline int3 interp_trilinear_stochastic(const float3& P, float randu)
     }
 
     return make_int3(idx[0], idx[1], idx[2]);
+}
+
+inline float3 interp_triquadratic_to_trilinear_stochastic(const float3& P, float randu)
+{
+    const float3 p = floor(P);
+    const float3 t = P - p;
+
+    // Corrected quadratic B-spline weights
+    const float3 w_minus1 = 0.5f * (1.0f - t) * (1.0f - t);
+    const float3 w_0 = 0.5f + t - t * t;
+    const float3 w_plus1 = 0.5f * t * t;
+
+    const float3 g0 = w_minus1 + w_0;
+
+    const float3 P0 = p + (w_0 / g0) - 1.0f;
+    const float3 P1 = p + 1.0f;
+
+    float3 Pnew = P0;
+
+    if (randu < g0.x) {
+        randu /= g0.x;
+    }
+    else {
+        Pnew.x = P1.x;
+        randu = (randu - g0.x) / (1.0f - g0.x);
+    }
+
+    if (randu < g0.y) {
+        randu /= g0.y;
+    }
+    else {
+        Pnew.y = P1.y;
+        randu = (randu - g0.y) / (1.0f - g0.y);
+    }
+
+    if (randu < g0.z) {
+        // stay with P0.z
+    }
+    else {
+        Pnew.z = P1.z;
+    }
+
+    return Pnew;
 }
 
 inline float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
@@ -182,62 +225,78 @@ struct VolumeIn2 {
     };
 };
 
-template <typename Acc, typename DataTypeNVDB, uint8_t Order>
-inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, const VolumeIn2& volin) {
+template <typename Acc, uint8_t Order, typename DataTypeNVDB, typename ReturnType>
+inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, const VolumeIn2& volin) {
     
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
+
+    if constexpr(0 == Order) {
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 0, false>;
+        return Sampler(acc)(point_indexd);
+    }
 
     if constexpr(1 == Order) {
         auto iii = interp_trilinear_stochastic(reinterpret_cast<float3&>(point_indexd), volin.rndf());
         return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
     }
 
-    if constexpr(3 > Order) {
-        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
-        return Sampler(acc)(point_indexd);
+    if constexpr(2 == Order) {
+        auto fff = reinterpret_cast<float3&>(point_indexd);
+        fff += make_float3(0.5f);
+        fff = interp_triquadratic_to_trilinear_stochastic(fff, volin.rndf());
+        auto iii = interp_trilinear_stochastic(fff, volin.rndf());
+        return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
     }
 
     if constexpr(3 == Order) {
-    
         auto fff = reinterpret_cast<float3&>(point_indexd);
         fff = interp_tricubic_to_trilinear_stochastic(fff, volin.rndf());
-        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true>;
-        return Sampler(acc)( reinterpret_cast<nanovdb::Vec3f&>(fff) );
+        auto iii = interp_trilinear_stochastic(fff, volin.rndf());
+        return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
     }
     
     if constexpr(4 == Order) {
-
         auto uuu = nanovdb::Vec3f(volin.rndf(), volin.rndf(), volin.rndf());
-             uuu -= nanovdb::Vec3f(0.5f);
         auto pick = nanovdb::RoundDown<nanovdb::Vec3f>(point_indexd + uuu);
         auto coord = nanovdb::Coord(pick[0], pick[1], pick[2]);
         return acc.getValue(coord);
     }
 
-    return 0.0f;
+    return ReturnType{};
 }
 
-template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
-static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos, VolumeIn2& volin, bool cihou) {
+template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB, typename ReturnType>
+__inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeIn2& volin) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
-    const auto& _acc = _grid->tree().getAccessor();
-
     if (_grid == nullptr) { return {}; }
+    const auto& _acc = _grid->tree().getAccessor();
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
 
     if constexpr(WorldSpace) 
     {
-        if (cihou) {
+        if constexpr(cihou) {
             pos_indexed = volin.localPosLazy();
         } else {
             pos_indexed = _grid->worldToIndexF(pos_indexed);
         }
     } //_grid->tree().root().maximum();
 
-    return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed, volin), _grid->tree().root().maximum() };
+    return nanoSampling<decltype(_acc), Order, DataTypeNVDB, ReturnType>(_acc, pos_indexed, volin);
+}
+
+template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB>
+__inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeIn2& volin) {
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
+
+    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
+    if (_grid == nullptr) { return {}; }
+
+    float value = samplingVDB<Order, WorldSpace, cihou, DataTypeNVDB, float>(grid_ptr, att_pos, volin);
+    float maxi  = _grid->tree().root().maximum();
+    return vec2 { value, maxi };
 }
 
 extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut& output) {
@@ -278,7 +337,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
 
 #endif // _FALLBACK_
 
-#if _USING_NANOVDB_
+#if _NANOVDB_
 
     output.albedo = clamp(albedo, 0.0f, 1.0f);
     output.anisotropy = clamp(anisotropy, -1.0f, 1.0f);

@@ -12,28 +12,71 @@
 #include <vector>
 #include <zeno/utils/orthonormal.h>
 
-void OptixScene::preload_mesh(std::string const &key, std::string const &mtlid,
-    float const *verts, size_t numverts, uint const *tris, size_t numtris,
-    std::map<std::string, std::pair<float const *, size_t>> const &vtab,
-    int const *matids, std::vector<std::string> const &matNameList)
-{
-    MeshDat &dat = meshdats[key];
-    dat.dirty = true;
+void OptixScene::preload_mesh(const std::string &key, const std::string &mtlid, 
+    const std::vector<std::string> &matNames, const int *matIndex,
+    const float *verts, size_t numverts, const uint *tris, size_t numtris,
+    const std::map<std::string, std::pair<float const *, size_t>> &vtab, GeoChange change)
+{   
+    auto& ptr = _meshes_[key];
+    if (nullptr == ptr) {
+        ptr = std::make_shared<MeshObject>();
+    }
+    auto& mesh = *ptr;
 
-    meshesDirty.insert(key);
+    if (change & GeoChange::AttrChange) {
 
-    dat.triMats.assign(matids, matids + numtris);
-    dat.mtlidList = matNameList;
-    dat.mtlid = mtlid;
-    dat.verts.assign(verts, verts + numverts * 3);
-    dat.tris.assign(tris, tris + numtris * 3);
-    //TODO: flatten just here... or in renderengineoptx.cpp
-    for (auto const &[key, fptr]: vtab) {
-        dat.vertattrs[key].assign(fptr.first, fptr.first + numverts * fptr.second);
+        auto get_attr = [&](const char* name) -> const float* {
+            auto it = vtab.find(name);
+            return it != vtab.end() ? it->second.first : nullptr;
+        };
+        
+        const auto uv_ptr = get_attr("uv");
+        const auto has_uv = (uv_ptr != nullptr);
+
+        const auto clr_ptr = get_attr("clr");
+        const auto has_clr = (clr_ptr != nullptr);
+
+        const auto tang_ptr = get_attr("atang");
+        const auto has_tang = (tang_ptr != nullptr);
+        
+        mesh.resize(numtris, numverts, has_clr, has_uv);
+        auto& nrmAttr = vtab.at("nrm").first;
+
+        tbb::parallel_for(size_t(0), numverts, [&](size_t i) {
+            mesh.g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
+            if (has_uv)
+                mesh.g_uv[i] = *(float2*)&(uv_ptr[i * 3]);
+            if (has_clr)
+                mesh.g_clr[i] = toHalf( *(float3*)&(clr_ptr[i * 3]) );
+            if (has_tang)
+                mesh.g_tan[i] = toHalf( *(float3*)&(tang_ptr[i * 3]) );
+        });
+        
+        if (change == GeoChange::AttrChange) {
+            mesh.upload(128);
+            return;
+        }
     }
 
-    uniqueMatsForMesh.insert(dat.mtlid);
-    for(auto& s : dat.mtlidList) {
+    meshesDirty.insert(key);
+    mesh.dirty = change;
+    if (mtlid != mesh.matid) {
+        mesh.matid = mtlid;
+        mesh.dirty |= GeoChange::MateChange;
+    }
+
+    auto& dat = mesh.dat;
+    dat.triMats.assign(matIndex, matIndex + numtris);
+    if (matNames != dat.mtlidList) {
+        dat.mtlidList = matNames;
+        mesh.dirty |= GeoChange::MateChange;
+    }
+
+    mesh.vertices.assign((float3*)verts, (float3*)verts + numverts);
+    mesh.indices.assign((uint3*)tris, (uint3*)tris + numtris);
+
+    uniqueMatsForMesh.insert(mtlid);
+    for(auto& s : matNames) {
         uniqueMatsForMesh.insert(s);
     }
     updateGeoType(key, ShaderMark::Mesh);
@@ -42,25 +85,10 @@ void OptixScene::preload_mesh(std::string const &key, std::string const &mtlid,
 void OptixScene::updateDrawObjects(uint16_t sbt_count) {
 
     for(const auto& name : meshesDirty) {
-        auto& dat = meshdats[name];
-        dat.dirty = false;
-
         auto& mesh = _meshes_[name];
-        if (mesh == nullptr) {
-            mesh = std::make_shared<MeshObject>();
-        }
-        mesh->dirty = true;
-        auto& clrAttr = dat.getAttr("clr");
-        const auto has_clr = !clrAttr.empty();
-
-        auto& tangAttr = dat.getAttr("atang");
-        auto& uvAttr = dat.getAttr("uv");
-        const auto has_uv = !uvAttr.empty();
-
-        mesh->resize(dat.tris.size()/3, dat.verts.size()/3, has_clr, has_uv);
+        auto& dat = mesh->dat;
 
         std::map<uint16_t, zeno::OpacityMicroMapConfig> omm_binding_cfgs {};
-
         auto load_omm_cfg = [&omm_binding_cfgs](uint16_t shader_idx) {
 
             auto& shader_ref = OptixUtil::rtMaterialShaders[shader_idx];
@@ -80,9 +108,12 @@ void OptixScene::updateDrawObjects(uint16_t sbt_count) {
             omm_binding_cfgs[shader_idx] = cfg;
         };
 
+    bool matChange = mesh->dirty & GeoChange::MateChange;
+    if (matChange) {
+
         if (dat.mtlidList.size()>1) {
 
-            mesh->mat_idx.resize(dat.tris.size()/3);
+            mesh->mat_idx.resize(mesh->indices.size());
 
             std::vector<uint16_t> global_matidx(max(dat.mtlidList.size(), 1ull));
 
@@ -96,7 +127,7 @@ void OptixScene::updateDrawObjects(uint16_t sbt_count) {
                 load_omm_cfg(pick);
             }
 
-            for (size_t i=0; i<dat.tris.size()/3; ++i) {
+            for (size_t i=0; i<mesh->indices.size(); ++i) {
                 int mtidx = max(0, dat.triMats[i]);
                 mesh->mat_idx[i] = global_matidx[mtidx];
             }
@@ -104,7 +135,7 @@ void OptixScene::updateDrawObjects(uint16_t sbt_count) {
 
             mesh->mat_idx = {0};
 
-            const auto matKey = std::tuple { dat.mtlid, ShaderMark::Mesh };
+            const auto matKey = std::tuple { mesh->matid, ShaderMark::Mesh };
             auto it = shader_indice_table.find(matKey);
 
             if (it != shader_indice_table.end()) {
@@ -113,23 +144,9 @@ void OptixScene::updateDrawObjects(uint16_t sbt_count) {
             }
             load_omm_cfg(mesh->mat_idx[0]);
         }
-        
-        memcpy(mesh->indices.data(), dat.tris.data(), sizeof(uint)*dat.tris.size() );
-        memcpy(mesh->vertices.data(), dat.verts.data(), sizeof(float)*dat.verts.size() );
-
-        auto ver_count = dat.verts.size()/3;        
-        auto& nrmAttr = dat.getAttr("nrm");
-
-        tbb::parallel_for(size_t(0), ver_count, [&](size_t i) {
-            if (has_uv) {
-                mesh->g_uv[i] = ( *(float2*)&(uvAttr[i * 3]) );
-                mesh->g_tan[i] = toHalf( *(float3*)&(tangAttr[i * 3]) );
-            }
-            if (has_clr) {
-                mesh->g_clr[i] = toHalf( *(float3*)&(clrAttr[i * 3]) );
-            }
-            mesh->g_nrm[i] = toHalf( *(float3*)&(nrmAttr[i * 3]) );
-        });
+    } else {
+        omm_binding_cfgs = mesh->omm_binding_map;
+    }
 
         for (auto& [k, v] : omm_binding_cfgs) {
             OptixUtil::addTexture(v.path);
@@ -141,17 +158,16 @@ void OptixScene::updateDrawObjects(uint16_t sbt_count) {
         dirtyTasks[name] = [&, omm_cfgs=omm_binding_cfgs](OptixDeviceContext& context){
             if (nullptr == mesh || mesh->vertices.empty()) return 0ull;
 
-            mesh->dirty = false;
-            mesh->buildGas(context, sbt_count, omm_cfgs);
+            auto update = (mesh->dirty == GeoChange::ShapChange);            
+            mesh->buildGas(update, context, sbt_count, omm_cfgs);
+            mesh->dirty = GeoChange::VoidChange;
             return mesh->node->handle;
         };
 
         cleanTasks[name] = [&](const std::string& k) {
             _meshes_.erase(k);
-            meshdats.erase(k);
         };
     }
-
     meshesDirty.clear();
 }
 
