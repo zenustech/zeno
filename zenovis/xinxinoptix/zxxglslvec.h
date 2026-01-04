@@ -1027,34 +1027,59 @@ __forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
     return 0.5 * length(cross(v1-v0, v2-v0));
 }
 
-__forceinline__ __device__ vec3 srgbToLinear(vec3 a)
+__forceinline__ __device__ vec4 srgbToLinear(vec4 a)
 {
 //    vec3 result;
 //    result[0] = a[0] < .04045 ?  a[0] * 0.07739938 : pow((a[0]+.055) * 0.947867299 , 2.4);
 //    result[1] = a[1] < .04045 ?  a[1] * 0.07739938 : pow((a[1]+.055) * 0.947867299 , 2.4);
 //    result[2] = a[2] < .04045 ?  a[2] * 0.07739938 : pow((a[2]+.055) * 0.947867299 , 2.4);
-    vec3 result = pow(a, 2.2f);
-    return result;
+
+    return vec4(powf(a.x,2.2f),powf(a.y,2.2f),powf(a.z,2.2f),a.w);
 }
 __forceinline__ __device__
-vec3 linRec709ToLinAP1(vec3 c)
+vec4 linRec709ToLinAP1(vec4 c)
 {
-    vec3 rec709toACEScg0 = vec3(0.610277,   0.345424,  0.0443001);
-    vec3 rec709toACEScg1 = vec3(0.0688436,  0.934974,  -0.00381805);
-    vec3 rec709toACEScg2 = vec3(0.0241673,  0.121814,  0.854019);
+    vec4 rec709toACEScg0 = vec4(0.610277,   0.345424,  0.0443001, 0.0f);
+    vec4 rec709toACEScg1 = vec4(0.0688436,  0.934974,  -0.00381805,0.0f);
+    vec4 rec709toACEScg2 = vec4(0.0241673,  0.121814,  0.854019,0.0f);
+    vec4 rec709toACEScg3 = vec4(0,0,0,1);
 
     // convert rec709 primaries to ACES AP1
-    vec3 result = vec3(dot(rec709toACEScg0,c), dot(rec709toACEScg1,c), dot(rec709toACEScg2,c));
+    vec4 result = vec4(dot(rec709toACEScg0,c), dot(rec709toACEScg1,c), dot(rec709toACEScg2,c), dot(rec709toACEScg3, c));
     return result;
 }
-template <typename T=float4, typename R=vec4>
-__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv, bool use_aces=false)
+__forceinline__ __device__ vec4 toHomoColor(float x)
 {
-    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
-    vec3 a = vec3(tmp);
-    a = use_aces? linRec709ToLinAP1(srgbToLinear(vec3(a))):vec3(a);
-    return *(R*)&a;
+    return vec4(x, 0,0,1);
 }
+__forceinline__ __device__ vec4 toHomoColor(float2 x)
+{
+    return vec4(x.x, x.y,0,1);
+}
+__forceinline__ __device__ vec4 toHomoColor(float3 x)
+{
+    return vec4(x.x, x.y,x.z,1);
+}
+__forceinline__ __device__ vec4 toHomoColor(float4 x)
+{
+    return x;
+}
+
+template <typename T=float4, typename R=vec4>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv, bool use_aces=false) {
+    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
+    if (use_aces)
+    {
+        vec4 c_in = toHomoColor(tmp);
+        c_in = srgbToLinear(c_in);
+        vec4 c = linRec709ToLinAP1(c_in);
+        return *(R*)&c;
+    }else
+    {
+        return *(R*)&tmp;
+    }
+}
+
 __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, 
                                            vec3 v0, vec3 v1, vec3 v2, vec3 p, 

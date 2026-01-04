@@ -911,19 +911,20 @@ namespace DisneyBSDF{
           bool trans = (wi.z * wo.z) < 0;
           float tmpPdf = trans? abs(wi.z)/M_PIf : 0.0f;//0.5/M_PIf:0.0f;
           vec3 transmit = vec3(1.0f);
+          vec3 wm = normalize(wi - wo);
+          vec3 d = BRDFBasics::EvalDisneyDiffuse(vec3(1.0f), mat.subsurface, mat.roughness, mat.sheen,Csheen, -wo, wi, wm, tmpPdf);
           if(thin) {
-              vec3 wm = normalize(wi - wo);
 //            vec3 color = mat.sssColor;
 //            vec3 sigma_t, alpha;
 //            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
 //            vec3 channelPDF = vec3(1.0f/3.0f);
 //            transmit = Transmission2(sigma_t * alpha, sigma_t,
 //                                  channelPDF, 0.001f / (abs(wi.z) + 0.005f), true);
-                vec3 d = BRDFBasics::EvalDisneyDiffuse(mat.basecolor, mat.subsurface, mat.roughness, mat.sheen,Csheen, -wo, wi, wm, tmpPdf);
+
               transmit = clamp(mat.sssParam * d, vec3(0), vec3(1));
           }
 
-          vec3 d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
+          d = (trans? vec3(1.0f): vec3(0.0f)) * transmit  * sssp * dielectricWt;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf  *  sssp * diffPr;
@@ -1416,6 +1417,7 @@ namespace DisneyBSDF{
             reflectance = pdf>1e-5f? (F>1?0:1) * reflectance:vec3(0.0f);
             //            reflectance = vec3(F);
             //            fPdf = F>0?1.0f:0.0f;
+            isSS = false;
             return true;
           }
           else{
@@ -1443,6 +1445,7 @@ namespace DisneyBSDF{
               if(dot(wo,N2)*dot(wi,N2)<0)
                 wi = normalize(wi - 2.0f * dot(wi, N2) * N2);
               w_eval = wi;
+              isSS = false;
             }else
             {
               //go inside
@@ -1471,14 +1474,13 @@ namespace DisneyBSDF{
               float pdf, pdf2;
             vec3 rd, rs, rt;
             MatOutput mat_new = mat;
-//            mat_new.specular = 0;
-//            mat_new.basecolor = vec3(1.0f);
-//            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
-//                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
-//            fPdf = pdf>1e-5f?pdf:0.0f;
-//            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
-            reflectance = vec3(1.0f);
-            fPdf = 1.0f;
+
+            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
+                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
+            fPdf = pdf>1e-5f?pdf:0.0f;
+            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+//            reflectance = vec3(1.0f);
+//            fPdf = 1.0f;
             return true;
             }
           }
