@@ -8,6 +8,7 @@
 #include <zeno/utils/string.h>
 #include <magic_enum.hpp>
 #include <algorithm>
+#include "zeno/utils/format.h"
 
 namespace zeno {
 
@@ -256,4 +257,39 @@ ZENDEFNODE(EvalGSOpacity, {
                                 {"shader"},
                             });
 
+
+    struct EvalFBM : ShaderNodeClone<EvalFBM> {
+        virtual int determineType(EmissionPass *em) override {
+            em->determineType(get_input("pos").get());
+            em->determineType(get_input("offset").get());
+            em->determineType(get_input("freq_detail_rough").get());
+            em->determineType(get_input("avg_streng").get());
+            return TypeHint.at("vec3");
+        }
+
+        virtual void emitCode(EmissionPass *em) override {
+            std::string pos = em->determineExpr(get_input("pos").get());
+            std::string offset = em->determineExpr(get_input("offset").get());
+            std::string freq_detail_rough = em->determineExpr(get_input("freq_detail_rough").get());
+            std::string avg_streng = em->determineExpr(get_input("avg_streng").get());
+            auto code = zeno::format("fbm({}, {}, {}.x, {}.y, {}.z, {}.x, {}.y)", pos, offset,
+                                     freq_detail_rough,freq_detail_rough,freq_detail_rough,avg_streng,avg_streng);
+
+            return em->emitCode(code);
+        }
+    };
+
+    ZENDEFNODE(EvalFBM, {
+        {
+            {"vec3", "pos", "0,0,0"},
+            {"vec3", "offset", "0,0,0"},
+            {"vec3", "freq_detail_rough", "1,2,0.5"},
+            {"vec2", "avg_streng", "0,1"}
+        },
+        {
+            {"vec3", "out"},
+        },
+        {},
+        {"shader"},
+    });
 }

@@ -90,6 +90,7 @@ private:
     Zenovis* m_zenovis;
 
     bool middle_button_pressed = false;
+    bool enable_move = true;
 };
 
 

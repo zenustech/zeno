@@ -1053,6 +1053,7 @@ ZENDEFNODE( SetSceneXform, {
     },
 });
 struct MakeSceneNode : zeno::INode {
+    int inputObjType = 0;
     void apply() override {
         auto scene_tree = std::make_shared<SceneObject>();
         scene_tree->root_name = get_input2<std::string>("root_name");
@@ -1062,6 +1063,29 @@ struct MakeSceneNode : zeno::INode {
         scene_tree->type = get_input2<std::string>("type");
         scene_tree->matrixMode = get_input2<std::string>("matrixMode");
         auto prim = get_input2<PrimitiveObject>("prim");
+        auto session = &zeno::getSession();
+        int currframe = session->globalState->frameid;
+        int beginframe = session->globalComm->beginFrameNumber;
+        std::string mode = get_input2<std::string>("stampMode");
+        if (mode == "UnChanged") {
+            if (currframe != beginframe) {
+                std::shared_ptr<IObject> unchangeObj;
+                unchangeObj = session->globalComm->constructEmptyObj(inputObjType);
+                unchangeObj->m_userData = prim->userData();
+                prim = std::dynamic_pointer_cast<PrimitiveObject>(unchangeObj);
+            }
+            prim->userData().set2("stamp-change", "UnChanged");
+        } else if (mode == "TotalChange") {
+            prim->userData().set2("stamp-change", "TotalChange");
+        }
+        inputObjType = session->globalComm->getObjType(prim);
+        auto &ud = prim->userData();
+        if (!ud.has<std::string>("ResourceType")) {
+            ud.set2("ResourceType", "Mesh");
+        }
+        if (!ud.has<std::string>("ObjectName")) {
+            ud.set2("ObjectName", get_input2<std::string>("ObjectName"));
+        }
         auto bbox = zeno::primBoundingBox2(prim.get());
 
         auto local_xform = glm::mat4(1);
@@ -1114,6 +1138,8 @@ struct MakeSceneNode : zeno::INode {
 ZENDEFNODE( MakeSceneNode, {
     {
         {"prim"},
+        {"enum UnChanged TotalChange", "stampMode", "UnChanged"},
+        {"string", "ObjectName", ""},
         {"enum static dynamic", "type", "dynamic"},
         {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
         {"string", "root_name", "/ABC"},

@@ -914,6 +914,7 @@ namespace DisneyBSDF{
           vec3 wm = normalize(wi - wo);
           vec3 d = BRDFBasics::EvalDisneyDiffuse(vec3(1.0f), mat.subsurface, mat.roughness, mat.sheen,Csheen, -wo, wi, wm, tmpPdf);
           if(thin) {
+
 //            vec3 color = mat.sssColor;
 //            vec3 sigma_t, alpha;
 //            CalculateExtinction2(color, mat.sssParam, sigma_t, alpha, 1.4f, mat.sssFxiedRadius);
@@ -1472,16 +1473,14 @@ namespace DisneyBSDF{
               w_eval = wi;
 
               float pdf, pdf2;
-            vec3 rd, rs, rt;
-            MatOutput mat_new = mat;
+              vec3 rd, rs, rt;
+              MatOutput mat_new = mat;
 
-            reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
-                                          is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
-            fPdf = pdf>1e-5f?pdf:0.0f;
-            reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
-//            reflectance = vec3(1.0f);
-//            fPdf = 1.0f;
-            return true;
+              reflectance = EvaluateDisney3(vec3(1.0f), mat_new, w_eval, wo, T, B, N, N2, thin,
+                                            is_inside, pdf, pdf2, 0, rd, rs, rt, true, reflection_fromCC);
+              fPdf = pdf>1e-5f?pdf:0.0f;
+              reflectance = pdf>1e-5f?reflectance:vec3(0.0f);
+              return true;
             }
           }
 

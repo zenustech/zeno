@@ -154,7 +154,8 @@ struct PerlinNoise {
             float frequency = 1<<i;
             float amplitude = pow(power,i);
             amplitude *= 1.f - max(0.f, i - (depth - 1));
-            total += perlin_lev1(a * frequency) * amplitude;
+            auto sample = a * frequency;
+            total += PerlinNoise1::perlin(sample[0], sample[1], sample[2]) * amplitude;
         }
 
         return total;

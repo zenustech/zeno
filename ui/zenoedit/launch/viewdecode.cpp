@@ -1,4 +1,4 @@
-﻿#ifdef ZENO_MULTIPROCESS
+#ifdef ZENO_MULTIPROCESS
 #include "viewdecode.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -165,6 +165,38 @@ struct PacketProc {
                 pModel->updateSocketDefl(ident, { socket, "", val }, subgIdx, false);
             }
 
+        } else if (action == "pythonRecordScript") {
+            QString ident = QString::fromStdString(objKey);
+            rapidjson::Document doc;
+            doc.Parse(buf, len);
+
+            if (!doc.IsObject()) {
+                zeno::log_warn("document root not object: {}", std::string(buf, len));
+                return false;
+            }
+            auto root = doc.GetObject();
+            for (auto iter = root.MemberBegin(); iter != root.MemberEnd(); iter++)
+            {
+                QString val;
+                if (ident.contains("PythonNode") && iter->name == "args")
+                {
+                    if (iter->value.IsObject())
+                    {
+                        rapidjson::StringBuffer sbBuf;
+                        rapidjson::Writer<rapidjson::StringBuffer> jWriter(sbBuf);
+                        iter->value.Accept(jWriter);
+                        val = QString::fromUtf8(sbBuf.GetString());
+                    }
+                }
+                else if (iter->value.IsString())
+                {
+                    val = iter->value.GetString();
+                }
+
+                QString socket = iter->name.GetString();
+                emit zenoApp->getMainWindow()->pythonRecordScriptFinished(val);
+                break;
+            }
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
             if (pos != std::string::npos) {

@@ -292,20 +292,20 @@ Graph_forkAndCreateNode(ZSubGraphObject* self, PyObject* arg, PyObject* kw)
     const QString& new_fork_name = QString::fromUtf8(_new_fork_name);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    NODE_DATA fakeNodeData = pModel->forkOnlySubgraph(self->subgIdx, fork_subgraph);
+    NODE_DATA fakeNodeData = pModel->forkOnlySubgraph(self->subgIdx, fork_subgraph, new_fork_name);
     if (fakeNodeData.isEmpty()) {
         PyErr_SetString(PyExc_Exception, "fork error");
         PyErr_WriteUnraisable(Py_None);
         return Py_None;
     }
 
-    //fork出来的子图的名字
+    //fork鍑烘潵鐨勫瓙鍥剧殑鍚嶅瓧
     QString new_fork_subgraph_name = fakeNodeData[ROLE_OBJNAME].toString();
     const QByteArray& bytes = new_fork_subgraph_name.toUtf8();
     const char* c = bytes.data();
     PyObject* new_arg= Py_BuildValue("s", c);
 
-    //用户想设置的名字
+    //鐢ㄦ埛鎯宠缃殑鍚嶅瓧
     const QByteArray& bytes2 = new_fork_name.toUtf8();
     const char* c2 = bytes2.data();
     PyObject* new_arg2 = Py_BuildValue("s", c2);

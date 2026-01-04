@@ -315,6 +315,7 @@ void ZenoSpreadsheet::clear() {
 }
 
 void ZenoSpreadsheet::setPrim(std::string primid, std::string mtlid, bool selecFromOpitx) {
+    zenoApp->getMainWindow()->statusbarShowMessage(zeno::format("{} : {}", primid, mtlid), 10000);
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
     pMtlid->setText(QString(mtlid.c_str()));
     if (!selecFromOpitx) {

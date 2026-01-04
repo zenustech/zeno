@@ -974,6 +974,8 @@ struct PrimDice : INode {
         primTriangulateIntoPolys(origin_prim.get());
         auto prim = std::dynamic_pointer_cast<PrimitiveObject>(origin_prim->clone());
         primTriangulateIntoPolys(prim.get());
+        prim->polys.erase_attr("parentID");
+        prim->loops.erase_attr("bw");
         auto camera = get_input2<CameraObject>("camera");
         auto width = get_input2<int>("width");
         auto height = get_input2<int>("height");
@@ -1055,7 +1057,7 @@ ZENDEFNODE(PrimDice,
     "camera",
     {"int", "width", "1920"},
     {"int", "height", "1080"},
-    {"int", "maxIterNum", "1"},
+    {"int", "maxIterNum", "20"},
     {"float", "factor", "0.5"},
 }, /* outputs: */ {
     "out",

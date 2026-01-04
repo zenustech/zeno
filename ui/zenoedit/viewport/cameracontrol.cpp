@@ -190,6 +190,7 @@ void CameraControl::click_id_activate_matnode(std::optional<std::tuple<std::stri
 
 void CameraControl::click_pos_set_pivot(std::optional<glm::vec3> hit_posWS)
 {
+    enable_move = true;
     m_hit_posWS = hit_posWS;
     if (m_hit_posWS.has_value()) {
         auto scene = m_zenovis->getSession()->get_scene();
@@ -262,6 +263,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event, ZOptixViewport* view
             }
             else {
                 if (viewport) {
+                    enable_move = false;
                     emit viewport->sig_send_clickinfo_to_optix(clickInfo);
                 }
             }
@@ -472,7 +474,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             if (!use_right_button && zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
                 auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
                 auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
-                if (new_pos.has_value()) {
+                if (new_pos.has_value() && enable_move) {
                     auto diff = new_pos.value() - getPos();
                     setPivot(getPivot() + diff);
                     setPos(new_pos.value());

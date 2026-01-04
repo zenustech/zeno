@@ -919,7 +919,7 @@ void GraphsModel::removeGraph(int idx)
     markDirty();
 }
 
-NODE_DATA GraphsModel::forkOnlySubgraph(const QModelIndex& subgIdx, const QString& fork_subgraph_name)
+NODE_DATA GraphsModel::forkOnlySubgraph(const QModelIndex& subgIdx, const QString& fork_subgraph_name, const QString& fork_subgraph_custom_name)
 {
     SubGraphModel* pModel = subGraph(fork_subgraph_name);
     ZASSERT_EXIT(pModel, NODE_DATA());
@@ -929,7 +929,7 @@ NODE_DATA GraphsModel::forkOnlySubgraph(const QModelIndex& subgIdx, const QStrin
         return NODE_DATA();
     }
 
-    NODE_DATA subnetData = _fork(fork_subgraph_name);
+    NODE_DATA subnetData = _fork(fork_subgraph_name, fork_subgraph_custom_name);
     return subnetData;
 }
 
@@ -996,7 +996,7 @@ QModelIndex GraphsModel::forkMaterial(const QModelIndex& currSubgIdx, const QMod
     return index;
 }
 
-NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
+NODE_DATA GraphsModel::_fork(const QString& forkSubgName, const QString& fork_subgraph_custom_name)
 {
     SubGraphModel* pModel = subGraph(forkSubgName);
     ZASSERT_EXIT(pModel, NODE_DATA());
@@ -1073,8 +1073,8 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             nodes.insert(newData[ROLE_OBJID].toString(), newData);
         }
     }
-
-    const QString& forkName = uniqueSubgraph(forkSubgName);
+    //const QString& forkName = uniqueSubgraph(forkSubgName);
+    const QString& forkName = fork_subgraph_custom_name.isEmpty() ? uniqueSubgraph(forkSubgName) : fork_subgraph_custom_name;
     SubGraphModel* pForkModel = new SubGraphModel(this);
     pForkModel->setName(forkName);
     pForkModel->setType(pModel->type());
