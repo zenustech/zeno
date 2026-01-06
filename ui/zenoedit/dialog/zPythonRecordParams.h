@@ -9,6 +9,10 @@
 
 struct PythonRecordInfo
 {
+    //shot name
+    QString shotname;
+
+    //renderJob
     // Parameters from VideoRecInfo
     int fstart = 0;
     int resolutionx = 1;
@@ -44,10 +48,14 @@ public:
     bool getInfo(PythonRecordInfo& info) const;
 
 private:
+    //shotName
+    QLineEdit* m_shotName;
+
     // VideoRecInfo parameters UI controls
     QLineEdit* m_resolutionXEdit;
     QLineEdit* m_resolutionYEdit;
     QCheckBox* m_needDenoiseCheckBox;
+    QLineEdit* m_renderTaskZsgPath;
     QLineEdit* m_samplesEdit;
     QCheckBox* m_aovsCheckBox;
     QCheckBox* m_exportEXRCheckBox;

@@ -1,4 +1,4 @@
-﻿#include "zenosubgraphscene.h"
+#include "zenosubgraphscene.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
@@ -19,6 +19,15 @@
 #include "settings/zenosettingsmanager.h"
 #include "groupnode.h"
 #include "viewport/cameracontrol.h"
+
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
+#include <QFileInfo>
+#include <QDir>
+#include <QDebug>
 
 
 bool sceneMenuEvent(
@@ -115,6 +124,8 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     setSceneRect(rcView);
 
     gentle_zoom(1.0);
+
+    setAcceptDrops(true);
 }
 
 void _ZenoSubGraphView::showGrid(bool bShow)
@@ -347,6 +358,60 @@ void _ZenoSubGraphView::showEvent(QShowEvent *event)
         emit zoomed(factor_i_want);
     }
     _base::showEvent(event);
+}
+
+bool isImageFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为图片格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList imageExtensions = { "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif",
+                                  "webp", "ico", "svg", "psd", "raw", "dds", "exr", "pfm", "hdr"};
+
+    return imageExtensions.contains(extension);
+}
+
+void _ZenoSubGraphView::dragMoveEvent(QDragMoveEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls) {
+            if (!url.isLocalFile()) {
+                continue;
+            }
+            QString filePath = url.toLocalFile();
+            if (isImageFile(filePath)) {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+    event->ignore();
+}
+
+void _ZenoSubGraphView::dropEvent(QDropEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls) {
+            if (!url.isLocalFile()) {
+                continue;
+            }
+            QString filePath = url.toLocalFile();
+            if (isImageFile(filePath)) {
+                QString imagePath = QDir::toNativeSeparators(filePath);
+
+                event->acceptProposedAction();
+
+                auto m_subgIdx = m_scene->subGraphIndex();
+                NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+                IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "SmartTexture2D", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", imagePath }, m_subgIdx, false);
+                return;
+            }
+        }
+    }
+    event->ignore();
 }
 
 void _ZenoSubGraphView::mousePressEvent(QMouseEvent* event)
