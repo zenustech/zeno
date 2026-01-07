@@ -245,6 +245,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new TargetCameraNode(params);
     }
+    else if (descName == "NumericVec3")
+    {
+        return new NumericVec3Node(params);
+    }
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);
