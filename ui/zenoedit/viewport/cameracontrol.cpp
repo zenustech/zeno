@@ -195,6 +195,7 @@ void CameraControl::click_pos_set_pivot(std::optional<glm::vec3> hit_posWS)
     if (m_hit_posWS.has_value()) {
         auto scene = m_zenovis->getSession()->get_scene();
         scene->camera->setPivot(m_hit_posWS.value());
+        zenoApp->getMainWindow()->statusbarShowMessage(zeno::format("pos: {}", m_hit_posWS.value()), 0);
     }
 }
 
