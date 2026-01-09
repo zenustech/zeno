@@ -5,6 +5,7 @@
 
 #define _NANOVDB_ true
 
+#include "IOMat.h"
 #include "volume.h"
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
@@ -150,35 +151,16 @@ inline __device__ float _LERP_(float t, float s1, float s2)
     return fma(t, s2, fma(-t, s1, s1));
 }
 
-struct VolumeIn2 {
-    float3 pos_world;
-    float3 pos_view;
-
-    bool isShadowRay;
-
-	float sigma_t;
-	uint32_t* seed;
-
-    
-    void* sbt_ptr;
-    float* world2object;
+struct VolumeInX : VolumeIn {
 
 	inline float rndf() const {
 		return rnd(*seed);
 	}
 
-    vec3 _local_pos_ = vec3(CUDART_NAN_F);
-    vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
-
     __device__ vec3 localPosLazy() {
 		if (isfinite(_local_pos_.x)) return _local_pos_;
 
-        if (world2object != nullptr) {
-            mat4* _w2o = reinterpret_cast<mat4*>(world2object);
-            vec4 tmp = (*_w2o) * vec4(pos_view.x, pos_view.y, pos_view.z, 1.0f);
-            
-            _local_pos_ = *(vec3*)&tmp;
-        }
+        _local_pos_ = transformPoint(pos_view, this->worldToObject);
         return _local_pos_;
     };
 
@@ -186,9 +168,7 @@ struct VolumeIn2 {
 		if (isfinite(_uniform_pos_.x)) return _uniform_pos_;
 
         using GridTypeNVDB = GridTypeNVDB0;
-        const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( sbt_ptr );
-
-        assert(sbt_data != nullptr);
+        const HitGroupData* sbt_data = (HitGroupData*)( sbt_ptr );
 
         const auto grid_ptr = sbt_data->vdb_grids[0];
         const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
@@ -226,7 +206,7 @@ struct VolumeIn2 {
 };
 
 template <typename Acc, uint8_t Order, typename DataTypeNVDB, typename ReturnType>
-inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, const VolumeIn2& volin) {
+inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd, const VolumeInX& volin) {
     
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
@@ -266,7 +246,7 @@ inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd
 }
 
 template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB, typename ReturnType>
-__inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeIn2& volin) {
+__inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeInX& volin) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
@@ -288,7 +268,7 @@ __inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, 
 }
 
 template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB>
-__inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeIn2& volin) {
+__inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeInX& volin) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
@@ -304,7 +284,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
     let uniforms = params.d_uniforms;
     let buffers = params.global_buffers;
 
-    auto& attrs = *reinterpret_cast<VolumeIn2*>(attrs_ptr);
+    auto& attrs = *reinterpret_cast<VolumeInX*>(attrs_ptr);
     auto& prd = attrs;
 
     vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos_world);

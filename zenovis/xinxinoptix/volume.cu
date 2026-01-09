@@ -128,23 +128,15 @@ extern "C" __global__ void __intersection__volume()
 }
 
 
-__device__ __inline__ auto EvalVolume(uint32_t& seed, float* m16, float sigma_t, float3& pos, VolumeOut& out, bool isShadowRay=false) {
+__device__ __forceinline__ auto EvalVolume(VolumeIn& vin, uint16_t dc_index, float sigma_t, float3& pos, VolumeOut& out) {
 
-    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
-
-    VolumeIn vin;
     vin.pos_view = pos;
     vin.pos_world = pos + params.cam.eye;
 
-    vin.isShadowRay = isShadowRay;
-
-    vin.seed = &seed;
     vin.sigma_t = sigma_t;
-    vin.sbt_ptr = (void*)sbt_data;
-    
-    vin.world2object = m16;
+    vin.resetCache();
 
-    optixDirectCall<void, void*, VolumeOut&>( sbt_data->dc_index, (void*)&vin, out);
+    optixDirectCall<void, void*, VolumeOut&>( dc_index, (void*)&vin, out);
 }
 
 extern "C" __global__ void __closesthit__radiance_volume()
@@ -152,7 +144,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     RadiancePRD* prd = getPRD();
     prd->radiance = vec3(0);
 
-    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+    const HitGroupData* sbt_data = (HitGroupData*)( optixGetSbtDataPointer() );
+    const auto dc_index = sbt_data->dc_index;
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
@@ -207,14 +200,18 @@ extern "C" __global__ void __closesthit__radiance_volume()
         new_orig = ray_orig;
     };
 
-    float m16[16] = {}; m16[15] = 1;
-    optixGetWorldToObjectTransformMatrix(m16);
+    VolumeIn vin {};
+    vin.isShadowRay = false;
+    vin.seed = &prd->seed;
+    vin.sbt_ptr = (void*)sbt_data;
+    optixGetObjectToWorldTransformMatrix((float*)vin.objectToWorld);
+    optixGetWorldToObjectTransformMatrix((float*)vin.worldToObject);
 
     if (0 == sbt_data->vol_depth) { // Homogeneous
 
         new_orig = ray_orig + 0.5f * (t0 + t1) * ray_dir;
         VolumeOut homo_out; 
-        EvalVolume(prd->seed, m16, 0.0f, new_orig, homo_out);
+        EvalVolume(vin, dc_index, 0.0f, new_orig, homo_out);
         //auto hg = pbrt::HenyeyGreenstein(vol_out.anisotropy);
 
         float3 transmittance = vec3(1.0f);
@@ -319,7 +316,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         } // over shoot, outside of volume
 
         new_orig = ray_orig + (t0+t_ele) * ray_dir;
-        EvalVolume(prd->seed, m16, sigma_t, new_orig, vol_out);
+        EvalVolume(vin, dc_index, sigma_t, new_orig, vol_out);
 
         v_density = clamp(vol_out.density / sigma_t, 0.0f, 1.0f);
         emitting += vol_out.emission;
@@ -397,7 +394,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
 
-    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+    const HitGroupData* sbt_data = (HitGroupData*)( optixGetSbtDataPointer() );
+    const auto dc_index = sbt_data->dc_index;
 
     ShadowPRD* prd = getPRD<ShadowPRD>();
     const float t0 = prd->vol.t0;
@@ -412,17 +410,21 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     float hgp = 1.0f;
     pbrt::HenyeyGreenstein hg(9.0f);
 
-    float m16[16] = {}; m16[15] = 1;
-    optixGetWorldToObjectTransformMatrix(m16);
-
     const float sigma_t = sbt_data->vol_extinction;
+
+    VolumeIn vin {};
+    vin.isShadowRay = true;
+    vin.seed = &prd->seed;
+    vin.sbt_ptr = (void*)sbt_data;
+    optixGetObjectToWorldTransformMatrix((float*)vin.objectToWorld);
+    optixGetWorldToObjectTransformMatrix((float*)vin.worldToObject);
 
     if (0 == sbt_data->vol_depth) { // Homogeneous
 
         test_point += ray_dir * 0.5f * (t0 + t1);
 
         VolumeOut homo_out;
-        EvalVolume(prd->seed, m16, sigma_t, test_point, homo_out);
+        EvalVolume(vin, dc_index, sigma_t, test_point, homo_out);
         hg = pbrt::HenyeyGreenstein(homo_out.anisotropy);
 
         vec3& trans = *(vec3*)&transmittance;
@@ -455,7 +457,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         } // over shoot, outside of volume
 
         VolumeOut vol_out;
-        EvalVolume(prd->seed, m16, sigma_t, test_point, vol_out, true);
+        EvalVolume(vin, dc_index, sigma_t, test_point, vol_out);
 
         const auto v_density = vol_out.density / sigma_t;
 
