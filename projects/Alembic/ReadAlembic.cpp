@@ -1337,7 +1337,7 @@ ZENDEFNODE(ReadAlembic, {
         "namelist",
     },
     {},
-    {"alembic"},
+    {"deprecated"},
 });
 
 struct ReadAlembicFile : INode {
