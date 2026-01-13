@@ -1734,14 +1734,16 @@ std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
         return tex_data;
     }
     auto rgba_data = rgb_to_rgba(tex_data, w, h);
+    auto albedo_data = rgb_to_rgba(optixgetimg_extra2("albedo", w, h), w, h);
+    auto normal_data = rgb_to_rgba(optixgetimg_extra2("normal", w, h), w, h);
 
     std::vector<float> output_data(w * h * 4);
     OptiXDenoiser::Data data;
     data.width     = w;
     data.height    = h;
     data.color     = rgba_data.data();
-    data.albedo    = nullptr;
-    data.normal    = nullptr;
+    data.albedo    = albedo_data.data();
+    data.normal    = normal_data.data();
     data.flow      = nullptr;
     data.flowtrust = nullptr;
     data.outputs.push_back( output_data.data() );
