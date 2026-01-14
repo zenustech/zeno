@@ -1,4 +1,4 @@
-﻿#ifndef __ZENO_MAINWINDOW_H__
+#ifndef __ZENO_MAINWINDOW_H__
 #define __ZENO_MAINWINDOW_H__
 
 #include <unordered_set>
@@ -16,6 +16,7 @@
 
 class ZenoDockWidget;
 class DisplayWidget;
+class zenoBenchmark;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
@@ -48,6 +49,7 @@ public:
     DisplayWidget* getCurrentViewport() const;
     DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
+    zenoBenchmark* getAnyBenchmark() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
 
     void doFrameUpdate(int frame);
@@ -142,6 +144,7 @@ signals:
     void alwaysModeChanged(bool bAlways);
     void runFinished();
     void runStarted();
+    void pythonRecordScriptFinished(QString command);//传递运行脚本zsg后生成的执行python脚本的命令
 
 public slots:
     void openFileDialog();
@@ -179,6 +182,9 @@ public slots:
     void onCheckUpdate();
     void onSetTimelineValue();
     void onComposeVideo();
+
+    void onPyProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onPyProcReady();
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
@@ -207,6 +213,7 @@ private:
     void screenShoot();
     void setActionIcon(QAction* action);
     void initCustomLayoutAction(const QStringList& list, bool isDefault = false);
+    void initRunScriptAction();
     void loadDockLayout(QString name, bool isDefault = false);
     QJsonObject readDefaultLayout();
     void manageCustomLayout();

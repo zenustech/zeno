@@ -53,7 +53,7 @@ struct LightSampleRecord {
 namespace pbrt {
     
 template <typename T>
-inline float Sqr(T v) { return v * v; }
+inline T Sqr(T v) { return v * v; }
 
 inline float SafeASin(float x) {
     DCHECK(x >= -1.0001 && x <= 1.0001);
@@ -67,6 +67,10 @@ inline float SafeASin(float x) {
 inline float SafeSqrt(float x) {
     DCHECK(x > -1e-3f);  // not too negative
     return sqrtf(fmaxf(0.f, x));
+}
+
+inline float Dot(const Vector3f& v, const Vector3f& n) {
+    return dot(v, n);
 }
 
 inline float AbsDot(const Vector3f& v, const Vector3f& n) {
@@ -249,7 +253,7 @@ static __host__ __device__ __inline__ float3 sphereUV(const float3 &dir, bool in
 
     auto x = internal? dir.x:-dir.x;
 
-    auto u = 0.5f + atan2f(dir.z, x) * 0.5f / M_PIf;
+    auto u = 0.25f + atan2f(dir.z, x) * 0.5f / M_PIf;
     auto v = 0.5f + asinf(dir.y) / M_PIf;
 
     return float3 {u, v, 0.0f};

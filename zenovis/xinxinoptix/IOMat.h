@@ -31,6 +31,7 @@ struct MatOutput {
     float clearcoatIOR;
 
     float specTrans;
+    float F0;
     vec3 transColor;
     vec3 transTint;
     float transTintDepth;
@@ -50,7 +51,11 @@ struct MatOutput {
     float displacement;
     float shadowReceiver;
     float shadowTerminatorOffset;
+    float emissionOnly;
     float isHair;
+    float hair_rough2;
+    float m0_rough;
+    float hairAmp;
     vec3  mask_value;
 
     vec3 nrm;
@@ -129,19 +134,23 @@ struct TriangleInput : MatInput {
         return { 1.0f-barys2.x-barys2.y, barys2.x, barys2.y };
     }
 
-    inline vec3 interpNorm(float smooth=0.0f) const {
+    inline vec3 interpNorm(float smooth=1.0f) const {
         let gas_ptr = getGasPointer();
         let nrm_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-4) );
         if (nrm_ptr == nullptr) { return wldNorm; }
 
-        float3 n0 = decodeHalf( nrm_ptr[ vertex_idx.x ] );
-        float3 n1 = decodeHalf( nrm_ptr[ vertex_idx.y ] );
-        float3 n2 = decodeHalf( nrm_ptr[ vertex_idx.z ] );
-
-        if (smooth > 0.0f) {
-            n0 = dot(n0, objNorm)>(1-smooth)?n0:objNorm;
-            n1 = dot(n1, objNorm)>(1-smooth)?n1:objNorm;
-            n2 = dot(n2, objNorm)>(1-smooth)?n2:objNorm;
+        float3 n0, n1, n2;
+        if (0.0f == smooth) {
+            n0 = n1 = n2 = objNorm; 
+        } else {
+            n0 = decodeHalf( nrm_ptr[ vertex_idx.x ] );
+            n1 = decodeHalf( nrm_ptr[ vertex_idx.y ] );
+            n2 = decodeHalf( nrm_ptr[ vertex_idx.z ] );
+            if (1.0f > smooth) {
+                n0 = dot(n0, objNorm)>(1-smooth)?n0:objNorm;
+                n1 = dot(n1, objNorm)>(1-smooth)?n1:objNorm;
+                n2 = dot(n2, objNorm)>(1-smooth)?n2:objNorm;
+            }
         }
 
         auto tmp = interp(barys2, n0, n1, n2);
@@ -232,11 +241,39 @@ struct SphereInput : MatInput {
     inline vec3 uv() const {
         return sphereUV(objNorm, false);
     }
+    __forceinline__ float3 barys() const {
+        return uv();
+    }
     inline vec3 clr() const {
         let gas_ptr = getGasPointer();
         let clr_ptr = (float3*)( *(gas_ptr-1) );
         if (clr_ptr == nullptr) return {0,0,0};
         return clr_ptr[priIdx]; 
+    }
+    inline float area(bool local=false) const {
+        return 0.0f;
+    }
+    inline float3 els(bool local=false) const {
+        return {};
+    }
+};
+
+struct CurveInput : MatInput {
+
+    inline vec3 interpNorm(float smooth=0.0f) const {
+        return N;
+    }
+    inline vec3 interpTang() const {
+        return T;
+    }
+    inline vec3 uv() const {
+        return {barys2.x, barys2.y, 0.0};
+    }
+    __forceinline__ float3 barys() const {
+        return uv();
+    }
+    inline vec3 clr() const {
+        return {}; 
     }
     inline float area(bool local=false) const {
         return 0.0f;
@@ -253,10 +290,8 @@ inline auto dispatch(const MatInput* input, int16_t ptype, Func&& func) {
             return func(*reinterpret_cast<const TriangleInput*>(input));
         case OPTIX_PRIMITIVE_TYPE_SPHERE:
             return func(*reinterpret_cast<const SphereInput*>(input));
-        default: {
-            using ReturnT = decltype(func(*reinterpret_cast<const SphereInput*>(input)));
-            return ReturnT{};
-        }
+        default: // Curve
+            return func(*reinterpret_cast<const CurveInput*>(input));
     }
 }
 
@@ -270,6 +305,9 @@ struct WrapperInput : MatInput {
     inline vec3 uv() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.uv(); });
     }
+    __forceinline__ float3 barys() const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.barys(); });
+    }
     inline vec3 clr() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.clr(); });
     }
@@ -278,5 +316,8 @@ struct WrapperInput : MatInput {
     }
     inline float3 els(bool local=false) const {
         return dispatch(this, ptype, [&](const auto& in) { return in.els(local); });
+    }
+    inline float3 eLength(bool local=false) const {
+        return els(local);
     }
 };

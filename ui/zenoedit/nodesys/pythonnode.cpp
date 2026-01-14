@@ -75,9 +75,11 @@ void PythonNode::onExecuteClicked()
         }
     }
     AppHelper::pythonExcute(script);
+    zenoApp->getMainWindow()->statusbarShowMessage("Execute", 10000);
 }
 
 void PythonNode::onGenerateClicked()
 {
     AppHelper::generatePython(this->nodeId());
+    zenoApp->getMainWindow()->statusbarShowMessage("Generate", 10000);
 }

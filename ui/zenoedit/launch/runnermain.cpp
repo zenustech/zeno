@@ -136,7 +136,7 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
                 + "\"}", "", 0);
 
     zeno::getSession().globalState->zeno_version = getZenoVersion();
-    if (!param.generator.isEmpty())
+    if (!param.generator.isEmpty() || param.pythonRecordScript)
     {
         //only execute the node which id is `param.generator`.
         std::set<std::string> nodes;
@@ -206,7 +206,11 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         std::string strJson = s.GetString();
         if (strJson != "")
         {
-            send_packet("{\"action\":\"generate\",\"key\":\"" + ident + "\"" + "}", strJson.c_str(), strJson.length() + 1);
+            if (param.pythonRecordScript) {
+                send_packet("{\"action\":\"pythonRecordScript\",\"key\":\"" + ident + "\"" + "}", strJson.c_str(), strJson.length() + 1);
+            } else {
+                send_packet("{\"action\":\"generate\",\"key\":\"" + ident + "\"" + "}", strJson.c_str(), strJson.length() + 1);
+            }
             return 0;
         }
         //and then send packet back to ui process.
@@ -265,6 +269,10 @@ static int runner_start(std::string const &progJson, int sessionid, const LAUNCH
         if (session->globalStatus->failed())
             return onfail();
     }
+
+    auto benchmarkLog = session->globalComm->getBenchmarkLog();
+    send_packet("{\"action\":\"benchmark\"}", benchmarkLog.data(), benchmarkLog.size());
+
     return 0;
 }
 
@@ -296,6 +304,7 @@ int runner_main(const QCoreApplication& app) {
         {"projectFps", "current project fps", "fps"},
         {"objcachedir", "objcachedir", "obj temp cache dir"},
         {"generator", "generator", "the node ident which trigger generate command"},
+        {"pythonRecordScript", "generate python script", "generate python distributed scripts"},
         });
     cmdParser.process(app);
     if (cmdParser.isSet("sessionid"))
@@ -322,6 +331,8 @@ int runner_main(const QCoreApplication& app) {
         param.projectFps = cmdParser.value("projectFps").toInt();
     if (cmdParser.isSet("generator"))
         param.generator = cmdParser.value("generator");
+    if (cmdParser.isSet("pythonRecordScript"))
+        param.pythonRecordScript = cmdParser.value("pythonRecordScript").toInt();
 
     std::cerr.rdbuf(std::cout.rdbuf());
     std::clog.rdbuf(std::cout.rdbuf());

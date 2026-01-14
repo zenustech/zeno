@@ -17,9 +17,11 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
+#include "dialog/zPythonRecordParams.h"
 #include "util/apphelper.h"
 #include "launch/ztcpserver.h"
 #include <zenoio/writer/zsgwriter.h>
+#include <zenomodel/include/zenomodel.h>
 
 
 using std::string;
@@ -838,7 +840,86 @@ void DisplayWidget::onRecord()
 
     int curSlidFeq = m_sliderFeq;
     ZRecordVideoDlg dlg(this);
-    if (QDialog::Accepted == dlg.exec())
+    int ret = dlg.exec();
+
+    if (ret == ZRecordVideoDlg::RunByPython)
+    {
+        // Get basic record info first
+        VideoRecInfo recInfo;
+        if (!dlg.getInfo(recInfo))
+        {
+            QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
+
+        zPythonRecordParams pythonParamsDlg(recInfo);
+        if (pythonParamsDlg.exec() == QDialog::Accepted)
+        {
+            PythonRecordInfo pythonInfo;
+            if (!pythonParamsDlg.getInfo(pythonInfo))
+            {
+                QMessageBox::warning(this, tr("Python Record"), tr("Invalid zsg path."));
+                return;
+            }
+
+            IGraphsModel* pModel = zeno_model::createModel(nullptr);
+            {
+                pModel->blockSignals(true);
+                QString controlRenderScriptZsg = "O:/resource/分布式执行控制.zsg";     //脚本zsg的路径
+                QString renderJobNodeName = "renderJob(1)";                         //将参数填入main图的renderJobNodeName节点
+                QString pythonNodeCls = "PythonNode";                               //执行main图的pythonnode的generate和execute
+
+                std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
+                bool ret = ZsgReader::getInstance().openFile(controlRenderScriptZsg, acceptor.get());
+                if (ret) {
+                    QModelIndex mainidx = pModel->index("main");
+                    QModelIndexList renderJobLstfst = pModel->searchInSubgraph(renderJobNodeName, mainidx);
+                    for (auto& idx : renderJobLstfst) {
+                        if (idx.data(ROLE_OBJNAME).toString() == renderJobNodeName) {
+                            auto ident = idx.data(ROLE_OBJID).toString();
+                            pModel->updateSocketDefl(ident, { "fstart", "", pythonInfo.fstart}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "resolution_x", "", pythonInfo.resolutionx}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "resolution_y", "", pythonInfo .resolutiony}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "denoise", "", pythonInfo .needDenoise}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "samples", "", pythonInfo .samples}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "aovs", "", pythonInfo .bAov}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "fend", "", pythonInfo .fend}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "exr", "", pythonInfo .bExportEXR}, mainidx, false);
+
+                            pModel->updateSocketDefl(ident, { "cmdParamsJson", "", pythonInfo .cmdParamsJson}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "cachePath", "", pythonInfo .cachePath}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "executor_path", "", pythonInfo .executorPath}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "optix", "", (int)pythonInfo .useOptix}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "renderTaskPath", "", pythonInfo .renderTaskPath}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "batchSize", "", pythonInfo .batchSize}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "MachineGroup", "", pythonInfo .machineGroup}, mainidx, false);
+                            break;
+                        }
+                    }
+
+                    QList<SEARCH_RESULT> pynodeLst = pModel->search(pythonNodeCls, SEARCH_NODECLS, SEARCH_MATCH_EXACTLY);
+                    if (pynodeLst.empty()) {
+                        return;
+                    }
+                    SEARCH_RESULT pynodeLstfst = pynodeLst.first();
+                    auto pythonNodeId = pynodeLstfst.targetIdx.data(ROLE_OBJID).toString();
+                    AppHelper::generatePythonByGraph(pModel, pythonNodeId);
+                    static QMetaObject::Connection pythonRecordConnection;
+                    if (pythonRecordConnection) {
+                        QObject::disconnect(pythonRecordConnection);
+                    }
+                    pythonRecordConnection = connect(zenoApp->getMainWindow(), &ZenoMainWindow::pythonRecordScriptFinished, [pModel](QString command) {
+                        AppHelper::pythonExcute(command);
+                        delete pModel;
+                    });
+                }
+            }
+            pModel->clearDirty();
+        }
+
+        return;
+    }
+    else if (QDialog::Accepted == ret)
     {
         VideoRecInfo recInfo;
         if (!dlg.getInfo(recInfo))

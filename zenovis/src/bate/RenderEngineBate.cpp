@@ -127,6 +127,7 @@ struct RenderEngineBate : RenderEngine {
         primHighlight = nullptr;
         fbr = nullptr;
     }
+
     std::optional<glm::vec3> getClickedPos(float _x, float _y) override {
 		auto w = scene->camera->m_nx;
 		auto h = scene->camera->m_ny;

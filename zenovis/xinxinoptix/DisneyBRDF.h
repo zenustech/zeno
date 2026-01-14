@@ -9,9 +9,16 @@ float PowerHeuristic(float a, float b, float beta = 2.0f)
 {
     float t  = powf(a, beta);
     float t2 = powf(b, beta);
-    return t / (t2 + t + 1e-6f);
+    return t / (t2 + t);
   
 }
+
+static __inline__ __device__
+float BalanceHeuristic(float a, float b)
+{
+    return a / (a + b);
+}
+
 static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);
     float v2 = v *v;
@@ -97,13 +104,19 @@ static __inline__ __device__ vec3 sampleUniformHemiSphere(unsigned int &seed)
 static __inline__ __device__  vec3 CosineSampleHemisphere(float r1, float r2)
 {
   vec3 dir;
-  float phi = 2.0f * M_PIf * r1;
-  float cosTheta = sqrtf(r2), sinTheta = sqrtf(1.0f - r2);
-//  float r = sqrt(r1);
-//  float phi = 2.0f * 3.1415926f  * r2;
-  dir.x = cosf(phi) * sinTheta;
-  dir.y = sinf(phi) * sinTheta;
-  dir.z = cosTheta;
+//  float phi = 2.0f * M_PIf * r1;
+//  float cosTheta = sqrtf(r2), sinTheta = sqrtf(1.0f - r2);
+////  float r = sqrt(r1);
+////  float phi = 2.0f * 3.1415926f  * r2;
+//  dir.x = cosf(phi) * sinTheta;
+//  dir.y = sinf(phi) * sinTheta;
+//  dir.z = cosTheta;
+    float radius = sqrtf(r1);
+    float angle = 2.0f * M_PIf * r2;
+    float x = radius * cosf(angle);
+    float y = radius * sinf(angle);
+    float z = sqrtf(1.0f - r1);
+    dir = vec3(x,y,z);
   return dir;
 }
 static __inline__ __device__  vec3 UniformSampleHemisphere(float r1, float r2)
@@ -318,20 +331,17 @@ float GgxG(vec3 wo, vec3 wi, float alphaX, float alphaY) {
 static __inline__ __device__
 float DielectricFresnel(float cosThetaI, float eta)
 {
-  float sin2 = 1.0f - cosThetaI * cosThetaI;
-  float eta2 = eta * eta;
+    float sin2Theta_i = 1 - pbrt::Sqr(cosThetaI);
+    float sin2Theta_t = sin2Theta_i / pbrt::Sqr(eta);
+    if (sin2Theta_t >= 1)
+       return 1.f;
+    float cosTheta_t = sqrt(1 - sin2Theta_t);
 
-  float cos2t = 1.0f - sin2 / eta2;
-  if(cos2t < 0.0f) return 1.0f;
-
-  float t0 = sqrt(cos2t);
-  float t1 = eta * t0;
-  float t2 = eta * cosThetaI;
-
-  float rs = (cosThetaI - t1) / (cosThetaI + t1);
-  float rp = (t0 - t2) / (t0 + t2);
-
-  return 0.5f * (rs * rs + rp * rp);
+    float r_parl = (eta * cosThetaI - cosTheta_t) /
+               (eta * cosThetaI + cosTheta_t);
+    float r_perp = (cosThetaI - eta * cosTheta_t) /
+               (cosThetaI + eta * cosTheta_t);
+    return (pbrt::Sqr(r_parl) + pbrt::Sqr(r_perp)) / 2;
 }
 
 static __inline__ __device__ 
@@ -423,7 +433,8 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = abs(L.z) / M_PIf;
-  res = L.z*H.z>0? 1.0f / M_PIf * baseColor * (FDL * FDV) + Fsheen : vec3(0.0);
+  res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor + Fsheen: vec3(0.0);
+  //res = (L.z*H.z>0)? 1.0f / M_PIf * baseColor: vec3(0.0);
 
   return res;
 }
@@ -462,6 +473,7 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
   return (L.z * V.z <= 0.0f)?vec3(0.0):F * D * G2 / (4.0f * L.z * V.z);
 }
 
+
 static __inline__ __device__
 vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
 {
@@ -479,11 +491,10 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
   float denom = LDotH * eta + VDotH;
   denom *= denom;
-  float eta2 = eta * eta;
   float jacobian = abs(LDotH) / (denom + 1e-5f);
 
-  pdf = G1 * max(0.0f, VDotH) * D * jacobian / abs(V.z);
-  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
+  pdf = G1 * abs(VDotH) * D * jacobian / abs(V.z);
+  return baseColor * (vec3(1.0f) - F)
          * D * G2 * abs(VDotH) * jacobian /
          abs(L.z * V.z);
 }

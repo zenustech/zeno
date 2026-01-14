@@ -9,6 +9,7 @@
         - Delta Tracking, Ratio Tracing
     - OpenVDB, NanoVDB
 - Lighting
+    - [Importance Sampling Techniques for Path Tracing in Participating Media](https://fpsunflower.github.io/ckulla/data/egsr_2012_volume_paper.pdf)
     - [Importance Sampling of Many Lights with Adaptive Tree Splitting](https://fpsunflower.github.io/ckulla/data/many-lights-hpg2018.pdf)
     - [An Area-Preserving Parametrization for Spherical Rectangles](https://blogs.autodesk.com/media-and-entertainment/wp-content/uploads/sites/162/egsr2013_spherical_rectangle.pdf)
     - [Stratified Sampling of Spherical Triangles](https://www.graphics.cornell.edu/pubs/1995/Arv95c.pdf)

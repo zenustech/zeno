@@ -158,7 +158,11 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     {
         return (varType == QMetaType::User);
     }
-    case CONTROL_COLOR_VEC3F:
+    case CONTROL_COLOR_VEC3F: {
+        if (varType == QVariant::UserType && var.userType() == QMetaTypeId<COLOR_VEC3F_TRANSFORM>::qt_metatype_id()) {
+            return true;
+        }
+    }
     case CONTROL_VEC2_FLOAT:
     case CONTROL_VEC2_INT:
     case CONTROL_VEC3_FLOAT:
@@ -257,7 +261,29 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_ENUM:
     case CONTROL_DIRECTORY:
         return defaultValue;
-    case CONTROL_COLOR_VEC3F:
+    case CONTROL_COLOR_VEC3F: {
+        UI_VECTYPE vec;
+        if (!defaultValue.isEmpty())
+        {
+            QStringList L = defaultValue.split(",");
+            vec.resize(L.size());
+            bool bOK = false;
+            for (int i = 0; i < L.size(); i++)
+            {
+                vec[i] = L[i].toFloat(&bOK);
+                Q_ASSERT(bOK);
+            }
+        }
+        else
+        {
+            vec.resize(3);
+        }
+        COLOR_VEC3F_TRANSFORM transClr;
+        transClr.origin = vec;
+        transClr.transform = vec;
+        transClr.type = "raw";
+        return QVariant::fromValue(transClr);
+    }
     case CONTROL_VEC2_FLOAT:
     case CONTROL_VEC2_INT:
     case CONTROL_VEC3_FLOAT:
@@ -900,8 +926,8 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_VEC3_INT:
         case CONTROL_COLOR_VEC3F:
         {
-            UI_VECTYPE vec(3);
-            return QVariant::fromValue(vec);
+            COLOR_VEC3F_TRANSFORM transClr;
+            return QVariant::fromValue(transClr);
         }
         case CONTROL_VEC2_FLOAT:
         case CONTROL_VEC2_INT:
@@ -1440,6 +1466,69 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     {
         if (QColor(val.GetString()).isValid())
             res = QVariant::fromValue(QColor(val.GetString()));
+    }
+    else if (descType == "colorvec3f")
+    {
+        if (val.IsNull())
+        {
+            res = QVariant::fromValue(QColor(0,0,0));
+            return res;
+        }
+        else
+        {
+            COLOR_VEC3F_TRANSFORM transClr;
+            if (val.IsArray())
+            {
+                UI_VECTYPE vec;
+                auto values = val.GetArray();
+                for (int i = 0; i < values.Size(); i++)
+                {
+                    vec.append(values[i].GetFloat());
+                }
+                transClr.origin = vec;
+                transClr.transform = vec;
+                transClr.type = "raw";
+            } else if (val.IsObject())
+            {
+                if (val.HasMember("origin") && val["origin"].IsArray())
+                {
+                    auto originArray = val["origin"].GetArray();
+                    if (originArray.Size() == 3)
+                    {
+                        for (int i = 0; i < originArray.Size(); i++)
+                        {
+                            if (originArray[i].IsFloat())
+                                transClr.origin[i] = originArray[i].GetFloat();
+                            else if (originArray[i].IsDouble())
+                                transClr.origin[i] = originArray[i].GetDouble();
+                            else if (originArray[i].IsInt())
+                                transClr.origin[i] = originArray[i].GetInt();
+                        }
+                    }
+                }
+                if (val.HasMember("transform") && val["transform"].IsArray())
+                {
+                    auto transformArray = val["transform"].GetArray();
+                    if (transformArray.Size() == 3)
+                    {
+                        for (int i = 0; i < transformArray.Size(); i++)
+                        {
+                            if (transformArray[i].IsFloat())
+                                transClr.transform[i] = transformArray[i].GetFloat();
+                            else if (transformArray[i].IsDouble())
+                                transClr.transform[i] = transformArray[i].GetDouble();
+                            else if (transformArray[i].IsInt())
+                                transClr.transform[i] = transformArray[i].GetInt();
+                        }
+                    }
+                }
+                if (val.HasMember("type") && val["type"].IsString())
+                {
+                    transClr.type = val["type"].GetString();
+                }
+            }
+            res = QVariant::fromValue(transClr);
+        }
     }
     else
     {

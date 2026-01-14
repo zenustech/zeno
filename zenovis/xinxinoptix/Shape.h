@@ -23,6 +23,10 @@ struct TriangleShape {
     inline float areaPDF() {
         return 1.0f / area;
     }
+
+    inline float3 center() {
+        return p0/3.0f + p1/3.0f + p2/3.0f;
+    }
     
     float Area() const {
         return 0.5f * length(cross(p1 - p0, p2 - p0));
@@ -53,7 +57,7 @@ struct TriangleShape {
         auto dc = pbrt::DirectionCone(nnn);
 
         return pbrt::LightBounds(bounds(), nnn, phi * area, 
-                dc.cosTheta, fmaxf(cosf(M_PIf / 2.0f), 0.0f), doubleSided);   
+                dc.cosTheta, fmaxf(cosf(M_PIf / 2.0f), 0.0f), doubleSided, true);   
     }
 
     // Sampling Function Definitions
@@ -178,11 +182,6 @@ struct TriangleShape {
             lsr->p = bary3.x * p0 + bary3.y * p1 + bary3.z * p2;
             lsr->n = faceNormal;
 
-            lsr->dir = (lsr->p - shadingP);
-            //lsr->dir = normalize(lsr->dir);
-            auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
-
-            lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
             lsr->dir = lsr->p - shadingP;
             lsr->dist = length(lsr->dir);
 
@@ -211,6 +210,7 @@ struct TriangleShape {
             if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
                 lsr->PDF = lsr->dist * lsr->dist * areaPDF() / fabsf(lsr->NoL);
             }
+            return;
         } // uniform area sampling
 
         float pdf = 1.0f;
@@ -248,11 +248,6 @@ struct TriangleShape {
         lsr->p = p;
         lsr->n = n;
 
-        lsr->dir = (lsr->p - shadingP);
-        //lsr->dir = normalize(lsr->dir);
-        auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
-
-        lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
         lsr->dir = lsr->p - shadingP;
         lsr->dist = length(lsr->dir);
         lsr->dir = lsr->dir / lsr->dist;
@@ -440,7 +435,7 @@ struct PointShape {
         auto bounds = pbrt::Bounds3f{tmp, tmp};
         
         return pbrt::LightBounds(bounds, Vector3f(0, 0, 1), 
-            Phi, cosf(M_PIf), cosf(M_PIf / 2), false);
+            Phi, cosf(M_PIf), cosf(M_PIf / 2), false, true);
     }
 };
 
@@ -507,10 +502,10 @@ __device__ inline void SphericalRectInit(SphericalRect& srect,
 static inline float2 SphericalRectSample(SphericalRect& srect, float u, float v) {
     // 1. compute ’cu’
     float au = u * srect.S + srect.k;
-    if(abs(sinf(au))<1e-5)
-    {
-      return {0, 0};
-    }
+    // if(abs(sinf(au))<1e-5)
+    // {
+    //   return {0, 0};
+    // }
     float fu = (cosf(au) * srect.b0 - srect.b1) / sinf(au) ;
     float cu = (fu>0 ? +1.f:-1.f) /sqrtf(fu*fu + srect.b0sq);
     cu = clamp(cu, -1.0f, 1.0f); // avoid NaNs
@@ -563,9 +558,11 @@ __device__ inline bool SpreadClampRect(float3& v,
     auto maxV = fminf(posV+spread_radius, lenY);
 
     if (minU > maxU || minV > maxV) return false;
+    minU = fminf(minU, maxU);
+    minV = fminf(minV, maxV);
 
-    auto lenU = maxU - minU;
-    auto lenV = maxV - minV;
+    auto lenU = fmaxf(0.0f, maxU - minU);
+    auto lenV = fmaxf(0.0f, maxV - minV);
 
     uvScale  = {lenU/lenX, lenV/lenY};
     uvOffset = {minU/lenX, minV/lenY};
@@ -626,6 +623,10 @@ struct RectShape {
         return 1.0f / Area();
     }
 
+    float3 center() const {
+        return v + axisX * 0.5f * lenX + axisY * 0.5f * lenY;
+    }
+
     inline bool EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
 
         float lightNoL = dot(-dir, normal);
@@ -655,49 +656,37 @@ struct RectShape {
 
     inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {  
 
-        auto uv = uu; 
-        auto _PDF_ = 0.0f;
+        auto uv = uu;
+        auto solidAngle = 0.0f;
 
-        if (isEllipse) {
+        SphericalRect squad;
+        SphericalRectInit(squad, shadingP, v, axisX, lenX, axisY, lenY);
+        bool SphericalSample = isfinite(squad.S) && squad.S > MinSphericalSampleArea;
 
-            auto tt = pbrt::SampleUniformDiskConcentric(uu);
-            tt = tt * 0.5f + 0.5f;
-            uv = tt;
-            _PDF_ = PDF();
-
-        } else {
-
-            SphericalRect squad;
-            SphericalRectInit(squad, shadingP, v, axisX, lenX, axisY, lenY); 
+        if (SphericalSample) {
+            solidAngle = squad.S;
             uv = SphericalRectSample(squad, uu.x, uu.y);
-            _PDF_ = squad.S;
         }
-
+        
         lsr->n = normalize(normal);
         lsr->p = v + axisX * lenX * uv.x + axisY * lenY * uv.y;
 
         lsr->uv = uv;
 
-        lsr->dir = (lsr->p - shadingP);
-        //lsr->dir = normalize(lsr->dir);
-        auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
-        
-        lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
         lsr->dir = lsr->p - shadingP;
-        lsr->dist = length(lsr->dir);
+        auto lensqr = dot(lsr->dir, lsr->dir);
+        lsr->dist = sqrtf(lensqr);
         lsr->dir = lsr->dir / lsr->dist;
-
         lsr->NoL = dot(-lsr->dir, lsr->n);
-        lsr->PDF = 0.0f;
 
-        if (_PDF_ > __FLT_EPSILON__ && fabsf(lsr->NoL) > __FLT_EPSILON__) 
-        {
-            if (isEllipse) {
-                lsr->PDF = lsr->dist * lsr->dist * _PDF_ / fabsf(lsr->NoL);
-            } else {
-                lsr->PDF = 1.0f / _PDF_;
-            }
+        if (!SphericalSample) {
+            solidAngle = fabsf(lsr->NoL) * Area() / lensqr;
         }
+        
+        if (solidAngle > __FLT_EPSILON__ && fabsf(lsr->NoL) > __FLT_EPSILON__) 
+            lsr->PDF = 1.0f / solidAngle;
+        else
+            lsr->PDF = 0.0f;
     }
 
     inline bool hitAsLight(LightSampleRecord* lsr, const float3& ray_orig, const float3& ray_dir) {
@@ -735,8 +724,6 @@ struct RectShape {
         lsr->n = normal;
         lsr->NoL = denom;
 
-        lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
-
         lsr->dir = ray_dir;
         lsr->dist = length(lsr->p - ray_orig);
 
@@ -766,13 +753,15 @@ struct RectShape {
         return result;
     }
 
-    pbrt::LightBounds BoundAsLight(float phi, bool doubleSided) {
+    pbrt::LightBounds BoundAsLight(float phi, float spread, bool doubleSided) {
 
         auto& nnn = reinterpret_cast<Vector3f&>(normal);
         auto dc = pbrt::DirectionCone(nnn);
+        auto cosTheta_e = cosf(spread * M_PIf / 2.0f);
+        cosTheta_e = clamp(cosTheta_e, 0.f, 1.f);
 
         return pbrt::LightBounds(bounds(), nnn, phi * area, 
-                dc.cosTheta, fmaxf(cosf(M_PIf / 2.0f), 0.0f), doubleSided);   
+                1, cosTheta_e, false, true);   
     }
 };
 
@@ -813,6 +802,8 @@ struct ConeShape {
         float cosTheta_e = cosf(acosf(cosFalloffEnd) - acosf(cosFalloffStart));
         // Allow a little slop here to deal with fp round-off error in the computation of
         // cosTheta_p in the importance function.
+        assert(cosFalloffEnd <= cosFalloffStart);
+
         if (cosTheta_e == 1 && cosFalloffEnd != cosFalloffStart)
             cosTheta_e = 0.999f;
 
@@ -820,7 +811,7 @@ struct ConeShape {
         auto& tmp = reinterpret_cast<Vector3f&>(p);
         auto bounds = pbrt::Bounds3f{tmp, tmp};
 
-        return pbrt::LightBounds(bounds, w, Phi, cosFalloffStart, cosTheta_e, false);
+        return pbrt::LightBounds(bounds, w, Phi, cosFalloffStart, cosTheta_e, false, true);
     }
 };
 
@@ -836,17 +827,17 @@ struct SphereShape {
     inline float PDF(const float3& shadingP, float dist2, float NoL) {
 
         if (dist2 < radius * radius) {
-            return dist2 / fabsf(NoL);
+            return 0.25f / M_PIf;
         }
 
-        float sinThetaMax2 = clamp( radius * radius / dist2, 0.0, 1.0);
+        float dist = sqrtf(dist2);
+        float sinThetaMax = radius / dist;
+        float cosThetaMax = sqrtf(fmaxf(0.0f, 1.0f - sinThetaMax * sinThetaMax));
+        //if (cosTheta < cosThetaMax) return 0.0f; // outside the cone
 
-        if (sinThetaMax2 <= __FLT_EPSILON__) {
-            return 1.0f; // point light
-        }
-
-        float cosThetaMax = sqrtf( 1.0 - sinThetaMax2 );
-        return 1.0f / ( 2.0f * M_PIf * (1.0 - cosThetaMax) );
+        // Stable computation: 1 - cosThetaMax
+        float one_minus_cosThetaMax = (sinThetaMax * sinThetaMax) / (1.0f + cosThetaMax);
+        return 1.0f / ( 2.0f * M_PIf * one_minus_cosThetaMax );
     }
 
     inline bool hitAsLight(LightSampleRecord* lsr, const float3& ray_origin, const float3& ray_dir) {
@@ -874,7 +865,6 @@ struct SphereShape {
             lsr->p = ray_origin + ray_dir * lsr->dist;
             lsr->n = normalize(lsr->p - center);
             lsr->p = center + radius * lsr->n;
-            lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
             lsr->dist = length(lsr->p - ray_origin);
             return true;
 
@@ -905,7 +895,7 @@ struct SphereShape {
         lsr->dist = distance;
     }
 
-    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {
+    inline void SampleAsLight(LightSampleRecord* lsr,  float2& uu, const float3& shadingP, float spread) {
 
         float3 vector = center - shadingP;
         float  dist2 = dot(vector, vector);
@@ -915,8 +905,6 @@ struct SphereShape {
         float radius2 = radius * radius;
 
         if (dist2 <= radius2) { // inside sphere
-            lsr->PDF = 0.0f;
-            return;
             
             auto localP = pbrt::UniformSampleSphere(uu);
             auto worldP = center + localP * radius;
@@ -924,7 +912,7 @@ struct SphereShape {
             auto localN = -localP; //facing center
             auto worldN =  localN; 
 
-            lsr->p = rtgems::offset_ray(worldP, worldN);
+            lsr->p = worldP;
             lsr->n = worldN;
 
             vector = lsr->p - shadingP;
@@ -940,8 +928,8 @@ struct SphereShape {
             lsr->dist = dist;
             lsr->dir  = dir;
 
-            lsr->NoL = dot(-dir, worldN);
-            lsr->PDF = lsr->dist * lsr->dist / lsr->NoL;
+            lsr->NoL = fmaxf(dot(-dir, worldN), 0.0f);
+            lsr->PDF = 0.25f / M_PIf;
             return;       
         }
 
@@ -949,32 +937,23 @@ struct SphereShape {
         float invDc = 1.0f / dist;
         float3& wc = dir; float3 wcX, wcY;
         pbrt::CoordinateSystem(wc, wcX, wcY);
-
         // Compute $\theta$ and $\phi$ values for sample in cone
         float sinThetaMax = radius * invDc;
+
+        // if (spread < 1.0f) {
+        //     float littleCone = spread * 0.5f * M_PIf;
+        //     float angle_a = M_PIf - littleCone;
+        //     float length_a = dist;
+
+        //     float sin_b = radius * (sinf(angle_a) / length_a);
+        //     sinThetaMax = sin_b;
+        // }
+
+        uu.x = uu.x * spread;
+
         const float sinThetaMax2 = sinThetaMax * sinThetaMax;
         float invSinThetaMax = 1.0f / sinThetaMax;
-
-        assert(sinThetaMax2 > 0);
-        const float cosThetaMax = sqrtf(1.0f - clamp(sinThetaMax2, 0.0f, 1.0f));
-
-        auto epsilon = 2e-3f;
-
-        if (sinThetaMax < epsilon) {
-            
-            lsr->p = center - dir * radius;
-            lsr->p = rtgems::offset_ray(lsr->p, -dir);
-
-            lsr->n = -dir;
-            lsr->dir = dir;
-            lsr->dist = length(lsr->p - shadingP);
-
-            lsr->PDF = 1.0f;
-            lsr->NoL = 1.0f;
-            lsr->intensity = M_PIf * radius2 / (lsr->dist * lsr->dist);
-            lsr->isDelta = true;
-            return;
-        } // point light
+        const float cosThetaMax = sqrtf(fmaxf(1.0f - sinThetaMax2, 0.0f));
 
         float cosTheta  = (cosThetaMax - 1) * uu.x + 1;
         float sinTheta2 = 1 - cosTheta * cosTheta;
@@ -996,7 +975,7 @@ struct SphereShape {
         float3 nWorld = pbrt::SphericalDirection(sinAlpha, cosAlpha, phi, -wcX, -wcY, -wc);
         float3 pWorld = center + radius * nWorld;
 
-        lsr->p = rtgems::offset_ray(pWorld, nWorld);
+        lsr->p = pWorld;
         lsr->n = nWorld;
 
         vector = lsr->p - shadingP;
@@ -1006,9 +985,13 @@ struct SphereShape {
 
         lsr->dist = dist;
         lsr->dir  = dir;
+
+        // stable: avoid 1 - cosThetaMax cancellation
+        // note: (1 + cosThetaMax) >= 1 here because cosThetaMax in [0,1]
+        float one_minus_cosThetaMax = sinThetaMax2 / (1.0f + cosThetaMax);
         
-        lsr->PDF = 1.0f / (2.0f * M_PIf * (1.0f - cosThetaMax)); // Uniform cone PDF.
-        lsr->NoL = dot(-lsr->dir, lsr->n); 
+        lsr->PDF = 1.0f / (2.0f * M_PIf * one_minus_cosThetaMax); // Uniform cone PDF.
+        lsr->NoL = dot(-lsr->dir, lsr->n);
     }
 
     pbrt::Bounds3f bounds() {
@@ -1028,6 +1011,211 @@ struct SphereShape {
         auto dc = pbrt::DirectionCone::EntireSphere();
 
         return pbrt::LightBounds(bounds(), dc.w, phi * area, 
-            dc.cosTheta, fmaxf(cos(M_PIf / 2.0f), 0.0f), doubleSided);   
+            dc.cosTheta, fmaxf(cos(M_PIf / 2.0f), 0.0f), doubleSided, true);   
     }
 };
+
+struct Interval {
+    bool hit;
+    float t_in;
+    float t_out; // may be +INFINITY when no forward exit
+};
+
+static Interval intersectCone(
+    const float3& O, const float3& D,     // ray origin, dir
+    const float3& C, const float3& A,     // apex, unit axis
+    float cosTheta)
+{
+    Interval H = {0, 0.0f, 0.0f};
+    const float EPS = 1e-6f;
+    const float INF_F = 1e30f;
+    float cos2 = cosTheta * cosTheta;
+
+    float3 v = O - C;
+    float dv = dot(D, A);
+    float vv = dot(v, A);
+    float dd = dot(D, D);
+    float vd = dot(v, D);
+    float vvlen = dot(v, v);
+
+    float a = dv*dv - cos2*dd;
+    float b = 2.0f*(dv*vv - cos2*vd);
+    float c = vv*vv - cos2*vvlen;
+
+    // check if origin inside front cone
+    int originInside = 0;
+    if (vv > 0.0f) {
+        float len = sqrtf(fmaxf(vvlen, EPS));
+        if (vv / len >= cosTheta - EPS) originInside = 1;
+    }
+
+    float disc = b*b - 4*a*c;
+    if (fabsf(a) < EPS) {
+        if (fabsf(b) < EPS) {
+            if (originInside) { H.hit=1; H.t_in=0.0f; H.t_out=INF_F; }
+            return H;
+        }
+        float t = -c / b;
+        if (t >= 0.0f && dot((O+ t*D) - C, A) >= 0.0f) {
+            H.hit=1;
+            if (originInside) { H.t_in=0.0f; H.t_out=t; }
+            else { H.t_in=t; H.t_out=INF_F; }
+        }
+        return H;
+    }
+    if (disc < 0.0f) {
+        if (originInside) { H.hit=1; H.t_in=0.0f; H.t_out=INF_F; }
+        return H;
+    }
+
+    float s = sqrtf(disc);
+    float t0 = (-b - s) / (2*a);
+    float t1 = (-b + s) / (2*a);
+    if (t0 > t1) { float tmp=t0; t0=t1; t1=tmp; }
+
+    int ok0 = (t0 >= 0.0f && dot((O+t0*D)-C, A) >= 0.0f);
+    int ok1 = (t1 >= 0.0f && dot((O+t1*D)-C, A) >= 0.0f);
+
+    if (!ok0 && !ok1) {
+        if (originInside) { H.hit=1; H.t_in=0.0f; H.t_out=INF_F; }
+        return H;
+    }
+    H.hit=1;
+    if (originInside) {
+        if (ok0) { H.t_in=0.0f; H.t_out=t0; }
+        else if (ok1) { H.t_in=0.0f; H.t_out=t1; }
+        else { H.t_in=0.0f; H.t_out=INF_F; }
+    } else {
+        if (ok0 && ok1) { H.t_in=t0; H.t_out=t1; }
+        else if (ok0) { H.t_in=t0; H.t_out=INF_F; }
+        else { H.t_in=t1; H.t_out=INF_F; }
+    }
+    return H;
+}
+
+static Interval intersectFrustum(
+    const float3& ray_o, const float3& ray_d,
+    const float3& corner,
+    const float3& axisX, const float& lenX,
+    const float3& axisY, const float& lenY,
+    float theta_x, float theta_y)
+{
+    auto DX = lenX * 0.5f;
+    auto DY = lenY * 0.5f;
+
+    auto axisZ = cross(axisY, axisX);
+    auto DZ_X = tanf(fmaxf(0.5f * M_PIf - theta_x, 0.0f)) * DX;
+    auto DZ_Y = tanf(fmaxf(0.5f * M_PIf - theta_y, 0.0f)) * DY;
+
+    float tmin = 0.0f;
+    float tmax = __FLT_MAX__;
+
+    // f(t) = num + t*den ; we want f(t) <= 0 (inside the half-space)
+    auto clip = [&](float num, float den) -> bool {
+        const float EPS = __FLT_EPSILON__;
+        if (fabs(den) < EPS) {
+            // ray direction parallel to plane normal: f is constant
+            return (num <= 0.0f); // if f(0) <= 0, ray is in that half-space for all t
+        }
+        float t = -num / den; // root where f(t) = 0
+        if (!isfinite(t)) return false;
+        if (den > 0.0f) {
+            // f increases with t → solution is t <= root → constrain tmax
+            if (t < tmax) tmax = t;
+        } else {
+            // den < 0: f decreases → solution is t >= root → raise tmin
+            if (t > tmin) tmin = t;
+        }
+        return tmax > tmin;
+    };
+
+    // --- Clamp with near plane ---
+    {
+        float3 n = -axisZ;                 // plane normal
+        float3 p = corner;               // point on near plane
+        float num = dot(ray_o - p, n);
+        float den = dot(ray_d, n);
+        if (!clip(num, den)) return {};
+    }
+
+    float tanx = tanf(theta_x);
+    {
+        auto apex = corner + axisX * DX + axisY * DY - axisZ * DZ_X;
+        // local basis coords
+        float3 o = ray_o - apex;
+        float ox = dot(o, axisX), oy = dot(o, axisY), oz = dot(o, axisZ);
+        float dx = dot(ray_d, axisX), dy = dot(ray_d, axisY), dz = dot(ray_d, axisZ);
+
+        if (!clip( ox - oz * tanx,  dx - dz * tanx)) return {};
+        if (!clip(-ox - oz * tanx, -dx - dz * tanx)) return {};
+    }
+
+    float tany = tanf(theta_y);
+    {
+        auto apex = corner + axisX * DX + axisY * DY - axisZ * DZ_Y;
+        // local basis coords
+        float3 o = ray_o - apex;
+        float ox = dot(o, axisX), oy = dot(o, axisY), oz = dot(o, axisZ);
+        float dx = dot(ray_d, axisX), dy = dot(ray_d, axisY), dz = dot(ray_d, axisZ);
+
+        if (!clip( oy - oz * tany,  dy - dz * tany)) return {};
+        if (!clip(-oy - oz * tany, -dy - dz * tany)) return {};
+    }
+    
+    return Interval {
+        (tmax > tmin && tmax > 0.0f),
+        tmin, tmax
+    };
+}
+
+static Interval intersectPyramid(
+    const float3& ray_o, const float3& ray_d,
+    const float3& apex, const float3& axis_z, 
+    const float3& axis_x, const float3& axis_y,
+    float theta_x, float theta_y)
+{
+    // local basis coords
+    float3 o = ray_o - apex;
+    float ox = dot(o, axis_x), oy = dot(o, axis_y), oz = dot(o, axis_z);
+    float dx = dot(ray_d, axis_x), dy = dot(ray_d, axis_y), dz = dot(ray_d, axis_z);
+
+    float tanx = tanf(theta_x);
+    float tany = tanf(theta_y);
+
+    float tmin = 0.0f;
+    float tmax = __FLT_MAX__;
+
+    // f(t) = num + t*den ; we want f(t) <= 0 (inside the half-space)
+    auto clip = [&](float num, float den) -> bool {
+        const float EPS = __FLT_EPSILON__;
+        if (fabs(den) < EPS) {
+            // ray direction parallel to plane normal: f is constant
+            return (num <= 0.0f); // if f(0) <= 0, ray is in that half-space for all t
+        }
+        float t = -num / den; // root where f(t) = 0
+        if (!isfinite(t)) return false;
+        if (den > 0.0f) {
+            // f increases with t → solution is t <= root → constrain tmax
+            if (t < tmax) tmax = t;
+        } else {
+            // den < 0: f decreases → solution is t >= root → raise tmin
+            if (t > tmin) tmin = t;
+        }
+        return tmax > tmin;
+    };
+
+    // Ensure point has positive w (pyramid opens in +w direction)
+    if (!clip(-oz, -dz)) return {};
+
+    // Four side planes:
+    // u - w*tanx <= 0  and  -u - w*tanx <= 0   (same idea for v)
+    if (!clip( ox - oz * tanx,  dx - dz * tanx)) return {};
+    if (!clip(-ox - oz * tanx, -dx - dz * tanx)) return {};
+    if (!clip( oy - oz * tany,  dy - dz * tany)) return {};
+    if (!clip(-oy - oz * tany, -dy - dz * tany)) return {};
+
+    return Interval {
+        (tmax > tmin && tmax > 0.0f),
+        tmin, tmax
+    };
+}

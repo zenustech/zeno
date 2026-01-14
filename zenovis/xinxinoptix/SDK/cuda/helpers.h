@@ -48,14 +48,17 @@ using uint64 = uint64_t;
 
 template<typename T>
 __forceinline__ __device__ T buffer_read(uint64_t ptr, int offset) {
-    return *(reinterpret_cast<T*>(ptr) + offset);
+    return (reinterpret_cast<T*>(ptr))[offset];
 }
 
 __forceinline__ __device__ float3 toSRGB( const float3& c, float gamma )
 {
     float  invGamma = 1.0f / gamma;
     float3 powed    = make_float3( powf( c.x, invGamma ), powf( c.y, invGamma ), powf( c.z, invGamma ) );
-
+//    float3 powed;
+//    powed.x = c.x <= 0.0031308? (c.x * 12.92) : (1.055 * pow(c.x, 1.0f/2.4f) - 0.055);
+//    powed.y = c.y <= 0.0031308? (c.y * 12.92) : (1.055 * pow(c.y, 1.0f/2.4f) - 0.055);
+//    powed.z = c.z <= 0.0031308? (c.z * 12.92) : (1.055 * pow(c.z, 1.0f/2.4f) - 0.055);
     return powed;
 }
 

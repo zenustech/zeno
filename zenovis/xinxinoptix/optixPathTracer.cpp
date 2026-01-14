@@ -68,7 +68,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "LightBounds.h"
@@ -89,33 +89,13 @@
 using namespace zeno::ChiefDesignerEXR;
 
 #include "zeno/utils/image_proc.h"
+#include "OptiXDenoiser.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 #include <string_view>
-struct CppTimer {
-    void tick() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        last = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    void tock() {
-        struct timespec t;
-        std::timespec_get(&t, TIME_UTC);
-        cur = t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
-    }
-    float elapsed() const noexcept {
-        return cur - last;
-    }
-    void tock(std::string_view tag) {
-        tock();
-        printf("%s: %f ms\n", tag.data(), elapsed());
-    }
 
-  private:
-    double last, cur;
-};
 static CppTimer timer, localTimer;
 
 namespace xinxinoptix {
@@ -128,6 +108,7 @@ bool minimized    = false;
 bool             camera_changed = true;
 sutil::Camera    camera;
 sutil::Trackball trackball;
+OptiXDenoiser denoiser;
 
 // Mouse state
 int32_t mouse_button = -1;
@@ -152,14 +133,10 @@ using Vertex = float3;
 
 struct PathTracerState
 {
-    OptixTraversableHandle         rootHandleIAS;
-    raii<CUdeviceptr>              rootBufferIAS;
-    
     raii<CUdeviceptr>              d_uniforms;
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
-    //raii<CUdeviceptr> seed_buffer_p;
     raii<CUdeviceptr> albedo_buffer_p;
     raii<CUdeviceptr> normal_buffer_p;
 
@@ -258,15 +235,11 @@ static void printUsageAndExit( const char* argv0 )
 static void initLaunchParams( PathTracerState& state )
 {
     auto& params = state.params;
-    params.handle = state.rootHandleIAS;
     
     auto byte_size = params.width * params.height * sizeof( float3 );
 
     state.accum_buffer_p.resize(byte_size);
     params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-
-    //state.seed_buffer_p.resize(byte_size);
-    //params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
     //state.params.samples_per_launch = samples_per_launch;
@@ -302,7 +275,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
 
     auto count = params.width * params.height;
     state.accum_buffer_p.resize( sizeof(float3) * count );
-    //state.seed_buffer_p.resize(sizeof(uint3)*count);
 
     if (!enable_aov) { count = 0; }
 
@@ -316,7 +288,6 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.pick_buffer.resize(sizeof(PickInfo));
 
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
-    //state.params.seed_buffer = (uint3*)(CUdeviceptr)state.seed_buffer_p;
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float3*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float3*)(CUdeviceptr)state.accum_buffer_t;
@@ -350,8 +321,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
                     ) );
-                    
-        //timer.tick();
+
                 optixLaunch(
                     OptixUtil::pipeline,
                     0,
@@ -361,8 +331,6 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     state.params.width,
                     state.params.height,
                     1);
-        //timer.tock("frame time");
-        //output_buffer.unmap();
 }
 
 
@@ -405,8 +373,8 @@ static void initCameraState()
 
 void updateRootIAS()
 {
-    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS, state.params.cam.eye);
-    state.params.handle = state.rootHandleIAS;
+    defaultScene.make_scene(OptixUtil::context, state.params.cam.eye);
+    state.params.handle = defaultScene.rootNode.handle;
     return;
 
     uint32_t MAX_INSTANCE_ID;
@@ -519,8 +487,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                     if (defaultScene._vdb_grids_cached.count(vdb_key)==0) continue;
 
 					auto vdb_ptr = defaultScene._vdb_grids_cached.at(vdb_key);
-					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
-					rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
+					rec.data.vdb_grids[t] = vdb_ptr->grids.front()->buffer.handle;
 				}
 
             for(uint t=0;t<32;t++)
@@ -537,14 +504,6 @@ static void createSBT( PathTracerState& state, bool raygen=false)
 
                 if (json.contains("vol_extinction")) {
                     rec.data.vol_extinction = json["vol_extinction"];
-                }
-
-                if (json.contains("equiangular")) {
-                    rec.data.equiangular = json["equiangular"];
-                }
-
-                if (json.contains("multiscatter")) {
-                    rec.data.multiscatter = json["multiscatter"];
                 }
             }
 
@@ -790,6 +749,45 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
     ptr = glm::value_ptr(tmp);
     memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
 }
+void update_hdr_sky(zeno::vec3f sky_rot3d, float sky_strength) {
+
+    state.params.sky_strength = sky_strength;
+    auto glm_sky_rot3d = zeno::bit_cast<glm::vec3>(sky_rot3d);
+    glm_sky_rot3d = glm::radians(glm_sky_rot3d);
+
+    auto q = glm::quat(glm_sky_rot3d);
+    glm::mat4 rotation = glm::toMat4(q);
+
+    auto tmp = glm::transpose(rotation);
+    auto ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
+
+    tmp = glm::transpose(glm::inverse(rotation));
+    ptr = glm::value_ptr(tmp);
+    memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
+}
+
+glm::vec3 realtime_rotate_sky(glm::vec3 rot_value) {
+    glm::mat4 tmp(1.0f);
+    auto ptr = glm::value_ptr(tmp);
+    memcpy(ptr, state.params.sky_rotation, sizeof(float)*12);
+    auto rotation = glm::transpose(tmp);
+    rotation = glm::rotate(rotation, rot_value[0], {1, 0, 0});
+    rotation = glm::rotate(rotation, rot_value[1], {0, 1, 0});
+    rotation = glm::rotate(rotation, rot_value[2], {0, 0, 1});
+    glm::quat q2 = glm::quat_cast(rotation);
+    glm::vec3 euler2 = glm::eulerAngles(q2);
+    {
+        auto tmp = glm::transpose(rotation);
+        auto ptr = glm::value_ptr(tmp);
+        memcpy(state.params.sky_rotation, ptr, sizeof(float)*12);
+
+        tmp = glm::transpose(glm::inverse(rotation));
+        ptr = glm::value_ptr(tmp);
+        memcpy(state.params.sky_onitator, ptr, sizeof(float)*12);
+    }
+    return euler2;
+}
 
 void using_hdr_sky(bool enable) {
     state.params.usingHdrSky = enable;
@@ -915,10 +913,13 @@ static void addLightSphere(float3 center, float radius)
 static int uniformBufferInitialized = false;
 // void optixUpdateUniforms(std::vector<float4> & inConstants) 
 void optixUpdateUniforms(void *inConstants, std::size_t size) {
+    if (uniformBufferInitialized) {
+        return;
+    }
 
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*size));
 
-    CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
+    CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*size));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
                           sizeof(float4)*size, cudaMemcpyHostToDevice));
     
@@ -1125,9 +1126,6 @@ void buildLightTree() {
         light.spreadMajor = clamp(dat.spreadMajor, 0.0f, 1.0f);
         light.spreadMinor = clamp(dat.spreadMinor, 0.0f, 1.0f);
 
-        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
-        light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
-
         light.mask = dat.mask;
         light.intensity  = dat.intensity;
         light.vIntensity = dat.vIntensity;
@@ -1149,9 +1147,16 @@ void buildLightTree() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.spreadMajor < 0.005f) {
-            light.type = zeno::LightType::Direction;
+        if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
+            auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
+            light.spreadNormalize = 2.f / (2.f + (2.f * void_angle - M_PIf) * tanf(void_angle));
+        } else {
+            light.spreadNormalize = 0.0f;
         }
+
+        // if (light.spreadMajor < 0.005f) {
+        //     light.type = zeno::LightType::Direction;
+        // }
 
         if (light.shape == zeno::LightShape::Plane || light.shape == zeno::LightShape::Ellipse) {
 
@@ -1199,14 +1204,21 @@ void buildLightTree() {
 
             auto major_angle = spread_major * 0.5f * M_PIf;
             major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
-
             auto inner_angle = spread_inner * major_angle;
-            auto falloff_angle = major_angle - inner_angle;
 
-            light.setConeData(center, light.N, 0.0f, major_angle, falloff_angle);
+            light.setConeData(center, light.N, 0.0f, major_angle, inner_angle);
         }
         if (light.type == zeno::LightType::Projector) {
-            light.point = {center};
+            
+            auto spread_major = clamp(light.spreadMajor, 0.01, 1.00);
+            auto spread_minor = clamp(light.spreadMinor, 0.01, 0.99);
+
+            auto major_angle = spread_major * 0.5f * M_PIf;
+            major_angle = fmaxf(major_angle, 2 * FLT_EPSILON);
+            auto minor_angle = spread_minor * 0.5f * M_PIf;
+            minor_angle = fmaxf(minor_angle, 2 * FLT_EPSILON);
+
+            light.setConeData(center, light.N, 0.0f, fmaxf(major_angle, minor_angle), 0.1);
         }
 
         if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
@@ -1215,7 +1227,7 @@ void buildLightTree() {
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
-            light.setConeData(center, light.N, radius, val.coneAngle, FLT_EPSILON);
+            light.setConeData(center, light.N, radius, val.coneAngle, val.coneAngle-FLT_EPSILON);
 
             if (dat.fluxFixed > 0) {
                 auto scale = val.coneAngle / M_PIf;
@@ -1409,19 +1421,8 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
 OptixUtil::_compile_group.run([&shaders, i] () {
 
-        auto marker = std::string("//PLACEHOLDER");
-        auto marker_length = marker.length();
-
         auto& callable_string = shaders[i]->callable;
-        auto start_marker = callable_string.find(marker);
-
-        if (start_marker != std::string::npos) {
-            auto end_marker = callable_string.find(marker, start_marker + marker_length);
-
-            callable_string.replace(start_marker, marker_length, "/*PLACEHOLDER");
-            callable_string.replace(end_marker, marker_length, "PLACEHOLDER*/");
-        }
-
+        
         std::shared_ptr<OptixUtil::OptixShaderCore> shaderCore = nullptr;
         auto key = std::tuple{shaders[i]->filename, shaders[i]->mark};
 
@@ -1551,7 +1552,7 @@ void configPipeline(bool shaderDirty) {
 
 void prepareScene()
 {
-    defaultScene.make_scene(OptixUtil::context, state.rootBufferIAS, state.rootHandleIAS);
+    defaultScene.make_scene(OptixUtil::context);
 }
 
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
@@ -1685,10 +1686,72 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
+    else if (name == "albedo") {
+        const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+        cudaMemcpy(tex_data.data(), _albedo_buffer, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
+    else if (name == "normal") {
+        const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+        cudaMemcpy(tex_data.data(), _normal_buffer, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
     else {
         throw std::runtime_error("invalid optixgetimg_extra name: " + name);
     }
     return tex_data;
+}
+
+std::vector<float> rgb_to_rgba(const std::vector<float> &rgb_data, int w, int h) {
+    std::vector<float> rgba_data(w * h * 4);
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto rgb_index = j * w * 3 + i * 3;
+            auto rgba_index = j * w * 4 + i * 4;
+            rgba_data[rgba_index + 0] = rgb_data[rgb_index + 0];
+            rgba_data[rgba_index + 1] = rgb_data[rgb_index + 1];
+            rgba_data[rgba_index + 2] = rgb_data[rgb_index + 2];
+            rgba_data[rgba_index + 3] = 1.0f;
+        }
+    }
+    return rgba_data;
+}
+
+std::vector<float> rgba_to_rgb(const std::vector<float> &rgba_data, int w, int h) {
+    std::vector<float> rgb_data(w * h * 3);
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto rgb_index = j * w * 3 + i * 3;
+            auto rgba_index = j * w * 4 + i * 4;
+            rgb_data[rgb_index + 0] = rgba_data[rgba_index + 0];
+            rgb_data[rgb_index + 1] = rgba_data[rgba_index + 1];
+            rgb_data[rgb_index + 2] = rgba_data[rgba_index + 2];
+        }
+    }
+    return rgb_data;
+}
+std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
+    auto tex_data = optixgetimg_extra2("color", w, h);
+    if (!denoising) {
+        return tex_data;
+    }
+    auto rgba_data = rgb_to_rgba(tex_data, w, h);
+    auto albedo_data = rgb_to_rgba(optixgetimg_extra2("albedo", w, h), w, h);
+    auto normal_data = rgb_to_rgba(optixgetimg_extra2("normal", w, h), w, h);
+
+    std::vector<float> output_data(w * h * 4);
+    OptiXDenoiser::Data data;
+    data.width     = w;
+    data.height    = h;
+    data.color     = rgba_data.data();
+    data.albedo    = albedo_data.data();
+    data.normal    = normal_data.data();
+    data.flow      = nullptr;
+    data.flowtrust = nullptr;
+    data.outputs.push_back( output_data.data() );
+    denoiser.init(data);
+    denoiser.exec();
+    denoiser.getResults();
+    denoiser.finish();
+    return rgba_to_rgb(output_data, w, h);
 }
 
 std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
@@ -1743,47 +1806,33 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
 #include <mutex>
 #include <condition_variable>
 
-std::mutex click_mutex;
-std::condition_variable click_cv;
-
-glm::vec3 get_click_pos(float xf, float yf) {
+bool isPosClick = false;
+std::function<void(glm::vec3)> clickPosCallback;
+void get_click_pos(float xf, float yf, std::function<void(glm::vec3)> cbClickPosSig) {
     int w = state.params.width;
     int h = state.params.height;
     int x = xf * w;
     int y = yf * h;
 
-    std::unique_lock<std::mutex> lock(click_mutex);
-    state.params.click_dirty = true;
     state.params.click_coord = make_uint2(x, h - 1 - y);
+    state.params.click_dirty = true;
 
-    click_cv.wait(lock, []{
-        return !state.params.click_dirty; 
-    });
-
-    float3 click_result;
-    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
-    cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
-    return glm::vec3(click_result.x, click_result.y, click_result.z);
+    clickPosCallback = std::move(cbClickPosSig);
+    isPosClick = true;
 }
 
-glm::uvec4 get_click_id(float xf, float yf) {
+std::function<void(std::tuple<std::string, std::string, uint32_t>)> clickIdCallback;
+void get_click_id(float xf, float yf, std::function<void(std::tuple<std::string, std::string, uint32_t>)> cbClickIdSig) {
     int w = state.params.width;
     int h = state.params.height;
     int x = xf * w;
     int y = yf * h;
     
-    std::unique_lock<std::mutex> lock(click_mutex);
-    state.params.click_dirty = true;
     state.params.click_coord = make_uint2(x, h - 1 - y);
+    state.params.click_dirty = true;
 
-    click_cv.wait(lock, []{
-        return !state.params.click_dirty; 
-    });
-
-    uint4 click_meta;
-    auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
-    cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
-    return glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
+    clickIdCallback = std::move(cbClickIdSig);
+    isPosClick = false;
 }
 
 static void save_exr(float3* ptr, int w, int h, std::string path) {
@@ -1853,6 +1902,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 #endif
     
     bool enable_output_aov = zeno::getSession().userData().get2<bool>("output_aov", false);
+    if (state.params.needAOV != enable_output_aov) {
+        resize_dirty = true;
+    }
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
     updateState( *output_buffer_o, state.params, enable_output_aov );
@@ -1876,28 +1928,56 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const int max_samples_once = 1;
     uchar4* result_buffer_data = output_buffer_o->map();
 
-    bool should_notify = false;
-    {
-        std::lock_guard<std::mutex> lock(click_mutex);
-        should_notify = state.params.click_dirty;
+    if (pause) {
+        return;
     }
 
-    if (pause && !should_notify) {
-        return;
+    if (ud.has("optix_image_path")) {
+        state.params.frame_time = 0;
     }
     state.params.pause = pause;
 
+    timer.tick();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
+    //cudaStreamSynchronize(0);
     output_buffer_o->unmap();
+    timer.tock();
+    state.params.frame_time = timer.elapsed();
 
-    if (should_notify) {
+    if (state.params.click_dirty)
+    {
+        if (isPosClick)
+        {
+            float3 click_result;
+            auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
+            cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
+            auto posWS = glm::vec3(click_result.x, click_result.y, click_result.z);
+            clickPosCallback(posWS);
+        } else {
+            uint4 click_meta;
+            auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
+            cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
+
+            auto ids = glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
+            if (ids != glm::uvec4())
+            {
+                uint64_t obj_id = *reinterpret_cast<uint64_t*>(&ids);
+                if (defaultScene.gas_to_obj_id.count(obj_id)) {
+                    auto name = defaultScene.gas_to_obj_id.at(obj_id);
+                    auto mat_name = std::string();
+                    if (defaultScene.dc_index_to_mat.count(ids[2])) {
+                        mat_name = defaultScene.dc_index_to_mat[ids[2]];
+                    }
+                    clickIdCallback(std::tuple<std::string, std::string, uint32_t>(name, mat_name, ids[3]));
+                }
+            }
+        }
         state.params.click_dirty = false;
-        click_cv.notify_all();
     }
 
 #ifdef OPTIX_BASE_GL
@@ -1917,10 +1997,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             auto mask_path = path.substr(0, path.size() - 4);
             save_png_data(mask_path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
-        // AOV
-        if (enable_output_aov) {
-            if (enable_output_exr) {
-                zeno::create_directories_when_write_file(exr_path);
+        if (enable_output_exr) {
+            zeno::create_directories_when_write_file(exr_path);
+            if (enable_output_aov) {
                 SaveMultiLayerEXR_half(
                         {
                                 optixgetimg_extra3("color", w, h).data(),
@@ -1945,40 +2024,29 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
             }
             else {
+                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
+            }
+        }
+        else {
+            std::string jpg_native_path = zeno::create_directories_when_write_file(path);
+            if (denoise) {
+                auto float_data = optixgetimg_color(w, h, true);
+                std::vector<uint8_t> u8_data(w * h * 3);
+                for (auto i = 0; i < u8_data.size(); i++) {
+                    u8_data[i] = int(glm::clamp(pow(float_data[i], 1.0f/2.2f) * 255.0f, 0.0f, 255.0f));
+                }
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 3, u8_data.data(), 100);
+            }
+            else {
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
+            }
+            if (enable_output_aov) {
                 path = path.substr(0, path.size() - 4);
                 save_png_color(path + ".aov.diffuse.png",   w, h,  optixgetimg_extra2("diffuse", w, h).data());
                 save_png_color(path + ".aov.specular.png",  w, h,  optixgetimg_extra2("specular", w, h).data());
                 save_png_color(path + ".aov.transmit.png",  w, h,  optixgetimg_extra2("transmit", w, h).data());
                 save_png_data(path + ".aov.background.png", w, h,  optixgetimg_extra2("background", w, h).data());
                 save_png_data(path + ".aov.mask.png",       w, h,  optixgetimg_extra2("mask", w, h).data());
-            }
-        }
-        else {
-            if (enable_output_exr) {
-                zeno::create_directories_when_write_file(exr_path);
-                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
-            }
-            else {
-                std::string jpg_native_path = zeno::create_directories_when_write_file(path);
-                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
-                if (denoise) {
-                    auto byte_size = state.albedo_buffer_p.size;
-                    std::vector<std::byte> temp; temp.resize(byte_size); 
-
-                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                    cudaMemcpy(temp.data(), _albedo_buffer, byte_size, cudaMemcpyDeviceToHost);
-                    
-                    auto a_path = path + ".albedo.pfm";
-                    std::string native_a_path = zeno::create_directories_when_write_file(a_path);
-                    zeno::write_pfm(native_a_path.c_str(), w, h, (float*)temp.data());
-
-                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                    cudaMemcpy(temp.data(), _normal_buffer, byte_size, cudaMemcpyDeviceToHost);
-
-                    auto n_path = path + ".normal.pfm";
-                    std::string native_n_path = zeno::create_directories_when_write_file(n_path);
-                    zeno::write_pfm(native_n_path.c_str(), w, h, (float*)temp.data());
-                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);

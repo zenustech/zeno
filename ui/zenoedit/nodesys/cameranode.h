@@ -17,6 +17,21 @@ protected:
 
 private slots:
     void onEditClicked();
+    void onFocalGetClicked();
+};
+
+class NumericVec3Node : public ZenoNode
+{
+    Q_OBJECT
+public:
+    NumericVec3Node(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+
+
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onEditClicked();
 };
 
 class TargetCameraNode : public ZenoNode
@@ -32,6 +47,7 @@ protected:
 private slots:
     void onEditClicked();
     void onGetClicked();
+    void onFocalGetClicked();
 };
 
 class LightNode : public ZenoNode

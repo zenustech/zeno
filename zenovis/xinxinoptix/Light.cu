@@ -45,17 +45,13 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     uint light_index = 0;
-
     bool ignore = false;
     const auto pType = optixGetPrimitiveType();
-
     if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
-
         ignore = params.firstSphereLightIdx == UINT_MAX;
         light_index = primitiveIndex + params.firstSphereLightIdx;
 
     } else {
-      //////
 
         if (isPlaneLightGAS(instanceId)) {
 
@@ -72,8 +68,8 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     if (ignore) {
-        prd->depth += 1;
-        prd->done = true;
+        prd->alphaHit = true;
+        prd->_tmin_ = optixGetRayTmax();
         return;
     }
 
@@ -98,11 +94,10 @@ extern "C" __global__ void __closesthit__radiance()
     auto visible = (light.config & zeno::LightConfigVisible);
 
     if (!visible && prd->depth == 0) {
+        prd->alphaHit = true;
         prd->_tmin_ = optixGetRayTmax();
         return;
     }
-
-    prd->done = true;
 
     float3 lightDirection = optixGetWorldRayDirection(); //light_pos - P;
     float  lightDistance  = optixGetRayTmax();  //length(lightDirection);
@@ -140,34 +135,29 @@ extern "C" __global__ void __closesthit__radiance()
 		return length(uvd) <= 0.5f;
 	};
 
-    if (prd->test_distance) {
-            
-        if (lightShape != zeno::LightShape::Ellipse) 
-        {
-            prd->maxDistance = optixGetRayTmax();
-            prd->test_distance = false; return;
-        }
+    if (lightShape != zeno::LightShape::Ellipse) 
+    {
+        prd->maxDistance = optixGetRayTmax(); 
+    } else {
 
         if (insideEllipse()) {
             prd->maxDistance = optixGetRayTmax();
-            prd->test_distance = false;
         } else {
-            prd->done = false;
+            prd->alphaHit = true;
             prd->_tmin_ = optixGetRayTmax();
+            return;
         }
+    }
 
+    if (prd->test_distance) {
+        prd->done = true;
+        prd->_tmax_ = optixGetRayTmax();
+        prd->test_distance = false;
         return;
     }
 
 	switch (lightShape) {
-	case zeno::LightShape::Ellipse: {
-		
-		if (light.rect.isEllipse && !insideEllipse()) {
-			prd->done = false;
-			prd->_tmin_ = optixGetRayTmax();
-			return;
-		}
-	}
+	case zeno::LightShape::Ellipse:
 	case zeno::LightShape::Plane: {
     
 		lsr.uv = rectUV();
@@ -214,31 +204,44 @@ extern "C" __global__ void __closesthit__radiance()
     default: return;
     }
 
-    if (light.type == zeno::LightType::Diffuse && light.spreadMajor < 1.0f && prd->depth > 0) {
-
-        auto void_angle = 0.5f * (1.0f - light.spreadMajor) * M_PIf;
+    if (light.spreadNormalize!=0.0f && light.spreadMajor < 1.0f && prd->depth > 0) {
+        
         auto atten = light_spread_attenuation(
-                                lsr.dir,
-                                lsr.n,
+                                lsr.NoL,
                                 light.spreadMajor,
-                                tanf(void_angle),
                                 light.spreadNormalize);
         lsr.intensity *= atten;
     }
 
     if (!cihouMaxDistanceContinue(lsr, light)) { return; }
-    float3 emission = cihouLightEmission(lsr, light, prd->depth);
+    const auto rgba = cihouLightEmission(lsr, light, prd->depth);
+    if (rgba.w<1.0f && prd->rndf()>rgba.w) {
+        prd->alphaHit = true;
+        prd->maxDistance = FLT_MAX;
+        prd->_tmin_ = optixGetRayTmax();
+        return;
+    }
+    const float3& emission = *(float3*)&rgba;
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
     }
-
     if (light.falloffExponent != 2.0f) {
         lsr.intensity *= powf(lsr.dist, 2.0f-light.falloffExponent);
     }
 
-    const float _SKY_PROB_ = params.skyLightProbablity();
+    if (visible && 0==prd->depth ) {
+                
+        prd->radiance = emission;
+        prd->_tmax_ = optixGetRayTmax();
 
+        prd->done = true;
+        prd->depth = 1;
+        prd->attenuation = vec3(1.0f); 
+        return;
+    }
+
+    const float _SKY_PROB_ = params.skyLightProbablity();
     if (lsr.NoL > _FLT_EPL_) {
 
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
@@ -251,15 +254,6 @@ extern "C" __global__ void __closesthit__radiance()
 
         if (lightPickPDF < 0.0f || !isfinite(lightPickPDF)) {
             lightPickPDF = 0.0f;
-        }
-
-        if (0 == prd->depth) {
-            if (light.config & zeno::LightConfigVisible) {
-                prd->radiance = emission;
-            }
-            prd->depth = 1;
-            prd->attenuation = vec3(1.0f); 
-            return;
         }
         
         float lightPDF = lightPickPDF * lsr.PDF;
@@ -276,6 +270,11 @@ extern "C" __global__ void __closesthit__radiance()
         // }
         auto tmp = float3{1, 1, 1};
         prd->updateAttenuation(tmp);
+
+        if (!prd->alphaHit) { // non block for secondary
+            prd->_tmin_ = optixGetRayTmax();
+            prd->_tmax_ = FLT_MAX;
+        }
     }
     return;
 }

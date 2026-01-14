@@ -1,4 +1,4 @@
-﻿#include "launch/livehttpserver.h"
+#include "launch/livehttpserver.h"
 #include "launch/livetcpserver.h"
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
@@ -14,6 +14,7 @@
 #include "panel/zenoproppanel.h"
 #include "panel/zenospreadsheet.h"
 #include "panel/zlogpanel.h"
+#include "panel/zenoBenchmark.h"
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
@@ -198,6 +199,7 @@ void ZenoMainWindow::initMenu()
     QJsonObject obj = readDefaultLayout();
     QStringList lst = obj.keys();
     initCustomLayoutAction(lst, true);
+    connect(m_ui->menuRun_script, &QMenu::aboutToShow, this, &ZenoMainWindow::initRunScriptAction);
     //check user saved layout.
     loadSavedLayout();
     //init recent files
@@ -495,6 +497,60 @@ void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefa
         m_ui->menuCustom_Layout->addActions(actions);
     }
 }
+
+void ZenoMainWindow::initRunScriptAction()
+{
+    m_ui->menuRun_script->clear();
+    QDir dir(QCoreApplication::applicationDirPath());
+    QString scriptDirPath = dir.absoluteFilePath("run_script");
+    QDir scriptDir(scriptDirPath);
+
+    if (!scriptDir.exists()) {
+        if (!dir.mkdir("run_script")) {
+            QAction* errorAction = new QAction(tr("Failed to create run_script folder"));
+            errorAction->setEnabled(false);
+            m_ui->menuRun_script->addAction(errorAction);
+            return;
+        }
+    }
+    dir.cd("run_script");
+
+    QStringList filters;
+    filters << "*.py";
+    QStringList scriptFiles = dir.entryList(filters, QDir::Files);
+    if (scriptFiles.isEmpty()) {
+        QAction* noScriptAction = new QAction(tr("No Python scripts found"));
+        noScriptAction->setEnabled(false);
+        m_ui->menuRun_script->addAction(noScriptAction);
+        return;
+    }
+    scriptFiles.sort();
+
+    for (const QString& scriptFile : scriptFiles) {
+        QString scriptName = QFileInfo(scriptFile).baseName();
+
+        QAction* scriptAction = new QAction(scriptName);
+        QString fullPath = dir.absoluteFilePath(scriptFile);
+        scriptAction->setData(fullPath);
+
+        QProcess* process = new QProcess(this);
+        connect(scriptAction, &QAction::triggered, this, [this, scriptAction, process]() {
+            QString scriptPath = scriptAction->data().toString();
+            QStringList args = {
+                scriptPath
+            };
+            process->start("python", args);
+            if (!process->waitForStarted(-1)) {
+                QMessageBox::warning(this, tr("Error"), tr("Failed to start Python process for script: %1").arg(scriptPath));
+                return;
+            }
+        });
+        connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onPyProcFinished(int, QProcess::ExitStatus)));
+        connect(process, SIGNAL(readyRead()), this, SLOT(onPyProcReady()));
+        m_ui->menuRun_script->addAction(scriptAction);
+    }
+}
+
 
 void ZenoMainWindow::loadDockLayout(QString name, bool isDefault) 
 {
@@ -1246,6 +1302,23 @@ ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
     return nullptr;
 }
 
+zenoBenchmark* ZenoMainWindow::getAnyBenchmark() const
+{
+    for (auto dock : findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly))
+    {
+        if (!dock->isVisible())
+            continue;
+        for (int i = 0; i < dock->count(); i++)
+        {
+            if (zenoBenchmark* benchmark = qobject_cast<zenoBenchmark*>(dock->widget(i)))
+            {
+                return benchmark;
+            }
+        }
+    }
+    return nullptr;
+}
+
 void ZenoMainWindow::onRunFinished()
 {
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
@@ -1542,6 +1615,35 @@ void ZenoMainWindow::onComposeVideo()
 {
     ZComposeVideoDlg dlg(this);
     dlg.exec();
+}
+
+void ZenoMainWindow::onPyProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    if (exitStatus == QProcess::NormalExit) {
+        qDebug() << "Process exited normally with code:" << exitCode;
+        if (exitCode == 0)
+            zeno::log_info("Python process exited with code 0.");
+        else
+            zeno::log_error("Python process exited with error code {}.", exitCode);
+    } else {
+        zeno::log_error("Python process crashed.");
+    }
+}
+
+void ZenoMainWindow::onPyProcReady()
+{
+    QProcess* proc = qobject_cast<QProcess*>(sender());
+    if (!proc) {
+        return;
+    }
+    QByteArray arr = proc->readAll();
+    QList<QByteArray> lst = arr.split('\n');
+    for (QByteArray line : lst)
+    {
+        if (!line.isEmpty())  {
+            zeno::log_info("Python script: {}", line.toStdString());
+        }
+    }
 }
 
 void ZenoMainWindow::importGraph(bool bPreset) {
@@ -2038,6 +2140,8 @@ bool ZenoMainWindow::saveQuit() {
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());
+    zeno::getSession().userData().del("paramPathEditLastSelectPath");
+
     return true;
 }
 

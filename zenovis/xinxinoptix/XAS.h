@@ -1,18 +1,48 @@
 #pragma once 
-
-
 #include "optix.h"
 #include "raiicuda.h"
 
-#include <map>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <functional>
+#include <optional>
 
 #ifndef uint
-using uint = unsigned int; 
+using uint = unsigned int;
 #endif
+
+#ifndef ushort
+using ushort = unsigned short;
+#endif
+
+struct SceneNode {
+    xinxinoptix::raii<CUdeviceptr> buffer;
+    OptixTraversableHandle handle;
+    uint32_t count;
+    uint32_t frame=UINT32_MAX;
+    uint8_t depth=0;
+};
+
+template <typename T = double, typename = std::enable_if_t<std::is_same_v<T, float> || std::is_same_v<T, double>>>
+struct CppTimer {
+    using Clock = std::chrono::steady_clock;
+    using Duration = std::chrono::duration<T, std::milli>;
+
+    void tick() { start = Clock::now(); }
+
+    T elapsed() const noexcept {
+        auto elapsed_ns = std::chrono::nanoseconds(Clock::now() - start).count();
+        return elapsed_ns / 1'000'000.0;
+    }
+
+    void tock(std::optional<std::string_view> tag = std::nullopt) {
+        durat = elapsed();
+        if (tag && !tag->empty()) {
+            printf("%s: %f ms\n", tag->data(), durat);
+        }
+    }
+
+private:
+    Clock::time_point start;
+    T durat;
+};
 
 #define RETURN_IF_CUDA_ERROR( call )                                           \
         cudaError_t error = call;                                              \
@@ -32,7 +62,8 @@ namespace xinxinoptix {
                          CUdeviceptr& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t aux_size=0, bool verbose=false)
     {
 
-        _handleXAS_ = 0llu;
+        if (OPTIX_BUILD_OPERATION_BUILD == accel_options.operation) 
+            _handleXAS_ = 0llu;
 
         size_t temp_buffer_size {};  
         size_t output_buffer_size {};
@@ -60,11 +91,16 @@ namespace xinxinoptix {
         raii<CUdeviceptr> bufferTemp{};
         CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size, 0 ) );
 
-        const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        if (OPTIX_BUILD_OPERATION_UPDATE == accel_options.operation) 
+        {
+            COMPACTION = false;
+        }
 
         if (!COMPACTION) {
 
-            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size + aux_size, 0) );
+            if (OPTIX_BUILD_OPERATION_UPDATE != accel_options.operation) 
+                CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size + aux_size, 0) );
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             0,  // CUDA stream
@@ -80,7 +116,7 @@ namespace xinxinoptix {
         } else {
 
             CUdeviceptr output_buffer_xas {};
-            CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t) + aux_size, 0) );
+            CUDA_CHECK(cudaMallocAsync( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t) + aux_size, 0) );
 
             OptixAccelEmitDesc emitProperty {};
             emitProperty.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -120,12 +156,16 @@ namespace xinxinoptix {
 
     inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
                          raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t aux_size=0, bool verbose=false) {
+        
+        if (OPTIX_BUILD_OPERATION_BUILD == accel_options.operation)
+            _bufferXAS_.reset();
                                                
-        buildXAS(context, accel_options, build_input, _bufferXAS_.reset(), _handleXAS_, aux_size, verbose);
+        buildXAS(context, accel_options, build_input, _bufferXAS_.handle, _handleXAS_, aux_size, verbose);
     }
 
-    inline void buildIAS(OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, std::vector<OptixInstance>& instances, 
-                         raii<CUdeviceptr>& bufferIAS, OptixTraversableHandle& handleIAS) 
+    template <template <class> class ALLOC>
+    inline void buildIAS(OptixDeviceContext& context, std::vector<OptixInstance, ALLOC<OptixInstance>>& instances, 
+                         raii<CUdeviceptr>& bufferIAS, OptixTraversableHandle& handleIAS, bool update=false) 
     {
 
         if (instances.empty()) {
@@ -137,7 +177,7 @@ namespace xinxinoptix {
         raii<CUdeviceptr>  d_instances;
         const size_t size_in_bytes = sizeof( OptixInstance ) * instances.size();
         CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_instances.reset() ), size_in_bytes, 0) );
-        CUDA_CHECK( cudaMemcpy(
+        CUDA_CHECK( cudaMemcpyAsync(
                     reinterpret_cast<void*>( (CUdeviceptr)d_instances ),
                     instances.data(),
                     size_in_bytes,
@@ -149,26 +189,32 @@ namespace xinxinoptix {
         instance_input.instanceArray.instances    = d_instances;
         instance_input.instanceArray.numInstances = static_cast<unsigned int>( instances.size() );
 
-        // OptixAccelBuildOptions accel_options{};
-        // accel_options.buildFlags                  = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-        // accel_options.operation                   = OPTIX_BUILD_OPERATION_BUILD;
-
+        OptixAccelBuildOptions accel_options{};
+        accel_options.operation = update? OPTIX_BUILD_OPERATION_UPDATE : OPTIX_BUILD_OPERATION_BUILD;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_UPDATE;
         buildXAS(context, accel_options, instance_input, bufferIAS, handleIAS);
     }
 
-    inline void buildIAS(OptixDeviceContext& context, std::vector<OptixInstance>& instances, raii<CUdeviceptr>& bufferIAS, OptixTraversableHandle& handleIAS) 
+    template <template <class> class ALLOC>
+    inline void buildIAS(OptixDeviceContext& context, std::vector<OptixInstance, ALLOC<OptixInstance>>& instances, SceneNode& node) 
     {
-        OptixAccelBuildOptions accel_options{};
-        accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+        bool update = node.count == instances.size();
+        if (!update) {
+            node.count = instances.size();
+        }
+        buildIAS(context, instances, node.buffer, node.handle, update);
+    }
 
-        buildIAS(context, accel_options, instances, bufferIAS, handleIAS);
-    } 
-
-    inline void buildMeshGAS(const OptixDeviceContext& context, std::vector<float3>& vertices, std::vector<uint3>& indices, std::vector<uint16_t>& mat_idx, uint16_t sbt_count,
-                                raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size, OptixBuildInputOpacityMicromap* inputOMM=nullptr)
+    template <template <class> class ALLOC>
+    inline void buildMeshGAS(bool update, const OptixDeviceContext& context, 
+            std::vector<float3, ALLOC<float3> >& vertices, std::vector<uint3, ALLOC<uint3> >& indices, std::vector<uint16_t, ALLOC<uint16_t> >& mat_idx, 
+            uint16_t sbt_count, raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t extra_size, OptixBuildInputOpacityMicromap* inputOMM=nullptr)
     {
         if (vertices.empty()) { return; }
+
+        OptixBuildOperation operation = OPTIX_BUILD_OPERATION_BUILD;
+        if (update && _bufferXAS_.handle>0 && _handleXAS_>0)
+            operation = OPTIX_BUILD_OPERATION_UPDATE;
 
         raii<CUdeviceptr> dverts {};
         raii<CUdeviceptr> dmats {};
@@ -177,22 +223,21 @@ namespace xinxinoptix {
         {
             const size_t size_in_byte = vertices.size() * sizeof( vertices[0] );
             CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &dverts ), size_in_byte, 0 ) );
-            CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr&)dverts ), vertices.data(), size_in_byte, cudaMemcpyHostToDevice) );
+            CUDA_CHECK( cudaMemcpyAsync( reinterpret_cast<void*>( (CUdeviceptr&)dverts ), vertices.data(), size_in_byte, cudaMemcpyHostToDevice) );
         }
 
         if (sbt_count > 1 && mat_idx.size()>1)
         {
             const size_t size_in_byte = mat_idx.size() * sizeof( mat_idx[0] );
             CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &dmats ), size_in_byte, 0 ) );
-            CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)dmats ), mat_idx.data(), size_in_byte, cudaMemcpyHostToDevice ) );
+            CUDA_CHECK( cudaMemcpyAsync( reinterpret_cast<void*>( (CUdeviceptr)dmats ), mat_idx.data(), size_in_byte, cudaMemcpyHostToDevice ) );
         }
-
+        
         if (!indices.empty())
         {
             const size_t size_in_byte = indices.size() * sizeof(uint3);
             CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &didx ), size_in_byte, 0) );
-            CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)didx ), indices.data(), size_in_byte, cudaMemcpyHostToDevice
-                        ) );
+            CUDA_CHECK( cudaMemcpyAsync( reinterpret_cast<void*>( (CUdeviceptr)didx ), indices.data(), size_in_byte, cudaMemcpyHostToDevice) );
         }
         // // Build triangle GAS // // One per SBT record for this build input
         const auto numSbtRecords = (sbt_count<=1 || mat_idx.size()<=1) ? 1 : sbt_count;
@@ -218,8 +263,10 @@ namespace xinxinoptix {
         triangle_input.triangleArray.numIndexTriplets            = indices.size();
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_DISABLE_OPACITY_MICROMAPS | OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-        accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
+        accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_UPDATE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        accel_options.buildFlags            |= OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+        accel_options.buildFlags            |= OPTIX_BUILD_FLAG_ALLOW_OPACITY_MICROMAP_UPDATE | OPTIX_BUILD_FLAG_ALLOW_DISABLE_OPACITY_MICROMAPS;
+        accel_options.operation              = operation;
 
         buildXAS(context, accel_options, triangle_input, _bufferXAS_, _handleXAS_, extra_size);
     }

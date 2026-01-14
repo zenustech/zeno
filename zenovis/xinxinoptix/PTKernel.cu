@@ -10,6 +10,9 @@
 #include "proceduralSky.h"
 
 #include <cuda_fp16.h>
+#include <volume.h>
+#include <Light.h>
+#include <OSD.h>
 
 #ifndef __CUDACC_RTC__
 #define __AOV__ 1
@@ -35,38 +38,31 @@ vec3 RRTAndODTFit(vec3 v)
 static __inline__ __device__
 vec3 ACESFilm(vec3 x)
 {
+    x = x * vec3(0.539,0.55,0.55);
   float a = 2.51f;
   float b = 0.03f;
   float c = 2.43f;
   float d = 0.59f;
   float e = 0.14f;
-  return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3(0), vec3(1));
+  return (x*(a*x+b))/(x*(c*x+d)+e);
+//    vec3 a = x * (x + 0.0245786f) - 0.000090537f;
+//    vec3 b = x * (0.983729f * x + 0.4329510f) + 0.238081f;
+//    return a / b;
 }
-static __inline__ __device__
-vec3 ACESFitted(vec3 color, float gamma)
-{
-//    const mat3x3 ACESInputMat = mat3x3
-//        (
-//            0.59719, 0.35458, 0.04823,
-//            0.07600, 0.90834, 0.01566,
-//            0.02840, 0.13383, 0.83777
-//        );
-//    mat3x3 ACESOutputMat = mat3x3
-//    (
-//        1.60475, -0.53108, -0.07367,
-//        -0.10208,  1.10813, -0.00605,
-//        -0.00327, -0.07276,  1.07602
-//    );
-    vec3 v1 = vec3(0.59719, 0.35458, 0.04823);
-    vec3 v2 = vec3(0.07600, 0.90834, 0.01566);
-    vec3 v3 = vec3(0.02840, 0.13383, 0.83777);
-    color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
-    // Apply RRT and ODT
-    color = RRTAndODTFit(color);
 
-    v1 = vec3(1.60475, -0.53108, -0.07367);
-    v2 = vec3(-0.10208,  1.10813, -0.00605);
-    v3 = vec3(-0.00327, -0.07276,  1.07602);
+static __inline__ __device__
+vec3 ACESFitted(vec3 color, float gamma=1.0f)
+{
+    // Apply RRT and ODT
+    //color = clamp(RRTAndODTFit(color), vec3(0), vec3(1));
+    //color = applyLook(color);
+    color = mix(vec3(dot(vec3(0.272229, 0.674082, 0.0536895), color)), color, 0.92);
+    color = ACESFilm(color);
+
+
+    vec3 v1 = vec3(1.60475, -0.53108, -0.07367);
+    vec3 v2 = vec3(-0.10208, 1.10813, -0.00605);
+    vec3 v3 = vec3(-0.00327, -0.07276, 1.07602);
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
 
     // Clamp to [0, 1]
@@ -96,6 +92,90 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
     bool bad = !isfinite(vector.x) || !isfinite(vector.y) || !isfinite(vector.z);
     return bad? true : lengthSquared(vector) == 0.0f;
 }
+
+void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
+    
+    const auto& vol = prd.vol;
+    // if (vol.homo_t1 <= vol.homo_t0) return;
+    // if (_tmax_ <= vol.homo_t0) return;
+    
+    float tmax = fminf(_tmax_, vol.homo_t1) - vol.homo_t0;
+
+    VolumeOut fog_out;
+    optixDirectCall<void, void*, VolumeOut&>( prd.vol.homo_matid, nullptr, fog_out);
+
+    const vec3& sigma_t = fog_out.extinction;
+    auto seed = prd.seed;
+
+    auto sum = dot(sigma_t, vec3(1.0f));
+    auto weight = (sum > 1e-6f)? sigma_t/sum : vec3(1.f/3.f);
+
+    const auto transmittance = exp(-sigma_t * tmax);
+    const auto cdf = 1.0f - transmittance;
+
+    auto Xi = rnd(seed);
+    int K = (Xi < weight[0]) ? 0 : (Xi < weight[0] + weight[1]) ? 1 : 2;
+
+    const float& sig_K = sigma_t[K];
+    const float& cdf_K = cdf[K];
+
+    float sa = 1.0 - rnd(seed) * cdf_K; //Sample of the survival CDF
+    float DT = -logf(sa) / sig_K;
+
+    let new_orig = ray_origin + (prd.vol.homo_t0) * ray_dir;
+    //let new_orig = ray_origin + (prd.vol.homo_t0 + dt) * ray_dir;
+    
+    ShadowPRD shadowPRD {};
+    shadowPRD.seed = seed ^ 0x9e3779b9u;
+    
+    shadowPRD.fog_dt = DT;
+    shadowPRD.fog_tmax = tmax;
+    shadowPRD.ShadowNormal = ray_dir;
+    shadowPRD.depth = prd.depth;
+    shadowPRD.origin = new_orig;
+    shadowPRD.attanuation = vec3(1.0f);
+
+    auto evalBxDF = [&](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
+
+        auto dt = shadowPRD.fog_dt;
+        vec3 va = sigma_t * dt;
+        vec3 tr = vec3(1.0f);
+        #pragma unroll
+        for (char i=0; i<3; ++i) {
+            auto& s = va[i];
+            // Use second-order Taylor expansion: exp(-s) ≈ 1 - s + s^2/2
+            if (s < 1e-4f)
+                tr[i] = (1.0f - s + 0.5f * s * s);
+            else
+                tr[i] = expf(-s);
+        }
+        vec3 pdf = sigma_t * tr;
+        pdf = pdf / cdf; // bounded pdf
+
+        pbrt::HenyeyGreenstein hg(fog_out.anisotropy);
+
+        auto distPDF = dot(pdf, weight);
+        auto phase = hg.p(_wo_, _wi_);
+
+        if (DT == dt) { // angle domain  
+            thisPDF = phase;
+        } else { // distance domain
+            thisPDF = distPDF;
+        }
+
+        float3 sigma_s = fog_out.albedo * sigma_t; // cancel sigma_t in pdf
+        if (DT == dt)
+            return sigma_s * tr * phase / distPDF;
+        else
+            return sigma_s * tr * phase * 4.0f * M_PIf;
+    };
+    
+    DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+
+    result = shadowPRD.radiance * fog_out.albedoAmp;
+    attenuation = transmittance;
+};
+
 extern "C" __global__ void __raygen__rg()
 {
     const auto w = params.width;
@@ -139,30 +219,6 @@ extern "C" __global__ void __raygen__rg()
     //vdc offset, which is used to draw elements from the vdc sequence
     //shall increase exactly as the subframe_index!
     seed1 = seed0 + subframe_index;
-
-//    if(subframe_index==0) {
-//        seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//        seed = pcg_hash(seed);
-//        rnd(seed);
-//        rnd(seed);
-////        unsigned int k = params.outside_random_number%10;
-////        for(int i=0;i<k;i++) rnd(seed);
-//
-//        //eventseed = (idx.y * w + idx.x) * subframe_index + (idx.y * w + idx.x);
-//        //seed += params.outside_random_number;
-//        eventseed = seed;
-//        seed1 = seed;
-//        seed0 = seed;
-//        params.seed_buffer[idx.y * w + idx.x] = make_uint3(seed,seed,seed);
-//
-//    }
-//    seed1 = seed0 + subframe_index;
-//    seed = tea<4>( idx.y * w + idx.x, subframe_index) + params.outside_random_number;
-//    seed = pcg_hash(seed);
-//    rnd(seed);
-//    rnd(seed);
-//    eventseed = seed0 + subframe_index;
-
 
     float focalPlaneDistance = cam.focal_distance>0.01f? cam.focal_distance: 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
@@ -283,6 +339,7 @@ extern "C" __global__ void __raygen__rg()
         }
 
         RadiancePRD prd;
+        prd.print_info = params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y;
         prd.vdcseed = vdcseed;
         prd.offset = seed1;
         prd.offset2 = seed1;
@@ -292,7 +349,6 @@ extern "C" __global__ void __raygen__rg()
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
-        prd.countEmitted = true;
         prd.done         = false;
         prd.seed         = seed;
         prd.eventseed    = eventseed;
@@ -306,6 +362,8 @@ extern "C" __global__ void __raygen__rg()
 
         prd.depth = 0;
         prd.diffDepth = 0;
+        prd.hair_depth = 0;
+        prd.alphaDepth = 0;
         prd.isSS = false;
         prd.curMatIdx = 0;
         prd.test_distance = false;
@@ -314,19 +372,27 @@ extern "C" __global__ void __raygen__rg()
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
         prd.max_depth = 4;
+        prd.sssDepth = 0;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
+    #if __AOV__ 
+        prd.__aov__ = true;
+    #endif
     #if DENOISE 
         prd.denoise = true;
     #endif
+        rnd(prd.seed);
+        vdcrnd(prd.offset, prd.vdcseed);
+        vdcrnd(prd.offset, prd.vdcseed);
+        vdcrnd(prd.offset, prd.vdcseed);
 
         // Primary Ray
         auto _attenuation = prd.attenuation;
         do {
             prd.alphaHit = false;
-            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_);
+            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, prd._mask_);
         } while (prd.alphaHit); // skip alpha
-        
+
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
         {
             float3 click_pos {0,0,0};
@@ -341,8 +407,9 @@ extern "C" __global__ void __raygen__rg()
         if(params.pause) return;
         
         prd._tmin_ = 0;
-        prd._tmax_ = FLT_MAX;
-        prd.maxDistance = FLT_MAX;
+        //fuck, SSS or other scattering scheme may return a small maxDistance
+        //value, how can we set it back to FLT_MAX here????
+        //prd.maxDistance = FLT_MAX;
         
         float3 m = prd.mask_value;
         mask_value = mask_value + m;
@@ -368,17 +435,30 @@ extern "C" __global__ void __raygen__rg()
             _tmin_ = prd._tmin_;
             _mask_ = prd._mask_;
 
-            prd._tmin_ = 0;
+
+            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+                float3 vol_lighting;
+                float3 vol_attenuation;
+                homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);
+                result += vol_lighting * _attenuation;
+
+                _attenuation *= vol_attenuation;
+                prd.attenuation *= vol_attenuation;
+            }
+            
+            prd.vol = {};
+            prd._tmin_ = _tmin_;
+            prd._tmax_ = FLT_MAX;
             prd._mask_ = EverythingMask;
 
             ray_origin = prd.origin;
             ray_direction = prd.direction;
 
-            if(prd.countEmitted==false || prd.depth>0) {
+            {
                 auto temp_radiance = prd.radiance * _attenuation;
 
                 float upperBound = prd.fromDiff?10.0f:1000.0f;
-                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10.0f));
 
                 result += prd.depth>1?clampped:temp_radiance;
             #if __AOV__
@@ -390,34 +470,32 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
-            if(prd.countEmitted==true && prd.depth>0){
-                prd.done = true;
-            }
-
             if( prd.done || prd.depth>prd.max_depth){
                 break;
             }
 
-            if(prd.depth > 3){
-                float RRprob = max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-                RRprob = min(RRprob, 0.99f);
+            if(prd.depth > 1){
+                float RRprob = RgbToY(prd.attenuation);//max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
+                RRprob = min(RRprob, 1.0f);
+
                 if(rnd(prd.seed) > RRprob) {
-                    prd.done=true;
+                    break;
                 } else {
-                    prd.attenuation = prd.attenuation / ( RRprob + 0.0001);
+                    prd.attenuation = prd.attenuation / RRprob;
                 }
             }
 
-            _attenuation = prd.attenuation;
-            if(prd.diffDepth > 1)
+            if(prd.diffDepth > 0)
                 _mask_ &= ~VolumeMaskAnalytics;
-            //if(isfinite(ray_origin.x) && isfinite(ray_origin.y) && isfinite(ray_origin.z))
-            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
-            //else
-                //;
 
+            prd._tmin_ = _tmin_;
+            do {
+                _attenuation = prd.attenuation;
+                prd.alphaHit = false;
+                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_ & prd._mask_);
+            }while(prd.alphaHit);
         }
-//        seed = prd.seed;
+        seed = prd.seed;
 //        seed1 = prd.offset;
 //        eventseed = prd.eventseed;
     }
@@ -479,14 +557,14 @@ extern "C" __global__ void __raygen__rg()
             tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
             const float3 accum_normal_prev = params.normal_buffer[ image_index ];
             tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
-
-            params.albedo_buffer[ image_index ] = tmp_albedo;
-            params.normal_buffer[ image_index ] = tmp_normal;
         #endif
     }
 
     params.accum_buffer[ image_index ] = accum_color;
-    //params.seed_buffer[ image_index ] = {seed1, seed, eventseed};
+    #if DENOISE
+        params.albedo_buffer[ image_index ] = tmp_albedo;
+        params.normal_buffer[ image_index ] = tmp_normal;
+    #endif
 
     #if __AOV__
         params.accum_buffer_D[ image_index ] = accum_color_d;
@@ -503,9 +581,14 @@ extern "C" __global__ void __raygen__rg()
 
     dither = (dither-0.5f);
     if (need_tone_mapping) {
-        accum_color = ACESFilm(accum_color);
+        accum_color = ACESFitted(accum_color);
     }
-    params.frame_buffer[ image_index ] = makeSRGB( accum_color, 2.2f, dither);
+    auto& pixel = params.frame_buffer[image_index];
+    pixel = makeSRGB( accum_color, 2.2f, dither);
+
+    if (params.frame_time > 0) {
+        drawOSD((uchar3*)&pixel, params.frame_time, uv, 20);
+    }
 }
 
 extern "C" __global__ void __miss__radiance()
@@ -517,8 +600,7 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
-    prd->countEmitted = false;
-    
+    prd->radiance *= 0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
         float envPdf = 0.0f;
@@ -540,19 +622,18 @@ extern "C" __global__ void __miss__radiance()
 
         envPdf *= params.skyLightProbablity();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf, 1.0f);
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf,1.0f);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;
         misWeight = prd->depth>=1?misWeight:1.0f;
         misWeight = prd->samplePdf>0.0f?misWeight:1.0f;
         
-        prd->radiance = misWeight * skysample;
+        prd->radiance = skysample*misWeight;
 
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
         }
-
         prd->done      = true;
         prd->hit_type  = 0;
         return;
@@ -565,14 +646,17 @@ extern "C" __global__ void __miss__radiance()
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-    } else {
-        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
-    }
+        transmittance = DisneyBSDF::Transmission(sigma_t, prd->maxDistance);
 
+    } else {
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, prd->maxDistance, false);
+    }
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-    prd->origin += prd->direction * optixGetRayTmax();
+
+    prd->origin += prd->direction * ( prd->maxDistance);
+    prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
+
 
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
@@ -580,16 +664,19 @@ extern "C" __global__ void __miss__radiance()
         prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
-        prd->maxDistance =
-            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+//        prd->maxDistance =
+//            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, channelPDF);
+        prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation,sigma_t*ss_alpha,sigma_t,prd->seed,channelPDF);
         prd->channelPDF = channelPDF;
-    }
 
+
+    }
+    prd->radiance = vec3(0);
     prd->depth++;
 
-    if(length(prd->attenuation)<1e-7f){
-        prd->done = true;
-    }
+//    if(length(prd->attenuation)<1e-7f){
+//        prd->done = true;
+//    }
 }
 
 extern "C" __global__ void __miss__occlusion()

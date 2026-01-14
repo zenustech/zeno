@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -117,7 +117,13 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <widget class="QMenu" name="menuRun_script">
+     <property name="title">
+      <string>Run script</string>
+     </property>
+    </widget>
     <addaction name="actionCombine_video"/>
+    <addaction name="menuRun_script"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -469,6 +475,11 @@ border-top: 1px solid black;</string>
   <action name="actionCombine_video">
    <property name="text">
     <string>Compose video</string>
+   </property>
+  </action>
+  <action name="actionq">
+   <property name="text">
+    <string>q</string>
    </property>
   </action>
  </widget>

@@ -22,6 +22,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
 #include "launch/ztcpserver.h"
+#include "panel/zenoBenchmark.h"
 
 namespace {
 
@@ -164,6 +165,38 @@ struct PacketProc {
                 pModel->updateSocketDefl(ident, { socket, "", val }, subgIdx, false);
             }
 
+        } else if (action == "pythonRecordScript") {
+            QString ident = QString::fromStdString(objKey);
+            rapidjson::Document doc;
+            doc.Parse(buf, len);
+
+            if (!doc.IsObject()) {
+                zeno::log_warn("document root not object: {}", std::string(buf, len));
+                return false;
+            }
+            auto root = doc.GetObject();
+            for (auto iter = root.MemberBegin(); iter != root.MemberEnd(); iter++)
+            {
+                QString val;
+                if (ident.contains("PythonNode") && iter->name == "args")
+                {
+                    if (iter->value.IsObject())
+                    {
+                        rapidjson::StringBuffer sbBuf;
+                        rapidjson::Writer<rapidjson::StringBuffer> jWriter(sbBuf);
+                        iter->value.Accept(jWriter);
+                        val = QString::fromUtf8(sbBuf.GetString());
+                    }
+                }
+                else if (iter->value.IsString())
+                {
+                    val = iter->value.GetString();
+                }
+
+                QString socket = iter->name.GetString();
+                emit zenoApp->getMainWindow()->pythonRecordScriptFinished(val);
+                break;
+            }
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
             if (pos != std::string::npos) {
@@ -178,6 +211,12 @@ struct PacketProc {
                 }
             }
 
+        } else if (action == "benchmark") {
+            if (auto main = zenoApp->getMainWindow()) {
+                if (auto benchmark = main->getAnyBenchmark()) {
+                    benchmark->setBenchMarkData(std::string(buf, len));
+                }
+            }
         } else if (action == "reportStatus") {
             std::string statJson{buf, len};
             zeno::getSession().globalStatus->fromJson(statJson);

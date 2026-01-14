@@ -1,4 +1,4 @@
-﻿#include "serialize.h"
+#include "serialize.h"
 #include <zeno/utils/logger.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/modelrole.h>
@@ -7,13 +7,14 @@
 #include "util/apphelper.h"
 #include "variantptr.h"
 #include "settings/zsettings.h"
+#include "panel/zenoBenchmark.h"
 #include <QSet>
 
 using namespace JsonHelper;
 
 QSet<QString> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
-    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer"
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky", "SkyComposer", "SetPhysicalCamera",
     });
 
 std::set<std::string> matNodeNames = {"ShaderFinalize", "ShaderVolume", "ShaderVolumeHomogeneous"};
@@ -146,6 +147,17 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         if (!configDoc.IsObject()) {
             zeno::log_error("paramsBase64 is corrupted");
+        }
+    }
+
+    bool monitorAllNodes = false;
+    std::string monitoredNodes;
+    if (auto main = zenoApp->getMainWindow()) {
+        if (auto benchmark = main->getAnyBenchmark()) {
+            monitoredNodes = benchmark->monitoredNodes();
+            if (monitoredNodes.empty()) {
+                monitorAllNodes = true;
+            }
         }
     }
 
@@ -292,7 +304,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                             if (!bDict)
                             {
                                 //new added param `doConcat` at MakeList.
-                                AddParams("setNodeParam", mockDictList, "doConcat", 1, "bool", writer);
+                                AddParams("setNodeParam", mockDictList, "doConcat", 0, "bool", writer);
                             }
                             // add link from outside node to the mock dict/list.
                             AddStringList({ "bindNodeInput", mockDictList, keyName, newOutId, outSock }, writer);
@@ -334,8 +346,13 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 if (opStr == "setNodeInput") {
                     defl = UiHelper::parseVarByType(sockType, defl, nullptr);
                 }
-                if (!defl.isNull())
+                if (!defl.isNull()) {
+                    if (sockType == "colorvec3f") {
+                        auto transClr = defl.value<COLOR_VEC3F_TRANSFORM>();
+                        defl = QVariant::fromValue<UI_VECTYPE>(transClr.transform);
+                    }
                     AddParams(opStr, ident, inputName, defl, sockType, writer);
+                }
             }
             else
             {
@@ -388,6 +405,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             if (paramValue.isNull())
                 continue;
+            if (param_info.typeDesc == "colorvec3f") {//使用trans之后的颜色
+                auto transClr = paramValue.value<COLOR_VEC3F_TRANSFORM>();
+                paramValue = QVariant::fromValue<UI_VECTYPE>(transClr.transform);
+            }
             AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
         }
 
@@ -418,6 +439,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
 		if (bView && (opts & OPT_VIEW))
         {
+            if (!ident.contains('/')) {
+                AddStringList({ "viewId", ident}, writer);
+            }
             QString objruntype("normal");   //按runtype分类
             if (launchParam.runtype == RunMatrix) { //matrix特殊处理
                 if (name == "Route") {
@@ -500,6 +524,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (opts & OPT_CACHE)
         {
             AddStringList({ "cacheToDisk", ident }, writer);
+        }
+
+        if (monitorAllNodes || monitoredNodes.find(ident.split('/', Qt::SkipEmptyParts).last().toStdString()) != std::string::npos) {
+            AddStringList({ "enableTimer", ident }, writer);
         }
     }
 }

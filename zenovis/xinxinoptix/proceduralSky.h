@@ -295,9 +295,10 @@ static __inline__ __device__ vec3 proceduralSky(
 static __forceinline__ __device__ vec3 sampleSkyTexture(vec2 uv, float upperBound, float isclamp, float &pdf)
 {
     vec3 col = texture2D<float4, vec3>(params.sky_texture, uv);
-    vec3 col_safe = clamp(col, vec3(0.0f), vec3(upperBound));
-    pdf = luminance(col) / params.envavg  / (2.0f * M_PIf * M_PIf);
-    return mix(col, col_safe, isclamp) * params.sky_strength;
+    //vec3 col_safe = clamp(col, vec3(0.0f), vec3(upperBound));
+    float sintheta = abs(sin(uv.y * M_PIf));
+    pdf = luminance(col) / params.envavg;
+    return col * params.sky_strength;
 }
 
 static __forceinline__ __device__ vec3 sampleSkyTexture(vec3 dir, float upperBound, float isclamp, float &pdf)

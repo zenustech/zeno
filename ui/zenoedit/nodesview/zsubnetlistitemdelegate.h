@@ -1,4 +1,4 @@
-#ifndef __ZSUBNET_LISTITEM_DELEGATE_H__
+﻿#ifndef __ZSUBNET_LISTITEM_DELEGATE_H__
 #define __ZSUBNET_LISTITEM_DELEGATE_H__
 
 #include <QtWidgets>
@@ -47,7 +47,7 @@ private slots:
 private:
     void getSubgraphs(const QModelIndex& index, QModelIndexList& subgraphs);
     void setForkLock(QSortFilterProxyModel* model, bool bLocked);
-    void setSubgraphType(QSortFilterProxyModel* model, bool bPreset);
+    void setSubgraphType(QSortFilterProxyModel* model, int subgType);
 
 private:
     IGraphsModel* m_model;

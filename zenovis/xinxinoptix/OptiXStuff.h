@@ -42,6 +42,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -881,13 +882,13 @@ inline void calc_sky_cdf_map(cuTexture* tex, int nx, int ny, int nc, std::functi
             auto color = zeno::vec3f(look(idx2+0), look(idx2+1), look(idx2+2));
             illum = zeno::dot(color, zeno::vec3f(0.2722287, 0.6740818, 0.0536895));
             //illum = illum > 0.5? illum : 0.0f;
-            illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
+            illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny) * 2.0f * 3.1415926 * 3.1415926 ;
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
-    sky_avg = total_illum / ((float)nx * (float)ny);
+    sky_avg = total_illum / ((float)nx * (float)ny) ;
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;
@@ -1002,6 +1003,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     std::function<void(void)>     cleanupTexture = [](){};
 
     std::shared_ptr<cuTexture> newTexture = nullptr;
+    std::shared_ptr<std::vector<unsigned char>> ucdata;
 
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
@@ -1065,7 +1067,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         ny = std::max(img->userData().get2<int>("h"), 1);
         nc = std::max(img->userData().get2<int>("channels"), 1);
 
-        auto ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
+        ucdata = std::make_shared<std::vector<unsigned char>>(img->verts.size() * nc);
 
         if (nc < 4) {
 
@@ -1098,6 +1100,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
+
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
             newTexture = std::make_shared<cuTexture>();

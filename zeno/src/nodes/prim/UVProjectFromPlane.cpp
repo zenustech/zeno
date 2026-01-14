@@ -99,18 +99,31 @@ void primSampleTexture(
         float remapMax
 ) {
 }
+static vec2i uv_to_tex(vec2f uv, int w, int h) {
+    float hx = 1.0f / float(w);
+    float hy = 1.0f / float(h);
+    float i = floor((uv[0] - 0.5f * hx) / hx);
+    float j = floor((uv[1] - 0.5f * hy) / hy);
 
-static vec2i uv_to_tex(vec2f texCoord, int w, int h) {
-    int x = (int)(texCoord[0] * w - 0.5f) % w;
-    int y = (int)(texCoord[1] * h - 0.5f) % h;
-    x = x < 0 ? w + x : x;
-    y = y < 0 ? h + y : y;
-    return {x, y};
+    return {int(i), int(j)};
+}
+
+static vec2i uv_to_tex(vec2f uv, int w, int h, vec2f &cxcy) {
+    float hx = 1.0f / float(w);
+    float hy = 1.0f / float(h);
+    float i = floor((uv[0] - 0.5f * hx) / hx);
+    float j = floor((uv[1] - 0.5f * hy) / hy);
+
+    float cx = (uv[0] - (i + 0.5f) * hx) / hx;
+    float cy = (uv[1] - (j + 0.5f) * hy) / hy;
+    cxcy = {cx, cy};
+
+    return {int(i), int(j)};
 }
 
 static vec3f getColor(vec2i tex, const vec3f* data, int w, int h) {
-    tex[0] = tex[0] % w;
-    tex[1] = tex[1] % h;
+    tex[0] = (tex[0] + w) % w;
+    tex[1] = (tex[1] + h) % h;
     int index = tex[1] * w + tex[0];
     return data[index];
 }
@@ -122,40 +135,37 @@ static vec3f getColorClamp(vec2i tex, const vec3f* data, int w, int h) {
     return data[index];
 }
 
-static vec3f Sample2DLinear(vec2f texCoord, const vec3f* data, int w, int h) {
-    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
-    vec2f f = fract(texCoord);
+static vec3f Sample2DLinear(vec2f uv, const vec3f* data, int w, int h) {
+    vec2f cxcy;
+    vec2i ij = uv_to_tex(uv, w, h, cxcy);
+    float cx = cxcy[0];
+    float cy = cxcy[1];
+    int x0 = (ij[0] + w) % w;
+    int y0 = (ij[1] + h) % h;
 
-    int x0 = int(floor(texCoord[0]));
-    int y0 = int(floor(texCoord[1]));
-    int x1 = x0 + 1;
-    int y1 = y0 + 1;
-
-    x0 = (x0 % w + w) % w;
-    x1 = (x1 % w + w) % w;
-    y0 = (y0 % h + h) % h;
-    y1 = (y1 % h + h) % h;
+    int x1 = (ij[0] + 1 + w) % w;
+    int y1 = (ij[1] + 1 + h) % h;
 
     vec3f s1 = getColor(vec2i(x0, y0), data, w, h);
     vec3f s2 = getColor(vec2i(x1, y0), data, w, h);
     vec3f s3 = getColor(vec2i(x0, y1), data, w, h);
     vec3f s4 = getColor(vec2i(x1, y1), data, w, h);
 
-    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
+    return mix(mix(s1, s2, cx), mix(s3, s4, cx), cy);
 }
 
-static vec3f Sample2DLinearClamp(vec2f texCoord, const vec3f* data, int w, int h) {
-    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
-    vec2f f = fract(texCoord);
-    int x = (int)(texCoord[0]) % w;
-    int y = (int)(texCoord[1]) % h;
-    x = x < 0 ? w + x : x;
-    y = y < 0 ? h + y : y;
+static vec3f Sample2DLinearClamp(vec2f uv, const vec3f* data, int w, int h) {
+    vec2f cxcy;
+    vec2i ij = uv_to_tex(uv, w, h, cxcy);
+    int x = ij[0];
+    int y = ij[1];
+    float cx = cxcy[0];
+    float cy = cxcy[1];
     vec3f s1 = getColorClamp(vec2i(x,y), data, w, h);
     vec3f s2 = getColorClamp(vec2i(x+1,y), data, w, h);
     vec3f s3 = getColorClamp(vec2i(x,y+1), data, w, h);
     vec3f s4 = getColorClamp(vec2i(x+1,y+1), data, w, h);
-    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
+    return mix(mix(s1, s2, cx), mix(s3, s4, cx), cy);
 }
 struct PrimSample2D : zeno::INode {
     static glm::vec3 mapplypos(glm::mat4 const &matrix, glm::vec3 const &vector) {
@@ -726,10 +736,10 @@ struct WriteImageFile_v2 : INode {
         std::vector<char> data(w * h * n);
         float gamma = get_input2<bool>("linear_to_srgb_when_save")? 1.0f/2.2f: 1.0f;
         for (int i = 0; i < w * h; i++) {
-            data[n * i + 0] = (char)(255 * pow(image->verts[i][0], gamma));
-            data[n * i + 1] = (char)(255 * pow(image->verts[i][1], gamma));
-            data[n * i + 2] = (char)(255 * pow(image->verts[i][2], gamma));
-            data[n * i + 3] = (char)(255 * alpha[i]);
+            data[n * i + 0] = (char)(255 * pow(zeno::clamp(image->verts[i][0], 0.0f, 1.0f), gamma));
+            data[n * i + 1] = (char)(255 * pow(zeno::clamp(image->verts[i][1], 0.0f, 1.0f), gamma));
+            data[n * i + 2] = (char)(255 * pow(zeno::clamp(image->verts[i][2], 0.0f, 1.0f), gamma));
+            data[n * i + 3] = (char)(255 * zeno::clamp(alpha[i], 0.0f, 1.0f));
         }
         if(type == "jpg"){
             stbi_flip_vertically_on_write(1);

@@ -143,24 +143,47 @@ namespace zenoui
             }
             case CONTROL_COLOR_VEC3F:
             {
-                QColor currentColor;
+                QColor originColor, transformColor;
+                QString colorType;
                 if (ctrl == CONTROL_COLOR_VEC3F) {
-                    auto colorVec = value.value<UI_VECTYPE>();
-                    currentColor = QColor::fromRgbF(colorVec[0], colorVec[1], colorVec[2]);
+                    auto colorVec = value.value<COLOR_VEC3F_TRANSFORM>();
+                    originColor = QColor::fromRgbF(colorVec.origin[0], colorVec.origin[1], colorVec.origin[2]);
+                    transformColor = QColor::fromRgbF(colorVec.transform[0], colorVec.transform[1], colorVec.transform[2]);
+                    colorType = QString::fromStdString(colorVec.type);
                 }
                 QPushButton *pBtn = new QPushButton;
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
-                pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(currentColor.name()));
+                transformColor.setRedF(std::pow(transformColor.redF(), 1 / 2.2));
+                transformColor.setGreenF(std::pow(transformColor.greenF(), 1 / 2.2));
+                transformColor.setBlueF(std::pow(transformColor.blueF(), 1 / 2.2));
+                pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(transformColor.name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = ColorEditor::getColor(pBtn->palette().window().color());
-                    if (color.isValid()) 
+                    COLOR_VEC3F_TRANSFORM curClrTrans;
+                    QColor curClr;
+                    if (cbSet.cbGetIndexData) {
+                        curClrTrans = cbSet.cbGetIndexData().value<COLOR_VEC3F_TRANSFORM>();
+                        curClr.setRedF(curClrTrans.origin[0]);
+                        curClr.setGreenF(curClrTrans.origin[1]);
+                        curClr.setBlueF(curClrTrans.origin[2]);
+                    } else {//group节点
+                        curClr = originColor;
+                        curClrTrans.type = "raw";
+                    }
+                    std::optional<COLOR_VEC3F_TRANSFORM> color = ColorEditor::getColor(curClr, QString::fromStdString(curClrTrans.type));
+                    if (color.has_value())
                     {
-                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                        COLOR_VEC3F_TRANSFORM colorTrans = color.value();
+                        QColor showclr;
+                        showclr.setRedF(pow(colorTrans.transform[0], 1 / 2.2));
+                        showclr.setGreenF(pow(colorTrans.transform[1], 1 / 2.2));
+                        showclr.setBlueF(pow(colorTrans.transform[2], 1 / 2.2));
+                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(showclr.name()));
                         if (ctrl == CONTROL_COLOR_VEC3F) {
-                            UI_VECTYPE colorVec(3);
-                            color.getRgbF(&colorVec[0], &colorVec[1], &colorVec[2]);
-                            cbSet.cbEditFinished(QVariant::fromValue<UI_VECTYPE>(colorVec));
+                            cbSet.cbEditFinished(QVariant::fromValue<COLOR_VEC3F_TRANSFORM>(colorTrans));
                         }
+                    }
+                    else {
+                        cbSet.cbEditFinished(QVariant());
                     }
                 });
                 return pBtn;

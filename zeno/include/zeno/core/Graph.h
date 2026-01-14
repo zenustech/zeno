@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <zeno/utils/api.h>
 #include <zeno/core/IObject.h>
@@ -82,6 +82,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
             std::map<std::string, zany> inputs) const;
     ZENO_API void setTempCache(std::string const& id);
     ZENO_API void setObjRunType(std::string const& id, std::string const& type);
+    ZENO_API void setEnableTimer(std::string const& id);
     ZENO_API INode* getNode(std::string const& id);
 };
 

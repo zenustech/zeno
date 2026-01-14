@@ -33,6 +33,7 @@ struct ShaderFinalize : INode {
 
             {1, "mat_subsurface"},
             {3, "mat_sssParam"},
+            {1, "mat_sssScale"},
             {3, "mat_sssColor"},
             {1, "mat_scatterDistance"},
             {1, "mat_scatterStep"},
@@ -46,6 +47,7 @@ struct ShaderFinalize : INode {
             {1, "mat_clearcoatIOR"},
 
             {1, "mat_specTrans"},
+            {1, "mat_F0"},
             {3, "mat_transColor"},
             {3, "mat_transTint"},
             {1, "mat_transTintDepth"},
@@ -66,24 +68,27 @@ struct ShaderFinalize : INode {
             {1, "mat_smoothness"},
             {1, "mat_emissionIntensity"},
             {3, "mat_emission"},
+            {1, "mat_emissionOnly"},
             {3, "mat_reflectance"}, 
             {1, "mat_opacity"},
             {1, "mat_thickness"},
-            {1, "mat_isHair"}
-
+            {1, "mat_isHair"},
+            {1, "mat_HairRough2"},
+            {1, "mat_FurCoat"}
         }, {
             get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("metalColor", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("specular", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),//for disney principled model specular shall be 0.5
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
 
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssRadius", std::make_shared<NumericObject>(vec3f(1.0f))),
+            get_input<IObject>("sssScale", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("scatterDistance", std::make_shared<NumericObject>(float(10000))),
             get_input<IObject>("scatterStep", std::make_shared<NumericObject>(float(0))),
@@ -97,6 +102,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("clearcoatIOR", std::make_shared<NumericObject>(float(1.5f))),
 
             get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("specF0", std::make_shared<NumericObject>(float(0.04f))),
             get_input<IObject>("transColor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTint", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("transTintDepth", std::make_shared<NumericObject>(float(10000.0f))),
@@ -117,14 +123,17 @@ struct ShaderFinalize : INode {
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("emissionIntensity", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("emission_only", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f)))
+            get_input<IObject>("isHair", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("HairRough2", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("FurCoat", std::make_shared<NumericObject>(float(0.0f)))
         });
         auto commonCode = em.getCommonCode();
 
-        auto sssRadiusMethod = get_input2<std::string>("sssRadius");
+        auto sssRadiusMethod = get_input2<std::string>("sssType");
         if (sssRadiusMethod == "Fixed") {
             code += "bool sssFxiedRadius = true;\n";
         } else {
@@ -186,8 +195,9 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "anisoRotation", "0.0"},
 
         {"float", "subsurface", "0.0"},
-        {"enum Fixed Adaptive", "sssRadius", "Fixed"},
-        {"vec3f", "sssParam", "1.0,1.0,1.0"},
+        {"enum Fixed Adaptive", "sssType", "Fixed"},
+        {"colorvec3f", "sssRadius", "1.0,1.0,1.0"},
+        {"float", "sssScale", "1.0"},
         {"colorvec3f", "sssColor", "1.0,1.0,1.0"},
         {"float", "scatterDistance", "10000"},
         {"float", "scatterStep", "0"},
@@ -201,11 +211,12 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "clearcoatIOR", "1.5"},
 
         {"float", "specTrans", "0.0"},
-        {"vec3f", "transColor", "1.0,1.0,1.0"},
-        {"vec3f", "transTint", "1.0,1.0,1.0"},
+        {"float", "specF0", "0.04"},
+        {"colorvec3f", "transColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "transTint", "1.0,1.0,1.0"},
         {"float", "transTintDepth", "10000.0"},
         {"float", "transDistance", "10.0"},
-        {"vec3f", "transScatterColor", "1.0,1.0,1.0"},
+        {"colorvec3f", "transScatterColor", "1.0,1.0,1.0"},
         {"float", "ior", "1.3"},
 
         {"float", "diffraction", "0.0"},
@@ -220,12 +231,14 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
         {"float", "emissionIntensity", "1"},
-        {"vec3f", "emission", "0,0,0"},
+        {"colorvec3f", "emission", "0,0,0"},
+        {"float", "emission_only", "0"},
         {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"float", "thickness", "0.0"},
         {"float", "isHair", "0.0"},
-
+        {"float", "HairRough2", "1.0"},
+        {"float", "FurCoat", "0.0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},

@@ -847,6 +847,10 @@
         <source>Compose video</source>
         <translation type="finished">合成视频</translation>
     </message>
+	<message>
+        <source>Run script</source>
+        <translation type="finished">运行脚本</translation>
+    </message>
     <message>
         <source>Undo</source>
         <translation type="unfinished">撤销</translation>
@@ -2468,6 +2472,10 @@
         <source>Trans to Preset Subgrah</source>
         <translation type="unfinished">转为预设子图</translation>
     </message>
+	<message>
+        <source>Trans to Material Subgrah</source>
+        <translation type="unfinished">转为材质子图</translation>
+    </message>
     <message>
         <source>Fork unlocked</source>
         <translation type="unfinished">Fork解锁</translation>
@@ -2566,6 +2574,10 @@
 	<message>
         <source>Xform</source>
         <translation type="unfinished">变换</translation>
+    </message>
+	<message>
+        <source>BenchMark</source>
+        <translation type="unfinished">运行时间</translation>
     </message>
 </context>
 <context>
@@ -3177,9 +3189,13 @@
         <source>alreday has same layout</source>
         <translation type="vanished">已经有同名布局了</translation>
     </message>
-    <message>
+	<message>
         <source>Custom Layout</source>
         <translation type="vanished">自定义布局</translation>
+    </message>
+	<message>
+        <source>No Python scripts found</source>
+        <translation type="finished">未找到pyhton脚本</translation>
     </message>
     <message>
         <source>English / Chinese</source>
@@ -3557,6 +3573,32 @@ All Files (*)</source>
     <message>
         <source>String mapping</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>zenoBenchmark</name>
+    <message>
+        <source>search</source>
+        <translation>搜索</translation>
+    </message>
+	<message>
+        <source>filter nodes</source>
+        <translation>过滤节点</translation>
+    </message>
+	<message>
+        <source>reset</source>
+        <translation>重置</translation>
+    </message>
+	<message>
+        <source>filter selected nodes</source>
+        <translation>过滤选中节点</translation>
+    </message>
+</context>
+<context>
+<name>ZenoSceneTreeModify</name>
+    <message>
+        <source>Sync to node</source>
+        <translation>同步到节点</translation>
     </message>
 </context>
 <context>

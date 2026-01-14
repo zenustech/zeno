@@ -111,6 +111,18 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        int *uv1s = prim->loops.attr_is<int>("uv1s")? prim->loops.attr<int>("uv1s").data(): nullptr;
+        int *uv2s = prim->loops.attr_is<int>("uv2s")? prim->loops.attr<int>("uv2s").data(): nullptr;
+        int *uv3s = prim->loops.attr_is<int>("uv3s")? prim->loops.attr<int>("uv3s").data(): nullptr;
+        int* uv10 = uv1s? prim->tris.add_attr<int>("uv10").data(): nullptr;
+        int* uv11 = uv1s? prim->tris.add_attr<int>("uv11").data(): nullptr;
+        int* uv12 = uv1s? prim->tris.add_attr<int>("uv12").data(): nullptr;
+        int* uv20 = uv2s? prim->tris.add_attr<int>("uv20").data(): nullptr;
+        int* uv21 = uv2s? prim->tris.add_attr<int>("uv21").data(): nullptr;
+        int* uv22 = uv2s? prim->tris.add_attr<int>("uv22").data(): nullptr;
+        int* uv30 = uv3s? prim->tris.add_attr<int>("uv30").data(): nullptr;
+        int* uv31 = uv3s? prim->tris.add_attr<int>("uv31").data(): nullptr;
+        int* uv32 = uv3s? prim->tris.add_attr<int>("uv32").data(): nullptr;
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
@@ -125,6 +137,21 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                 uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                 uv1[scanbase] = {uvs[loop_uv[start + 1]][0], uvs[loop_uv[start + 1]][1], 0};
                 uv2[scanbase] = {uvs[loop_uv[start + 2]][0], uvs[loop_uv[start + 2]][1], 0};
+                if (uv1s) {
+                    uv10[scanbase] = uv1s[start];
+                    uv11[scanbase] = uv1s[start + 1];
+                    uv12[scanbase] = uv1s[start + 2];
+                }
+                if (uv2s) {
+                    uv20[scanbase] = uv2s[start];
+                    uv21[scanbase] = uv2s[start + 1];
+                    uv22[scanbase] = uv2s[start + 2];
+                }
+                if (uv3s) {
+                    uv30[scanbase] = uv3s[start];
+                    uv31[scanbase] = uv3s[start + 1];
+                    uv32[scanbase] = uv3s[start + 2];
+                }
                 prim->tris[scanbase] = vec3i(
                         prim->loops[start],
                         prim->loops[start + 1],
@@ -135,6 +162,21 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                     uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                     uv1[scanbase] = {uvs[loop_uv[start + j - 1]][0], uvs[loop_uv[start + j - 1]][1], 0};
                     uv2[scanbase] = {uvs[loop_uv[start + j]][0], uvs[loop_uv[start + j]][1], 0};
+                    if (uv1s) {
+                        uv10[scanbase] = uv1s[start];
+                        uv11[scanbase] = uv1s[start + j - 1];
+                        uv12[scanbase] = uv1s[start + j];
+                    }
+                    if (uv2s) {
+                        uv20[scanbase] = uv2s[start];
+                        uv21[scanbase] = uv2s[start + j - 1];
+                        uv22[scanbase] = uv2s[start + j];
+                    }
+                    if (uv3s) {
+                        uv30[scanbase] = uv3s[start];
+                        uv31[scanbase] = uv3s[start + j - 1];
+                        uv32[scanbase] = uv3s[start + j];
+                    }
                     prim->tris[scanbase] = vec3i(
                             prim->loops[start],
                             prim->loops[start + j - 1],

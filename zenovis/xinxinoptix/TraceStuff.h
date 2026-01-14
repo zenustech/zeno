@@ -44,53 +44,64 @@ enum medium{
 struct VolumePRD {
     float t0;
     float t1;
+
+    float homo_t0;
+    float homo_t1;
+    uint homo_matid;
 };
 
-struct ShadowPRD {
+struct CommonPRD {
     bool test_distance;
     float maxDistance;
+
+    uint32_t seed;
+    float rndf() {
+        return rnd(seed);
+    }
+
+    VolumePRD vol {};
+};
+
+struct ShadowPRD : CommonPRD {
+
     uint32_t lightIdx = UINT_MAX;
     
     float3 origin;
-    uint32_t seed;
+    float3 radiance;
     float3 attanuation;
+
+    float fog_dt;
+    float fog_tmax;
     
     uint8_t depth;
     uint8_t nonThinTransHit;
 
-    VolumePRD vol;
     float3 ShadowNormal;
-
-    float rndf() {
-        return rnd(seed);
-    }
 };
 
-struct RadiancePRD
-{
-
-    bool test_distance;
-    float maxDistance;
-
+struct RadiancePRD : CommonPRD {
     //zxx seed
     unsigned int offset = 0;
     unsigned int offset2 = 0;
     unsigned int offset3 = 0;
     unsigned int vdcseed = 0;
-    
+    bool         print_info = false;
+    int          alphaDepth;
     float3       radiance;
     float3       aov[3];
     float3       emission;
     float3       attenuation;
+    float3       sssAttenBegin;
+    float3       sssDirBegin;
     float3       origin;
     float3       direction;
+
 
     float3 tmp_albedo {};
     float3 tmp_normal {};
     
     float        minSpecRough;
 
-    unsigned int seed;
     unsigned int eventseed;
 
     float        scatterDistance;
@@ -108,10 +119,11 @@ struct RadiancePRD
     uint8_t      depth;
     uint8_t      max_depth;
     uint8_t      diffDepth;
+    uint8_t      hair_depth;
+    uint8_t      sssDepth;
 
     bool done         : 1;
-    bool countEmitted : 1;
-
+    bool __aov__      : 1;
     bool isSS         : 1;
     bool alphaHit     : 1;
     bool fromDiff     : 1; 
@@ -127,21 +139,15 @@ struct RadiancePRD
     vec3 ss_alpha {};
 
     uint8_t medium;
-    uint8_t curMatIdx;
+    uint8_t curMatIdx=0;
 
     half3 sigma_t_queue[8];
     half3 ss_alpha_queue[8];
     
     vec3 channelPDF;
-
-    // cihou nanovdb
-    VolumePRD vol;
+    
     float3 geometryNormal;
 
-    __device__ __forceinline__ float rndf() {
-        return rnd(this->seed);
-        //return pcg_rng(this->seed); 
-    }
     __device__ __forceinline__ vec3 sigma_s() {
         return sigma_t * ss_alpha;
     }
@@ -160,19 +166,18 @@ struct RadiancePRD
         auto cached = this->extinction();
         vec3 d = abs(cached - extinction);
         float c = dot(d, vec3(1,1,1));
-        if(curMatIdx<7 && c > 1e-6f )
+        if(curMatIdx<7)
         {
-
+            curMatIdx++;
             sigma_t_queue[curMatIdx] = float3_to_half3(extinction);
             ss_alpha_queue[curMatIdx] = float3_to_half3(ss_alpha);
-            curMatIdx++;
         }
         return curMatIdx;
     }
 
     __device__ void readMat(vec3& sigma_t, vec3& ss_alpha) {
 
-        auto idx = max(min(curMatIdx-1, 7),0);
+        auto idx = min(curMatIdx, 7);
 
         sigma_t = half3_to_float3(sigma_t_queue[idx]);
         ss_alpha = half3_to_float3(ss_alpha_queue[idx]);

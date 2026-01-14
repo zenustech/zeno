@@ -36,6 +36,7 @@ public:
     static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
     static void pythonExcute(const QString& code);
     static void generatePython(const QString& id);
+    static void generatePythonByGraph(IGraphsModel* pModel, const QString& id);
 };
 
 

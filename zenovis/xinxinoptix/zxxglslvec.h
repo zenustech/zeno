@@ -2,6 +2,10 @@
 #include <cuda_fp16.h>
 #include <cuda/helpers.h>
 
+#ifdef _NANOVDB_
+#include <nanovdb/NanoVDB.h>
+#endif
+
 #ifndef var
 #define var auto
 #endif
@@ -9,6 +13,32 @@
 #ifndef let
 #define let auto const
 #endif
+static __constant__ int permutation[512] = {151,160,137,91,90,15,
+131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180,151,
+160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,
+37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,
+11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,
+139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,
+46,245,40,244,102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208,89,18,
+169,200,196,135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,
+250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,
+189,28,42,223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167,
+43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,
+97,228,251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,
+239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,
+254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+};
 
 __forceinline__ __device__ float to_radians(float degrees) {
     return degrees * M_PIf / 180.0f;
@@ -26,6 +56,13 @@ __forceinline__ __device__ void swap(T& a, T& b) {
 
 struct vec4{
     float x, y, z, w;
+
+#ifdef _NANOVDB_
+    __forceinline__ __host__ __device__ vec4(const nanovdb::Vec4f &v) 
+    {
+        x = v[0]; y = v[1]; z = v[2]; w = v[3];
+    }
+#endif
     __forceinline__ __device__ vec4(const float4 &_v)
     {
         x = _v.x; z = _v.z;
@@ -39,6 +76,10 @@ struct vec4{
     {
         x = _x; y = _x; z = _x; w = _x;
     }
+    __forceinline__ __device__ vec4(float3 xyz, float _w)
+    {
+        x = xyz.x; y = xyz.y; z = xyz.z; w = _w;
+    }
     explicit __forceinline__ __device__ operator float() const {
         return x;
     }
@@ -50,7 +91,6 @@ struct vec4{
 
 struct vec3{
     float x, y, z;
-
     __forceinline__ __device__ float& operator[](unsigned int index) {
         auto ptr= &this->x;
         ptr += index;
@@ -70,6 +110,13 @@ struct vec3{
     __forceinline__ __device__ bool operator!=(vec3 other) const {
         return !(*this==other);
     }
+
+#ifdef _NANOVDB_
+    __forceinline__ __host__ __device__ vec3(const nanovdb::Vec3f &v) 
+    {
+        x = v[0]; y = v[1]; z = v[2]; 
+    }
+#endif
 
     __forceinline__ __host__ __device__ vec3(const float3 &_v)
     {
@@ -503,23 +550,26 @@ __forceinline__ __device__ vec4 log(vec4 a)
 {
     return vec4(logf(a.x), logf(a.y), logf(a.z), logf(a.w));
 }
-
+__forceinline__ __device__ float safesqrt(float a)
+{
+    return sqrt(fmaxf(a,0.0f));
+}
 __forceinline__ __device__ vec2 sqrt(vec2 a)
 {
-    return vec2(sqrtf(a.x), sqrtf(a.y));
+    return vec2(safesqrt(a.x), safesqrt(a.y));
 }
 __forceinline__ __device__ vec3 sqrt(vec3 a)
 {
-    return vec3(sqrtf(a.x), sqrtf(a.y), sqrtf(a.z));
+    return vec3(safesqrt(a.x), safesqrt(a.y), safesqrt(a.z));
 }
 __forceinline__ __device__ vec4 sqrt(vec4 a)
 {
-    return vec4(sqrtf(a.x), sqrtf(a.y), sqrtf(a.z), sqrtf(a.w));
+    return vec4(safesqrt(a.x), safesqrt(a.y), safesqrt(a.z), safesqrt(a.w));
 }
 
 #ifndef __CUDACC_RTC__
 float rsqrtf(float a) {
-    return 1.0/sqrtf(a);
+    return 1.0/safesqrt(a);
 }
 #endif
 
@@ -916,6 +966,18 @@ __forceinline__ __device__ vec4 fract(vec4 a)
 //////////////end of common math///////////////////////////////////////////////////
 
 /////////////begin of geometry math///////////////////////////////////////////////
+__forceinline__ __device__ float sum(vec2 a)
+{
+    return a.x + a.y;
+}
+__forceinline__ __device__ float sum(vec3 a)
+{
+    return a.x + a.y + a.z;
+}
+__forceinline__ __device__ float sum(vec4 a)
+{
+    return a.x + a.y + a.z + a.w;
+}
 __forceinline__ __device__ float dot(vec2 a, vec2 b)
 {
     return a.x*b.x + a.y*b.y ;
@@ -1009,12 +1071,59 @@ __forceinline__ __device__ float area(vec3 v0, vec3 v1, vec3 v2)
     return 0.5 * length(cross(v1-v0, v2-v0));
 }
 
-template <typename T=float4, typename R=vec4>
-__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv)
+__forceinline__ __device__ vec4 srgbToLinear(vec4 a)
 {
-    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
-    return *(R*)&tmp;
+//    vec3 result;
+//    result[0] = a[0] < .04045 ?  a[0] * 0.07739938 : pow((a[0]+.055) * 0.947867299 , 2.4);
+//    result[1] = a[1] < .04045 ?  a[1] * 0.07739938 : pow((a[1]+.055) * 0.947867299 , 2.4);
+//    result[2] = a[2] < .04045 ?  a[2] * 0.07739938 : pow((a[2]+.055) * 0.947867299 , 2.4);
+
+    return vec4(powf(a.x,2.2f),powf(a.y,2.2f),powf(a.z,2.2f),a.w);
 }
+__forceinline__ __device__
+vec4 linRec709ToLinAP1(vec4 c)
+{
+    vec4 rec709toACEScg0 = vec4(0.610277,   0.345424,  0.0443001, 0.0f);
+    vec4 rec709toACEScg1 = vec4(0.0688436,  0.934974,  -0.00381805,0.0f);
+    vec4 rec709toACEScg2 = vec4(0.0241673,  0.121814,  0.854019,0.0f);
+    vec4 rec709toACEScg3 = vec4(0,0,0,1);
+
+    // convert rec709 primaries to ACES AP1
+    vec4 result = vec4(dot(rec709toACEScg0,c), dot(rec709toACEScg1,c), dot(rec709toACEScg2,c), dot(rec709toACEScg3, c));
+    return result;
+}
+__forceinline__ __device__ vec4 toHomoColor(float x)
+{
+    return vec4(x, 0,0,1);
+}
+__forceinline__ __device__ vec4 toHomoColor(float2 x)
+{
+    return vec4(x.x, x.y,0,1);
+}
+__forceinline__ __device__ vec4 toHomoColor(float3 x)
+{
+    return vec4(x.x, x.y,x.z,1);
+}
+__forceinline__ __device__ vec4 toHomoColor(float4 x)
+{
+    return x;
+}
+
+template <typename T=float4, typename R=vec4>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv, bool use_aces=false) {
+    auto tmp = tex2D<T>(texObj, uv.x, uv.y);
+    if (use_aces)
+    {
+        vec4 c_in = toHomoColor(tmp);
+        c_in = srgbToLinear(c_in);
+        vec4 c = linRec709ToLinAP1(c_in);
+        return *(R*)&c;
+    }else
+    {
+        return *(R*)&tmp;
+    }
+}
+
 __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, vec2 uvtiling, vec3 uvw,
                                            vec2 uv0, vec2 uv1, vec2 uv2, 
                                            vec3 v0, vec3 v1, vec3 v2, vec3 p, 
@@ -1092,6 +1201,143 @@ __forceinline__ __device__ vec4 parallax2D(cudaTextureObject_t texObj, vec2 uv, 
     pOffset = {};//hit?vec3(0,0,0): h.y * h.x * N;
     return vec4(finalTexCoords.x, finalTexCoords.y, hit?1:0, 0);
 }
+
+__forceinline__ __device__ float fade(float t) {
+    return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+__forceinline__ __device__ int inc(int num) {
+    return num + 1;
+}
+
+__forceinline__ __device__ float grad(int hash, float x, float y, float z) {
+    switch(hash & 0xF)
+    {
+        case 0x0: return  x + y;
+        case 0x1: return -x + y;
+        case 0x2: return  x - y;
+        case 0x3: return -x - y;
+        case 0x4: return  x + z;
+        case 0x5: return -x + z;
+        case 0x6: return  x - z;
+        case 0x7: return -x - z;
+        case 0x8: return  y + z;
+        case 0x9: return -y + z;
+        case 0xA: return  y - z;
+        case 0xB: return -y - z;
+        case 0xC: return  y + x;
+        case 0xD: return -y + z;
+        case 0xE: return  y - x;
+        case 0xF: return -y - z;
+        default: return 0;
+    }
+}
+
+__forceinline__ __device__ float perlin(float x, float y, float z) {
+    x = fract(x / 256.f) * 256.f;
+    y = fract(y / 256.f) * 256.f;
+    z = fract(z / 256.f) * 256.f;
+    int xi = (int)x & 255;
+    int yi = (int)y & 255;
+    int zi = (int)z & 255;
+    float xf = x-(int)x;
+    float yf = y-(int)y;
+    float zf = z-(int)z;
+    float u = fade(xf);
+    float v = fade(yf);
+    float w = fade(zf);
+    int aaa = permutation[permutation[permutation[    xi ]+    yi ]+    zi ];
+    int aba = permutation[permutation[permutation[    xi ]+inc(yi)]+    zi ];
+    int aab = permutation[permutation[permutation[    xi ]+    yi ]+inc(zi)];
+    int abb = permutation[permutation[permutation[    xi ]+inc(yi)]+inc(zi)];
+    int baa = permutation[permutation[permutation[inc(xi)]+    yi ]+    zi ];
+    int bba = permutation[permutation[permutation[inc(xi)]+inc(yi)]+    zi ];
+    int bab = permutation[permutation[permutation[inc(xi)]+    yi ]+inc(zi)];
+    int bbb = permutation[permutation[permutation[inc(xi)]+inc(yi)]+inc(zi)];
+    float x1 = mix(    grad (aaa, xf  , yf  , zf),
+                       grad (baa, xf-1, yf  , zf),
+                       u);
+    float x2 = mix(    grad (aba, xf  , yf-1, zf),
+                       grad (bba, xf-1, yf-1, zf),
+                       u);
+    float y1 = mix(x1, x2, v);
+    x1 = mix(    grad (aab, xf  , yf  , zf-1),
+                 grad (bab, xf-1, yf  , zf-1),
+                 u);
+    x2 = mix(    grad (abb, xf  , yf-1, zf-1),
+                 grad (bbb, xf-1, yf-1, zf-1),
+                 u);
+    float y2 = mix (x1, x2, v);
+    return mix (y1, y2, w);
+}
+
+
+__forceinline__ __device__ vec3 perlin_hash22(vec3 p)
+{
+    p = vec3( dot(p,vec3(127.1f,311.7f,284.4f)),
+               dot(p,vec3(269.5f,183.3f,162.2f)),
+               dot(p,vec3(228.3f,164.9f,126.0f)));
+
+    return -1.0f + 2.0f * fract(sin(p)*43758.5453123f);
+}
+
+__forceinline__ __device__ float perlin_lev1(vec3 p)
+{
+    vec3 pi = floor(p);
+    vec3 pf = p - pi;
+    vec3 w = pf * pf * (3.0f - 2.0f * pf);
+    return 0.08f + 0.8f * (mix(
+            mix(
+                    mix(
+                            dot(perlin_hash22(pi + vec3(0, 0, 0)), pf - vec3(0, 0, 0)),
+                            dot(perlin_hash22(pi + vec3(1, 0, 0)), pf - vec3(1, 0, 0)),
+                            w[0]),
+                    mix(
+                            dot(perlin_hash22(pi + vec3(0, 1, 0)), pf - vec3(0, 1, 0)),
+                            dot(perlin_hash22(pi + vec3(1, 1, 0)), pf - vec3(1, 1, 0)),
+                            w[0]),
+                    w[1]),
+            mix(
+                    mix(
+                            dot(perlin_hash22(pi + vec3(0, 0, 1)), pf - vec3(0, 0, 1)),
+                            dot(perlin_hash22(pi + vec3(1, 0, 1)), pf - vec3(1, 0, 1)),
+                            w[0]),
+                    mix(
+                            dot(perlin_hash22(pi + vec3(0, 1, 1)), pf - vec3(0, 1, 1)),
+                            dot(perlin_hash22(pi + vec3(1, 1, 1)), pf - vec3(1, 1, 1)),
+                            w[0]),
+                    w[1]),
+            w[2]));
+}
+
+__forceinline__ __device__ float perlin(vec3 a,float power,float depth)
+{
+    float total = 0;
+    int n = (int)ceil(depth);
+    for(int i=0; i<n; i++)
+    {
+        float frequency = 1<<i;
+        float amplitude = pow(power,i);
+        amplitude *= 1.f - max(0.f, i - (depth - 1));
+        vec3 tmp = a * frequency;
+        total += perlin(tmp.x, tmp.y, tmp.z) * amplitude;
+    }
+
+    return total;
+}
+
+__forceinline__ __device__ vec3 fbm(vec3 pos, vec3 offset, float scale, float detail, float roughness, float average, float strength)
+{
+    vec3 res;
+    vec3 p = scale * pos + offset;
+    vec3 o = { perlin(vec3(p.x, p.y, p.z),roughness, detail),
+               perlin(vec3(p.y, p.z, p.x),roughness, detail),
+               perlin(vec3(p.z, p.x, p.y),roughness, detail)};
+    res = vec3(average) + o * vec3(strength);
+    return res;
+}
+
+
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
@@ -1520,4 +1766,135 @@ __forceinline__ __device__ float half_to_float(ushort1 in)
 {
     half x = reinterpret_cast<half&>(in);
     return __half2float(x);
+}
+__forceinline__ __device__ float RgbToY(const vec3 c) {
+  vec3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+  return dot(y_weight, c);
+}
+__forceinline__ __device__ float RgbToY(const float3 c) {
+  float3 y_weight = {0.212671f, 0.715160f, 0.072169f};
+  return dot(y_weight, c);
+}
+__forceinline__ __device__ bool is_black(const vec3 &a)
+{
+   return dot(abs(a),vec3(1))<1e-12;
+}
+__forceinline__ __device__ vec3 safe_divide_spectrum(const vec3 &a, const vec3 &b)
+{
+    vec3 c;
+    c.x = fabs(b.x)<__FLT_MIN__?0:a.x/b.x;
+    c.y = fabs(b.y)<__FLT_MIN__?0:a.y/b.y;
+    c.z = fabs(b.z)<__FLT_MIN__?0:a.z/b.z;
+}
+#define SH_C0 0.28209479177387814f
+
+#define SH_C1 0.4886025119029199f
+
+#define SH_C2_0 1.0925484305920792f
+#define SH_C2_1 -1.0925484305920792f
+#define SH_C2_2 0.31539156525252005f
+#define SH_C2_3 -1.0925484305920792f
+#define SH_C2_4 0.5462742152960396f
+
+#define SH_C3_0 -0.5900435899266435f
+#define SH_C3_1 2.890611442640554f
+#define SH_C3_2 -0.4570457994644658f
+#define SH_C3_3 0.3731763325901154f
+#define SH_C3_4 -0.4570457994644658f
+#define SH_C3_5 1.445305721320277f
+#define SH_C3_6 -0.5900435899266435f
+
+namespace GS{
+    static __inline__ __device__
+    vec3 GetParamFromBuffer(const float *SH_params, int index){
+        return vec3(SH_params[index*3],SH_params[index*3 +1],SH_params[index*3+2]);
+    }
+
+    static __inline__ __device__
+    const float* GetShBufferFormUniform(const float4 *buffer,size_t index){
+        return (const float*) (buffer + index * 14);
+    }
+
+    static __inline__ __device__
+    const float GetOpacityFromUniform(const float4 *buffer,size_t index){
+        return buffer[index * 14+12].x;
+    }
+    static __inline__ __device__
+    const float* GetCenterPos (const float4 *buffer,size_t index){
+        return (const float *)(buffer + (index * 14+12)) + 1;
+    }
+
+    __inline__ __device__
+    float EvalGSOpacity(const float4 *buffer,size_t index,float clamp_radius, vec3 pos, const float *mat){
+        vec3 new_origin(mat[3],mat[7],mat[11]);
+        vec3 dir = normalize(pos - new_origin);
+        pos = normalize(pos);
+        float cosAlpha= dot(pos,dir);
+        if(cosAlpha < 0.0f){
+            return 0.0f;
+        }
+
+        float op = GetOpacityFromUniform(buffer, index);
+        float cos2 = cosAlpha * cosAlpha;
+        float sin2 = 1.0f - cos2;
+        sin2 = sin2 * clamp_radius * clamp_radius;
+        return expf(-0.5f * sin2) * op;
+        //return op;
+
+    }
+
+
+
+
+    static __inline__ __device__
+    vec3 EvalSH(const float4* buffer, size_t index, int level, vec3 dir,const float *mat){
+        float *SH_params =(float*) (buffer + index * 14);
+        vec3 color(0,0,0);
+        //dir = -vec3(mat[3],mat[7],mat[11]);
+        const float * pos_vec = GetCenterPos(buffer, index);
+        vec3 center_world_pos(pos_vec[0],pos_vec[1],pos_vec[2]);
+        //dir is the world space position of camera
+        dir = center_world_pos - dir;
+
+        dir = normalize(dir);
+        color = SH_C0 * GetParamFromBuffer(SH_params, 0);
+        float x,y,z,xx,yy,zz,xy,xz,yz;
+        x = dir.x;
+        y = dir.y;
+        z = dir.z;
+        xx = x * x;
+        yy = y * y;
+        zz = z * z;
+        xy = x * y;
+        xz = x * z;
+        yz = y * z;
+        if(level > 0){
+            color = color
+            - SH_C1 * GetParamFromBuffer(SH_params, 1) * y
+            + SH_C1 * GetParamFromBuffer(SH_params,2) * z
+            - SH_C1 * GetParamFromBuffer(SH_params,3) * x;
+            if(level >1) {
+                color = color
+                + SH_C2_0 * xy * GetParamFromBuffer(SH_params,4)
+                + SH_C2_1 * yz * GetParamFromBuffer(SH_params,5)
+                + SH_C2_2 * (2.0f * zz - xx - yy) * GetParamFromBuffer(SH_params,6)
+                + SH_C2_3 * xz * GetParamFromBuffer(SH_params,7)
+                + SH_C2_4 * (xx - yy) * GetParamFromBuffer(SH_params,8);
+                if(level > 2){
+                    color = color
+                    + SH_C3_0 * y * (3.0f * xx - yy) * GetParamFromBuffer(SH_params,9)
+                    + SH_C3_1 * xy * z * GetParamFromBuffer(SH_params,10)
+                    + SH_C3_2 * y * (4.0f * zz - xx - yy) * GetParamFromBuffer(SH_params,11)
+                    + SH_C3_3 * z * (2.0f * zz - 3.0f * xx - 3.0f * yy) * GetParamFromBuffer(SH_params,12)
+                    + SH_C3_4 * x * (4.0f * zz - xx - yy) * GetParamFromBuffer(SH_params,13)
+                    + SH_C3_5 * z * (xx - yy) * GetParamFromBuffer(SH_params,14)
+                    + SH_C3_6 * x * (xx - 3.0f * yy) * GetParamFromBuffer(SH_params,15);
+                }
+            }
+
+        }
+        color = color+0.5f;
+        color = clamp(color,vec3(0,0,0),vec3(1,1,1));
+        return color;
+    }
 }

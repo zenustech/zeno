@@ -7,6 +7,7 @@
 #include <tinygltf/json.hpp>
 #include <glm/glm.hpp>
 #include <deque>
+#include <unordered_set>
 
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/types/ListObject.h"
@@ -36,18 +37,37 @@ struct SceneObject : IObjectClone<SceneObject> {
     std::string type = "static";
     std::string matrixMode = "TotalChange";
 
+    void force_merge(std::shared_ptr<SceneObject> other) {
+        auto &root_node = scene_tree[root_name];
+        auto &other_root_node = other->scene_tree[root_name];
+        std::unordered_set<std::string> root_children;
+        root_children.insert(root_node.children.begin(), root_node.children.end());
+        for (auto ochild: other_root_node.children) {
+            if (root_children.count(ochild) == 0) {
+                root_node.children.push_back(ochild);
+            }
+        }
+
+        scene_tree.merge(other->scene_tree);
+        node_to_matrix.merge(other->node_to_matrix);
+        node_to_id.merge(other->node_to_id);
+        prim_list.merge(other->prim_list);
+    }
+
     // return value is in world space
-    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::string& node_name, const std::vector<glm::mat4> &parent_mat) {
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
+            const std::string& node_name
+            , const std::vector<glm::mat4> &parent_mat
+            , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+            , const std::unordered_map<std::string, std::vector<glm::mat4>> &node_2_matrix
+    ) {
         if (scene_tree.count(node_name) == 0) {
             return std::nullopt;
         }
         SceneTreeNode stn = scene_tree.at(node_name);
-        std::vector<glm::mat4> local_mat;
-        if (node_to_matrix.count(node_name + "_m")) {
-            local_mat = node_to_matrix[node_name];
-        }
-        if (local_mat.empty()) {
-            local_mat = {glm::mat4(1)};
+        std::vector<glm::mat4> local_mat = {glm::mat4(1)};
+        if (node_2_matrix.count(stn.matrix)) {
+            local_mat = node_2_matrix.at(stn.matrix);
         }
         std::vector<glm::mat4> global_mat;
         for (const auto &pm: parent_mat) {
@@ -57,23 +77,21 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
         std::vector<glm::vec3> bbox_points;
         for (const auto &mesh: stn.meshes) {
-            if (prim_list.count(mesh) == 0) {
+            if (mesh_bbox.count(mesh) == 0) {
                 continue;
             }
-            auto prim = prim_list[mesh];
-            if (prim->userData().has<vec3f>("_bboxMin")) {
-                auto bmin_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
-                auto bmax_OS = zeno::bit_cast<glm::vec3>(prim->userData().get2<vec3f>("_bboxMin"));
+            {
+                auto [bmin_OS, bmax_OS] = mesh_bbox.at(mesh);
                 for (const auto &gm: global_mat) {
                     auto bmin_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
-                    auto bmax_WS = glm::vec3(gm * glm::vec4(bmin_OS, 1));
+                    auto bmax_WS = glm::vec3(gm * glm::vec4(bmax_OS, 1));
                     bbox_points.emplace_back(bmin_WS);
                     bbox_points.emplace_back(bmax_WS);
                 }
             }
         }
         for (const auto &child: stn.children) {
-            auto bboxWS = get_node_bbox(child, global_mat);
+            auto bboxWS = get_node_bbox(child, global_mat, mesh_bbox, node_2_matrix);
             if (bboxWS.has_value()) {
                 bbox_points.emplace_back(bboxWS->first);
                 bbox_points.emplace_back(bboxWS->second);
@@ -101,7 +119,11 @@ struct SceneObject : IObjectClone<SceneObject> {
             return std::pair{bmin, bmax};
         }
     }
-    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(const std::vector<std::string> &links) {
+    std::optional<std::pair<glm::vec3, glm::vec3>> get_node_bbox(
+            const std::vector<std::string> &links
+            , const std::unordered_map<std::string, std::pair<glm::vec3, glm::vec3>> &mesh_bbox
+            , const std::unordered_map<std::string, std::vector<glm::mat4>> &node_2_matrix
+    ) {
         if (links.empty()) {
             return std::nullopt;
         }
@@ -112,12 +134,9 @@ struct SceneObject : IObjectClone<SceneObject> {
                 return std::nullopt;
             }
             SceneTreeNode stn = scene_tree.at(node_name);
-            std::vector<glm::mat4> local_mat;
-            if (node_to_matrix.count(node_name + "_m")) {
-                local_mat = node_to_matrix[node_name];
-            }
-            if (local_mat.empty()) {
-                local_mat = {glm::mat4(1)};
+            std::vector<glm::mat4> local_mat = {glm::mat4(1)};
+            if (node_2_matrix.count(stn.matrix)) {
+                local_mat = node_2_matrix.at(stn.matrix);
             }
             std::vector<glm::mat4> global_mat;
             for (const auto &pm: parent_mat) {
@@ -127,7 +146,7 @@ struct SceneObject : IObjectClone<SceneObject> {
             }
             parent_mat = global_mat;
         }
-        return get_node_bbox(links.back(), parent_mat);
+        return get_node_bbox(links.back(), parent_mat, mesh_bbox, node_2_matrix);
     }
 
     std::string
@@ -364,15 +383,26 @@ struct SceneObject : IObjectClone<SceneObject> {
             for (const auto &[path, prim]: prim_list) {
                 BasicRenderInstances[path]["Geom"] = path;
                 BasicRenderInstances[path]["Material"] = "Default";
-                auto vol_mat = prim->userData().get2<std::string>("vol_mat", "");
-                if (vol_mat.size()) {
-                    BasicRenderInstances[path]["Material"] = vol_mat;
+
+                const bool vbox = prim->userData().get2<bool>("vbox", false);
+                if (vbox) {
+                    auto mtlid = prim->userData().get2<std::string>("mtlid", "");
+                    BasicRenderInstances[path]["Material"] = mtlid;
+                }
+                const bool is_curve = prim->userData().has("curve")||prim->userData().has("cyhair");
+                if(is_curve )
+                {
+                    auto mtlid = prim->userData().get2<std::string>("mtlid", "");
+                    BasicRenderInstances[path]["Material"] = mtlid;
                 }
             }
             json["BasicRenderInstances"] = BasicRenderInstances;
 
             Json RenderGroups = Json::object();
             for (auto &[path, stn]: scene_tree) {
+                if (path == "/DynamicScene" || path == "/StaticScene") {
+                    continue;
+                }
                 Json render_group = Json();
                 for (auto &child: stn.children) {
                     render_group[child] = Json::array({path + "_m"});
@@ -385,10 +415,36 @@ struct SceneObject : IObjectClone<SceneObject> {
                 }
                 RenderGroups[path] = render_group;
             }
+            std::vector<std::string> entries;
+            if (root_name != "/DynamicScene" && root_name != "/StaticScene") {
+                entries.push_back(root_name);
+            }
+            else {
+                const auto &root_node = scene_tree[root_name];
+                for (const auto &child: root_node.children) {
+                    entries.push_back(child);
+                }
+            }
+            Json mat_json;
+            for (auto const &path: entries) {
+                std::string mat_name;
+                if (scene_tree.count(path)) {
+                    auto &node = scene_tree[path];
+                    mat_name = node.matrix;
+                }
+                mat_json[path].push_back(mat_name);
+            }
+            for (const auto & entry: entries) {
+                for (const auto & child: scene_tree[entry].children) {
+                    RenderGroups[entry][child].clear();
+                }
+            }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
+                json["StaticEntries"] = mat_json;
             } else {
                 json["DynamicRenderGroups"] = RenderGroups;
+                json["DynamicEntries"] = mat_json;
             }
             ud.set2("Scene", std::string(json.dump()));
             scene->arr.push_back(scene_descriptor);

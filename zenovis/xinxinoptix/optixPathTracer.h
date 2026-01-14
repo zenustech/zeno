@@ -79,7 +79,7 @@ struct GenericLight
         switch (this->shape) {
         case zeno::LightShape::Plane:
         case zeno::LightShape::Ellipse:
-            return this->rect.BoundAsLight(Phi, doubleSided);
+            return this->rect.BoundAsLight(Phi, spreadMajor, doubleSided);
         case zeno::LightShape::Sphere:
             return this->sphere.BoundAsLight(Phi, false);
         case zeno::LightShape::Point:
@@ -91,12 +91,16 @@ struct GenericLight
         return pbrt::LightBounds();
     }
 
-    void setConeData(const float3& p, const float3& dir, float range, float spreadAngle, float falloffAngle=0.0f) {
+    void setConeData(const float3& p, const float3& dir, float range, float spreadAngle, float innerAngle=1e-2f) {
         this->cone.p = p;
         this->cone.range = range;
 
+        if(innerAngle >= spreadAngle) {
+            innerAngle = 0.99f * spreadAngle;
+        }
+
         this->cone.dir = dir;
-        this->cone.cosFalloffStart = cosf(spreadAngle - falloffAngle);
+        this->cone.cosFalloffStart = cosf(innerAngle);
         this->cone.cosFalloffEnd = cosf(spreadAngle);
     }
 
@@ -159,9 +163,9 @@ struct PickInfo {
 
 struct Params
 {
-    unsigned int subframe_index;
+    uint16_t subframe_index;
+    uint16_t     frame_time;
     float3*      accum_buffer;
-    //uint3*        seed_buffer;
     float3*      accum_buffer_D;
     float3*      accum_buffer_S;
     float3*      accum_buffer_T;
@@ -179,8 +183,8 @@ struct Params
     void** global_buffers;
 
     uint2 click_coord;
-    bool click_dirty;
     bool pause;
+    bool click_dirty;
 
     unsigned int width;
     unsigned int height;
@@ -211,8 +215,7 @@ struct Params
         if (sky_texture == 0llu || skycdf == nullptr) 
             return -0.0f;
 
-        static const float DefaultSkyLightProbablity = 0.5f;
-        return this->num_lights>0? DefaultSkyLightProbablity : 1.0f;
+        return this->num_lights>0? fminf(0.5f, sky_strength) : 1.0f;
     }
 
     OptixTraversableHandle handle;
@@ -276,15 +279,12 @@ struct HitGroupData
 {
     uint16_t dc_index;
     float opacity = FLT_MAX;
-    uint16_t vol_depth=999;
+    uint16_t vol_depth=0;
     float vol_extinction=1.0f;
 
     bool binaryShadowTestDirectRay;
     bool binaryShadowTestIndirectRay;
     
-    bool equiangular  = false;
-    bool multiscatter = false;
-
     cudaTextureObject_t textures[32];
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];

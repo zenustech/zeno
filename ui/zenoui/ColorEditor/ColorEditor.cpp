@@ -34,9 +34,34 @@ void ColorCorrection::correct(QColor& color)
     double r = color.redF();
     double g = color.greenF();
     double b = color.blueF();
-    color.setRedF(std::pow(r, 1 / gamma));
-    color.setGreenF(std::pow(g, 1 / gamma));
-    color.setBlueF(std::pow(b, 1 / gamma));
+
+    switch (mode) {
+        case RAW:
+            color.setRedF(std::pow(r, 1 / gamma));
+            color.setGreenF(std::pow(g, 1 / gamma));
+            color.setBlueF(std::pow(b, 1 / gamma));
+            break;
+
+        case SRGB:
+            //zeno::vec3f srgb(r, g, b);
+
+            color.setRedF(r);
+            color.setGreenF(g);
+            color.setBlueF(b);
+            break;
+
+        case ACES:
+        {
+            zeno::vec3f srgb(r, g, b);
+            zeno::vec3f linear = srgbToLinear(srgb);
+
+            zeno::vec3f acesColor = linRec709ToLinAP1(linear);
+            color.setRedF(std::pow(acesColor[0], 1 / gamma));
+            color.setGreenF(std::pow(acesColor[1], 1 / gamma));
+            color.setBlueF(std::pow(acesColor[2], 1 / gamma));
+            break;
+        }
+    }
 }
 
 void ColorCorrection::correct(QImage& image)
@@ -48,6 +73,61 @@ void ColorCorrection::correct(QImage& image)
             image.setPixelColor(x, y, color);
         }
     }
+}
+
+void ColorCorrection::dump(QColor& color)
+{
+    double r = color.redF();
+    double g = color.greenF();
+    double b = color.blueF();
+
+    switch (mode) {
+    case RAW:
+        //color.setRedF(std::pow(r, 1 / gamma));
+        //color.setGreenF(std::pow(g, 1 / gamma));
+        //color.setBlueF(std::pow(b, 1 / gamma));
+        break;
+
+    case SRGB:
+        //zeno::vec3f srgb(r, g, b);
+        color.setRedF(std::pow(r, gamma));
+        color.setGreenF(std::pow(g, gamma));
+        color.setBlueF(std::pow(b, gamma));
+        break;
+
+    case ACES:
+    {
+        zeno::vec3f srgb(r, g, b);
+        zeno::vec3f linear = srgbToLinear(srgb);
+
+        zeno::vec3f acesColor = linRec709ToLinAP1(linear);
+        color.setRedF(std::pow(acesColor[0], 1 / 1));
+        color.setGreenF(std::pow(acesColor[1], 1 / 1));
+        color.setBlueF(std::pow(acesColor[2], 1 / 1));
+        break;
+    }
+    }
+}
+
+zeno::vec3f ColorCorrection::srgbToLinear(zeno::vec3f c)
+{
+    //    vec3 result;
+    //    result[0] = a[0] < .04045 ?  a[0] * 0.07739938 : pow((a[0]+.055) * 0.947867299 , 2.4);
+    //    result[1] = a[1] < .04045 ?  a[1] * 0.07739938 : pow((a[1]+.055) * 0.947867299 , 2.4);
+    //    result[2] = a[2] < .04045 ?  a[2] * 0.07739938 : pow((a[2]+.055) * 0.947867299 , 2.4);
+    zeno::vec3f result = pow(c, 2.2f);
+    return result;
+}
+
+zeno::vec3f ColorCorrection::linRec709ToLinAP1(zeno::vec3f c)
+{
+    zeno::vec3f rec709toACEScg0 = zeno::vec3f(0.610277, 0.345424, 0.0443001);
+    zeno::vec3f rec709toACEScg1 = zeno::vec3f(0.0688436, 0.934974, -0.00381805);
+    zeno::vec3f rec709toACEScg2 = zeno::vec3f(0.0241673, 0.121814, 0.854019);
+
+    // convert rec709 primaries to ACES AP1
+    zeno::vec3f result = zeno::vec3f(dot(rec709toACEScg0, c), dot(rec709toACEScg1, c), dot(rec709toACEScg2, c));
+    return result;
 }
 
 //--------------------------------------------------------- color wheel ------------------------------------------------
@@ -1451,7 +1531,7 @@ class ColorEditor::Private
 {
 public:
     ColorWheel* wheel;
-    QCheckBox* showInSRGB;
+    QComboBox* colorModeCombo;
     ColorLineEdit* colorText;
     ColorPreview* preview;
     ColorPicker* picker;
@@ -1480,7 +1560,7 @@ public:
         picker = new ColorPicker(parent);
         pickerBtn = new QPushButton(tr("pick"), parent);
         wheel = new ColorWheel(parent);
-        showInSRGB = new QCheckBox(tr("show in srgb"), parent);
+        colorModeCombo = new QComboBox(parent);
         colorText = new ColorLineEdit(parent);
         preview = new ColorPreview(color, parent);
         combo = new ColorComboWidget(parent);
@@ -1508,7 +1588,7 @@ public:
         leftLayout->setContentsMargins(0, 0, 5, 0);
         leftLayout->setSpacing(0);
         leftLayout->addWidget(wheel, 0, 0, 1, 10);
-        leftLayout->addWidget(showInSRGB, 1, 0, 1, 5, Qt::AlignLeft);
+        leftLayout->addWidget(colorModeCombo, 1, 0, 1, 5, Qt::AlignLeft);
         leftLayout->addWidget(colorText, 1, 5, 1, 5, Qt::AlignRight);
         leftLayout->addWidget(previewGroup, 2, 0, 1, 10);
         leftLayout->addWidget(comboGroup, 3, 0, 1, 10);
@@ -1657,13 +1737,13 @@ public:
 };
 
 ColorEditor::ColorEditor(QWidget* parent)
-    : ColorEditor(Qt::white, parent)
+    : ColorEditor(Qt::white, "raw", parent)
 {
 }
 
-ColorEditor::ColorEditor(const QColor& initial, QWidget* parent)
+ColorEditor::ColorEditor(const QColor& origin, QString type, QWidget* parent)
     : QDialog(parent)
-    , p(new Private(initial, this))
+    , p(new Private(origin, this))
 {
     setWindowFlag(Qt::WindowContextHelpButtonHint, false);
     setWindowTitle(tr("ColorEditor"));
@@ -1683,9 +1763,24 @@ ColorEditor::ColorEditor(const QColor& initial, QWidget* parent)
     // current combination
     p->wheel->setColorCombination(p->combo->currentCombination());
     // current color
-    setCurrentColor(initial);
-    // show in srgb
-    p->showInSRGB->setChecked(true);
+    setCurrentColor(origin);
+    // color mode combo
+    p->colorModeCombo->addItem("raw");
+    p->colorModeCombo->addItem("srgb");
+    p->colorModeCombo->addItem("aces");
+    if (type == "raw")
+    {
+        p->colorModeCombo->setCurrentIndex(0);
+        p->colorCorrection->mode = ColorCorrection::RAW;
+    } else if (type == "srgb")
+    {
+        p->colorModeCombo->setCurrentIndex(1);
+        p->colorCorrection->mode = ColorCorrection::SRGB;
+    } else if (type == "aces")
+    {
+        p->colorModeCombo->setCurrentIndex(2);
+        p->colorCorrection->mode = ColorCorrection::ACES;
+    }
 }
 
 ColorEditor::~ColorEditor() = default;
@@ -1715,9 +1810,20 @@ QColor ColorEditor::currentColor() const
     return p->currentColor;
 }
 
-QColor ColorEditor::selectedColor() const
+std::optional<COLOR_VEC3F_TRANSFORM> ColorEditor::selectedColor() const
 {
-    return p->selectedColor;
+    QColor origin = p->selectedColor;
+    QColor transform(origin);
+    p->colorCorrection->dump(transform);
+    if (origin.isValid() && transform.isValid())
+    {
+        COLOR_VEC3F_TRANSFORM transclr;
+        origin.getRgbF(&transclr.origin[0], &transclr.origin[1], &transclr.origin[2]);
+        transform.getRgbF(&transclr.transform[0], &transclr.transform[1], &transclr.transform[2]);
+        transclr.type = p->colorModeCombo->currentText().toStdString();
+        return transclr;
+    }
+    return std::nullopt;
 }
 
 void ColorEditor::setColorCombinations(const QVector<colorcombo::ICombination*> combinations)
@@ -1746,8 +1852,20 @@ void ColorEditor::keyPressEvent(QKeyEvent* e)
 void ColorEditor::initSlots()
 {
     // color correction
-    connect(p->showInSRGB, &QCheckBox::toggled, this, [this](bool checked) {
-        auto colorCorrection = checked ? p->colorCorrection.get() : nullptr;
+    connect(p->colorModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        ColorCorrection* colorCorrection = nullptr;
+
+        if (index == 0) {
+            p->colorCorrection->mode = ColorCorrection::RAW;
+            colorCorrection = p->colorCorrection.get();
+        } else if (index == 1) {
+            p->colorCorrection->mode = ColorCorrection::SRGB;
+            colorCorrection = p->colorCorrection.get();
+        } else if (index == 2) {
+            p->colorCorrection->mode = ColorCorrection::ACES;
+            colorCorrection = p->colorCorrection.get();
+        }
+
         p->wheel->setColorCorrection(colorCorrection);
         p->palette->setColorCorrection(colorCorrection);
         p->preview->setColorCorrection(colorCorrection);
@@ -1806,9 +1924,9 @@ void ColorEditor::initSlots()
     });
 }
 
-QColor ColorEditor::getColor(const QColor& initial, QWidget* parent, const QString& title)
+std::optional<COLOR_VEC3F_TRANSFORM> ColorEditor::getColor(const QColor& origin, QString type, QWidget* parent, const QString& title)
 {
-    ColorEditor dlg(initial, parent);
+    ColorEditor dlg(origin, type, parent);
     if (!title.isEmpty()) dlg.setWindowTitle(title);
     dlg.exec();
     return dlg.selectedColor();

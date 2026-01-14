@@ -305,6 +305,9 @@ struct BulletConstraint : zeno::IObject {
     btVector3 pivot1;
     btVector3 pivot2;
 
+    BulletConstraint()
+    {}
+
     BulletConstraint(btRigidBody *obj1, btRigidBody *obj2, std::string constraintType)
         : obj1(obj1), obj2(obj2), constraintType(constraintType) {
 

@@ -48,7 +48,7 @@ ZENDEFNODE(ProceduralSky, {
 });
 
 struct HDRSky : INode {
-    virtual void apply() override {
+    void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         std::string path = "";
         if (has_input2<std::string>("path")) {
@@ -58,21 +58,18 @@ struct HDRSky : INode {
                  throw zeno::makeError("HDRSky file not exists");
              }
         }
-        prim->userData().set2("isRealTimeObject", std::move(1));
-        prim->userData().set2("HDRSky", std::move(path));
-        prim->userData().set2("evnTexRotation", std::move(get_input2<float>("rotation")));
-        prim->userData().set2("evnTex3DRotation", std::move(get_input2<zeno::vec3f>("rotation3d")));
-        prim->userData().set2("evnTexStrength", std::move(get_input2<float>("strength")));
-        prim->userData().set2("enable", std::move(get_input2<bool>("enable")));
-        set_output("HDRSky", std::move(prim));
+        prim->userData().set2("isRealTimeObject", 1);
+        prim->userData().set2("HDRSky", path);
+        prim->userData().set2("evnTex3DRotation", get_input2<zeno::vec3f>("rotation3d"));
+        prim->userData().set2("evnTexStrength", get_input2<float>("strength"));
+        prim->userData().set2("enable", 1);
+        set_output("HDRSky", prim);
     }
 };
 
 ZENDEFNODE(HDRSky, {
     {
-        {"bool", "enable", "1"},
         {"readpath", "path"},
-        {"float", "rotation", "0"},
         {"vec3f", "rotation3d", "0,0,0"},
         {"float", "strength", "1"},
     },

@@ -17,16 +17,43 @@ qreal editor_factor = 1.0;
 ZGraphicsTextItem::ZGraphicsTextItem(QGraphicsItem* parent)
     : QGraphicsTextItem(parent)
 {
+    setAcceptDrops(true);
 }
 
 ZGraphicsTextItem::ZGraphicsTextItem(const QString& text, const QFont& font, const QColor& color, QGraphicsItem* parent)
     : QGraphicsTextItem(parent)
 {
+    setAcceptDrops(true);
     setText(text);
     setFont(font);
     setDefaultTextColor(color);
 }
 
+void ZGraphicsTextItem::dragEnterEvent(QGraphicsSceneDragDropEvent* event) {
+    if (event->mimeData()->hasUrls()) {
+        event->setAccepted(true);
+    }
+}
+
+void ZGraphicsTextItem::dropEvent(QGraphicsSceneDragDropEvent* event) {
+    if (event->mimeData()->hasUrls()) {
+        QUrl url = event->mimeData()->urls().first();
+        auto text = url.toString();
+        if (text.startsWith("file:///")) {
+            text = text.mid(8);
+        }
+        setPlainText(text);
+        event->setAccepted(true);
+        emit editingFinished();
+
+        QString newText = document()->toPlainText();
+        if (newText != m_text) {
+            QString oldText = m_text;
+            m_text = newText;
+            emit contentsChanged(oldText, newText);
+        }
+    }
+}
 void ZGraphicsTextItem::setText(const QString& text)
 {
     m_text = text;

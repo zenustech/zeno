@@ -230,6 +230,12 @@ static __host__ __device__ __inline__ float rnd(unsigned int &seed)
 
   return (float)tmp / (float)0xffffffff;
 }
+static __host__ __device__ __inline__ unsigned int getScrumble(unsigned int current_scrumble)
+{
+    unsigned int s = current_scrumble;
+    rnd(s);rnd(s);rnd(s);
+    return s;
+}
 static __host__ __device__ __inline__ float vdcrnd(unsigned int index, unsigned int &seed)
 {
     unsigned int scrambled = index ^ seed;

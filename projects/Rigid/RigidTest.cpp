@@ -35,15 +35,174 @@
 // multibody inverse kinematics/dynamics
 #include "BussIK/IKTrajectoryHelper.h"
 #include <Bullet3Common/b3HashMap.h>
-#include "BulletInverseDynamics/MultiBodyTree.hpp"
-#include "BulletInverseDynamics/btMultiBodyTreeCreator.hpp"
 
+#include <BulletInverseDynamics/MultiBodyTree.hpp>
+#include <BulletInverseDynamics/btMultiBodyTreeCreator.hpp>
+#include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
+#include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <BulletDynamics/ConstraintSolver/btHingeConstraint.h>
+#include <BulletDynamics/ConstraintSolver/btSliderConstraint.h>
 namespace {
 using namespace zeno;
 
 /*
  *  Bullet Position & Rotation
  */
+struct BulletVehicle : zeno::IObject{
+    std::unique_ptr<btVehicleRaycaster> vehicle_ray_caster = nullptr;
+    std::unique_ptr<btRaycastVehicle> vehicle = nullptr;
+    BulletVehicle() = default;
+};
+struct MakeVehicle : zeno::INode{
+    virtual void apply() override {
+
+        auto obj = get_input<BulletObject>("CarChassis");
+        auto car_chassis = obj->body.get();
+        auto car_chassis_shape = obj->colShape->shape.get();
+        auto world = get_input<BulletWorld>("World");
+        btRaycastVehicle::btVehicleTuning vehicle_tuning;
+        auto oVehicle = std::make_shared<BulletVehicle>();
+
+
+        //compute inertia for car_chassis
+        btVector3 inertia;
+        car_chassis_shape->calculateLocalInertia(obj->mass,inertia);
+        car_chassis->setDamping(0.2, 0.2);
+        car_chassis->setActivationState(DISABLE_DEACTIVATION); //never deactivate the vehicle
+
+
+
+        float car_mass = obj->mass;
+
+        float max_motor_impulse = 4000.f;
+        float engine_force = 0.f;
+        float max_engine_force = 2000.f;
+
+        float default_breaking_force = 10.f;
+        float breaking_force = 100.f;
+        float max_breaking_force = 100.f;
+
+        float vehicle_steering = 0.f;
+        float steering_increment = 0.08f;
+        float steering_clamp = 0.6f;
+
+        float wheel_radius = 0.5f;
+        float wheel_width = 0.4f;
+        float wheel_friction = 1000;
+
+        float suspension_stiffness = 20.f;
+        float suspension_damping = 2.3f;
+        float suspension_compression = 4.4f;
+        float suspension_rest_length = 0.6f;
+
+        float roll_influence = 0.1f;
+
+        //create vehicle given world
+        oVehicle->vehicle_ray_caster = std::make_unique<btDefaultVehicleRaycaster>(world->dynamicsWorld.get());
+        oVehicle->vehicle = std::make_unique<btRaycastVehicle>(vehicle_tuning, car_chassis, oVehicle->vehicle_ray_caster.get());
+        oVehicle->vehicle->setCoordinateSystem(0, 1, 2);
+        //world add vehicle
+        world->dynamicsWorld.get()->addVehicle(oVehicle->vehicle.get());
+        //vehicle add wheels
+        //four wheel, four position and axis
+        btVector3 wheelDirectionCS0(0,-1,0);
+        btVector3 wheelAxleCS(-1,0,0);
+        btVector3 front_right_wheel_pos(0.8,0.0f,1);
+        btVector3  front_left_wheel_pos(-0.8,0.0f,1);
+        btVector3  back_right_wheel_pos(0.8,0.0f,-1);
+        btVector3   back_left_wheel_pos(-0.8,0.0f,-1);
+        oVehicle->vehicle->addWheel(front_right_wheel_pos, wheelDirectionCS0, wheelAxleCS, suspension_rest_length, wheel_radius, vehicle_tuning, true);
+        oVehicle->vehicle->addWheel( front_left_wheel_pos, wheelDirectionCS0, wheelAxleCS, suspension_rest_length, wheel_radius, vehicle_tuning, true);
+        oVehicle->vehicle->addWheel( back_right_wheel_pos, wheelDirectionCS0, wheelAxleCS, suspension_rest_length, wheel_radius, vehicle_tuning, false);
+        oVehicle->vehicle->addWheel(  back_left_wheel_pos, wheelDirectionCS0, wheelAxleCS, suspension_rest_length, wheel_radius, vehicle_tuning, false);
+        for (int i = 0; i < oVehicle->vehicle->getNumWheels(); i++)
+        {
+            btWheelInfo & wheel = oVehicle->vehicle->getWheelInfo(i);
+            wheel.m_suspensionStiffness = suspension_stiffness;
+            wheel.m_wheelsDampingRelaxation = suspension_damping;
+            wheel.m_wheelsDampingCompression = suspension_compression;
+            wheel.m_frictionSlip = wheel_friction;
+            wheel.m_rollInfluence = roll_influence;
+        }
+        set_output("vehicle", std::move(oVehicle));
+    }
+};
+ZENDEFNODE(MakeVehicle, {
+    {"CarChassis","World"},
+    {"vehicle"},
+    {},
+    {"Bullet"},
+});
+struct SetVehicleState : zeno::INode{
+    virtual void apply() override{
+        auto iVehicle = get_input2<BulletVehicle>("vehicle");
+        auto vehicle = iVehicle->vehicle.get();
+        float engine_force = get_input2<float>("engine_force");
+        float breaking_force = get_input2<float>("breaking_force");
+        float vehicle_steering = get_input2<float>("vehicle_steering");
+        int wheelIndex = 2;
+        vehicle->applyEngineForce(engine_force, wheelIndex);
+        vehicle->setBrake(breaking_force, wheelIndex);
+
+        wheelIndex = 3;
+        vehicle->applyEngineForce(engine_force, wheelIndex);
+        vehicle->setBrake(breaking_force, wheelIndex);
+
+        wheelIndex = 0;
+        vehicle->setSteeringValue(vehicle_steering, wheelIndex);
+
+        wheelIndex = 1;
+        vehicle->setSteeringValue(vehicle_steering, wheelIndex);
+
+    }
+};
+ZENDEFNODE(SetVehicleState, {
+    {
+        "vehicle",
+        { "float", "engine_force", "0" },
+        { "float", "breaking_force", "0" },
+        { "float", "vehicle_steering", "0" }
+    },
+    {},
+    {},
+    {"Bullet"},
+});
+
+struct GetVehicleTransform : zeno::INode {
+    virtual void apply() override {
+        auto iVehicle = get_input2<BulletVehicle>("vehicle");
+        auto wtrans0 = std::make_unique<BulletTransform>();
+        auto wtrans1 = std::make_unique<BulletTransform>();
+        auto wtrans2 = std::make_unique<BulletTransform>();
+        auto wtrans3 = std::make_unique<BulletTransform>();
+        auto vehicle = iVehicle->vehicle.get();
+        std::vector<btTransform> trans;
+        for (int i = 0; i < vehicle->getNumWheels(); i++)
+        {
+            //synchronize the wheels with the (interpolated) chassis world transform
+            vehicle->updateWheelTransform(i, true);
+            btTransform tr = vehicle->getWheelInfo(i).m_worldTransform;
+            trans.push_back(tr);
+        }
+        wtrans0->trans = trans[0];
+        wtrans1->trans = trans[1];
+        wtrans2->trans = trans[2];
+        wtrans3->trans = trans[3];
+        set_output("wheel0", std::move(wtrans0));
+        set_output("wheel1", std::move(wtrans1));
+        set_output("wheel2", std::move(wtrans2));
+        set_output("wheel3", std::move(wtrans3));
+    }
+};
+ZENDEFNODE(GetVehicleTransform, {
+    {
+        "vehicle"
+    },
+    {"wheel0","wheel1","wheel2","wheel3"},
+    {},
+    {"Bullet"},
+});
 
 struct BulletMakeTransform : zeno::INode {
     virtual void apply() override {
@@ -155,12 +314,22 @@ struct PrimitiveToBulletMesh : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_unique<BulletTriangleMesh>();
         auto pos = prim->attr<zeno::vec3f>("pos");
-        for (int i = 0; i < prim->tris.size(); i++) {
+//        for (int i = 0; i < prim->tris.size(); i++) {
+//            auto f = prim->tris[i];
+//            mesh->mesh.addTriangle(
+//                    zeno::vec_to_other<btVector3>(pos[f[0]]),
+//                    zeno::vec_to_other<btVector3>(pos[f[1]]),
+//                    zeno::vec_to_other<btVector3>(pos[f[2]]), false);
+//        }
+        for(int i=0;i<prim->verts.size();i++)
+        {
+            btVector3 vi(prim->verts[i][0], prim->verts[i][1], prim->verts[i][2]);
+            mesh->mesh.findOrAddVertex(vi, false);
+        }
+        for (int i = 0; i < prim->tris.size(); i++)
+        {
             auto f = prim->tris[i];
-            mesh->mesh.addTriangle(
-                    zeno::vec_to_other<btVector3>(pos[f[0]]),
-                    zeno::vec_to_other<btVector3>(pos[f[1]]),
-                    zeno::vec_to_other<btVector3>(pos[f[2]]), true);
+            mesh->mesh.addTriangleIndices(prim->tris[i][0],prim->tris[i][1],prim->tris[i][2]);
         }
         set_output("mesh", std::move(mesh));
     }
@@ -425,7 +594,18 @@ ZENDEFNODE(PrimitiveConvexDecomposition, {
 /*
  *  Bullet Collision
  */
-
+struct BulletMakeHeightFieldShape : zeno::INode{
+    virtual void apply() override {
+    }
+};
+ZENDEFNODE(BulletMakeHeightFieldShape, {
+    {"prim",
+     {"vec2i","size", "512,512"},
+     {"float","h_max","1"}},
+    {"shape"},
+    {},
+    {"Bullet"},
+});
 struct BulletMakeBoxShape : zeno::INode {
     virtual void apply() override {
         auto size = get_input<zeno::NumericObject>("semiSize")->get<zeno::vec3f>();
@@ -1047,7 +1227,50 @@ public:
 	int getNumTaskSchedulers() const { return m_taskSchedulers.size(); }
 	btITaskScheduler* getTaskScheduler(int i) { return m_taskSchedulers[i]; }
 } gTaskSchedulerMgr; */
+struct BulletMakeHingeConstraint : zeno::INode {
+    virtual void apply() override {
 
+        auto obj1 = get_input<BulletObject>("obj1");
+        auto obj2 = get_input<BulletObject>("obj2");
+        auto iter = get_input2<int>("iternum");
+        auto axis1 = get_input2<zeno::vec3f>("AxisA");
+        auto axis2 = get_input2<zeno::vec3f>("AxisB");
+        auto pivot1 = get_input2<zeno::vec3f>("PivotA");
+        auto pivot2 = get_input2<zeno::vec3f>("PivotB");
+        auto pivotInA = btVector3(pivot1[0], pivot1[1], pivot1[2]);
+        auto pivotInB = btVector3(pivot2[0], pivot2[1], pivot2[2]);
+        auto axisInA = btVector3(axis1[0], axis1[1], axis1[2]);
+        auto axisInB = btVector3(axis2[0], axis2[1], axis2[2]);
+
+        auto cons = std::make_shared<BulletConstraint>();
+
+        cons->constraint = std::make_unique<btHingeConstraint>(*(obj1->body.get()), *(obj2->body.get()), pivotInA, pivotInB, axisInA, axisInB);
+        cons->axis1 = axisInA;
+        cons->axis2 = axisInB;
+        cons->obj1 = obj1->body.get();
+        cons->obj2 = obj2->body.get();
+        cons->pivot1 = pivotInA;
+        cons->pivot2 = pivotInB;
+        cons->frame1 = obj1->body->getWorldTransform();
+        cons->frame2 = obj2->body->getWorldTransform();
+        cons->constraintType = "Hinge";
+        set_output("constraint", std::move(cons));
+    }
+};
+
+ZENDEFNODE(BulletMakeHingeConstraint, {
+    {
+        "obj1", "obj2",
+        { "int", "iternum", "100" },
+        { "vec3f", "AxisA", "1,0,0" },
+        { "vec3f", "AxisB", "1,0,0" },
+        { "vec3f", "PivotA", "0,0,0" },
+        { "vec3f", "PivotB", "0,0,0" }
+    },
+    {"constraint"},
+    {},
+    {"Bullet"},
+});
 struct BulletMakeConstraint : zeno::INode {
     virtual void apply() override {
         auto constraintType = get_param<std::string>("constraintType");
@@ -1119,28 +1342,28 @@ struct BulletConstraintSetFrames : zeno::INode {
             dynamic_cast<btConeTwistConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Fixed") {
-            dynamic_cast<btFixedConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btFixedConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Generic6Dof") {
-            dynamic_cast<btGeneric6DofConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btGeneric6DofConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Generic6DofSpring") {
-            dynamic_cast<btGeneric6DofSpringConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btGeneric6DofSpringConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Generic6DofSpring2") {
-            dynamic_cast<btGeneric6DofSpring2Constraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btGeneric6DofSpring2Constraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Hinge") {
-            dynamic_cast<btHingeConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btHingeConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Hinge2") {
-            dynamic_cast<btHinge2Constraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btHinge2Constraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Slider") {
-            dynamic_cast<btSliderConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btSliderConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         else if (constraintType == "Universal") {
-            dynamic_cast<btUniversalConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
+            static_cast<btUniversalConstraint *>(cons->constraint.get())->setFrames(frame1->trans, frame2->trans);
         }
         set_output("constraint", std::move(cons));
     }
@@ -1324,33 +1547,33 @@ struct BulletConstraintSetAxis : zeno::INode {
 
 
         if (constraintType == "Fixed") {
-            dynamic_cast<btFixedConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btFixedConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         else if (constraintType == "Gear") {
-            dynamic_cast<btGearConstraint *>(cons->constraint.get())->setAxisA(axis1);
-            dynamic_cast<btGearConstraint *>(cons->constraint.get())->setAxisB(axis2);
+            static_cast<btGearConstraint *>(cons->constraint.get())->setAxisA(axis1);
+            static_cast<btGearConstraint *>(cons->constraint.get())->setAxisB(axis2);
         }
         else if (constraintType == "Generic6Dof") {
-            dynamic_cast<btGeneric6DofConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btGeneric6DofConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         else if (constraintType == "Generic6DofSpring") {
-            dynamic_cast<btGeneric6DofSpringConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btGeneric6DofSpringConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         else if (constraintType == "Generic6DofSpring2") {
-            dynamic_cast<btGeneric6DofSpring2Constraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btGeneric6DofSpring2Constraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         else if (constraintType == "Hinge") {
-            dynamic_cast<btHingeConstraint *>(cons->constraint.get())->setAxis(axis1);
+            static_cast<btHingeConstraint *>(cons->constraint.get())->setAxis(axis1);
         }
         else if (constraintType == "Hinge2") {
-            dynamic_cast<btHinge2Constraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btHinge2Constraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         else if (constraintType == "Point2Point") {
-            dynamic_cast<btPoint2PointConstraint *>(cons->constraint.get())->setPivotA(axis1);
-            dynamic_cast<btPoint2PointConstraint *>(cons->constraint.get())->setPivotB(axis2);
+            static_cast<btPoint2PointConstraint *>(cons->constraint.get())->setPivotA(axis1);
+            static_cast<btPoint2PointConstraint *>(cons->constraint.get())->setPivotB(axis2);
         }
         else if (constraintType == "Universal") {
-            dynamic_cast<btUniversalConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
+            static_cast<btUniversalConstraint *>(cons->constraint.get())->setAxis(axis1, axis2);
         }
         set_output("constraint", std::move(cons));
     }

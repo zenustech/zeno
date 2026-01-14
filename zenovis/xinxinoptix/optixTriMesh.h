@@ -31,36 +31,21 @@ inline void check( cuOmmBaking::Result status )
 }
 
 struct MeshDat {
-    bool dirty = true;
-
     std::vector<std::string> mtlidList;
-    std::string mtlid;
-    std::vector<float> verts;
-    std::vector<uint> tris;
     std::vector<int> triMats;
-
-    std::vector<float> dummy{};
-    std::map<std::string, std::vector<float>> vertattrs;
-    auto const &getAttr(std::string const &s) const
-    {
-        auto find = vertattrs.find(s);
-        if(find!=vertattrs.end())
-            return find->second;
-        else
-            return dummy;
-    }
 };
 
 struct MeshObject {
-    bool dirty = true;
+    MeshDat dat;
+    uint8_t dirty;
     std::string matid;
 
-    std::vector<float3> vertices{};
-    std::vector<uint3>  indices {};
-    std::vector<uint16_t> mat_idx{};
+    std::vector<float3, CudaPinnedAllocator<float3>> vertices{};
+    std::vector<uint3, CudaPinnedAllocator<uint3>>  indices {};
+    std::vector<uint16_t, CudaPinnedAllocator<uint16_t>> mat_idx{};
 
-    std::vector<float2> g_uv;
-    std::vector<ushort3> g_clr, g_nrm, g_tan;
+    std::vector<float2, CudaPinnedAllocator<float2>> g_uv;
+    std::vector<ushort3, CudaPinnedAllocator<ushort3>> g_clr, g_nrm, g_tan;
 
 template<class T, class E=uint8_t>
 using raii = xinxinoptix::raii<T, E>;
@@ -97,19 +82,20 @@ using raii = xinxinoptix::raii<T, E>;
         }
     }
 
-    template<class T>
-    static void upload(std::vector<T>& vector, raii<CUdeviceptr>& buffer) {
+    template<class T, typename C=std::allocator<T>>
+    static void upload(std::vector<T, C>& vector, raii<CUdeviceptr>& buffer) {
 
         if (!vector.empty()) {
 
             auto byte_size = sizeof(vector[0]) * vector.size();
             buffer.resize(byte_size);
-            cudaMemcpy((void*)buffer.handle, vector.data(), byte_size, cudaMemcpyHostToDevice);
+            cudaMemcpyAsync((void*)buffer.handle, vector.data(), byte_size, cudaMemcpyHostToDevice);
 
         } else { buffer.reset(); }
     }
 
     void upload(size_t extra_size) {
+        if (0==node->handle || 0==node->buffer.handle ) return;
 
         upload(g_uv, d_uv);
         upload(g_clr, d_clr);
@@ -123,37 +109,37 @@ using raii = xinxinoptix::raii<T, E>;
         auto buffers = this->aux();
         if (0) {
             upload(mat_idx, d_mat);
-            buffers.push_back(d_mat.handle);
-        } else {
-            d_mat.reset();
-            buffers.push_back(0);
+            buffers[0] = d_mat.handle;
         }
-        std::reverse(buffers.begin(), buffers.end());
-
         auto byte_size = sizeof(buffers[0]) * buffers.size();
-        cudaMemcpy((void*)(gas_ptr-byte_size), buffers.data(), byte_size, cudaMemcpyHostToDevice);
+        cudaMemcpyAsync((void*)(gas_ptr-byte_size), buffers.data(), byte_size, cudaMemcpyHostToDevice);
     }
 
-    std::vector<CUdeviceptr> aux() {
-        return std::vector { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+    std::vector<CUdeviceptr, CudaPinnedAllocator<CUdeviceptr>> aux() {
+        //return { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
+        return { 0, d_tan.handle, d_nrm.handle, d_clr.handle, d_uv.handle, d_idx.handle };
     }
 
-    void buildGas(OptixDeviceContext context, uint16_t sbt_count,
-        const std::map<uint16_t, zeno::OpacityMicroMapConfig>& binding_cfg_map={}) {
+    std::map<uint16_t, zeno::OpacityMicroMapConfig> omm_binding_map;
+
+    void buildGas(bool update, OptixDeviceContext context, uint16_t sbt_count, const std::map<uint16_t, zeno::OpacityMicroMapConfig>& binding_cfg_map={}) {
 
         auto buffers = this->aux();
-        std::reverse(buffers.begin(), buffers.end());
         auto extra_size = sizeof(buffers[0]) * buffers.size();
 
-        if (binding_cfg_map.size()>0) { 
+        if (binding_cfg_map.size()>0) {
+            omm_binding_map = binding_cfg_map; 
             inputOMM = bakeOMM(context, binding_cfg_map);
         } else {
             inputOMM = nullptr;
             check(d_ommArray.free());
             check(d_ommIndices.free());
         }
-        xinxinoptix::buildMeshGAS(context, vertices, indices, mat_idx, sbt_count, node->buffer, node->handle, extra_size, inputOMM.get());
-        upload(extra_size);
+        xinxinoptix::buildMeshGAS(update, context, vertices, indices, mat_idx, sbt_count, node->buffer, node->handle, extra_size, inputOMM.get());
+        
+        if (this->dirty & GeoChange::AttrChange) {
+            upload(extra_size);
+        }
     }
 
     using ommc = zeno::OpacityMicroMapConfig;

@@ -29,63 +29,72 @@ namespace zeno
 {
 namespace
 {
-
-struct testPoly1 : INode {
-    void apply() override {
-        std::vector<zeno::vec3f> verts = {vec3f(0,0,0), vec3f(1,0,0), vec3f(0,0,1), vec3f(1,0,1)};
-        std::vector<int> poly = {0, 1, 3, 2};
-        std::vector<vec3i> triangles;
-
-        polygonDecompose(verts, poly, triangles);
-        //printf("x0 = %i, y0 = %i, z0 = %i\n", triangles[0][0], triangles[0][1], triangles[0][2]);
-
-        auto prim = std::make_shared<PrimitiveObject>();
-
-        for (int i = 0; i < verts.size(); i++) {
-            prim->verts.push_back(verts[i]);
-        }
-
-        for (int i = 0; i < triangles.size(); i++) {
-            prim->tris.push_back(triangles[i]);
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(testPoly1, {
-    /* inputs: */
-    {
-    },
-    /* outputs: */
-    {
-        "prim",
-    },
-    /* params: */ {}, /* category: */
-    {
-        "WBTest",
-    }});
-
-
-struct testPoly2 : INode {
+struct PrimDecompose : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto list = get_input<ListObject>("list")->getLiterial<int>();
-
-        std::vector<vec3i> triangles;
-        polygonDecompose(prim->verts, list, triangles);
-
-        for (int i = 0; i < triangles.size(); i++) {
-            prim->tris.push_back(triangles[i]);
+        if (prim->polys->empty()) {
+            set_output("prim", std::move(prim));
         }
+        AttrVector<int> new_loops;
+        AttrVector<vec2i> new_polys;
+        std::vector<int> old_loops_map;
+        std::vector<int> old_polys_map;
+        for (auto i = 0; i < prim->polys.size(); i++) {
+            auto [s, l] = prim->polys[i];
+            if (l <= 4) {
+                old_polys_map.emplace_back(i);
+                new_polys.emplace_back(new_loops.size(), l);
+                for (auto i = 0; i < l; i++) {
+                    new_loops.emplace_back(prim->loops[s + i]);
+                    old_loops_map.emplace_back(s+i);
+                }
+                continue;
+            }
+            std::vector<int> poly;
+            std::unordered_map<int, int> poly_map;
+            for (auto i = 0; i < l; i++) {
+                poly.emplace_back(prim->loops[s + i]);
+                poly_map[prim->loops[s + i]] = s + i;
+            }
+
+            auto tris = polygonDecompose(prim->verts, poly);
+            for (auto i = 0; i < tris.size(); i++) {
+                old_polys_map.emplace_back(i);
+                new_polys.emplace_back(new_loops.size(), 3);
+                auto [x, y, z] = tris[i];
+                new_loops.emplace_back(x);
+                new_loops.emplace_back(y);
+                new_loops.emplace_back(z);
+                old_loops_map.emplace_back(poly_map[x]);
+                old_loops_map.emplace_back(poly_map[y]);
+                old_loops_map.emplace_back(poly_map[z]);
+            }
+        }
+        prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &attr = new_loops.add_attr<T>(key);
+            for (auto i = 0; i < attr.size(); i++) {
+                attr[i] = arr[old_loops_map[i]];
+            }
+        });
+        prim->loops = new_loops;
+
+        prim->polys.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
+            using T = std::decay_t<decltype(arr[0])>;
+            auto &attr = new_polys.add_attr<T>(key);
+            for (auto i = 0; i < attr.size(); i++) {
+                attr[i] = arr[old_loops_map[i]];
+            }
+        });
+        prim->polys = new_polys;
 
         set_output("prim", std::move(prim));
     }
 };
-ZENDEFNODE(testPoly2, {
+ZENDEFNODE(PrimDecompose, {
     /* inputs: */
     {
         "prim",
-        "list",
     },
     /* outputs: */
     {

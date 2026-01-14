@@ -1,13 +1,26 @@
 #pragma once
 
 #include <Sampling.h>
+#include <nanovdb/NanoVDB.h>
 
 #ifndef __CUDACC_RTC__
 #include <Host.h>
 #endif
 
-namespace nanovdb {
-    using Fp32 = float;
+namespace nanovdb {    
+    using Float = float;
+    using Float3 = Vec3f;
+    using Float4 = Vec4f;
+
+    using Double = double;
+    
+    using Short = int16_t;
+
+    using Int = int32_t;
+    using Int3 = Vec3i;
+    using Int4 = Vec4i;
+
+    using Long = int64_t;
 };
 
 struct VolumeIn {
@@ -20,10 +33,16 @@ struct VolumeIn {
     uint32_t* seed;
 
     void* sbt_ptr;
-    float* world2object;
+    float4 objectToWorld[3];
+    float4 worldToObject[3];
+    
+    float3 _local_pos_;
+    float3 _uniform_pos_;
 
-    float3 _local_pos_ = make_float3(CUDART_NAN_F);
-    float3 _uniform_pos_ = make_float3(CUDART_NAN_F);
+    void resetCache() {
+        _local_pos_.x = CUDART_NAN_F;
+        _uniform_pos_.x = CUDART_NAN_F;
+    }
 };
 
 struct VolumeOut {

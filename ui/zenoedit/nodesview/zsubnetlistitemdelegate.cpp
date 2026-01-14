@@ -1,4 +1,4 @@
-#include "zsubnetlistitemdelegate.h"
+﻿#include "zsubnetlistitemdelegate.h"
 #include "style/zenostyle.h"
 #include "zenosubnetlistview.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -176,12 +176,36 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addAction(pDelete);
             menu->addAction(pSave);
             menu->addAction(pForkLock);
-            bool bPreset = index.data(ROLE_SUBGRAPH_TYPE) == SUBGRAPH_PRESET;
-            QAction* pPreset = new QAction(bPreset ? tr("Trans to Normal Subgrah") : tr("Trans to Preset Subgrah"));
-            menu->addAction(pPreset);
-            connect(pPreset, &QAction::triggered, this, [=]() {
-                setSubgraphType(pProxyModel, bPreset);
-            });
+            auto subgType = index.data(ROLE_SUBGRAPH_TYPE);
+            QAction* action1 = nullptr;
+            QAction* action2 = nullptr;
+            SUBGRAPH_TYPE action1Type, action2Type;
+            if (subgType == SUBGRAPH_PRESET) {
+                action1 = new QAction(tr("Trans to Normal Subgrah"));
+                action2 = new QAction(tr("Trans to Material Subgrah"));
+                action1Type = SUBGRAPH_NOR;
+                action2Type = SUBGRAPH_METERIAL;
+            }
+            else if (subgType == SUBGRAPH_METERIAL) {
+                action1 = new QAction(tr("Trans to Normal Subgrah"));
+                action2 = new QAction(tr("Trans to Preset Subgrah"));
+                action1Type = SUBGRAPH_NOR;
+                action2Type = SUBGRAPH_PRESET;
+            }
+            else {
+                action1 = new QAction(tr("Trans to Preset Subgrah"));
+                action2 = new QAction(tr("Trans to Material Subgrah"));
+                action1Type = SUBGRAPH_PRESET;
+                action2Type = SUBGRAPH_METERIAL;
+            }
+            menu->addAction(action1);
+            menu->addAction(action2);
+            connect(action1, &QAction::triggered, this, [=]() {
+                setSubgraphType(pProxyModel, action1Type);
+                });
+            connect(action2, &QAction::triggered, this, [=]() {
+                setSubgraphType(pProxyModel, action2Type);
+                });
 
             menu->exec(QCursor::pos());
         }
@@ -299,17 +323,20 @@ void ZSubnetListItemDelegate::setForkLock(QSortFilterProxyModel* pProxyModel, bo
     }
 }
 
-void ZSubnetListItemDelegate::setSubgraphType(QSortFilterProxyModel* pProxyModel, bool bPreset)
+void ZSubnetListItemDelegate::setSubgraphType(QSortFilterProxyModel* pProxyModel, int subgType)
 {
     QModelIndexList indexs;
     for (const QModelIndex& idx : m_selectedIndexs) {
+        if (idx.data(ROLE_OBJNAME).toString().toLower() == "main") {
+            continue;
+        }
         const QModelIndex& srcIdx = pProxyModel->mapToSource(idx);
         if (srcIdx.isValid())
             indexs << srcIdx;
     }
     for (const auto& idx : indexs)
     {
-        m_model->setData(idx, bPreset ? SUBGRAPH_NOR : SUBGRAPH_PRESET, ROLE_SUBGRAPH_TYPE);
+        m_model->setData(idx, (SUBGRAPH_TYPE)subgType, ROLE_SUBGRAPH_TYPE);
     }
 }
 

@@ -163,21 +163,58 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         if (pGraphsModel && !mtlid.isEmpty())
         {
-            for (const auto& subgIdx : pGraphsModel->subgraphsIndice(SUBGRAPH_METERIAL))
-            {
-                if (subgIdx.data(ROLE_MTLID).toString() == mtlid)
-                {
-                    QString subgraph_name = subgIdx.data(ROLE_OBJNAME).toString();
-                    ZenoMainWindow* pWin = zenoApp->getMainWindow();
-                    if (pWin) {
-                        ZenoSettingsManager::GetInstance().setValue(zsSubgraphType, SUBGRAPH_METERIAL);
-                        ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
-                        if (pEditor) {
-                            pEditor->activateTab(subgraph_name, "", "");
+            ZenoMainWindow* pWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(pWin);
+            ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
+            ZASSERT_EXIT(pEditor);
+            auto& const checkNodesInSubg = [pGraphsModel, pEditor, &mtlid](auto subgIdx) {
+                for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++) {
+                    auto nodeidx = pGraphsModel->index(i, subgIdx);
+                    if (pGraphsModel->IsSubGraphNode(nodeidx)) {
+                        if (nodeidx.data(ROLE_CUSTOM_OBJNAME).toString() == mtlid) {
+                            pEditor->activateTab(nodeidx.data(ROLE_OBJNAME).toString(), "", "");
+                            return;
+                        }
+                        INPUT_SOCKETS inputs = nodeidx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                        for (auto& input : inputs) {
+                            if (input.first.toLower() == QString("matname") &&
+                                input.second.info.defaultValue.toString() == mtlid) {
+                                pEditor->activateTab(nodeidx.data(ROLE_OBJNAME).toString(), "", "");
+                                return;
+                            }
+                        }
+                    }
+                    else if (nodeidx.data(ROLE_OBJNAME).toString() == "SubInput") {
+                        PARAMS_INFO params = nodeidx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+                        if (params["name"].value.toString().toLower() == QString("matname") &&
+                            params["defl"].value.toString() == mtlid) {
+                            pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", nodeidx.data(ROLE_OBJID).toString(), false, false);
                             return;
                         }
                     }
                 }
+                };
+            QVector<QPersistentModelIndex> subgExceptMat;
+            for (int i = 0; i < pGraphsModel->rowCount(); i++)
+            {
+                auto subgIdx = pGraphsModel->index(i, 0);
+                if (subgIdx.data(ROLE_SUBGRAPH_TYPE).toInt() == SUBGRAPH_TYPE::SUBGRAPH_METERIAL) {
+                    if (subgIdx.data(ROLE_MTLID).toString() == mtlid) {
+                        pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                        return;
+                    }
+                    checkNodesInSubg(subgIdx);
+                }
+                else {
+                    subgExceptMat.push_back(subgIdx);
+                }
+            }
+            for (const auto& subgIdx : subgExceptMat) {
+                if (subgIdx.data(ROLE_OBJNAME).toString() == mtlid) {
+                    pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", "");
+                    return;
+                }
+                checkNodesInSubg(subgIdx);
             }
 			QList<SEARCH_RESULT> resLst = pGraphsModel->search("ShaderFinalize", SEARCH_NODECLS, SEARCH_MATCH_EXACTLY, {});
 			for (auto item : resLst)
@@ -278,6 +315,7 @@ void ZenoSpreadsheet::clear() {
 }
 
 void ZenoSpreadsheet::setPrim(std::string primid, std::string mtlid, bool selecFromOpitx) {
+    zenoApp->getMainWindow()->statusbarShowMessage(zeno::format("{} : {}", primid, mtlid), 10000);
     pPrimName->setText(QString(primid.c_str()).split(':')[0]);
     pMtlid->setText(QString(mtlid.c_str()));
     if (!selecFromOpitx) {
