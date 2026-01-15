@@ -89,6 +89,7 @@
 using namespace zeno::ChiefDesignerEXR;
 
 #include "zeno/utils/image_proc.h"
+#include "OptiXDenoiser.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -107,6 +108,7 @@ bool minimized    = false;
 bool             camera_changed = true;
 sutil::Camera    camera;
 sutil::Trackball trackball;
+OptiXDenoiser denoiser;
 
 // Mouse state
 int32_t mouse_button = -1;
@@ -1684,10 +1686,72 @@ std::vector<float> optixgetimg_extra2(std::string name, int w, int h) {
     else if (name == "color") {
         cudaMemcpy(tex_data.data(), (void*)state.accum_buffer_p.handle, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
     }
+    else if (name == "albedo") {
+        const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+        cudaMemcpy(tex_data.data(), _albedo_buffer, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
+    else if (name == "normal") {
+        const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+        cudaMemcpy(tex_data.data(), _normal_buffer, sizeof(float) * tex_data.size(), cudaMemcpyDeviceToHost);
+    }
     else {
         throw std::runtime_error("invalid optixgetimg_extra name: " + name);
     }
     return tex_data;
+}
+
+std::vector<float> rgb_to_rgba(const std::vector<float> &rgb_data, int w, int h) {
+    std::vector<float> rgba_data(w * h * 4);
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto rgb_index = j * w * 3 + i * 3;
+            auto rgba_index = j * w * 4 + i * 4;
+            rgba_data[rgba_index + 0] = rgb_data[rgb_index + 0];
+            rgba_data[rgba_index + 1] = rgb_data[rgb_index + 1];
+            rgba_data[rgba_index + 2] = rgb_data[rgb_index + 2];
+            rgba_data[rgba_index + 3] = 1.0f;
+        }
+    }
+    return rgba_data;
+}
+
+std::vector<float> rgba_to_rgb(const std::vector<float> &rgba_data, int w, int h) {
+    std::vector<float> rgb_data(w * h * 3);
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto rgb_index = j * w * 3 + i * 3;
+            auto rgba_index = j * w * 4 + i * 4;
+            rgb_data[rgb_index + 0] = rgba_data[rgba_index + 0];
+            rgb_data[rgb_index + 1] = rgba_data[rgba_index + 1];
+            rgb_data[rgb_index + 2] = rgba_data[rgba_index + 2];
+        }
+    }
+    return rgb_data;
+}
+std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
+    auto tex_data = optixgetimg_extra2("color", w, h);
+    if (!denoising) {
+        return tex_data;
+    }
+    auto rgba_data = rgb_to_rgba(tex_data, w, h);
+    auto albedo_data = rgb_to_rgba(optixgetimg_extra2("albedo", w, h), w, h);
+    auto normal_data = rgb_to_rgba(optixgetimg_extra2("normal", w, h), w, h);
+
+    std::vector<float> output_data(w * h * 4);
+    OptiXDenoiser::Data data;
+    data.width     = w;
+    data.height    = h;
+    data.color     = rgba_data.data();
+    data.albedo    = albedo_data.data();
+    data.normal    = normal_data.data();
+    data.flow      = nullptr;
+    data.flowtrust = nullptr;
+    data.outputs.push_back( output_data.data() );
+    denoiser.init(data);
+    denoiser.exec();
+    denoiser.getResults();
+    denoiser.finish();
+    return rgba_to_rgb(output_data, w, h);
 }
 
 std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
@@ -1933,10 +1997,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             auto mask_path = path.substr(0, path.size() - 4);
             save_png_data(mask_path + "_mask.png", w, h,  optixgetimg_extra2("mask", w, h).data());
         }
-        // AOV
-        if (enable_output_aov) {
-            if (enable_output_exr) {
-                zeno::create_directories_when_write_file(exr_path);
+        if (enable_output_exr) {
+            zeno::create_directories_when_write_file(exr_path);
+            if (enable_output_aov) {
                 SaveMultiLayerEXR_half(
                         {
                                 optixgetimg_extra3("color", w, h).data(),
@@ -1961,40 +2024,29 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
             }
             else {
+                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
+            }
+        }
+        else {
+            std::string jpg_native_path = zeno::create_directories_when_write_file(path);
+            if (denoise) {
+                auto float_data = optixgetimg_color(w, h, true);
+                std::vector<uint8_t> u8_data(w * h * 3);
+                for (auto i = 0; i < u8_data.size(); i++) {
+                    u8_data[i] = int(glm::clamp(pow(float_data[i], 1.0f/2.2f) * 255.0f, 0.0f, 255.0f));
+                }
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 3, u8_data.data(), 100);
+            }
+            else {
+                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
+            }
+            if (enable_output_aov) {
                 path = path.substr(0, path.size() - 4);
                 save_png_color(path + ".aov.diffuse.png",   w, h,  optixgetimg_extra2("diffuse", w, h).data());
                 save_png_color(path + ".aov.specular.png",  w, h,  optixgetimg_extra2("specular", w, h).data());
                 save_png_color(path + ".aov.transmit.png",  w, h,  optixgetimg_extra2("transmit", w, h).data());
                 save_png_data(path + ".aov.background.png", w, h,  optixgetimg_extra2("background", w, h).data());
                 save_png_data(path + ".aov.mask.png",       w, h,  optixgetimg_extra2("mask", w, h).data());
-            }
-        }
-        else {
-            if (enable_output_exr) {
-                zeno::create_directories_when_write_file(exr_path);
-                save_exr((float3 *)optixgetimg_extra2("color", w, h).data(), w, h, exr_path);
-            }
-            else {
-                std::string jpg_native_path = zeno::create_directories_when_write_file(path);
-                stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
-                if (denoise) {
-                    auto byte_size = state.albedo_buffer_p.size;
-                    std::vector<std::byte> temp; temp.resize(byte_size); 
-
-                    const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-                    cudaMemcpy(temp.data(), _albedo_buffer, byte_size, cudaMemcpyDeviceToHost);
-                    
-                    auto a_path = path + ".albedo.pfm";
-                    std::string native_a_path = zeno::create_directories_when_write_file(a_path);
-                    zeno::write_pfm(native_a_path.c_str(), w, h, (float*)temp.data());
-
-                    const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-                    cudaMemcpy(temp.data(), _normal_buffer, byte_size, cudaMemcpyDeviceToHost);
-
-                    auto n_path = path + ".normal.pfm";
-                    std::string native_n_path = zeno::create_directories_when_write_file(n_path);
-                    zeno::write_pfm(native_n_path.c_str(), w, h, (float*)temp.data());
-                }
             }
         }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);

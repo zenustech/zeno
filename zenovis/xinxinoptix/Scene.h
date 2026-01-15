@@ -70,6 +70,8 @@ private:
     phmap::parallel_flat_hash_map_m<std::string, glm::mat4> renderObjectMatrixMap;
 
     nlohmann::json sceneJson;
+
+    phmap::parallel_node_hash_set_m<std::string> matrix_dirty;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
     phmap::parallel_flat_hash_map_m<std::string, std::vector<int>> instance_ids_map{};
 
@@ -143,6 +145,7 @@ public:
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
         matrix_map[key] = std::move(matrix_list);
+        matrix_dirty.insert(key);
         if (instance_ids.size() > 0) {
             instance_ids_map[key] = std::move(instance_ids);
         }
@@ -445,6 +448,57 @@ public:
             cleanTasks.clear();
         }
 
+        std::function<bool(const std::string&, nlohmann::json&, decltype(nodeCache)&)> dirtyCheck;
+
+        dirtyCheck = [&](const std::string& key, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache) -> bool {
+
+            auto& node = nodeCache[key];
+            if (nullptr == node) {
+                //return false;
+                node = std::make_shared<SceneNode>();
+            }
+
+            auto find_obj = renderGroup.find(key);
+            if (find_obj == renderGroup.end()) { return true; }
+            auto& ref = *find_obj;
+
+            bool dirty = false;
+            for (auto& item : ref.items()) {
+                auto& item_key = item.key();
+                bool check = dirtyCheck(item_key, renderGroup, nodeCache);
+                dirty |= check;
+
+                auto& matrix_keys = item.value();
+                for (auto& matrix_key : matrix_keys.items()) {
+                    if ( matrix_dirty.contains(matrix_key.value()) ) {
+                        dirty |= true; break;
+                    }
+                }
+            }
+            if (dirty) {
+                node->frame = UINT32_MAX;
+            }
+            return dirty;
+        };
+
+        auto dirtyGroup = [&](std::string_view group_key, std::string_view entry_key, decltype(nodeCache)& nodeCache) 
+        {
+            if (!sceneJson.contains(group_key)) return;
+            if (!sceneJson.contains(entry_key)) return;
+
+            auto& rg = sceneJson[group_key];
+            auto& entrys = sceneJson[entry_key];
+
+            for (const auto& kv : entrys.items()) {
+                dirtyCheck(kv.key(), rg, nodeCache);
+            }
+        };
+
+        if (!matrix_dirty.empty()) {
+            dirtyGroup("DynamicRenderGroups", "DynamicEntries", nodeCache);
+            matrix_dirty.clear();
+        }
+        
         treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, uint& test_depth, 
                             decltype(nodeCache)& nodeCache) -> OptixTraversableHandle 
         {
