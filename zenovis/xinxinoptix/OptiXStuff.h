@@ -1106,7 +1106,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         }
         auto count = nx * ny * nc;
         for (auto i = 0; i < count; i++) {
-            rgba[i] = zeno::clamp(rgba[i], 0.f, 60000.0f);
+            img[i] = zeno::clamp(img[i], 0.f, 60000.0f);
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
