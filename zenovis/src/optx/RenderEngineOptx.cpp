@@ -720,6 +720,7 @@ struct GraphicsManager {
                         mtlid = prim_in->userData().get2<std::string>("Material_0", "");
                     }
                     auto& matids = prim_in->tris.attr<int>("matid");
+                    //changeType = userdata->get();
 
                     defaultScene.preload_mesh(reName, mtlid, matNameList, matids.data(), vs, nvs, ts, nts, vtab);
 
