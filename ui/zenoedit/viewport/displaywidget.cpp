@@ -865,9 +865,11 @@ void DisplayWidget::onRecord()
             IGraphsModel* pModel = zeno_model::createModel(nullptr);
             {
                 pModel->blockSignals(true);
-                QString controlRenderScriptZsg = "O:/resource/分布式执行控制.zsg";     //脚本zsg的路径
+                QString controlRenderScriptZsg = "O:/resource/DistributedExecutionControl.zsg";     //脚本zsg的路径
                 QString renderJobNodeName = "renderJob(1)";                         //将参数填入main图的renderJobNodeName节点
                 QString pythonNodeCls = "PythonNode";                               //执行main图的pythonnode的generate和execute
+
+                QString shotName = "shotName";
 
                 std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
                 bool ret = ZsgReader::getInstance().openFile(controlRenderScriptZsg, acceptor.get());
@@ -880,19 +882,28 @@ void DisplayWidget::onRecord()
                             pModel->updateSocketDefl(ident, { "fstart", "", pythonInfo.fstart}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "resolution_x", "", pythonInfo.resolutionx}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "resolution_y", "", pythonInfo .resolutiony}, mainidx, false);
-                            pModel->updateSocketDefl(ident, { "denoise", "", pythonInfo .needDenoise}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "denoise", "", int(pythonInfo .needDenoise)}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "samples", "", pythonInfo .samples}, mainidx, false);
-                            pModel->updateSocketDefl(ident, { "aovs", "", pythonInfo .bAov}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "aovs", "", int(pythonInfo .bAov)}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "fend", "", pythonInfo .fend}, mainidx, false);
-                            pModel->updateSocketDefl(ident, { "exr", "", pythonInfo .bExportEXR}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "exr", "", int(pythonInfo .bExportEXR)}, mainidx, false);
 
                             pModel->updateSocketDefl(ident, { "cmdParamsJson", "", pythonInfo .cmdParamsJson}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "cachePath", "", pythonInfo .cachePath}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "executor_path", "", pythonInfo .executorPath}, mainidx, false);
-                            pModel->updateSocketDefl(ident, { "optix", "", (int)pythonInfo .useOptix}, mainidx, false);
+                            pModel->updateSocketDefl(ident, { "optix", "", int(pythonInfo .useOptix)}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "renderTaskPath", "", pythonInfo .renderTaskPath}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "batchSize", "", pythonInfo .batchSize}, mainidx, false);
                             pModel->updateSocketDefl(ident, { "MachineGroup", "", pythonInfo .machineGroup}, mainidx, false);
+                            break;
+                        }
+                    }
+                    QModelIndexList shotNameLstfst = pModel->searchInSubgraph(shotName, mainidx);
+                    for (auto& idx : shotNameLstfst) {
+                        auto x = idx.data(ROLE_CUSTOM_OBJNAME).toString();
+                        if (idx.data(ROLE_CUSTOM_OBJNAME).toString() == shotName) {
+                            auto ident = idx.data(ROLE_OBJID).toString();
+                            pModel->updateParamInfo(ident, { "value", "", pythonInfo.shotname }, mainidx, false);
                             break;
                         }
                     }
