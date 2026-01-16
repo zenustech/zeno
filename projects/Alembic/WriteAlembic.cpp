@@ -315,7 +315,7 @@ void write_attrs(
     }
     if (prim->polys.size() > 0) {
         prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
-            if (_key == "faceset" || _key == "matid" || _key == "abcpath") {
+            if (_key == "faceset" || _key == "abcpath") {
                 return;
             }
             std::string key = _key;
@@ -389,9 +389,6 @@ void write_user_data(
             continue;
         }
         if (key == "abcpath_count" || zeno::starts_with(key, "abcpath_")) {
-            continue;
-        }
-        if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
             continue;
         }
         if (ud.has<int>(key)) {
