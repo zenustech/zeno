@@ -387,11 +387,12 @@ extern "C" __global__ void __raygen__rg()
         vdcrnd(prd.offset, prd.vdcseed);
 
         // Primary Ray
-        auto _attenuation = prd.attenuation;
         do {
             prd.alphaHit = false;
             traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, prd._mask_);
         } while (prd.alphaHit); // skip alpha
+
+        auto _attenuation = prd.attenuation;
 
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
         {
@@ -663,19 +664,11 @@ extern "C" __global__ void __miss__radiance()
         prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed, prd->scatterDistance);
     } else
     {
-//        prd->maxDistance =
-//            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation/prd->sssAttenBegin) * ss_alpha, sigma_t, channelPDF);
         prd->maxDistance = DisneyBSDF::sample_scatter_distance(prd->attenuation,sigma_t*ss_alpha,sigma_t,prd->seed,channelPDF);
         prd->channelPDF = channelPDF;
-
-
     }
     prd->radiance = vec3(0);
     prd->depth++;
-
-//    if(length(prd->attenuation)<1e-7f){
-//        prd->done = true;
-//    }
 }
 
 extern "C" __global__ void __miss__occlusion()

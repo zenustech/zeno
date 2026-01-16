@@ -113,7 +113,6 @@ struct RadiancePRD : CommonPRD {
     float        samplePdf;
     vec3         mask_value;
     
-    uint16_t lightmask = EverythingMask;
     uint4 record;
 
     uint8_t      depth;
