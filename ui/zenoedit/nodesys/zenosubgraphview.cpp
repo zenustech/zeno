@@ -1,4 +1,4 @@
-﻿#include "zenosubgraphscene.h"
+#include "zenosubgraphscene.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenosubgraphview.h"
 #include "zenosearchbar.h"
@@ -19,6 +19,15 @@
 #include "settings/zenosettingsmanager.h"
 #include "groupnode.h"
 #include "viewport/cameracontrol.h"
+
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
+#include <QFileInfo>
+#include <QDir>
+#include <QDebug>
 
 
 bool sceneMenuEvent(
@@ -115,6 +124,8 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     setSceneRect(rcView);
 
     gentle_zoom(1.0);
+
+    setAcceptDrops(true);
 }
 
 void _ZenoSubGraphView::showGrid(bool bShow)
@@ -347,6 +358,117 @@ void _ZenoSubGraphView::showEvent(QShowEvent *event)
         emit zoomed(factor_i_want);
     }
     _base::showEvent(event);
+}
+
+bool isImageFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为图片格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList imageExtensions = { "jpg", "jpeg", "png", "bmp", "gif", "tiff", "tif",
+                                  "webp", "ico", "svg", "psd", "raw", "dds", "pfm"};
+
+    return imageExtensions.contains(extension);
+}
+
+bool isJsonFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为JSON格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList jsonExtensions = { "json" };
+
+    return jsonExtensions.contains(extension);
+}
+
+bool isAlembicFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为Alembic格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList alembicExtensions = { "abc" };
+
+    return alembicExtensions.contains(extension);
+}
+
+bool isFbxFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为FBX格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList fbxExtensions = { "fbx" };
+
+    return fbxExtensions.contains(extension);
+}
+
+bool isHdrFile(const QString& filePath)
+{
+    // 检查文件扩展名是否为HDR格式
+    QString extension = QFileInfo(filePath).suffix().toLower();
+    QStringList hdrExtensions = { "hdr", "exr" };
+
+    return hdrExtensions.contains(extension);
+}
+
+void _ZenoSubGraphView::dragMoveEvent(QDragMoveEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls) {
+            if (!url.isLocalFile()) {
+                continue;
+            }
+            QString filePath = url.toLocalFile();
+            if (isHdrFile(filePath) || isImageFile(filePath) || isJsonFile(filePath) || isAlembicFile(filePath) || isFbxFile(filePath)) {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+    event->ignore();
+}
+
+void _ZenoSubGraphView::dropEvent(QDropEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        QList<QUrl> urls = event->mimeData()->urls();
+        for (const QUrl& url : urls) {
+            if (!url.isLocalFile()) {
+                continue;
+            }
+            QString filePath = url.toLocalFile();
+            QString nativePath = QDir::toNativeSeparators(filePath);
+
+            event->acceptProposedAction();
+
+            auto m_subgIdx = m_scene->subGraphIndex();
+            NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+            
+            if (isHdrFile(filePath)) {
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "HDRSky", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", nativePath }, m_subgIdx, false);
+                return;
+            }
+            else if (isImageFile(filePath)) {
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "SmartTexture2D", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", nativePath }, m_subgIdx, false);
+                return;
+            }
+            else if (isJsonFile(filePath)) {
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "ReadJson", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", nativePath }, m_subgIdx, false);
+                return;
+            }
+            else if (isAlembicFile(filePath)) {
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "ReadAlembicFile", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", nativePath }, m_subgIdx, false);
+                return;
+            }
+            else if (isFbxFile(filePath)) {
+                QString id = NodesMgr::createNewNode(pModel, m_subgIdx, "ReadFBXFile", mapToScene(event->pos()));
+                pModel->updateSocketDefl(id, { "path", "", nativePath }, m_subgIdx, false);
+                return;
+            }
+        }
+    }
+    event->ignore();
 }
 
 void _ZenoSubGraphView::mousePressEvent(QMouseEvent* event)

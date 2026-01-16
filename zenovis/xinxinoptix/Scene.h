@@ -515,10 +515,10 @@ public:
             if (nullptr == node) {
                 node = std::make_shared<SceneNode>();
             } else {
-                if (node->frame == frameid) {
-                    test_depth = node->depth;
-                    return node->handle;
-                }
+//                if (node->frame == frameid) {
+//                    test_depth = node->depth;
+//                    return node->handle;
+//                }
             }
             node->frame = frameid;
             std::vector<OptixInstance> instanced {};

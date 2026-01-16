@@ -250,6 +250,8 @@ if (mats.nrm != n) {
 }
 
     if (has_nrm) { // has input from node graph
+        float c = abs(dot(att_V,att_N));
+        mat_normal = mix(vec3(0,0,1),mat_normal,c);
         n = mat_normal.x * t + mat_normal.y * b + mat_normal.z * n;
         b = cross(t, n);
         t = cross(n, b);

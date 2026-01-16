@@ -558,13 +558,14 @@ extern "C" __global__ void __raygen__rg()
             tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
             const float3 accum_normal_prev = params.normal_buffer[ image_index ];
             tmp_normal = lerp(accum_normal_prev, tmp_normal, a);
-
-            params.albedo_buffer[ image_index ] = tmp_albedo;
-            params.normal_buffer[ image_index ] = tmp_normal;
         #endif
     }
 
     params.accum_buffer[ image_index ] = accum_color;
+    #if DENOISE
+        params.albedo_buffer[ image_index ] = tmp_albedo;
+        params.normal_buffer[ image_index ] = tmp_normal;
+    #endif
 
     #if __AOV__
         params.accum_buffer_D[ image_index ] = accum_color_d;
