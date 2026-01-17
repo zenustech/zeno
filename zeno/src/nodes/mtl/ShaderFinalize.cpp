@@ -153,6 +153,14 @@ struct ShaderFinalize : INode {
             opacity = max(0.0f, 1.0f - opacity);
             j["opacity"] = opacity;
         }
+        if (has_input2<float>("shadowReceiver")) {
+            auto shadowReceiver = get_input2<float>("shadowReceiver");
+            if (shadowReceiver > 0.0) {
+                j["opacity"] = 2.0f;
+            }
+        } else {
+            j["opacity"] = 2.0f;
+        }
         mtl->parameters = j.dump();
 
         if (has_input("extensionsCode"))

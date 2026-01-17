@@ -237,7 +237,7 @@ namespace detail {
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
 void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir, 
-                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, float3* RadianceWithoutShadow=nullptr) {
+                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
     const float _SKY_PROB_ = params.num_lights>0?0.5:1.0f;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
@@ -265,9 +265,6 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
 
         uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
-
-        // bool enabled = light.mask & prd->lightmask;
-        // if (!enabled) { return; }
 
         lightPickProb *= pick.prob;
         LightSampleRecord lsr;
@@ -567,10 +564,9 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             shadowPRD.maxDistance = lsr.dist;
             
             traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD, ~LightMatMask & EverythingMask);
-            auto light_attenuation = shadowPRD.attanuation;
-
-            if (nullptr==RadianceWithoutShadow && lengthSquared(light_attenuation) == 0.0f) return;
-
+            
+            const auto& light_attenuation = shadowPRD.attanuation;
+            if (lengthSquared(shadowPRD.attanuation)==0) return;
             auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
             auto misWeight = 1.0f;
 
@@ -583,10 +579,6 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
 
                 float3 radianceNoShadow = emission * bxdf_value;
                 radianceNoShadow *= misWeight;
-
-                if (nullptr != RadianceWithoutShadow) {
-                    *RadianceWithoutShadow = radianceNoShadow;
-                }
 
                 if constexpr (!detail::is_void<TypeAux>::value) {
                     auto tmp = light_attenuation * misWeight;
@@ -623,10 +615,8 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
                         0, // tmin
                         FLT_MAX, // tmax,
                         &shadowPRD, ~LightMatMask & EverythingMask);
-
-
-            if (nullptr==RadianceWithoutShadow && lengthSquared(shadowPRD.attanuation) == 0.0f) return;
-
+            
+            if (lengthSquared(shadowPRD.attanuation)==0) return;
             auto bxdf_value = evalBxDF(sampleDir, wo, scatterPDF);
 
             float tmp = 1.0f / samplePDF;
@@ -641,10 +631,6 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             }
 
             float3 radianceNoShadow = illum * tmp * bxdf_value; 
-
-            if (nullptr != RadianceWithoutShadow) {
-                *RadianceWithoutShadow += radianceNoShadow;
-            }
 
             if constexpr (!detail::is_void<TypeAux>::value) {
                 (*taskAux)(illum * tmp * shadowPRD.attanuation);

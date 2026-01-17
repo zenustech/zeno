@@ -261,7 +261,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
         }
 
         prd->depth += 1;
-        prd->lightmask = VolumeMatMask;
 
         ShadowPRD shadowPRD {};
         shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
@@ -363,7 +362,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     scattering = vol_out.albedo;
     
     prd->depth += 1;
-    prd->lightmask = VolumeMatMask;
 
     ShadowPRD shadowPRD {};
     shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
