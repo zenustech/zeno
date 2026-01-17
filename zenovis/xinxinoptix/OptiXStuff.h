@@ -1010,6 +1010,10 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             return;
         }
         nc = 4;
+        auto count = nx * ny * nc;
+        for (auto i = 0; i < count; i++) {
+            rgba[i] = zeno::clamp(rgba[i], 0.f, 60000.0f);
+        }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         for (auto i = 0; i < ny / 2; i++) {
@@ -1099,6 +1103,10 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
             zeno::log_error("loading hdr texture failed:{}", path);
             newTexture = std::make_shared<cuTexture>();
             return;
+        }
+        auto count = nx * ny * nc;
+        for (auto i = 0; i < count; i++) {
+            img[i] = zeno::clamp(img[i], 0.f, 60000.0f);
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);

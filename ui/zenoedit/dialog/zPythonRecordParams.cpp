@@ -9,6 +9,7 @@
 #include "zeno/utils/UserData.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
+#include "zenomainwindow.h"
 
 zPythonRecordParams::zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget *parent)
     : QDialog(parent)
@@ -24,6 +25,15 @@ zPythonRecordParams::zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget 
     
     int row = 0;
     
+    QString path = zenoApp->graphsManagment()->zsgPath();
+    QFileInfo fi(path);
+    QString zsgpath = fi.absoluteFilePath();
+
+    formLayout->addWidget(new QLabel("shot Name:"), row, 0);
+    m_shotName = new QLineEdit();
+    m_shotName->setText(fi.baseName());
+    formLayout->addWidget(m_shotName, row++, 1);
+
     // Add VideoRecInfo parameters section with a separator
     formLayout->addWidget(new QLabel("<b>Video Recording Parameters</b>"), row, 0, 1, 2);
     row++;
@@ -99,6 +109,11 @@ zPythonRecordParams::zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget 
     m_optixCheckBox->setChecked(true);
     formLayout->addWidget(m_optixCheckBox, row++, 1);
     
+    formLayout->addWidget(new QLabel("render task path:"), row, 0);
+    m_renderTaskZsgPath = new QLineEdit();
+    m_renderTaskZsgPath->setText(zsgpath);
+    formLayout->addWidget(m_renderTaskZsgPath, row++, 1);
+
     // batchSize
     formLayout->addWidget(new QLabel("Batch Size:"), row, 0);
     m_batchSizeEdit = new QLineEdit();
@@ -106,16 +121,20 @@ zPythonRecordParams::zPythonRecordParams(const VideoRecInfo& videoInfo, QWidget 
     m_batchSizeEdit->setText("20");
     formLayout->addWidget(m_batchSizeEdit, row++, 1);
     
+    auto mainw = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainw);
+    auto timelineInfo = mainw->timelineInfo();
+
     formLayout->addWidget(new QLabel("frame start:"), row, 0);
     m_frameStart = new QLineEdit();
     m_frameStart->setValidator(new QIntValidator(0, INT_MAX, this));
-    m_frameStart->setText("0");
+    m_frameStart->setText(QString::number(timelineInfo.beginFrame));
     formLayout->addWidget(m_frameStart, row++, 1);
 
     formLayout->addWidget(new QLabel("frame end:"), row, 0);
     m_frameEnd = new QLineEdit();
     m_frameEnd->setValidator(new QIntValidator(0, INT_MAX, this));
-    m_frameEnd->setText("0");
+    m_frameEnd->setText(QString::number(timelineInfo.endFrame));
     formLayout->addWidget(m_frameEnd, row++, 1);
 
     // machineGroup
@@ -139,6 +158,13 @@ zPythonRecordParams::~zPythonRecordParams()
 
 bool zPythonRecordParams::getInfo(PythonRecordInfo& info) const
 {
+    if (m_renderTaskZsgPath->text().isEmpty())
+    {
+        return false;
+    }
+
+    info.shotname = m_shotName->text();
+
     // Copy VideoRecInfo parameters from UI controls
     info.fstart = m_frameStart->text().toInt();
     info.resolutionx = m_resolutionXEdit->text().toInt();
@@ -150,18 +176,12 @@ bool zPythonRecordParams::getInfo(PythonRecordInfo& info) const
     info.fend = m_frameEnd->text().toInt();
     info.bExportEXR = m_exportEXRCheckBox->isChecked();
 
-    QString path = zenoApp->graphsManagment()->zsgPath();
-    if (path.isEmpty())
-        return false;
-    QFileInfo fi(path);
-    QString zsgpath = fi.absoluteFilePath();
-
     // Set Python-specific parameters
     info.cmdParamsJson = m_cmdParamsJsonEdit->text();
     info.cachePath = m_cachePathEdit->text();
     info.executorPath = m_executorPathEdit->text();
     info.useOptix = m_optixCheckBox->isChecked();
-    info.renderTaskPath = zsgpath;
+    info.renderTaskPath = m_renderTaskZsgPath->text();
     info.batchSize = m_batchSizeEdit->text().toInt();
     info.machineGroup = m_machineGroupEdit->text();
 

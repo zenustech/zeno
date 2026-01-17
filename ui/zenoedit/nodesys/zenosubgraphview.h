@@ -1,4 +1,4 @@
-﻿#ifndef __ZENO_GRAPHVIEW_H__
+#ifndef __ZENO_GRAPHVIEW_H__
 #define __ZENO_GRAPHVIEW_H__
 
 #include <QtWidgets>
@@ -37,6 +37,9 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
     void scrollContentsBy(int dx, int dy) override;
     void showEvent(QShowEvent *event) override;
+
+    void dragMoveEvent(QDragMoveEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 public slots:
     void redo();
