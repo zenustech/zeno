@@ -316,7 +316,8 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
-
+    if(denoise == true) state.params.outside_random_number = 0;
+    
         CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
