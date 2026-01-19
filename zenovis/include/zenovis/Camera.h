@@ -30,6 +30,7 @@ struct ZOptixCameraSettingInfo {
     bool panorama_camera = false;
     bool panorama_vr180 = false;
     float pupillary_distance = 0.06;
+    int num_samples = 1;
 };
 
 struct Camera {
@@ -93,7 +94,7 @@ public:
     float get_safe_frames() const;
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
-    void setPhysicalCamera(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance);
+    void setPhysicalCamera(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance, int num_samples = 1);
     void placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up);
     void placeCamera(glm::vec3 pos, glm::quat rotation);
     void focusCamera(float cx, float cy, float cz, float radius);

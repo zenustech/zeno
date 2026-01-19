@@ -1120,7 +1120,8 @@ struct GraphicsManager {
                             ud.get2<bool>("exposure"),
                             ud.get2<bool>("panorama_camera"),
                             ud.get2<bool>("panorama_vr180"),
-                            ud.get2<float>("pupillary_distance")
+                            ud.get2<float>("pupillary_distance"),
+                            ud.get2<int>("num_samples")
                         );
                     }
                 }
@@ -1174,7 +1175,8 @@ struct GraphicsManager {
                                 ud.get2<bool>("exposure"),
                                 ud.get2<bool>("panorama_camera"),
                                 ud.get2<bool>("panorama_vr180"),
-                                ud.get2<float>("pupillary_distance")
+                                ud.get2<float>("pupillary_distance"),
+                                ud.get2<int>("num_samples")
                             );
                         }
                     }
@@ -2576,7 +2578,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
+        xinxinoptix::optixrender(0, scene->camera->zOptixCameraSettingInfo.num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 

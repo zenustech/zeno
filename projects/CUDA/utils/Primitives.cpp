@@ -4736,11 +4736,12 @@ ZENDEFNODE(RemovePrimitiveTopo, {
 struct ShuffleParticles : INode {
     void apply() override {
         auto prim = get_input2<PrimitiveObject>("prim");
+        auto seed = get_input2<int>("seed");
         auto n = prim->size();
 
         auto &pos = prim->verts.values;
         size_t m = std::max((int)n / 3, 1);
-        zs::u64 sd = 1;
+        zs::u64 sd = seed;
         for (int iter = 0; iter != m; ++iter) {
             auto i = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
             auto j = zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) % (size_t)n;
@@ -4764,6 +4765,7 @@ struct ShuffleParticles : INode {
 ZENDEFNODE(ShuffleParticles, {
                                  {
                                      {"PrimitiveObject", "prim"},
+                                     {"int","seed", "1"},
                                  },
                                  {{"PrimitiveObject", "prim"}},
                                  {},

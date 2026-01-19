@@ -1906,9 +1906,7 @@ static void updateRayGen(bool aov, bool denoise) {
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     bool imageRendered = false;
-    samples = zeno::envconfig::getInt("SAMPLES", samples);
-    // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
-    zeno::log_debug("rendering samples {}", samples);
+
 
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
 #ifdef OPTIX_BASE_GL
