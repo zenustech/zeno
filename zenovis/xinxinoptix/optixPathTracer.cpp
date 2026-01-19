@@ -1729,7 +1729,7 @@ std::vector<float> rgba_to_rgb(const std::vector<float> &rgba_data, int w, int h
     }
     return rgb_data;
 }
-std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
+std::vector<float> optixgetimg_color(int w, int h, bool denoising, bool up2) {
     auto tex_data = optixgetimg_extra2("color", w, h);
     if (!denoising) {
         return tex_data;
@@ -1738,7 +1738,10 @@ std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
     auto albedo_data = rgb_to_rgba(optixgetimg_extra2("albedo", w, h), w, h);
     auto normal_data = rgb_to_rgba(optixgetimg_extra2("normal", w, h), w, h);
 
-    std::vector<float> output_data(w * h * 4);
+    int output_w = up2 ? 2 * w: w;
+    int output_h = up2 ? 2 * h: h;
+    std::vector<float> output_data(output_w * output_h * 4);
+
     OptiXDenoiser::Data data;
     data.width     = w;
     data.height    = h;
@@ -1748,11 +1751,21 @@ std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
     data.flow      = nullptr;
     data.flowtrust = nullptr;
     data.outputs.push_back( output_data.data() );
-    denoiser.init(data);
+    denoiser.init(
+        data
+        , 0
+        , 0
+        , false
+        , false
+        , false
+        , up2
+        , OPTIX_DENOISER_ALPHA_MODE_COPY
+        , false
+    );
     denoiser.exec();
     denoiser.getResults();
     denoiser.finish();
-    return rgba_to_rgb(output_data, w, h);
+    return rgba_to_rgb(output_data, output_w, output_h);
 }
 
 std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
@@ -2031,12 +2044,15 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         else {
             std::string jpg_native_path = zeno::create_directories_when_write_file(path);
             if (denoise) {
-                auto float_data = optixgetimg_color(w, h, true);
-                std::vector<uint8_t> u8_data(w * h * 3);
+                bool up2 = false;
+                auto float_data = optixgetimg_color(w, h, true, up2);
+                int output_w = up2 ? 2 * w: w;
+                int output_h = up2 ? 2 * h: h;
+                std::vector<uint8_t> u8_data(output_w * output_h * 3);
                 for (auto i = 0; i < u8_data.size(); i++) {
                     u8_data[i] = int(glm::clamp(pow(float_data[i], 1.0f/2.2f) * 255.0f, 0.0f, 255.0f));
                 }
-                stbi_write_jpg(jpg_native_path.c_str(), w, h, 3, u8_data.data(), 100);
+                stbi_write_jpg(jpg_native_path.c_str(), output_w, output_h, 3, u8_data.data(), 100);
             }
             else {
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);
