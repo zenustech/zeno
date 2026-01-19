@@ -1121,7 +1121,9 @@ struct GraphicsManager {
                             ud.get2<bool>("panorama_camera"),
                             ud.get2<bool>("panorama_vr180"),
                             ud.get2<float>("pupillary_distance"),
-                            ud.get2<int>("num_samples")
+                            ud.get2<int>("num_samples"),
+                            ud.get2<int>("ray_bounce"),
+                            ud.get2<bool>("up2x")
                         );
                     }
                 }
@@ -1176,7 +1178,9 @@ struct GraphicsManager {
                                 ud.get2<bool>("panorama_camera"),
                                 ud.get2<bool>("panorama_vr180"),
                                 ud.get2<float>("pupillary_distance"),
-                                ud.get2<int>("num_samples")
+                                ud.get2<int>("num_samples"),
+                                ud.get2<int>("ray_bounce"),
+                                ud.get2<bool>("up2x")
                             );
                         }
                     }

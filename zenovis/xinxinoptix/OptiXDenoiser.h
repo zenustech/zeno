@@ -124,6 +124,7 @@ public:
     // Cleanup state, deallocate memory -- normally done only once per render session.
     void finish();
 
+    std::optional<int> render_session_id;
 private:
     // --- Test flow vectors: Flow is applied to noisy input image and written back to result.
     // --- No denoising.

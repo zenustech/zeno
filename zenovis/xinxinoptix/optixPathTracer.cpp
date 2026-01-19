@@ -1751,6 +1751,14 @@ std::vector<float> optixgetimg_color(int w, int h, bool denoising, bool up2) {
     data.flow      = nullptr;
     data.flowtrust = nullptr;
     data.outputs.push_back( output_data.data() );
+    auto &session_ud = zeno::getSession().userData();
+    int render_session_id = session_ud.get2<int>("render_session_id", 0);
+    if (denoiser.render_session_id.has_value() && denoiser.render_session_id.value() == render_session_id) {
+    }
+    else {
+        denoiser = OptiXDenoiser();
+        denoiser.render_session_id = render_session_id;
+    }
     denoiser.init(
         data
         , 0
@@ -2042,7 +2050,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         else {
             std::string jpg_native_path = zeno::create_directories_when_write_file(path);
             if (denoise) {
-                bool up2 = false;
+                bool up2 = ud.get2("optix_render_up2x", false);
                 auto float_data = optixgetimg_color(w, h, true, up2);
                 int output_w = up2 ? 2 * w: w;
                 int output_h = up2 ? 2 * h: h;
