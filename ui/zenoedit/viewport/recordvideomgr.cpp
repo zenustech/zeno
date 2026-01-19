@@ -120,7 +120,13 @@ REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
     }
     //Zenovis::GetInstance().blockSignals(false);
     QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
-    QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
+    QString outPath;
+    if (m_recordInfo.videoname.contains('/') || m_recordInfo.videoname.contains('\\')) {
+        outPath = m_recordInfo.videoname;
+    }
+    else {
+        outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
+    }
 
     QString cmd = QString("ffmpeg -y -start_number %1 -r %2 -i %3 -b:v %4k -c:v mpeg4 %5")
               .arg(m_recordInfo.frameRange.first)
