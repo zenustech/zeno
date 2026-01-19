@@ -25,7 +25,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     }
 }
 
-void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance) {
+void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, int scale, bool aces, bool exposure, bool panorama_camera, bool panorama_vr180, float pupillary_distance, int num_samples) {
     this->zOptixCameraSettingInfo.aperture = aperture;
     this->zOptixCameraSettingInfo.shutter_speed = shutter_speed;
     this->zOptixCameraSettingInfo.iso = iso;
@@ -35,6 +35,7 @@ void Camera::setPhysicalCamera(float aperture, float shutter_speed, float iso, i
     this->zOptixCameraSettingInfo.panorama_camera = panorama_camera;
     this->zOptixCameraSettingInfo.panorama_vr180 = panorama_vr180;
     this->zOptixCameraSettingInfo.pupillary_distance = pupillary_distance;
+    this->zOptixCameraSettingInfo.num_samples = num_samples;
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 view, glm::vec3 up) {
