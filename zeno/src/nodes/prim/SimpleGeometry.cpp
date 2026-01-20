@@ -23,6 +23,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 #include <cstdlib>
+#include "zeno/utils/bit_operations.h"
 
 #define ROTATE_COMPUTE                          \
     auto gp = glm::vec3(p[0], p[1], p[2]);      \
@@ -1205,7 +1206,7 @@ struct CreateSphere : zeno::INode {
  
         transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
 
-        auto n_transform = glm::transpose(glm::inverse(transform));
+        auto n_transform = glm::transpose(glm::inverse(glm::mat3(transform)));
 
         nors.resize(verts.size());
         for(int i = 0; i < verts.size(); i++){
@@ -1213,7 +1214,7 @@ struct CreateSphere : zeno::INode {
             auto p = verts[i];
             auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
             verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
-            auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
+            auto gn = glm::normalize(n_transform * zeno::bit_cast<glm::vec3>(n));
             nors[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
 
