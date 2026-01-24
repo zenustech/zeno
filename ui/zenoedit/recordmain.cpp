@@ -1,4 +1,4 @@
-﻿#include "AudioFile.h"
+#include "AudioFile.h"
 #include "zeno/extra/assetDir.h"
 #define MINIMP3_IMPLEMENTATION
 #define MINIMP3_FLOAT_OUTPUT
@@ -258,7 +258,7 @@ int record_main(const QCoreApplication& app)
         });
 
         bool ret = AppHelper::openZsgAndRun(param, launchparam);
-        ZERROR_EXIT(ret, -1); //will launch tcp server to start a calc proc.
+        ZERROR_EXIT(ret, 200); //will launch tcp server to start a calc proc.计算错误返回200
 
         if (param.bRecord && !param.sPath.isEmpty()) {
             //get the final zencache path, like `2023-07-06 18-29-14`
@@ -420,7 +420,7 @@ int record_main(const QCoreApplication& app)
             QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
                 if (QProcess::Crashed == error) {
                     std::cout << "\n[record] render process has crashed\n" << std::flush;
-                    QCoreApplication::exit(-2);
+                    QCoreApplication::exit(100);//渲染错误返回100
                 }
             });
         }
