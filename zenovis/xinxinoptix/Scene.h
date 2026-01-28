@@ -672,6 +672,9 @@ public:
         }
         if (0 == staticRenderGroup) {
             staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic);
+        } else {
+            auto depth = nodeCacheStatic["StaticRenderGroups"]->depth;
+            maxNodeDepth = max(maxNodeDepth, depth);
         }
         maxNodeDepth += 1;
         gather();
