@@ -32,14 +32,16 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     int j = start/nx;
 
     uv = { (i+r0)/nx, (j+r1)/ny };
-    uv.x = clamp(uv.x, 0.5f/nx, 1.0f - 0.5f/nx);
-    uv.y = clamp(uv.y, 0.5f/ny, 1.0f - 0.5f/ny);
+    uv.x = clamp(uv.x, 0.0f, 1.0f);
+    uv.y = clamp(uv.y, 0.0f, 1.0f);
 
     float theta = uv.x * 2.0f * M_PIf - 0.5 * M_PIf;
-    float phi = uv.y * M_PIf;
+    float phi = uv.y * M_PIf  - 0.5f * M_PIf;
+    float cosPhi = cosf(phi);
     //float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sinf(phi);
     //pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
-    vec3 dir = vec3(cosf(theta), sinf(phi - 0.5f * M_PIf), sinf(theta));
+
+    vec3 dir = vec3( cosPhi * cosf(theta), sinf(phi), cosPhi*sinf(theta));
 
     const auto& rotation = params.sky_onitator;
     dir = optix_impl::optixTransformVector(rotation[0], rotation[1], rotation[2], dir);
