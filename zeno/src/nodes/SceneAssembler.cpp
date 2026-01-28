@@ -736,20 +736,16 @@ ZENDEFNODE( MergeMultiScenes, {
 struct FlattenSceneTree : zeno::INode {
     void apply() override {
         auto scene = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
-        auto use_static = get_input2<bool>("use_static");
-        scene->type = use_static? "static" : "dynamic";
-        scene->matrixMode = get_input2<std::string>("matrixMode");
         scene->flatten();
+        auto output_scene = scene->to_list();
 
-        set_output2("scene", scene);
+        set_output2("scene", output_scene);
     }
 };
 
 ZENDEFNODE( FlattenSceneTree, {
     {
         "scene",
-        {"bool", "use_static", "1"},
-        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
     },
     {
         {"scene"}
