@@ -673,7 +673,11 @@ public:
         if (0 == staticRenderGroup) {
             staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic);
         } else {
-            auto depth = nodeCacheStatic["StaticRenderGroups"]->depth;
+            uint8_t depth = 1;
+            auto find = nodeCacheStatic.find("StaticRenderGroups");
+            if (find != nodeCacheStatic.end()) {
+                depth = find->second->depth;
+            }
             maxNodeDepth = max(maxNodeDepth, depth);
         }
         maxNodeDepth += 1;
