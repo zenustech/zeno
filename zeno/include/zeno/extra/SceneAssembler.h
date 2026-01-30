@@ -13,6 +13,7 @@
 #include "zeno/types/ListObject.h"
 #include "zeno/types/UserData.h"
 #include "zeno/utils/log.h"
+#include "zeno/utils/string.h"
 #include "zeno/utils/bit_operations.h"
 
 using Json = nlohmann::json;
@@ -151,7 +152,17 @@ struct SceneObject : IObjectClone<SceneObject> {
 
     std::string
     get_new_root_name(const std::string &root_name, const std::string &new_root_name, const std::string &path) {
-        return new_root_name + path.substr(root_name.size());
+        if (starts_with(path, root_name)) {
+            return new_root_name + path.substr(root_name.size());
+        }
+        else {
+            if (starts_with(path, "/")) {
+                return new_root_name + path;
+            }
+            else {
+                return new_root_name + "/" + path;
+            }
+        }
     }
 
     std::shared_ptr <SceneObject> root_rename(std::string new_root_name, std::vector<glm::mat4> root_xform) {

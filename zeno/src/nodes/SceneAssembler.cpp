@@ -1148,6 +1148,102 @@ ZENDEFNODE( MakeSceneNode, {
     {
     },
     {
+        "deprecated",
+    },
+});
+
+struct MakeSceneNode_v2 : zeno::INode {
+    int inputObjType = 0;
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto session = &zeno::getSession();
+        int currframe = session->globalState->frameid;
+        int beginframe = session->globalComm->beginFrameNumber;
+        std::string mode = get_input2<std::string>("stampMode");
+        if (mode == "UnChanged") {
+            if (currframe != beginframe) {
+                std::shared_ptr<IObject> unchangeObj;
+                unchangeObj = session->globalComm->constructEmptyObj(inputObjType);
+                unchangeObj->m_userData = prim->userData();
+                prim = std::dynamic_pointer_cast<PrimitiveObject>(unchangeObj);
+            }
+            prim->userData().set2("stamp-change", "UnChanged");
+        } else if (mode == "TotalChange") {
+            prim->userData().set2("stamp-change", "TotalChange");
+        }
+        inputObjType = session->globalComm->getObjType(prim);
+        auto &ud = prim->userData();
+        if (!ud.has<std::string>("ResourceType")) {
+            ud.set2("ResourceType", "Mesh");
+        }
+        if (!ud.has<std::string>("ObjectName")) {
+            ud.set2("ObjectName", get_input2<std::string>("ObjectName"));
+        }
+        auto bbox = zeno::primBoundingBox2(prim.get());
+
+        auto local_xform = glm::mat4(1);
+        if (get_input2<bool>("centralize") && bbox.has_value()) {
+            vec3f bmin = {};
+            vec3f bmax = {};
+            std::tie(bmin, bmax) = bbox.value();
+            auto center = (bmin + bmax) * 0.5;
+            bmin -= center;
+            bmax -= center;
+            bbox = {bmin, bmax};
+            for (auto &p: prim->verts) {
+                p -= center;
+            }
+            local_xform[3] = {center[0], center[1], center[2], 1};
+        }
+        if (bbox.has_value()) {
+            vec3f bmin = {};
+            vec3f bmax = {};
+            std::tie(bmin, bmax) = bbox.value();
+            prim->userData().setLiterial("_bboxMin", bmin);
+            prim->userData().setLiterial("_bboxMax", bmax);
+        }
+
+        auto scene_tree = std::make_shared<SceneObject>();
+        auto obj_name = prim->userData().get2<std::string>("ObjectName");
+        auto node_name = obj_name + "_node";
+        if (!zeno::starts_with(node_name, "/")) {
+            node_name = "/" + node_name;
+        }
+        scene_tree->root_name = node_name;
+        scene_tree->type = get_input2<std::string>("type");
+        scene_tree->matrixMode = get_input2<std::string>("matrixMode");
+        SceneTreeNode root_node;
+        root_node.matrix = scene_tree->root_name + "_m";
+        scene_tree->node_to_matrix[root_node.matrix] = {glm::mat4(1)};
+        scene_tree->prim_list[obj_name] = prim;
+        root_node.meshes.push_back(obj_name);
+
+        scene_tree->scene_tree[scene_tree->root_name] = root_node;
+
+        if (has_input("xforms")) {
+            auto xforms = get_xform_from_prim(get_input2<PrimitiveObject>("xforms"));
+            scene_tree->node_to_matrix[scene_tree->root_name + "_m"] = xforms;
+        }
+        auto scene = scene_tree->to_list();
+        set_output2("scene", scene);
+    }
+};
+ZENDEFNODE( MakeSceneNode_v2, {
+    {
+        {"prim"},
+        {"enum UnChanged TotalChange", "stampMode", "UnChanged"},
+        {"string", "ObjectName", ""},
+        {"enum static dynamic", "type", "dynamic"},
+        {"enum UnChanged TotalChange", "matrixMode", "TotalChange"},
+        {"bool", "centralize", "0"},
+        {"xforms"},
+    },
+    {
+        "scene",
+    },
+    {
+    },
+    {
         "Scene",
     },
 });
