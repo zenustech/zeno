@@ -146,33 +146,8 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     }
 
     assert(tmp_grids.size() != 0);
-    auto baseGrid = tmp_grids.front();
     
     file.close();
-
-    //const auto parent_matrix = volume.transform;
-
-    // const auto child_matrix = [&]() -> auto {
-
-    //     auto tmp = baseGrid->transform().baseMap()->getAffineMap()->getMat4();
-    //     glm::mat4 result;
-    //     for (uint i=0; i<16; ++i) {
-    //         auto ele = *(tmp[0]+i);
-    //         result[i/4][i%4] = ele;
-    //     }
-    //     return result;
-    // }();
-
-    //auto result_matrix = parent_matrix * child_matrix;  
-
-    //auto vdb_transform = baseGrid->transform().copy(); //.createLinearTransform();
-    //auto vdb_matrix = vdb_transform->baseMap()->getAffineMap()->getMat4();
-
-    //for (uint i=0; i<16; ++i) {
-    //    *(vdb_matrix[0]+i) = result_matrix[i/4][i%4];
-    //}
-
-    //auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
 
     volume.grids.clear();
     volume.grids.reserve(tmp_grids.size());
@@ -282,55 +257,44 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
     auto& accel = *volume.node;
     {
 		// get this grid's aabb
-        sutil::Aabb aabb = [&]()
-        {
-            if (volume.grids.size() == 0) {
-                return sutil::Aabb( {-0.5, -0.5, -0.5}, {0.5, 0.5, 0.5} );
-            }
-            // indexBBox returns the extrema of the (integer) voxel coordinates.
-            // Thus the actual bounds of the space covered by those voxels extends
-            // by one unit (or one "voxel size") beyond those maximum indices.
-            auto baseGrid = volume.grids.front();
-            auto bbox = baseGrid->indexedBox();
-            nanovdb::Coord boundsMin( bbox.min() );
-            nanovdb::Coord boundsMax( bbox.max() + nanovdb::Coord( 1 ) ); // extend by one unit
+        sutil::Aabb aabb = sutil::Aabb( make_float3(0), make_float3(1) );
+        
+        auto aabb_ptr = &aabb;
+        auto count = 1;
 
-            float3 min = { 
-                static_cast<float>( boundsMin[0] ), 
-                static_cast<float>( boundsMin[1] ), 
-                static_cast<float>( boundsMin[2] )};
-            float3 max = {
-                static_cast<float>( boundsMax[0] ),
-                static_cast<float>( boundsMax[1] ),
-                static_cast<float>( boundsMax[2] )};
-
-            return sutil::Aabb( min, max );
-        }();
+        if (!volume.aabbs.empty()) {
+            aabb_ptr = volume.aabbs.data();
+            count = volume.aabbs.size();
+        }
+        size_t byte_size = sizeof(sutil::Aabb) * count;
 
 		// up to device
-        xinxinoptix::raii<CUdeviceptr> d_aabb;
-        CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &d_aabb ), sizeof( sutil::Aabb ), 0 ) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void* >(  d_aabb.handle ), &aabb, 
-            sizeof( sutil::Aabb ), cudaMemcpyHostToDevice ) );
+        auto& d_aabb = *volume.d_aabb;
+        d_aabb.allocAndUpload(byte_size, (const uint8_t*)aabb_ptr);
 
         // Make build input for this grid
         uint32_t aabb_input_flags = OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL;
         OptixBuildInput build_input = {};
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers = &d_aabb;
+
+        auto jumped = ((sutil::Aabb*)d_aabb.handle + 1);
+        CUdeviceptr tmp[1] = { (CUdeviceptr)jumped }; 
+        build_input.customPrimitiveArray.aabbBuffers = &tmp[0];
+        
         build_input.customPrimitiveArray.flags = &aabb_input_flags;
         build_input.customPrimitiveArray.numSbtRecords = 1;
-        build_input.customPrimitiveArray.numPrimitives = 1;
+        build_input.customPrimitiveArray.numPrimitives = count;
         build_input.customPrimitiveArray.sbtIndexOffsetBuffer = 0;
         build_input.customPrimitiveArray.sbtIndexOffsetSizeInBytes = 0;
         build_input.customPrimitiveArray.primitiveIndexOffset = 0;
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION; //| OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
         accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
 
-        xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 8);
+        xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 128);
         cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
+        cudaMemcpy((char*)accel.buffer.handle+128-16, &d_aabb.handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
         return;
     }
 }

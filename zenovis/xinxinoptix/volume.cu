@@ -22,8 +22,19 @@ __inline__ __device__ bool rayHit(const float3& ray_ori, const float3& ray_dir, 
                                      reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
     if (bounds == 0)
         return iray.intersects( box, t0, t1 );
+
+    auto maxi = box.max();
+    auto mini = box.min();
+    auto diff = maxi - mini;
+    auto center = mini + diff/2;
+    
     if (bounds == 1)
-        return iray.intersects({0,0,0}, box.max()[1], t0, t1);
+    {
+        iray.setEye(iray.eye() - center);
+        iray.setEye(iray.eye() / diff );
+        iray.setDir(iray.dir() / diff );
+        return iray.intersects({0,0,0}, 0.5f, t0, t1);
+    }
     if (bounds == 2) {
 
         iray.intersects( box, t0, t1 );
@@ -31,14 +42,11 @@ __inline__ __device__ bool rayHit(const float3& ray_ori, const float3& ray_dir, 
         auto b_t0 = t0;
         auto b_t1 = t1;
 
-        iray.setEye( iray.eye() * nanovdb::Vec3f{2,1,2} );
-        iray.setDir( iray.dir() * nanovdb::Vec3f{2,1,2} );
-        bool hit = iray.intersects({0,box.min()[1],0}, box.max()[1]*2, t0, t1);
-
-        auto v0 = iray.dir() * t0 * nanovdb::Vec3f{0.5,1,0.5};
-        t0 = v0.length();
-        auto v1 = iray.dir() * t1 * nanovdb::Vec3f{0.5,1,0.5};
-        t1 = v1.length();
+        nanovdb::Vec3f scale(2,1,2);
+        iray.setEye( iray.eye() - center);
+        iray.setEye( iray.eye() * scale / diff );
+        iray.setDir( iray.dir() * scale / diff );
+        bool hit = iray.intersects({0,-0.5f,0}, 1, t0, t1);
 
         t0 = max(b_t0, t0);
         t1 = min(b_t1, t1);
@@ -47,20 +55,22 @@ __inline__ __device__ bool rayHit(const float3& ray_ori, const float3& ray_dir, 
     }
 }
 
+struct AABB {
+    nanovdb::Vec3f mini;
+    nanovdb::Vec3f maxi;
+};
+
 extern "C" __global__ void __intersection__volume()
 {
-    const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
-    const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
+    auto gas = optixGetGASTraversableHandle();
+    auto gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+    const auto aabb_ptr = reinterpret_cast<AABB*>(*(gas_ptr-2));
+    
+    const AABB& abox = aabb_ptr[optixGetPrimitiveIndex()+1];
+    const auto box = nanovdb::BBox<nanovdb::Vec3f>(abox.mini, abox.maxi);
 
-    auto box = [&]() -> nanovdb::BBox<nanovdb::Vec3f> {
-        if ( grid == nullptr) {
-            return nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(-0.5f), nanovdb::Vec3f(0.5f));
-        } else {
-            auto& ibox = grid->indexBBox();
-            return nanovdb::BBox<nanovdb::Vec3f>(ibox.min(), ibox.max()+nanovdb::Coord(1));
-        }
-    } ();
-
+    const auto* sbt_data = (HitGroupData*)( optixGetSbtDataPointer() );
+    
     const float3 ray_ori = optixGetObjectRayOrigin();
           float3 ray_dir = optixGetObjectRayDirection(); // not normalized
 
@@ -78,24 +88,24 @@ extern "C" __global__ void __intersection__volume()
         t0 = t0 * dirlen; 
         t1 = t1 * dirlen;
     }
-    
-    auto gas = optixGetGASTraversableHandle();
-    auto gas_ptr = (char*)optixGetGASPointerFromHandle(gas);
 
-    uint8_t bounds = *(gas_ptr-1);
-    //bool inside = box.isInside(reinterpret_cast<const nanovdb::Vec3f&>(ray_ori));
+    uint8_t bounds = *((char*)gas_ptr-1);
     auto hitted = rayHit( ray_ori, ray_dir, box, bounds, t0, t1 );
     if (!hitted) { return; }
-    //auto scale = optixTransformVectorFromObjectToWorldSpace(ray_dir);
+
     auto len = 1.0f / dirlen;
     // object distance to world distance 
     t0 = t0 * len;
     t1 = t1 * len;
 
-    //t0 = max(t0, optixGetRayTmin());
-    t1 = max(t1, t0);
-    
-    if (t1 <= t0) { // skip tmin
+    t0 = fmaxf(t0, optixGetRayTmin());
+    t1 = fmaxf(t1, t0);
+
+    if (t1 < t0) {
+        auto tmp = t1;
+        t1 = t0; t0 = tmp;
+    }
+    if (optixGetRayTmin() >= t1) { 
         return;
     }
 
@@ -310,7 +320,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
             v_density = 0;
 
             prd->alphaHit = true;
-            //prd->_tmax_ = t1;
             break;
         } // over shoot, outside of volume
 

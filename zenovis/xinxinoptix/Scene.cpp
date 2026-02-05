@@ -362,14 +362,15 @@ void OptixScene::preload_sphere_group(const std::string& key, std::vector<zeno::
     };
 }
 
-bool OptixScene::preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform) {
+bool OptixScene::preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform, std::vector<sutil::Aabb>& aabbs) {
 
     auto& vbox = _vboxs_[key];
     if (nullptr == vbox) {
         vbox = std::make_shared<VolumeWrapper>(); 
     }
     auto trans = glm::transpose(transform);
-
+    
+    vbox->aabbs = std::move(aabbs);
     vbox->dirty = true;
     vbox->bounds = bounds;
     vbox->transform = trans;

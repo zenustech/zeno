@@ -222,6 +222,8 @@ struct VolumeWrapper
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
 	uint8_t bounds;
 	glm::mat4 transform;
+	std::vector<sutil::Aabb> aabbs;
+	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_aabb = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
 
 	std::vector<std::string> selected;
 

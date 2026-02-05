@@ -203,6 +203,8 @@ public:
 
                 auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
                 if (vdb_ptr->dirty == false) continue;
+                
+                continue;
 
                 auto ibox = vdb_ptr->grids.front()->indexedBox();
 
@@ -427,8 +429,8 @@ public:
                     if (_vdb_grids_cached.count(vdb_key)==0) {
                         shader_visiable = VisibilityMask::NothingMask;
                     } else {
-                        auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                        candi.handle = vdb_ptr->node->handle;
+                        // auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
+                        // candi.handle = vdb_ptr->node->handle;
                     } //vdb_ptr
                 } 
                 if (shader_ref.isHomoVol())
@@ -789,7 +791,7 @@ public:
         }
     }
 
-    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform);
+    bool preloadVolumeBox(const std::string& key, std::string& matid, uint8_t bounds, glm::mat4& transform, std::vector<sutil::Aabb>& aabbs);
     bool preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& combined_key);
 };
 

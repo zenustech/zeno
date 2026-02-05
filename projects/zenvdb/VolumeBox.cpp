@@ -160,12 +160,13 @@ struct CreateVolumeBox : zeno::INode {
         glm::vec3 eularAngleXYZ = glm::vec3(rotate[0], rotate[1], rotate[2]);
         glm::mat4 rotation = EulerAngle::rotate(orderTyped, measureTyped, eularAngleXYZ);
 
-        std::vector<glm::mat4> transforms;
+        glm::mat4 world_matrix(1.0f);
+        std::vector<openvdb::CoordBBox> voxels;
 
         if (has_input2<VDBGrid>("vdbGrid")) {
 
             auto grid = get_input2<VDBGrid>("vdbGrid");
-		   
+
             auto float_grid = std::dynamic_pointer_cast<VDBFloatGrid>(grid);
             auto root = float_grid->m_grid->tree().root();
 
@@ -176,34 +177,15 @@ struct CreateVolumeBox : zeno::INode {
             using Int1Type = RootType::ChildNodeType;  // level 2 InternalNode
             using Int2Type = Int1Type::ChildNodeType;  // level 1 InternalNode
 
-            auto AsTras = [&grid](openvdb::CoordBBox& box) {
-
-                glm::vec3 bmax = glm::vec3(box.max().x(), box.max().y(), box.max().z()) + 1.0f;
-                glm::vec3 bmin = glm::vec3(box.min().x(), box.min().y(), box.min().z());
-    
-                auto diff = bmax - bmin;
-                auto center = bmin + diff / 2.0f;
-    
-                auto trans = glm::mat4(1.0f);
-    
-                trans = glm::translate(trans, center);
-                trans = glm::scale(trans, diff);
-    
-                const auto world_matrix = [&]() -> auto {
-    
-                    auto tmp = grid->getTransform().baseMap()->getAffineMap()->getMat4();
-                    glm::mat4 result;
-                    for (size_t i=0; i<16; ++i) {
-                        auto ele = *(tmp[0]+i);
-                        result[i/4][i%4] = ele;
-                    }
-                    return result;
-                }();
-    
-                return world_matrix * trans;
-                //transform = world_matrix * trans;
-                //transform = trans;
-            };
+            world_matrix = [&]() -> auto {
+                auto tmp = grid->getTransform().baseMap()->getAffineMap()->getMat4();
+                glm::mat4 result;
+                for (size_t i=0; i<16; ++i) {
+                    auto ele = *(tmp[0]+i);
+                    result[i/4][i%4] = ele;
+                }
+                return result;
+            } ();
 
             if (greedy) {
 
@@ -216,9 +198,7 @@ struct CreateVolumeBox : zeno::INode {
                     if (iter.getDepth() == 2) {
                         auto box = iter.getBoundingBox();
 
-                        transforms.push_back( AsTras(box) );
                         voxelSize = box.dim();
-
                         allbox.expand(box);
                         nodeboxs.push_back(box);
                     }
@@ -231,18 +211,16 @@ struct CreateVolumeBox : zeno::INode {
                 ndim.y() = bdim.y()/voxelSize.y();
                 ndim.z() = bdim.z()/voxelSize.z();
 
-                GreedyVoxel greedyVoxle(ndim.x(), ndim.y(), ndim.z());
+                GreedyVoxel greedyVoxel(ndim.x(), ndim.y(), ndim.z());
 
                 for (const auto& box : nodeboxs) {
                     auto diff = box.min() - allbox.min();
                     auto offset = diff.asVec3i() / voxelSize.asVec3i();  
                     
-                    greedyVoxle.fill(offset.x(), offset.y(), offset.z());
+                    greedyVoxel.fill(offset.x(), offset.y(), offset.z());
                 }
 
-                auto voxels = greedyVoxle.greedy();
-                transforms.clear();
-                transforms.reserve(voxels.size());
+                voxels = greedyVoxel.greedy();
 
                 for (auto& box : voxels) {
 
@@ -251,76 +229,77 @@ struct CreateVolumeBox : zeno::INode {
 
                     openvdb::Coord box_min = openvdb::Coord(mini.x(), mini.y(), mini.z());
                     openvdb::Coord box_max = openvdb::Coord(maxi.x(), maxi.y(), maxi.z());
-                    auto nbox = openvdb::CoordBBox(box_min, box_max);
-
-                    transforms.push_back(AsTras(nbox));
+                    box = openvdb::CoordBBox(box_min, box_max);
                 }
             }
             else {
                 auto box = grid->evalActiveVoxelBoundingBox();
-                transforms.push_back( AsTras(box) );
+                voxels = { box };
             }
 
         } else {
+
+            auto box = openvdb::CoordBBox(openvdb::Coord(0), openvdb::Coord(1));
+            voxels = { box };
+
             glm::mat4 transform(1.0);
             transform = glm::translate(transform, glm::vec3(pos[0], pos[1], pos[2]));
             transform = transform * rotation;
             transform = glm::scale(transform, glm::vec3(scale[0], scale[1], scale[2]));
-            transforms.push_back(transform);
+            transform = glm::translate(transform, glm::vec3(-0.5f));
+
+            world_matrix = transform;
         }
 
-        auto list = std::make_shared<zeno::ListObject>();
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto& ud = prim->userData();
+        ud.set2("mtlid", get_input2<std::string>("vol_mat", ""));
+        
+        prim->verts->reserve(voxels.size() * 8);
+        prim->quads->reserve(voxels.size() * 4);
+        auto& raw = prim->add_attr<zeno::vec3f>("raw");
+        
+        size_t offset = 0;
+        for (auto& voxel : voxels) {
 
-        for (auto& transform : transforms) {
-
-            auto prim = std::make_shared<zeno::PrimitiveObject>();
-            prim->userData().set2("mtlid", get_input2<std::string>("vol_mat", ""));
-
-            float dummy[] = {-0.5f, 0.5f};
+            openvdb::Coord dummy[2];
+            dummy[0] = voxel.min();
+            dummy[1] = voxel.max();
 
             for (int i=0; i<=1; ++i) {
                 for (int j=0; j<=1; ++j) {
                     for (int k=0; k<=1; ++k) {
-                        auto p = glm::vec4(dummy[i], dummy[j], dummy[k], 1.0f);
-                        p = transform * p;
+
+                        auto x = dummy[i][0];
+                        auto y = dummy[j][1];
+                        auto z = dummy[k][2];
+                        raw.push_back(zeno::vec3f(x, y, z));
+
+                        auto p = glm::vec4(x, y, z, 1.0f);
+                        p = world_matrix * p;
                         prim->verts.push_back(zeno::vec3f(p.x, p.y, p.z));
                     }
                 }
             }
-
             // enough to draw box wire frame
-            prim->quads->push_back(zeno::vec4i(0, 1, 3, 2));
-            prim->quads->push_back(zeno::vec4i(4, 5, 7, 6));
-            prim->quads->push_back(zeno::vec4i(0, 1, 5, 4));
-            prim->quads->push_back(zeno::vec4i(3, 2, 6, 7));
-
-            primWireframe(prim.get(), true);
-            prim->userData().set2("bounds", bounds);
-
-            auto transform_ptr = glm::value_ptr(transform);
-
-            zeno::vec4f row0, row1, row2, row3;
-            memcpy(row0.data(), transform_ptr, sizeof(float)*4);
-            memcpy(row1.data(), transform_ptr+4, sizeof(float)*4);
-            memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);
-            memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
-
-            prim->userData().set2("_transform_row0", row0);
-            prim->userData().set2("_transform_row1", row1);
-            prim->userData().set2("_transform_row2", row2);
-            prim->userData().set2("_transform_row3", row3);
-            prim->userData().set2("vbox", true);
-
-            list->arr.push_back(prim);
+            prim->quads->push_back(zeno::vec4i(offset+0, offset+1, offset+3, offset+2));
+            prim->quads->push_back(zeno::vec4i(offset+4, offset+5, offset+7, offset+6));
+            prim->quads->push_back(zeno::vec4i(offset+0, offset+1, offset+5, offset+4));
+            prim->quads->push_back(zeno::vec4i(offset+3, offset+2, offset+6, offset+7));
+            offset += 8;
         }
+        primWireframe(prim.get(), true);
 
-        if (list->arr.size()==1) {
-            set_output("prim", std::move(list->arr.front()));
-            return;
-        }
+        auto transform_ptr = glm::value_ptr(world_matrix);
+        ud.set2("_transform_row0", *(zeno::vec4f*)(transform_ptr+0));
+        ud.set2("_transform_row1", *(zeno::vec4f*)(transform_ptr+4));
+        ud.set2("_transform_row2", *(zeno::vec4f*)(transform_ptr+8));
+        ud.set2("_transform_row3", *(zeno::vec4f*)(transform_ptr+12));
+        
+        ud.set2("bounds", bounds);
+        ud.set2("vbox", true);
 
-        set_output("prim", std::move(list));
-
+        set_output("prim", prim);
     }
 };
 

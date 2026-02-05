@@ -388,8 +388,12 @@ extern "C" __global__ void __raygen__rg()
 
         // Primary Ray
         do {
+            _tmin_ = prd._tmin_; 
+            _mask_ = prd._mask_;
+            prd._tmin_ = 0.f;
+            prd._mask_ = 255;
             prd.alphaHit = false;
-            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, prd._mask_);
+            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
 
         auto _attenuation = prd.attenuation;
@@ -407,7 +411,6 @@ extern "C" __global__ void __raygen__rg()
         }
         if(params.pause) return;
         
-        prd._tmin_ = 0;
         //fuck, SSS or other scattering scheme may return a small maxDistance
         //value, how can we set it back to FLT_MAX here????
         //prd.maxDistance = FLT_MAX;
@@ -433,10 +436,6 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
-            _tmin_ = prd._tmin_;
-            _mask_ = prd._mask_;
-
-
             if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
                 float3 vol_lighting;
                 float3 vol_attenuation;
@@ -448,7 +447,7 @@ extern "C" __global__ void __raygen__rg()
             }
             
             prd.vol = {};
-            prd._tmin_ = _tmin_;
+            prd._tmin_ = 0;
             prd._tmax_ = FLT_MAX;
             prd._mask_ = EverythingMask;
 
@@ -486,15 +485,19 @@ extern "C" __global__ void __raygen__rg()
                 }
             }
 
-            if(prd.diffDepth > 0)
-                _mask_ &= ~VolumeMaskAnalytics;
+            const uint8_t mark = prd.diffDepth>0? ~VolumeMaskAnalytics:EverythingMask;
 
-            prd._tmin_ = _tmin_;
             do {
                 _attenuation = prd.attenuation;
+
+                _tmin_ = prd._tmin_;
+                _mask_ = prd._mask_;
+                prd._tmin_ = 0.f;
+                prd._mask_ = 255;
                 prd.alphaHit = false;
-                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_ & prd._mask_);
-            }while(prd.alphaHit);
+
+                traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_ & mark);
+            } while(prd.alphaHit);
         }
         seed = prd.seed;
 //        seed1 = prd.offset;

@@ -29,39 +29,7 @@ __device__ __forceinline__ vec4 parallaxCall(TriangleInput& attrs, cudaTextureOb
     Onb onb(attrs.objNorm);
     float3 axis[3] = {onb.m_normal, onb.m_binormal, onb.m_tangent};
     auto thisMat = attrs.sbtIdx;
-//    if(attrs.depth<=1&&h.z>0)//in fact shall be diffDepth
-//    {
-//        bool lost = true;
-//        char idx0 = 0, idx1 = 1, idx2 = 2;
-//        for (int i=0; i<8; ++i)
-//        {
-//            float2 uu = { rnd(seed), rnd(seed) };
-//            auto offset = pbrt::SampleUniformDiskConcentric(uu);
-//            if (lost) {
-//                idx0 = 3 * rnd(seed);
-//                idx1 = (idx0 + 1) % 3;
-//                idx2 = (idx0 + 2) % 3;
-//            }
-//            auto pos = attrs.objPos + h.z * ( axis[idx0] + axis[idx1] * offset.x + axis[idx2] * offset.y);
-//            auto len2 = 1.0f - offset.x * offset.x  - offset.y * offset.y;
-//            auto len = h.z * sqrtf(fmaxf(0.0f, len2));
-//            optixTraverse(attrs.gas, pos, -axis[idx0], fmaxf(0.0f, h.z-len), h.z+len, 0, EverythingMask,
-//                        1u<<0, RAY_TYPE_RADIANCE, RAY_TYPE_COUNT, 0);
-//
-//            if( optixHitObjectIsHit() ) {
-//                lost = false;
-//                const auto thatMat = optixHitObjectGetSbtGASIndex();
-//                if(thatMat!=thisMat)
-//                {
-//                    forced_hit = false;
-//                }
-//            } else
-//            {
-//                forced_hit = false;
-//                lost = true;
-//            }
-//        }
-//    }
+
     vec3 barys3 = attrs.barys();
     return parallax2D(tex, uv, uvtiling, barys3,
                         uv0, uv1, uv2, v0, v1, v2,

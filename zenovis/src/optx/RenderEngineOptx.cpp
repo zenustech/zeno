@@ -534,7 +534,7 @@ struct GraphicsManager {
                     memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                     memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                    auto bounds = ud.get2<std::string>("bounds");
+                    auto bounds = ud.get2<std::string>("bounds", "Box");
                     
                     uint8_t boundsID = [&]() {
                         if ("Box" == bounds)
@@ -545,8 +545,28 @@ struct GraphicsManager {
                             return 2;
                     } ();
 
-                    const auto reName = prim_in->userData().get2<std::string>("ObjectName", key);
-                    defaultScene.preloadVolumeBox(reName, mtlid, boundsID, vbox_transform);
+                    auto& raw = prim_in->attr<zeno::vec3f>("raw");
+                    std::vector<sutil::Aabb> aabbs;
+                    aabbs.reserve(raw.size()/8 + 1);
+
+                    float3 min_bd = make_float3(+FLT_MAX); 
+                    float3 max_bd = make_float3(-FLT_MAX);
+
+                    aabbs.push_back(sutil::Aabb{});
+
+                    for (size_t i=0; i<raw.size(); i+=8) {
+                        auto mini = reinterpret_cast<float3&>(raw[i]);
+                        auto maxi = reinterpret_cast<float3&>(raw[i+7]);
+
+                        min_bd = fmaxf(min_bd, mini);
+                        max_bd = fmaxf(max_bd, maxi);
+                        
+                        aabbs.push_back(sutil::Aabb( mini, maxi ));
+                    }
+                    aabbs[0] = sutil::Aabb{min_bd, max_bd};
+
+                    const auto reName = ud.get2<std::string>("ObjectName", key);
+                    defaultScene.preloadVolumeBox(reName, mtlid, boundsID, vbox_transform, aabbs);
                     return;
                 }
 
