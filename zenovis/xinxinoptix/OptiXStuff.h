@@ -97,6 +97,7 @@ inline raii<OptixModule> round_quadratic_ism;
 inline raii<OptixModule> flat_quadratic_ism;
 inline raii<OptixModule> round_cubic_ism;
 
+inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 inline std::vector< std::function<void(void)> > garbageTasks;
 
 inline void resetAll() {
@@ -119,6 +120,8 @@ inline void resetAll() {
 
     pipeline.reset();
     context.reset();
+
+    CachedPrimitiveTypeFlags = UINT_MAX;
 }
 
 typedef std::tuple<uint, uint> PipelineMark;
@@ -156,7 +159,6 @@ inline void createContext()
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
-inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
