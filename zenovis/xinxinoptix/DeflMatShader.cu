@@ -34,10 +34,6 @@ __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
 }
 
-__inline__ __device__ bool isfinite(const float3& vector) {
-    return isfinite(vector.x) && isfinite(vector.y) && isfinite(vector.z);
-}
-
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
     auto rt_data = (HitGroupData*)optixGetSbtDataPointer();
