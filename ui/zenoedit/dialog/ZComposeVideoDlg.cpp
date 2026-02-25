@@ -72,6 +72,11 @@ bool ZComposeVideoDlg::combineVideo()
 
     // 检查输出文件是否存在
     QString outPath = m_ui->linePath->text() + "/" + (m_ui->filename->text().isEmpty() ? "output.mp4" : m_ui->filename->text() + ".mp4");
+    auto filename = m_ui->filename->text();
+    if (filename.contains('\\') || filename.contains('/')) {
+        outPath = filename;
+    }
+
     if (QFile::exists(outPath)) {
         QMessageBox::information(this, tr("Info"), tr("Output file exists"));
         return false;
@@ -125,6 +130,10 @@ void ZComposeVideoDlg::startVideoCompose()
     connect(m_workerThread, &QThread::started, worker, [=]() {
         QString imgPath = m_ui->linePath->text() + "/{:07}.jpg";
         QString outPath = m_ui->linePath->text() + "/" + (m_ui->filename->text().isEmpty() ? "output.mp4" : m_ui->filename->text() + ".mp4");
+        auto filename = m_ui->filename->text();
+        if (filename.contains('\\') || filename.contains('/')) {
+            outPath = filename;
+        }
 
         // 获取起始帧号
         QDir qDir = QDir(m_ui->linePath->text());

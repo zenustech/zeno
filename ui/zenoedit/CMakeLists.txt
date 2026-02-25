@@ -62,7 +62,7 @@ target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 #find_package(FFMPEG REQUIRED COMPONENTS avformat avcodec swscale avutil swresample)
 #target_link_libraries(zenoedit PRIVATE avformat avcodec swscale avutil swresample)
 
-find_package(FFMPEG)
+find_package(FFMPEG REQUIRED)
 target_include_directories(zenoedit PRIVATE ${FFMPEG_INCLUDE_DIRS})
 target_link_directories(zenoedit PRIVATE ${FFMPEG_LIBRARY_DIRS}) 
 target_link_libraries(zenoedit PRIVATE ${FFMPEG_LIBRARIES})
