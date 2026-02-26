@@ -175,7 +175,7 @@ struct Params
     
     PickInfo*    pick_buffer;
 
-    float3*      debug_buffer;
+    float3*      denoised_buffer;
     float3*      albedo_buffer;
     float3*      normal_buffer;
     

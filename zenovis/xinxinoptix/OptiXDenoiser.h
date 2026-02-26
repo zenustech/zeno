@@ -39,12 +39,13 @@
 
 #include <cuda_runtime.h>
 #include <cmath>
-#include <iostream>
-#include <fstream>
-#include <sstream>
+
 #include <cstdlib>
-#include <iomanip>
 #include <vector>
+
+#include <raiicuda.h>
+#include <optional>
+#include <map>
 
 
 // Create four channel float OptixImage2D with given dimension. Allocate memory on device and
@@ -53,7 +54,7 @@ static OptixImage2D createOptixImage2D( unsigned int width, unsigned int height,
 {
     OptixImage2D oi;
 
-    const uint64_t frame_byte_size = width * height * sizeof(float4);
+    const uint64_t frame_byte_size = width * height * sizeof(float3);
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &oi.data ), frame_byte_size ) );
     if( hmem )
     {
@@ -66,16 +67,41 @@ static OptixImage2D createOptixImage2D( unsigned int width, unsigned int height,
     }
     oi.width              = width;
     oi.height             = height;
-    oi.rowStrideInBytes   = width*sizeof(float4);
-    oi.pixelStrideInBytes = sizeof(float4);
-    oi.format             = OPTIX_PIXEL_FORMAT_FLOAT4;
+    oi.rowStrideInBytes   = width*sizeof(float3);
+    oi.pixelStrideInBytes = sizeof(float3);
+    oi.format             = OPTIX_PIXEL_FORMAT_FLOAT3;
+    return oi;
+}
+
+static OptixImage2D createOptixImage2D( unsigned int width, unsigned int height, OptixPixelFormat format, CUdeviceptr dmem=0 ) 
+{
+    static const std::map<OptixPixelFormat, size_t> lookup {
+        {OPTIX_PIXEL_FORMAT_HALF3, sizeof(ushort3)},
+        {OPTIX_PIXEL_FORMAT_HALF4, sizeof(ushort4)},
+        {OPTIX_PIXEL_FORMAT_FLOAT3, sizeof(float3)},
+        {OPTIX_PIXEL_FORMAT_FLOAT4, sizeof(float4)}
+    };
+
+    auto find = lookup.find(format);
+    if (find == lookup.end()) return {};
+
+    const size_t pixel_size = find->second;
+
+    OptixImage2D oi;
+    oi.data = dmem;
+    oi.width              = width;
+    oi.height             = height;
+    oi.rowStrideInBytes   = width * pixel_size;
+    oi.pixelStrideInBytes = pixel_size;
+    oi.format             = format;
     return oi;
 }
 
 // Copy OptixImage2D from src to dest.
 static void copyOptixImage2D( OptixImage2D& dest, const OptixImage2D& src )
 {
-    CUDA_CHECK( cudaMemcpy( (void*)dest.data, (void*)src.data, src.width * src.height * sizeof( float4 ), cudaMemcpyDeviceToDevice ) );
+    auto byte_size = src.rowStrideInBytes * src.height; 
+    CUDA_CHECK( cudaMemcpy( (void*)dest.data, (void*)src.data, byte_size, cudaMemcpyDeviceToDevice ) );
 }
 
 class OptiXDenoiser
@@ -83,46 +109,71 @@ class OptiXDenoiser
 public:
     struct Data
     {
+        bool       up2x = false;
         uint32_t  width     = 0;
         uint32_t  height    = 0;
-        float*    color     = nullptr;
-        float*    albedo    = nullptr;
-        float*    normal    = nullptr;
-        float*    flow      = nullptr;
-        float*    flowtrust = nullptr;
-        std::vector< float* > aovs;     // input AOVs
-        std::vector< float* > outputs;  // denoised beauty, followed by denoised AOVs
+        CUdeviceptr  color  = 0;
+        CUdeviceptr  albedo = 0;
+        CUdeviceptr  normal = 0;
+
+        CUdeviceptr    flow   = 0;
+        CUdeviceptr flowtrust = 0;
+        std::vector<CUdeviceptr> aovs;     // input AOVs
+        std::vector<CUdeviceptr> outputs;  // denoised beauty, followed by denoised AOVs
+
+        inline bool operator!=(const Data& other) const {
+
+            if(aovs.size() != other.aovs.size()) return true;
+            for (int i=0; i<aovs.size(); ++i) {
+                if (aovs[i] != other.aovs[i]) return true;
+            }
+            
+            if (outputs.size() != other.outputs.size()) return true;
+            for (int i=0; i<outputs.size(); ++i) {
+                if (outputs[i] != other.outputs[i]) return true;
+            }
+
+            return width != other.width || height != other.height || up2x != other.up2x ||
+                   color != other.color || albedo != other.albedo || normal != other.normal ||
+                   flow  != other.flow  || flowtrust != other.flowtrust;
+        }
+
+        inline bool operator==(const Data& other) const {
+            return !(*this != other);
+        }
     };
+
+    bool empty() {
+        return 0 == this->cached.color;
+    }
 
     // Initialize the API and push all data to the GPU -- normaly done only once per session.
     // tileWidth, tileHeight: If nonzero, enable tiling with given dimension.
     // kpMode: If enabled, use kernel prediction model even if no AOVs are given.
     // temporalMode: If enabled, use a model for denoising sequences of images.
     // applyFlowMode: Apply flow vectors from current frame to previous image (no denoising).
-    void init( const Data&  data,
+    void init( OptixDeviceContext& context,
+               const Data&  data,
                unsigned int tileWidth     = 0,
                unsigned int tileHeight    = 0,
                bool         kpMode        = false,
                bool         temporalMode  = false,
                bool         applyFlowMode = false,
-               bool         upscale2xMode = false,
                OptixDenoiserAlphaMode alphaMode = OPTIX_DENOISER_ALPHA_MODE_COPY,
                bool         specularMode  = false );
 
     // Execute the denoiser. In interactive sessions, this would be done once per frame/subframe.
     void exec();
 
-    // Update denoiser input data on GPU from host memory.
-    void update( const Data& data );
-
     // Copy results from GPU to host memory.
     void getResults();
+    std::vector<float>& getResult(int i); 
 
     // Return internal guide layer data for temporal models, if available. Returned memory must be freed.
     void getInternalGuideLayerData( unsigned char** data, size_t* sizeInBytes );
 
     // Cleanup state, deallocate memory -- normally done only once per render session.
-    void finish();
+    void reset();
 
     std::optional<int> render_session_id;
 private:
@@ -138,11 +189,14 @@ private:
     bool                  m_temporalMode;
     bool                  m_applyFlowMode;
 
-    CUdeviceptr           m_intensity    = 0;
-    CUdeviceptr           m_avgColor     = 0;
-    CUdeviceptr           m_scratch      = 0;
+using DeviceBuffer = xinxinoptix::raii<CUdeviceptr>;
+
+    DeviceBuffer           m_intensity    = {};
+    DeviceBuffer           m_avgColor     = {};
+    DeviceBuffer           m_scratch      = {};
+    DeviceBuffer           m_state        = {};
+
     uint32_t              m_scratch_size = 0;
-    CUdeviceptr           m_state        = 0;
     uint32_t              m_state_size   = 0;
 
     unsigned int          m_tileWidth    = 0;
@@ -151,16 +205,18 @@ private:
 
     OptixDenoiserGuideLayer           m_guideLayer = {};
     std::vector< OptixDenoiserLayer > m_layers;
-    std::vector< float* >             m_host_outputs;
+
+    Data cached;
+    std::vector<std::vector<float>>   m_host_outputs;
 };
 
-void OptiXDenoiser::init( const Data&  data,
+inline void OptiXDenoiser::init( OptixDeviceContext& context,
+                          const Data&  data,
                           unsigned int tileWidth,
                           unsigned int tileHeight,
                           bool         kpMode,
                           bool         temporalMode,
                           bool         applyFlowMode,
-                          bool         upscale2xMode,
                           OptixDenoiserAlphaMode alphaMode,
                           bool         specularMode )
 {
@@ -171,6 +227,12 @@ void OptiXDenoiser::init( const Data&  data,
     SUTIL_ASSERT_MSG( !data.normal || data.albedo, "Currently albedo is required if normal input is given" );
     SUTIL_ASSERT_MSG( ( tileWidth == 0 && tileHeight == 0 ) || ( tileWidth > 0 && tileHeight > 0 ), "tile size must be > 0 for width and height" );
 
+    if (data == cached) return;
+    
+    reset();
+    cached = data;
+    
+    bool upscale2xMode = data.up2x;
     unsigned int outScale = 1;
     if( upscale2xMode )
     {
@@ -178,43 +240,25 @@ void OptiXDenoiser::init( const Data&  data,
         outScale = 2;
     }
 
-    m_host_outputs = data.outputs;
+    const auto pixel_count = data.width * data.height * outScale * outScale;
+
+    m_host_outputs.clear();
+    for (int i=0; i<data.outputs.size(); ++i) {
+        m_host_outputs.emplace_back(std::vector<float>(pixel_count * 3));
+    }
     m_temporalMode = temporalMode;
     m_applyFlowMode = applyFlowMode;
 
     m_tileWidth  = tileWidth > 0 ? tileWidth : data.width;
     m_tileHeight = tileHeight > 0 ? tileHeight : data.height;
 
-    //
-    // Initialize CUDA and create OptiX context
-    //
-    {
-        // Initialize CUDA
-        CUDA_CHECK( cudaFree( nullptr ) );
-
-        CUcontext cu_ctx = nullptr;  // zero means take the current context
-        OPTIX_CHECK( optixInit() );
-        OptixDeviceContextOptions options = {};
-        options.logCallbackFunction       = &context_log_cb;
-        options.logCallbackLevel          = 4;
-        OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &m_context ) );
-    }
+    // use Optix context from render
+    m_context = context;
 
     //
     // Create denoiser
     //
     {
-        /*****
-        // Load user provided model if model.bin is present in the currrent directory,
-        // configuration of filename not done here.
-        std::ifstream file( "model.bin" );
-        if ( file.good() ) {
-            std::stringstream source_buffer;
-            source_buffer << file.rdbuf();
-            OPTIX_CHECK( optixDenoiserCreateWithUserModel( m_context, (void*)source_buffer.str().c_str(), source_buffer.str().size(), &m_denoiser ) );
-        }
-        else
-        *****/
         {
             OptixDenoiserOptions options = {};
             options.guideAlbedo  = data.albedo ? 1 : 0;
@@ -231,7 +275,6 @@ void OptiXDenoiser::init( const Data&  data,
             OPTIX_CHECK( optixDenoiserCreate( m_context, modelKind, &options, &m_denoiser ) );
         }
     }
-
 
     //
     // Allocate device memory for denoiser
@@ -259,34 +302,21 @@ void OptiXDenoiser::init( const Data&  data,
 
         if( data.aovs.size() == 0 && kpMode == false )
         {
-            CUDA_CHECK( cudaMalloc(
-                        reinterpret_cast<void**>( &m_intensity ),
-                        sizeof( float )
-                        ) );
+            m_intensity.resize(sizeof(float));
         }
         else
         {
-            CUDA_CHECK( cudaMalloc(
-                        reinterpret_cast<void**>( &m_avgColor ),
-                        3 * sizeof( float )
-                        ) );
+            m_avgColor.resize(sizeof(float) * 3);
         }
 
-        CUDA_CHECK( cudaMalloc(
-                    reinterpret_cast<void**>( &m_scratch ),
-                    m_scratch_size 
-                    ) );
-
-        CUDA_CHECK( cudaMalloc(
-                    reinterpret_cast<void**>( &m_state ),
-                    denoiser_sizes.stateSizeInBytes
-                    ) );
+        m_scratch.resize(m_scratch_size);
+        m_state.resize(denoiser_sizes.stateSizeInBytes);
 
         m_state_size = static_cast<uint32_t>( denoiser_sizes.stateSizeInBytes );
 
         OptixDenoiserLayer layer = {};
-        layer.input  = createOptixImage2D( data.width, data.height, data.color );
-        layer.output = createOptixImage2D( outScale * data.width, outScale * data.height );
+        layer.input  = createOptixImage2D( data.width, data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.color );
+        layer.output = createOptixImage2D( outScale * data.width, outScale * data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.outputs[0]);
 
         if( m_temporalMode )
         {
@@ -331,15 +361,15 @@ void OptiXDenoiser::init( const Data&  data,
         m_layers.push_back( layer );
 
         if( data.albedo )
-            m_guideLayer.albedo = createOptixImage2D( data.width, data.height, data.albedo );
+            m_guideLayer.albedo = createOptixImage2D( data.width, data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.albedo );
         if( data.normal )
-            m_guideLayer.normal = createOptixImage2D( data.width, data.height, data.normal );
+            m_guideLayer.normal = createOptixImage2D( data.width, data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.normal );
 
         for( size_t i=0; i < data.aovs.size(); i++ )
         {
             layer = {};
-            layer.input  = createOptixImage2D( data.width, data.height, data.aovs[i] );
-            layer.output = createOptixImage2D( outScale * data.width, outScale * data.height );
+            layer.input  = createOptixImage2D( data.width, data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.aovs[i]);
+            layer.output = createOptixImage2D( outScale * data.width, outScale * data.height, OPTIX_PIXEL_FORMAT_FLOAT3, data.outputs[i+1] );
             if( m_temporalMode )
             {
                 // First frame initializaton.
@@ -376,51 +406,10 @@ void OptiXDenoiser::init( const Data&  data,
     }
 }
 
-void OptiXDenoiser::update( const Data& data )
+inline void OptiXDenoiser::exec()
 {
-    SUTIL_ASSERT( data.color  );
-    SUTIL_ASSERT( data.outputs.size() >= 1 );
-    SUTIL_ASSERT( data.width  );
-    SUTIL_ASSERT( data.height );
-    SUTIL_ASSERT_MSG( !data.normal || data.albedo, "Currently albedo is required if normal input is given" );
+    if (m_denoiser == nullptr) return;
 
-    m_host_outputs = data.outputs;
-
-    CUDA_CHECK( cudaMemcpy( (void*)m_layers[0].input.data, data.color, data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    if( m_temporalMode )
-        CUDA_CHECK( cudaMemcpy( (void*)m_guideLayer.flow.data, data.flow, data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    if( data.albedo )
-        CUDA_CHECK( cudaMemcpy( (void*)m_guideLayer.albedo.data, data.albedo, data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    if( data.normal )
-        CUDA_CHECK( cudaMemcpy( (void*)m_guideLayer.normal.data, data.normal, data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    if( data.flowtrust )
-        CUDA_CHECK( cudaMemcpy( (void*)m_guideLayer.flowTrustworthiness.data, data.flowtrust, data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    for( size_t i=0; i < data.aovs.size(); i++ )
-        CUDA_CHECK( cudaMemcpy( (void*)m_layers[1+i].input.data, data.aovs[i], data.width * data.height * sizeof( float4 ), cudaMemcpyHostToDevice ) );
-
-    if( m_temporalMode )
-    {
-        OptixImage2D temp = m_guideLayer.previousOutputInternalGuideLayer;
-        m_guideLayer.previousOutputInternalGuideLayer = m_guideLayer.outputInternalGuideLayer;
-        m_guideLayer.outputInternalGuideLayer = temp;
-
-        for( size_t i=0; i < m_layers.size(); i++ )
-        {
-            temp = m_layers[i].previousOutput;
-            m_layers[i].previousOutput = m_layers[i].output;
-            m_layers[i].output = temp;
-        }
-    }
-    m_params.temporalModeUsePreviousLayers = 1;
-}
-
-void OptiXDenoiser::exec()
-{
     if( m_intensity )
     {
         OPTIX_CHECK( optixDenoiserComputeIntensity(
@@ -447,12 +436,12 @@ void OptiXDenoiser::exec()
 
     if( m_applyFlowMode )
     {
-        applyFlow();
+        // applyFlow();
     }
     else
     {
         // This sample is always using tiling mode. 
-#if 0
+#if 1
         OPTIX_CHECK( optixDenoiserInvoke(
                     m_denoiser,
                     nullptr, // CUDA stream
@@ -485,7 +474,7 @@ void OptiXDenoiser::exec()
                     ) );
 #endif
     }
-    CUDA_SYNC_CHECK();
+    // CUDA_SYNC_CHECK();
 }
 
 inline float catmull_rom(
@@ -591,11 +580,12 @@ void OptiXDenoiser::applyFlow()
 
 void OptiXDenoiser::getResults()
 {
-    const uint64_t frame_byte_size = m_layers[0].output.width*m_layers[0].output.height*sizeof(float4);
+    auto& output = m_layers[0].output;
+    const uint64_t frame_byte_size = output.width * output.height * sizeof(float3);
     for( size_t i=0; i < m_layers.size(); i++ )
     {
         CUDA_CHECK( cudaMemcpy(
-                    m_host_outputs[i],
+                    m_host_outputs[i].data(),
                     reinterpret_cast<void*>( m_layers[i].output.data ),
                     frame_byte_size,
                     cudaMemcpyDeviceToHost
@@ -607,6 +597,17 @@ void OptiXDenoiser::getResults()
                                     reinterpret_cast<void*>( m_layers[i].input.data ),
                                     frame_byte_size, cudaMemcpyDeviceToHost ) );
     }
+}
+
+inline std::vector<float>& OptiXDenoiser::getResult(int i) {
+
+    if (i>=m_layers.size()) return m_host_outputs[0];
+
+    auto& output = m_layers[0].output;
+    const uint64_t frame_byte_size = output.width * output.height * sizeof(float3);
+
+    cudaMemcpy(m_host_outputs[i].data(), (void*)m_layers[i].output.data, frame_byte_size, cudaMemcpyDeviceToHost);
+    return m_host_outputs[i];
 }
 
 void OptiXDenoiser::getInternalGuideLayerData( unsigned char** data, size_t* sizeInBytes )
@@ -622,27 +623,26 @@ void OptiXDenoiser::getInternalGuideLayerData( unsigned char** data, size_t* siz
     }
 }
 
-void OptiXDenoiser::finish() 
+inline void OptiXDenoiser::reset() 
 {
     // Cleanup resources
     optixDenoiserDestroy( m_denoiser );
-    optixDeviceContextDestroy( m_context );
 
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_intensity)) );
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_avgColor)) );
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_scratch)) );
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_state)) );
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.albedo.data)) );
-    CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.normal.data)) );
+    m_intensity.reset();
+    m_avgColor.reset();
+    m_scratch.reset();
+    m_state.reset();
+    
     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.flow.data)) );
     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.flowTrustworthiness.data)) );
     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.previousOutputInternalGuideLayer.data)) );
     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_guideLayer.outputInternalGuideLayer.data)) );
-    for( size_t i=0; i < m_layers.size(); i++ )
-    {
-        CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].input.data) ) );
-        CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].output.data) ) ); 
-        CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].previousOutput.data) ) );
-    }
+    // for( size_t i=0; i < m_layers.size(); i++ )
+    // {
+    //     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].input.data) ) );
+    //     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].output.data) ) ); 
+    //     CUDA_CHECK( cudaFree(reinterpret_cast<void*>(m_layers[i].previousOutput.data) ) );
+    // }
     m_layers.clear();
+    m_host_outputs.clear();
 }
