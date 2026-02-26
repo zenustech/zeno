@@ -577,6 +577,10 @@ extern "C" __global__ void __raygen__rg()
         accum_buffer_B[image_index] = __float2half(accum_color_b);
     #endif
 
+    #if DENOISE
+        accum_color = params.denoised_buffer[image_index];
+    #endif
+
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
