@@ -1,5 +1,5 @@
 #pragma once
-
+#include <zeno/utils/log.h>
 // ===== FFmpeg =====
 // FFmpeg是一个强大的多媒体处理库，用于处理视频、音频等多媒体数据
 // extern "C" 确保C语言的FFmpeg库在C++中正确链接
@@ -461,3 +461,56 @@ private:
     bool initialized = false;           // 是否已用第一帧初始化FFmpeg
     bool ok = true;                     // 操作是否成功（错误时设为false）
 };
+
+static bool videoCompose(QString imgPath, QString outPath, int startFrame, int fps, int bitrate) {
+    // 计算总帧数
+    int totalFrames = 0;
+    int currentFrame = startFrame;
+    while (true) {
+        QString currentImgPath = QString::fromStdString(zeno::format(imgPath.toStdString(), currentFrame));
+        if (!QFile::exists(currentImgPath)) {
+            break;
+        }
+        totalFrames++;
+        currentFrame++;
+    }
+
+    // 开始合成
+    ImageSequenceEncoder enc;
+    bool ret = enc.open(
+        outPath.toStdString(),
+        fps,
+        bitrate
+    );
+
+    if (!ret) {
+        zeno::log_info("Failed to open output file.");
+        return false;
+    }
+
+    currentFrame = startFrame;
+    int processedFrames = 0;
+    bool composeSuccess = true;
+    while (true) {
+        QString currentImgPath = QString::fromStdString(zeno::format(imgPath.toStdString(), currentFrame));
+        if (!QFile::exists(currentImgPath)) {
+            break;
+        }
+
+        ret = enc.addFrameFromFile(currentImgPath.toStdString());
+        if (!ret) {
+            composeSuccess = false;
+            break;
+        }
+
+        processedFrames++;
+        currentFrame++;
+    }
+
+    // 即使close返回false，只要成功处理了所有帧，就认为是成功的
+    enc.close();
+
+    // 如果成功处理了至少一帧，并且没有中途失败，就认为是成功的
+    bool finalSuccess = composeSuccess && processedFrames > 0;
+    return finalSuccess;
+}
