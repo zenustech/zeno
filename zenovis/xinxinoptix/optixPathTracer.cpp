@@ -1731,41 +1731,6 @@ std::vector<float> rgba_to_rgb(const std::vector<float> &rgba_data, int w, int h
     }
     return rgb_data;
 }
-std::vector<float> optixgetimg_color(int w, int h, bool denoising, bool up2x) {
-    auto tex_data = optixgetimg_extra2("color", w, h);
-    if (!denoising) {
-        return tex_data;
-    }
-
-    int output_w = up2x ? 2 * w: w;
-    int output_h = up2x ? 2 * h: h;
-    state.denoised_buffer.resize(output_w * output_h * sizeof(float)*3);
-
-    OptiXDenoiser::Data data {};
-    data.up2x      = up2x;
-    data.width     = w;
-    data.height    = h;
-    data.color     = state.accum_buffer_p.handle;
-    data.albedo    = state.albedo_buffer_p.handle;
-    data.normal    = state.normal_buffer_p.handle;
-    data.outputs.push_back( state.denoised_buffer );
-
-    auto& denoiser = state.denoiser;
-    
-    auto &session_ud = zeno::getSession().userData();
-    int render_session_id = session_ud.get2<int>("render_session_id", 0);
-    if (denoiser.render_session_id.has_value() && denoiser.render_session_id.value() == render_session_id) {
-    }
-    else {
-        denoiser.render_session_id = render_session_id;
-    }
-
-    denoiser.init(OptixUtil::context, data, 
-            0, 0, false, false, false, 
-            OPTIX_DENOISER_ALPHA_MODE_COPY, false);
-    denoiser.exec();
-    return denoiser.getResult(0);
-}
 
 std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
     std::vector<Imath::half> tex_data(w * h * 3);
@@ -1947,8 +1912,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     }
     state.params.pause = pause;
 
+    const bool up2x = ud.get2("optix_render_up2x", false);
     if (denoise) {
-        auto up2x = false;
         auto w = state.params.width;
         auto h = state.params.height;
 
@@ -2071,10 +2036,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         else {
             std::string jpg_native_path = zeno::create_directories_when_write_file(path);
             if (denoise) {
-                bool up2 = ud.get2("optix_render_up2x", false);
-                auto float_data = optixgetimg_color(w, h, true, up2);
-                int output_w = up2 ? 2 * w: w;
-                int output_h = up2 ? 2 * h: h;
+                const auto& float_data = state.denoiser.getResult(0);
+                int output_w = up2x ? 2 * w: w;
+                int output_h = up2x ? 2 * h: h;
                 std::vector<uint8_t> u8_data(output_w * output_h * 3);
                 for (auto i = 0; i < u8_data.size(); i++) {
                     u8_data[i] = int(glm::clamp(pow(float_data[i], 1.0f/2.2f) * 255.0f, 0.0f, 255.0f));
