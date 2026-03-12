@@ -92,8 +92,10 @@ public:
         // - &w, &h: 获取图片的宽度和高度
         // - &comp: 获取原始通道数（如RGB=3，RGBA=4）
         // - 3: 强制转换为RGB三通道（忽略透明度等）
+        stbi_set_flip_vertically_on_load(false);
         int w, h, comp;
         unsigned char* data = stbi_load(filePath.c_str(), &w, &h, &comp, 3);
+        stbi_set_flip_vertically_on_load(true);
 
         // 检查图片是否加载成功
         if (!data) {
