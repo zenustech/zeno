@@ -9,7 +9,7 @@ struct ImplShaderBuffer : ShaderNodeClone<ImplShaderBuffer> {
     int out;
 
     virtual int determineType(EmissionPass *em) override {
-        return TypeHint.at("uint64");
+        return TypeHint.at("uint64_t");
     }
 
     virtual void emitCode(EmissionPass *em) override {
