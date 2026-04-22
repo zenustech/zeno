@@ -301,6 +301,15 @@ namespace HairBSDF{
         }
         //rand.z /= apPdf[p];
 
+        if (p == 0) {
+            prd->hit_type = SPECULAR_HIT; // R
+        } else if (p == 1) {
+            prd->hit_type = TRANSMIT_HIT; // TT
+        } else if (p == 2) {
+            prd->hit_type = DIFFUSE_HIT; // TRT
+        } else {
+            prd->hit_type = DIFFUSE_HIT; // Other
+        }
 
         m0_rough = m0_rough * beta_m;
         m0_rough = clamp(m0_rough,0.001f,1.0f);
