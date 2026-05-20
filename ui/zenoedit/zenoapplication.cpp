@@ -4,6 +4,7 @@
 #include "zenomainwindow.h"
 #include <zeno/utils/log.h>
 #include "util/log.h"
+#include "util/apiMgr.h"
 #include "launch/ztcpserver.h"
 #include "launch/corelaunch.h"
 #include "startup/zstartup.h"
@@ -17,6 +18,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     , m_server(nullptr)
 #endif
     , m_bUIApp(true)
+    , m_apiMgr(new ApiMgr(this))
 {
     initMetaTypes();
     initFonts();
