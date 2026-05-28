@@ -108,6 +108,31 @@ if (NOT DEFINED CUDAToolkit_BIN_DIR)
 endif()
 set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
 
+if(WIN32)
+    set(CUDA_BIN_DIR "${CUDAToolkit_BIN_DIR}")
+    # Search in both CUDA 13 Layout (bin/x64/) and CUDA 12 Layout (bin/)
+    file(GLOB NVRTC_DLLS 
+        "${CUDA_BIN_DIR}/x64/nvrtc64_*.dll" 
+        "${CUDA_BIN_DIR}/x64/nvrtc-builtins64_*.dll"
+        "${CUDA_BIN_DIR}/nvrtc64_*.dll" 
+        "${CUDA_BIN_DIR}/nvrtc-builtins64_*.dll"
+    )
+     # Safety check to verify files were actually found
+    if(NOT NVRTC_DLLS)
+        message(FATAL_ERROR "NVRTC DLLs not found! Check your CUDA installation path.")
+    endif()
+    # Copy the DLLs into your build tree execution folder during standard builds
+    file(COPY ${NVRTC_DLLS} DESTINATION "${CMAKE_BINARY_DIR}/bin")
+    # Install the DLLs into the shipping package folder structure
+    install(FILES ${NVRTC_DLLS} DESTINATION bin)
+else()
+    # Linux setup (.so files)
+    get_target_property(NVRTC_SO CUDA::nvrtc LOCATION)
+    get_filename_component(CUDA_SO_DIR "${NVRTC_SO}" DIRECTORY)
+    file(GLOB NVRTC_SOS "${CUDA_SO_DIR}/libnvrtc.so*" "${CUDA_SO_DIR}/libnvrtc-builtins.so*")
+    install(FILES ${NVRTC_SOS} DESTINATION lib)
+endif()
+
 set(FILE_LIST
     ${OPTIX_PATH}/include/@optix.h
     ${OPTIX_PATH}/include/@optix_types.h
