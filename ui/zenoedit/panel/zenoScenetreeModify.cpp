@@ -1,4 +1,4 @@
-﻿#include "ZenoSceneTreeModify.h"
+#include "ZenoSceneTreeModify.h"
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include "viewport/zoptixviewport.h"
@@ -129,7 +129,7 @@ void SceneTreeModifyModel::removeRow(int row)
 	endRemoveRows();
 }
 
-QModelIndex& SceneTreeModifyModel::indexFromId(QString id)
+QModelIndex SceneTreeModifyModel::indexFromId(QString id)
 {
 	for (int i = 0; i < m_items.size(); ++i) {
 		if (m_items[i].id == id) {

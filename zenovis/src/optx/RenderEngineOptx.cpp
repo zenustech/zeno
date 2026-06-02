@@ -1,6 +1,8 @@
 #include <tuple>
 #include <unordered_map>
+#ifdef _WIN32
 #include <vcruntime_string.h>
+#endif
 #include <vector_types.h>
 #ifdef ZENO_ENABLE_OPTIX
 

@@ -53,9 +53,12 @@ template <class T> struct raii_traits {
     }
 };
 
-template <class T, class E=uint8_t, class traits = raii_traits<T>,
-         class = std::enable_if_t<std::is_same_v<std::decay_t<T>, T> &&
-         std::is_void_v<decltype(traits::deallocate(std::declval<T>()))>>>
+template <typename Traits, typename Type, typename = void>
+struct has_deallocate : std::__false_type {};
+template <typename Traits, typename Type>
+struct has_deallocate<Traits, Type, std::void_t<decltype(Traits::deallocate(std::declval<Type>()))>> : std::true_type {};
+
+template <class T, class E=uint8_t, class traits = raii_traits<T>>
 struct raii {
     T handle;
     std::size_t size, capacity;
@@ -97,14 +100,12 @@ struct raii {
         std::swap(capacity, o.capacity);
     }
 
-    template <typename TT = T, std::enable_if_t<std::is_same_v<TT, CUdeviceptr>> * = nullptr>
     bool resize(std::size_t newSize, std::size_t incSize = 0, bool managed=false) {
-
-        if (newSize ==0 ) {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return false;
+        if (newSize == 0) {
             reset(); return true;
         }
-
-        if (newSize != size) {  // temporary
+        if (newSize != size) {  
             if (managed)
                 CUDA_CHECK(cudaMallocManaged(reinterpret_cast<void **>(&reset()), newSize));
             else
@@ -113,14 +114,14 @@ struct raii {
             capacity = newSize;
             return true;
         }
-
         return false;
     }
 
     auto get() { return handle; }
 
-    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >>
     cudaError_t free() {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return cudaError::cudaSuccess;
+
         auto re = cudaError::cudaSuccess;
         if (handle) 
             re = cudaFreeAsync((void *)handle, 0);
@@ -130,34 +131,36 @@ struct raii {
         return re;
     }
 
-    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >>
     cudaError alloc(size_t count) {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return cudaError::cudaSuccess;
 
         auto byte_size = sizeof(E) * count;
         reset();
         size = byte_size;
         capacity = byte_size;
-
         return cudaMallocAsync((void**)&handle, byte_size, 0);
     }
 
-    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >>
     void allocAndUpload(size_t count, const E* ptr) {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return;
+
         auto byte_size = sizeof(E) * count;
         resize(byte_size);
         cudaMemcpy((void*)handle, ptr, byte_size, cudaMemcpyHostToDevice);
     }
 
-    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >, typename C=std::allocator<T>>
+    template <typename C=std::allocator<T>>
     void allocAndUpload(std::vector<E, C>& array) {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return;
+
         auto byte_size = sizeof(E) * array.size();
-        //alloc(array.size());
         resize(byte_size);
         cudaMemcpy((void*)handle, array.data(), byte_size, cudaMemcpyHostToDevice);
     }
 
-    template<typename = std::enable_if_t< std::is_same_v<T, CUdeviceptr> >>
     void download(std::vector<E>& array) {
+        if constexpr (!std::is_same_v<T, CUdeviceptr>) return;
+
         size_t count = size / sizeof(E);
         if (size % sizeof(E)) {
             count += 1;

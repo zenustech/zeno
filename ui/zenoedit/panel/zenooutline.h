@@ -46,7 +46,7 @@ private:
     };
     
     std::unique_ptr<OutlineItem> rootItem;  // rootItem也使用unique_ptr
-    void OutlineItemModel::set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name, bool skip = false);
+    void set_child_node(Json const&json, OutlineItemModel::OutlineItem *item, std::string name, bool skip = false);
 };
 
 class zenooutline : public QWidget
