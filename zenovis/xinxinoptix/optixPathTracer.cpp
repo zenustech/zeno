@@ -55,7 +55,7 @@
 #include <map>
 #include <unordered_map>
 #include "xinxinoptixapi.h"
-#include "OptiXStuff.h"
+#include "optiXStuff.h"
 #include <zeno/utils/vec.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/envconfig.h>

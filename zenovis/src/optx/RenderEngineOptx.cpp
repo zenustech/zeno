@@ -37,7 +37,7 @@
 #include <zeno/types/UserData.h>
 #include "zeno/core/Session.h"
 #include <variant>
-#include "../../xinxinoptix/OptiXStuff.h"
+#include "../../xinxinoptix/optiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/AttrVector.h>

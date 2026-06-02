@@ -10,7 +10,7 @@ target_sources(zenovis PRIVATE
   ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
-  OptiXStuff.h
+  optiXStuff.h
   Host.h
 
   optixVolume.cpp
