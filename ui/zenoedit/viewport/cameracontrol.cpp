@@ -123,7 +123,7 @@ void CameraControl::click_id_activate_matnode(std::optional<std::tuple<std::stri
         ZASSERT_EXIT(pEditor);
         if (IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel())
         {
-            auto& const checkNodesInSubg = [pGraphsModel, pEditor, &mat_id](auto subgIdx) {
+            const auto& checkNodesInSubg = [pGraphsModel, pEditor, &mat_id](auto subgIdx) {
                 for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++) {
                     auto nodeidx = pGraphsModel->index(i, subgIdx);
                     if (pGraphsModel->IsSubGraphNode(nodeidx)) {
@@ -131,7 +131,7 @@ void CameraControl::click_id_activate_matnode(std::optional<std::tuple<std::stri
                             pEditor->activateTab(nodeidx.data(ROLE_OBJNAME).toString(), "", "");
                             return;
                         }
-                        INPUT_SOCKETS inputs = nodeidx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+                        INPUT_SOCKETS inputs = nodeidx.data(ROLE_INPUTS).template value<INPUT_SOCKETS>();
                         for (auto& input : inputs) {
                             if (input.first.toLower() == QString("matname") &&
                                 input.second.info.defaultValue.toString() == QString::fromStdString(mat_id)) {
@@ -141,7 +141,7 @@ void CameraControl::click_id_activate_matnode(std::optional<std::tuple<std::stri
                         }
                     }
                     else if (nodeidx.data(ROLE_OBJNAME).toString() == "SubInput") {
-                        PARAMS_INFO params = nodeidx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+                        PARAMS_INFO params = nodeidx.data(ROLE_PARAMETERS).template value<PARAMS_INFO>();
                         if (params["name"].value.toString().toLower() == QString("matname") &&
                             params["defl"].value.toString() == QString::fromStdString(mat_id)) {
                             pEditor->activateTab(subgIdx.data(ROLE_OBJNAME).toString(), "", nodeidx.data(ROLE_OBJID).toString(), false, false);

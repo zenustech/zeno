@@ -146,8 +146,8 @@ struct CameraEval : zeno::INode {
         auto nodelist = get_input<zeno::ListObject>("nodelist")->get<zeno::CameraObject>();
 
         std::sort(nodelist.begin(), nodelist.end(), [](const auto &a, const auto &b)-> bool {
-            auto a_frame = a->userData().get2<float>("frame");
-            auto b_frame = b->userData().get2<float>("frame");
+            auto a_frame = a->userData().template get2<float>("frame");
+            auto b_frame = b->userData().template get2<float>("frame");
             return a_frame < b_frame;
         });
 

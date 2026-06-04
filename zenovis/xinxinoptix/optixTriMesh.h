@@ -4,7 +4,7 @@
 
 #include <map>
 #include <vector>
-#include "OptiXStuff.h"
+#include "optiXStuff.h"
 
 //#include <OptiXToolkit/CuOmmBaking/CuBuffer.h>
 #include <OptiXToolkit/CuOmmBaking/CuOmmBaking.h>

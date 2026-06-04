@@ -661,7 +661,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         }
         return false;
     };
-    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &runtype, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return false;
 

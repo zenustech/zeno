@@ -470,7 +470,7 @@ public:
 
                 auto& matrix_keys = item.value();
                 for (auto& matrix_key : matrix_keys.items()) {
-                    if ( matrix_dirty.contains(matrix_key.value()) ) {
+                    if ( matrix_dirty.contains(matrix_key.value().get<std::string>()) ) {
                         dirty |= true; break;
                     }
                 }
@@ -566,8 +566,8 @@ public:
 
                 for (auto& matrix_key : matrix_keys.items()) {
 
-                    const auto& matrix_list = matrix_map[matrix_key.value()];
-                    const auto id_it = instance_ids_map.find(matrix_key.value());
+                    const auto& matrix_list = matrix_map[matrix_key.value().get<std::string>()];
+                    const auto id_it = instance_ids_map.find(matrix_key.value().get<std::string>());
                     const auto has_custom_id = id_it != instance_ids_map.end();
 
                     instanced.reserve(instanced.size() + matrix_list.size());
@@ -641,7 +641,7 @@ public:
 
                 //auto matrix_keys = fallback_keys;
                 for (auto& mkey : matrix_keys.items()) {
-                    const auto& mlist = matrix_map[mkey.value()];
+                    const auto& mlist = matrix_map[mkey.value().get<std::string>()];
                     for (size_t i=0; i<mlist.size(); ++i) {
                         auto& matrix = mlist[i];
                         memcpy(opi.transform, matrix.data(), sizeof(float)*12);

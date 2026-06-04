@@ -1,7 +1,5 @@
 #pragma once
-
 #include "optixCommon.h"
-#include "optixStuff.h"
 #include "optixPathTracer.h"
 #include <vector>
 

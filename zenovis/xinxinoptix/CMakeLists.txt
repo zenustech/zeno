@@ -10,7 +10,7 @@ target_sources(zenovis PRIVATE
   ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
-  OptiXStuff.h
+  optiXStuff.h
   Host.h
 
   optixVolume.cpp
@@ -130,7 +130,8 @@ else()
     get_target_property(NVRTC_SO CUDA::nvrtc LOCATION)
     get_filename_component(CUDA_SO_DIR "${NVRTC_SO}" DIRECTORY)
     file(GLOB NVRTC_SOS "${CUDA_SO_DIR}/libnvrtc.so*" "${CUDA_SO_DIR}/libnvrtc-builtins.so*")
-    install(FILES ${NVRTC_SOS} DESTINATION lib)
+    file(COPY ${NVRTC_SOS} DESTINATION "${CMAKE_BINARY_DIR}/bin")
+    # install(FILES ${NVRTC_SOS} DESTINATION lib)
 endif()
 
 set(FILE_LIST
