@@ -69,7 +69,7 @@ struct ShaderVolume : INode {
         auto EmissionScale = get_input2<std::string>("EmissionScale:");
         em.commonCode += "#define VolumeEmissionScale VolumeEmissionScaleType::" + EmissionScale + "\n";
 
-        vol_depth = clamp(vol_depth, 9, 9999);
+        vol_depth = clamp(vol_depth, 1, 9999);
         vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
         std::string parameters = "";

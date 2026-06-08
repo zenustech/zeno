@@ -7,6 +7,7 @@
 #include <cuda_runtime.h>
 
 #include <memory>
+#include <nvrtc.h>
 #include <optix.h>
 #include <optix_stubs.h>
 
@@ -279,15 +280,26 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
     bool success=false;
 
     std::vector<const char*> compilerOptions {
-        "-std=c++17", "-default-device"
-        //,"-extra-device-vectorization"
-  #if !defined( NDEBUG )      
-        ,"-lineinfo" //"-G"//"--dopt=on",
-  #endif
-        ,"--relocatable-device-code=true"
-        // "--extensible-whole-program"
-        , "--optix-ir"
+        "-std=c++17", "-default-device",
+        "--extra-device-vectorization",
+        "--relocatable-device-code=true",
+        "--use_fast_math",
+        "--optix-ir",
+    #if !defined( NDEBUG )      
+        "-lineinfo" //"-G"//"--dopt=on",
+    #endif
     };
+
+    {  
+        int major, minor; 
+        auto result = nvrtcVersion(&major, &minor);
+        if (result == NVRTC_SUCCESS) {
+            if (major >= 12) {
+                compilerOptions.push_back("--split-compile=0");
+            }
+        }
+        // printf("NVRTC Version %d.%d \n", major, minor);
+    }
 
     std::string flat_macros = ""; 
 

@@ -365,10 +365,10 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
             }
         }else if (postprocess == "aces"){
             if (wrapS == "CLAMP_TO_EDGE") {
-                em->emitCode(zeno::format("({}(texture2D( zenotex[{}], saturate(vec2({}) * {}), true))){}", type, texId, coord, uvtiling, suffix));
+                em->emitCode(zeno::format("({}(texture2D<float4,vec4,true>( zenotex[{}], saturate(vec2({}) * {}), true))){}", type, texId, coord, uvtiling, suffix));
             }
             else {
-                em->emitCode(zeno::format("({}(texture2D(zenotex[{}], vec2({}) * {}, true))){}", type, texId, coord, uvtiling, suffix));
+                em->emitCode(zeno::format("({}(texture2D<float4,vec4,true>(zenotex[{}], vec2({}) * {}, true))){}", type, texId, coord, uvtiling, suffix));
             }
         }else if (postprocess == "normal_map"){
             if (wrapS == "CLAMP_TO_EDGE") {

@@ -370,7 +370,7 @@ bool OptixScene::preloadVolumeBox(const std::string& key, std::string& matid, ui
     }
     auto trans = glm::transpose(transform);
     
-    vbox->aabbs = std::move(aabbs);
+    // vbox->aabbs = std::move(aabbs);
     vbox->dirty = true;
     vbox->bounds = bounds;
     vbox->transform = trans;

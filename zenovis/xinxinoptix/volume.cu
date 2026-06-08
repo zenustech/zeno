@@ -73,7 +73,7 @@ struct AABB {
     float3 maxi;
 
     AABB() = default;
-    AABB(float3& mi, float3& ma) {
+    __device__ AABB(float3 mi, float3 ma) {
         mini = mi, maxi = ma;
     }
     __device__ float3 ext() const {
@@ -125,16 +125,18 @@ struct OcStack {
     }
 };
 
-__device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_idx, const AABB& root_box, const float3& ray_o, const float3& ray_d, float thickness, float t_skip, uint8_t max_depth=8) {
+__device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_idx, const AABB& root_box, OcStack& stack, const float3& ray_o, const float3& ray_d, float thickness, float t_skip, uint8_t max_depth=8) {
 
-    OcStack stack {};
+    // OcStack stack {};
     OcTrace trace {};
 
     auto _root_scale = root_box.ext();
     auto _root_offset = root_box.mini;
+    
     // scale root box to [0.f, 1.f]
-    auto _ray_o = (ray_o - _root_offset) / _root_scale;
-    auto _ray_d = ray_d / _root_scale;
+    auto _inver_scale = 1.0f / _root_scale;
+    auto _ray_o = (ray_o - _root_offset) * _inver_scale;
+    auto _ray_d = ray_d * _inver_scale;
 
         auto rayScale = length( _ray_d );
         thickness *= rayScale;
@@ -301,6 +303,10 @@ __device__ __forceinline__ auto EvalVolume(VolumeIn& vin, uint16_t dc_index, flo
     optixDirectCall<void, void*, bool, VolumeOut&>( dc_index, (void*)&vin, shadowRay, out);
 }
 
+__device__ __forceinline__ int roundUpToMultiple(int v, int m) {
+    return ((v + m - 1) / m) * m;
+}
+
 extern "C" __global__ void __intersection__volume()
 {
     auto gas = optixGetGASTraversableHandle();
@@ -380,10 +386,28 @@ extern "C" __global__ void __intersection__volume()
     const auto octree_ptr = reinterpret_cast<OcNode*>(*(gas_ptr-5));
     assert(octree_ptr != nullptr);
 
+    const auto bbox = aabb;
+    const auto dim = bbox.ext();
+
+    const int OCTREE_DEPTH = 6;
+    const int leafRes = 1 << OCTREE_DEPTH;
+    int3 paddedDim {
+            roundUpToMultiple(int(dim.x), leafRes),
+            roundUpToMultiple(int(dim.y), leafRes),
+            roundUpToMultiple(int(dim.z), leafRes) };
+    const float3 minCoord = bbox.mini;
+    const float3 maxCoord {
+            minCoord.x + paddedDim.x,
+            minCoord.y + paddedDim.y,
+            minCoord.z + paddedDim.z };
+
+    auto octbox = AABB(minCoord, maxCoord);
+
     if ( !anyhit ) {
 
+        OcStack stack {};
         auto thickness = -logf(1.0f-prd->rndf())  / (len * sbt_data->vol_extinction);
-        auto sek = traverseSVO(octree_ptr, 0, aabb, ray_ori, ray_dir, thickness, obj_t0);
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, obj_t0);
 
         if (sek.t0<0) {
             return; // empty
@@ -417,10 +441,11 @@ extern "C" __global__ void __intersection__volume()
     auto scale = 1.0f / (len * sbt_data->vol_extinction);
 
     float t_progress = obj_t0;
+    OcStack stack {};
 
     do {
         auto thickness = -logf(1.0f-rnd(seed)) * scale;
-        auto sek = traverseSVO(octree_ptr, 0, aabb, ray_ori, ray_dir, thickness, t_progress);
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, t_progress);
 
         if (sek.t0 >= obj_t1 || sek.t0 < 0) // empty zone
             break;
@@ -551,7 +576,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     shadowPRD.origin = new_orig; //camera sapce
     shadowPRD.attanuation = vec3(1.0f);
 
-    DirectLighting<true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
+    DirectLighting<true, true>(shadowPRD, new_orig+params.cam.eye, ray_dir, evalBxDF);
     prd->radiance += shadowPRD.radiance;
 }
 

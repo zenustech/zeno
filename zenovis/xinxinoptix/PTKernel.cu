@@ -96,10 +96,8 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
 void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
     
     const auto& vol = prd.vol;
-    // if (vol.homo_t1 <= vol.homo_t0) return;
-    // if (_tmax_ <= vol.homo_t0) return;
     
-    float tmax = fminf(_tmax_, vol.homo_t1) - vol.homo_t0;
+    float tmax = fminf(_tmax_, vol.t1) - vol.t0;
 
     VolumeOut fog_out;
     optixDirectCall<void, void*, VolumeOut&>( prd.vol.homo_matid, nullptr, fog_out);
@@ -122,8 +120,8 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     float sa = 1.0 - rnd(seed) * cdf_K; //Sample of the survival CDF
     float DT = -logf(sa) / sig_K;
 
-    let new_orig = ray_origin + (prd.vol.homo_t0) * ray_dir;
-    //let new_orig = ray_origin + (prd.vol.homo_t0 + dt) * ray_dir;
+    let new_orig = ray_origin + (prd.vol.t0) * ray_dir;
+    //let new_orig = ray_origin + (prd.vol.t0 + dt) * ray_dir;
     
     ShadowPRD shadowPRD {};
     shadowPRD.seed = seed ^ 0x9e3779b9u;
@@ -436,7 +434,7 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
-            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+            if (prd.vol.homo_matid!=UINT_MAX && prd.vol.t1 > prd.vol.t0 && prd._tmax_ > prd.vol.t0) {
                 float3 vol_lighting;
                 float3 vol_attenuation;
                 homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);

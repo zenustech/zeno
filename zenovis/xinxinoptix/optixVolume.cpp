@@ -258,7 +258,15 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
     {
 		// get this grid's aabb
         sutil::Aabb aabb = sutil::Aabb( make_float3(0), make_float3(1) );
-        
+
+        if (volume.grids.size()>0) {
+            auto bbox = volume.grids[0]->indexedBox();
+            auto min3s = bbox.min().asVec3s();
+            auto max3s = bbox.max().asVec3s();
+            aabb.m_min = make_float3(min3s[0], min3s[1], min3s[2]);
+            aabb.m_max = make_float3(max3s[0] + 1.0f, max3s[1] + 1.0f, max3s[2] + 1.0f);
+        }
+
         auto aabb_ptr = &aabb;
         auto count = 1;
 

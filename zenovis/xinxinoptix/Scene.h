@@ -429,8 +429,8 @@ public:
                     if (_vdb_grids_cached.count(vdb_key)==0) {
                         shader_visiable = VisibilityMask::NothingMask;
                     } else {
-                        // auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                        // candi.handle = vdb_ptr->node->handle;
+                        auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
+                        candi.handle = vdb_ptr->node->handle;
                     } //vdb_ptr
                 } 
                 if (shader_ref.isHomoVol())

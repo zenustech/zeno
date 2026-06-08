@@ -333,8 +333,4 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, bool shad
         __proxy_callable__evalmat<false>(attrs_ptr, shadowRay, output);
     else
         __proxy_callable__evalmat<true>(attrs_ptr, shadowRay, output);
-    // if (output.albedoAmp < 0.0f) {
-
-    //     auto& attrs = *reinterpret_cast<VolumeInX*>(attrs_ptr);
-
 }

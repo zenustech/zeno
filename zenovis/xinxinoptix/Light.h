@@ -234,7 +234,7 @@ namespace detail {
     };
 }
 
-template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
+template<bool _MIS_, bool CHEAP_BXDF=false, typename TypeEvalBxDF, typename TypeAux = void>
 static __forceinline__ __device__
 void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir, 
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
@@ -590,8 +590,8 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
     
     }
     else{
-        auto dlights = reinterpret_cast<DistantLightList*>(params.dlights_ptr);
-        auto plights = reinterpret_cast<PortalLightList*>(params.plights_ptr);
+        auto dlights = reinterpret_cast<const DistantLightList*>(params.dlights_ptr);
+        auto plights = reinterpret_cast<const PortalLightList*>(params.plights_ptr);
         float dlight_wt = nullptr != dlights && dlights->COUNT()>0?1.0f:0.0f;
         float plight_wt = plights != nullptr && plights->COUNT()>0?1.0f:0.0f;
         float elight_wt = params.sky_strength>0?1.0f:0.0f;

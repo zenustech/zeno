@@ -29,9 +29,9 @@ static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned
     return ptr;
 }
 
-static __forceinline__ __device__ void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
+static __forceinline__ __device__ void  packPointer( const void* ptr, unsigned int& i0, unsigned int& i1 )
 {
-    const unsigned long long uptr = reinterpret_cast<unsigned long long>( ptr );
+    auto& uptr = reinterpret_cast<const uint64_t&>( ptr );
     i0 = uptr >> 32;
     i1 = uptr & 0x00000000ffffffff;
 }
@@ -55,7 +55,7 @@ struct CommonPRD {
     float maxDistance;
 
     uint32_t seed;
-    float rndf() {
+    __device__ float rndf() {
         return rnd(seed);
     }
 
