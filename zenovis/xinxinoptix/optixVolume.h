@@ -2,8 +2,9 @@
 
 #include "optixCommon.h"
 
+#include "Octree.h"
 #include <sutil/Aabb.h>
-#include <sutil/vec_math.h>
+// #include <sutil/vec_math.h>
 #include <sutil/Exception.h>
 
 #include <nanovdb/NanoVDB.h>
@@ -30,6 +31,7 @@
 #include "volume.h"
 #include "magic_enum.hpp"
 
+#include <zeno/utils/vec.h>
 #include <zeno/utils/type_traits.h>
 #include <zeno/types/TextureObject.h>
 
@@ -222,8 +224,11 @@ struct VolumeWrapper
 	//openvdb::math::Transform::Ptr transform; // openvdb::math::Mat4f::identity();
 	uint8_t bounds;
 	glm::mat4 transform;
-	std::vector<sutil::Aabb> aabbs;
+	sutil::Aabb aabb;
 	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_aabb = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
+
+	VolumeAggregate aggregate;
+	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_octree = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
 
 	std::vector<std::string> selected;
 

@@ -42,12 +42,12 @@ enum medium{
 };
 
 struct VolumePRD {
+    uint homo_matid=UINT_MAX;
+    
     float t0;
     float t1;
-
-    float homo_t0;
-    float homo_t1;
-    uint homo_matid;
+    half density_min;
+    half density_max;
 };
 
 struct CommonPRD {

@@ -271,15 +271,16 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 		// up to device
         auto& d_aabb = *volume.d_aabb;
         d_aabb.allocAndUpload(byte_size, (const uint8_t*)aabb_ptr);
+        {
+            auto byte_size = sizeof(VolumeAggregate::OcNode) * volume.aggregate.octree.size();
+            volume.d_octree->allocAndUpload( byte_size, (const uint8_t*)volume.aggregate.octree.data() );
+        }
 
         // Make build input for this grid
         uint32_t aabb_input_flags = OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL;
         OptixBuildInput build_input = {};
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-
-        auto jumped = ((sutil::Aabb*)d_aabb.handle + 1);
-        CUdeviceptr tmp[1] = { (CUdeviceptr)jumped }; 
-        build_input.customPrimitiveArray.aabbBuffers = &tmp[0];
+        build_input.customPrimitiveArray.aabbBuffers = &d_aabb.handle;
         
         build_input.customPrimitiveArray.flags = &aabb_input_flags;
         build_input.customPrimitiveArray.numSbtRecords = 1;
@@ -294,7 +295,11 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 
         xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 128);
         cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
-        cudaMemcpy((char*)accel.buffer.handle+128-16, &d_aabb.handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
+        cudaMemcpy((char*)accel.buffer.handle+128-8-24, &aabb, sizeof(sutil::Aabb), cudaMemcpyHostToDevice);
+
+        const auto& d_octree = volume.d_octree;
+        cudaMemcpy((char*)accel.buffer.handle+128-40, &(d_octree->handle), sizeof(uint64_t), cudaMemcpyHostToDevice);
+        printf("d_octree = %llu \n", d_octree->handle);
         return;
     }
 }

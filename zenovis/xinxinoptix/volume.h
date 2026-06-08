@@ -5,6 +5,11 @@
 
 #ifndef __CUDACC_RTC__
 #include <Host.h>
+
+#ifndef half
+using __half=uint16_t;
+#endif
+
 #endif
 
 namespace nanovdb {    
@@ -24,38 +29,22 @@ namespace nanovdb {
 };
 
 struct VolumeIn {
-    float3 pos_world;
     float3 pos_view;
 
-    bool isShadowRay;
-
-    float sigma_t;
     uint32_t* seed;
-
     void* sbt_ptr;
+    
     float4 objectToWorld[3];
     float4 worldToObject[3];
-    
-    float3 _local_pos_;
-    float3 _uniform_pos_;
-
-    void resetCache() {
-        _local_pos_.x = CUDART_NAN_F;
-        _uniform_pos_.x = CUDART_NAN_F;
-    }
 };
 
 struct VolumeOut {
-    float step_scale=__FLT_MAX__;
-
-    float max_density;
-    float density;
+    __half density;
+    __half anisotropy;
+    float albedoAmp;
 
     float3 albedo;
     float3 extinction;
-    float albedoAmp;
-    
-    float anisotropy;
     float3 emission;
 };
 

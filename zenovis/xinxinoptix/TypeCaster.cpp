@@ -4,6 +4,12 @@
 #include <vector_functions.hpp>
 // #include <cuda_fp16.hpp>
 
+ushort toHalf(const float& in)
+{
+    half h = __float2half(in);
+    return *(ushort*)&(h);
+}
+
 ushort2 toHalf(const float2& in)
 {
     half hx = __float2half(in.x);

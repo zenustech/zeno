@@ -13,6 +13,7 @@ target_sources(zenovis PRIVATE
   OptiXStuff.h
   Host.h
 
+  Octree.h
   optixVolume.cpp
   optixVolume.h
   optixSphere.cpp

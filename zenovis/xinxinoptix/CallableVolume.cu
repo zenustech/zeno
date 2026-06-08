@@ -3,8 +3,6 @@
 #include <nanovdb/util/HDDA.h>
 #include <nanovdb/util/SampleFromVoxels.h>
 
-#define _NANOVDB_ true
-
 #include "IOMat.h"
 #include "volume.h"
 #include "TraceStuff.h"
@@ -157,15 +155,11 @@ struct VolumeInX : VolumeIn {
 		return rnd(*seed);
 	}
 
-    __device__ vec3 localPosLazy() {
-		if (isfinite(_local_pos_.x)) return _local_pos_;
-
-        _local_pos_ = transformPoint(pos_view, this->worldToObject);
-        return _local_pos_;
+    __device__ vec3 localPosLazy() const {
+        return transformPoint(pos_view, this->worldToObject);
     };
 
-    __device__ vec3 uniformPosLazy() {
-		if (isfinite(_uniform_pos_.x)) return _uniform_pos_;
+    __device__ vec3 uniformPosLazy() const {
 
         using GridTypeNVDB = GridTypeNVDB0;
         const HitGroupData* sbt_data = (HitGroupData*)( sbt_ptr );
@@ -173,10 +167,9 @@ struct VolumeInX : VolumeIn {
         const auto grid_ptr = sbt_data->vdb_grids[0];
         const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
 
+        auto local_pos = localPosLazy();
         if (_grid == nullptr) {
-            auto local_pos = localPosLazy();
-            _uniform_pos_ = local_pos + 0.5f;
-            return _uniform_pos_;
+            return local_pos + 0.5f;
         }
 
         auto bbox = _grid->indexBBox();
@@ -193,11 +186,8 @@ struct VolumeInX : VolumeIn {
             static_cast<float>( boundsMax[1] ),
             static_cast<float>( boundsMax[2] )};
 
-        auto local_pos = localPosLazy();
-
         auto _uniform_pos_ = (local_pos - min) / (max - min);
         _uniform_pos_ = clamp(_uniform_pos_, vec3(0.0f), vec3(1.0f));
-
         // assert(_uniform_pos_.x >= 0);
         // assert(_uniform_pos_.y >= 0);
         // assert(_uniform_pos_.z >= 0);
@@ -246,7 +236,7 @@ inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd
 }
 
 template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB, typename ReturnType>
-__inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeInX& volin) {
+__inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, const vec3& att_pos, const VolumeInX& volin) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
@@ -268,7 +258,7 @@ __inline__ __device__ ReturnType samplingVDB(const unsigned long long grid_ptr, 
 }
 
 template <uint8_t Order, bool WorldSpace, bool cihou, typename DataTypeNVDB>
-__inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, vec3& att_pos, VolumeInX& volin) {
+__inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, const vec3& att_pos, const VolumeInX& volin) {
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
     const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
@@ -279,7 +269,8 @@ __inline__ __device__ vec2 XsamplingVDB(const unsigned long long grid_ptr, vec3&
     return vec2 { value, maxi };
 }
 
-extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut& output) {
+template <bool DENSITY>
+__device__ void __proxy_callable__evalmat(void* attrs_ptr, bool shadowRay, VolumeOut& output) {
 
     let uniforms = params.d_uniforms;
     let buffers = params.global_buffers;
@@ -287,7 +278,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
     auto& attrs = *reinterpret_cast<VolumeInX*>(attrs_ptr);
     auto& prd = attrs;
 
-    vec3& att_pos = reinterpret_cast<vec3&>(attrs.pos_world);
+    vec3 att_pos = attrs.pos_view + params.cam.eye;
     auto att_clr = vec3(0);
     auto att_uv = vec3(0);
     auto att_nrm = vec3(0);
@@ -299,7 +290,7 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
     auto vdb_max_v = sbt_data->vdb_max_v;
 
     auto att_isBackFace = false;
-    auto att_isShadowRay = attrs.isShadowRay;
+    auto att_isShadowRay = shadowRay;
     float albedoAmp = 1.0f;
 #ifdef __FORWARD__
     //GENERATED_BEGIN_MARK
@@ -317,33 +308,33 @@ extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, VolumeOut
 
 #endif // _FALLBACK_
 
-#if _NANOVDB_
-
     output.albedo = clamp(albedo, 0.0f, 1.0f);
-    output.anisotropy = clamp(anisotropy, -1.0f, 1.0f);
+    output.anisotropy = __half( clamp(anisotropy, -1.0f, 1.0f) );
     output.extinction = extinction;
     output.albedoAmp = albedoAmp;
-
-    output.density = fmaxf(density, 0.0f);
+    
     output.emission = fmaxf(emission, vec3(0.0f));
 
 	if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Raw) {
 		//output.emission = output.emission; 
 	} else if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Density) {
-		output.emission = output.density * output.emission;
+		output.emission = density * output.emission;
 	} else if constexpr(VolumeEmissionScale == VolumeEmissionScaleType::Absorption) {
-
-		auto sigma_t = attrs.sigma_t;
-
-		float sigma_a = sigma_t * output.density * average(1.0f - output.albedo);
-		sigma_a = fmaxf(sigma_a, 0.0f);
-		auto tmp = output.emission * sigma_a;
-		output.step_scale = 1.0f / fmaxf(sigma_t, average(tmp)); 
-		output.emission = tmp / sigma_t;
+        
 	}
-    
-#else
-    //USING 3D ARRAY
-    //USING 3D Noise 
-#endif
+
+    if constexpr(DENSITY) {
+        output.density = __half( fmaxf(density, 0.0f) );
+    }
+}
+
+extern "C" __device__ void __direct_callable__evalmat(void* attrs_ptr, bool shadowRay, VolumeOut& output) {
+    if (output.density < __half(0))
+        __proxy_callable__evalmat<false>(attrs_ptr, shadowRay, output);
+    else
+        __proxy_callable__evalmat<true>(attrs_ptr, shadowRay, output);
+    // if (output.albedoAmp < 0.0f) {
+
+    //     auto& attrs = *reinterpret_cast<VolumeInX*>(attrs_ptr);
+
 }
