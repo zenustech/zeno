@@ -13,6 +13,7 @@ target_sources(zenovis PRIVATE
   OptiXStuff.h
   Host.h
 
+  Octree.cpp
   Octree.h
   optixVolume.cpp
   optixVolume.h
@@ -164,6 +165,7 @@ set(FILE_LIST
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Octree.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@GeometryAux.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Curves.h

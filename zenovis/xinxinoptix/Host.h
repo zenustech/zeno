@@ -21,6 +21,10 @@
 #include <cstdint>
 #include <stdint.h>
 
+#ifndef half
+using __half=uint16_t;
+#endif
+
 // static inline bool isnan(float f) {
 //     return f == INFINITY;
 // }

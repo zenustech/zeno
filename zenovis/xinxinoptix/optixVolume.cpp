@@ -280,7 +280,7 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
         auto& d_aabb = *volume.d_aabb;
         d_aabb.allocAndUpload(byte_size, (const uint8_t*)aabb_ptr);
         {
-            auto byte_size = sizeof(VolumeAggregate::OcNode) * volume.aggregate.octree.size();
+            auto byte_size = sizeof(OcNode) * volume.aggregate.octree.size();
             volume.d_octree->allocAndUpload( byte_size, (const uint8_t*)volume.aggregate.octree.data() );
         }
 

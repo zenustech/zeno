@@ -10,6 +10,7 @@
 #include "zxxglslvec.h"
 #include "math_constants.h"
 
+#include <Octree.h>
 #include <cuda_fp16.h>
 // #include "nvfunctional"
 
@@ -90,18 +91,6 @@ struct AABB {
 struct OcTrace {
     float t0 = -1;
     half min_d, max_d;
-};
-
-struct OcNode {
-    uint32_t data;
-    half min_d, max_d;
-
-    __device__ uint8_t childMask() const {
-        return (uint8_t)(data >> 24);
-    }
-    __device__ uint32_t childOffset() const {
-        return (uint32_t)(data & 0x00FFFFFF);
-    }
 };
 
 #define MAX_STACK_DEPTH 23

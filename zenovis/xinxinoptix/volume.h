@@ -5,11 +5,6 @@
 
 #ifndef __CUDACC_RTC__
 #include <Host.h>
-
-#ifndef half
-using __half=uint16_t;
-#endif
-
 #endif
 
 namespace nanovdb {    
