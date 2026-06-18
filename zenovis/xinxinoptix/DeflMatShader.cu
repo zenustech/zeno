@@ -943,4 +943,6 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->radiance += CUR_TOTAL_TRANS  * mats.emission;
     prd->depth++;
+    
+    prd->volume_depth = 0;
 }

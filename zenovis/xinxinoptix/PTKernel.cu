@@ -363,6 +363,7 @@ extern "C" __global__ void __raygen__rg()
         prd.hair_depth = 0;
         prd.alphaDepth = 0;
         prd.isSS = false;
+        prd.volume_depth = 0;
         prd.curMatIdx = 0;
         prd.test_distance = false;
         prd.ss_alpha_queue[0] = half3(-1.0f);
@@ -468,17 +469,22 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
-            if( prd.done || prd.depth>prd.max_depth){
+            if( prd.done || ( 0==prd.volume_depth && prd.depth>prd.max_depth ) ){
                 break;
             }
 
             if(prd.depth > 1){
                 float RRprob = RgbToY(prd.attenuation);//max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-                RRprob = min(RRprob, 1.0f);
+                if (prd.volume_depth >= 4) {
+                    RRprob = fminf(RRprob, 0.85f);
+                } else {
+                    RRprob = fminf(RRprob, 1.00f);
+                }
 
-                if(rnd(prd.seed) > RRprob) {
+                if(RRprob <= 0.0f || rnd(prd.seed) > RRprob) {
                     break;
                 } else {
+                    // RRprob = fmaxf(RRprob, 1e-3f);
                     prd.attenuation = prd.attenuation / RRprob;
                 }
             }
@@ -622,9 +628,12 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
-        envPdf *= params.skyLightProbablity();
+        bool hasenv = params.skynx | params.skyny;
+        hasenv = params.usingHdrSky && hasenv;
+        envPdf = hasenv ? envPdf : (0.25f / M_PIf);
+        envPdf *= DirectSkySelectionWeight();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf,1.0f);
+        float misWeight = BRDFBasics::BalanceHeuristic(prd->samplePdf, envPdf);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;

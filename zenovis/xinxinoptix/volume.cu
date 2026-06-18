@@ -535,6 +535,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     // else {
         prd->origin = new_orig;
         prd->depth += 1;
+        prd->volume_depth = min(prd->volume_depth+1, 255);
         prd->_tmax_ = t0;
         prd->updateAttenuation(vout.albedo);
         prd->geometryNormal = {};
@@ -555,8 +556,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
     
     auto evalBxDF = [hg=hg, albedo=vout.albedo](const float3& _wi_, const float3& _wo_, float& thisPDF) -> float3 {
         // pbrt::HenyeyGreenstein hg(aniso);
-        thisPDF = hg.p(_wo_, _wi_);
-        return albedo * thisPDF;
+        float phase = hg.p(_wo_, _wi_);
+        thisPDF = phase;
+        return albedo * phase;
     };
 
     ShadowPRD shadowPRD {};
