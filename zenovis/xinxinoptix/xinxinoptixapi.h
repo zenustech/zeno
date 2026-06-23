@@ -117,6 +117,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 void updateRootIAS();
 void buildLightTree();
 void configPipeline(bool dirty);
+void configPipeline(bool dirty, bool pipelineDirty);
 
 void set_window_size(int nx, int ny);
 void set_outside_random_number(unsigned int outside_random_number);

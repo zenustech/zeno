@@ -175,6 +175,7 @@ bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& c
 {
     auto path = texVDB.path;
     auto channel = texVDB.channel;
+    const auto requested_channel = channel;
 
     std::filesystem::path filePath = path;
 
@@ -194,6 +195,33 @@ bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& c
         return true;
     };
 
+    const auto makeVGridKey = [&](const std::string& resolved_channel) {
+        return path + "{" + requested_channel + "|" + resolved_channel + "}#" + std::to_string(static_cast<int>(texVDB.eleType));
+    };
+
+    auto cachedVolumeIsCurrent = [&](const std::string& vdb_key) {
+        auto it = _vdb_grids_cached.find(vdb_key);
+        if (it == _vdb_grids_cached.end()) {
+            return false;
+        }
+
+        auto& cached = it->second;
+        if (fileTime == cached->file_time && texVDB.eleType == cached->type) {
+            combined_key = vdb_key;
+            return true;
+        }
+
+        cleanupVolume(*cached);
+        return false;
+    };
+
+    if (!isNumber(channel)) {
+        const auto vdb_key = makeVGridKey(channel);
+        if (cachedVolumeIsCurrent(vdb_key)) {
+            return true;
+        }
+    }
+
     if ( isNumber(channel) ) {
         auto channel_index = (uint)std::stoi(channel);
         channel = fetchGridName(path, channel_index);
@@ -201,20 +229,13 @@ bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& c
         checkGridName(path, channel);
     }
 
-    const auto vdb_key = path + "{" + channel + "}";
+    const auto vdb_key = makeVGridKey(channel);
     combined_key = vdb_key;
 
     zeno::log_debug("loading VDB :{}", path);
 
-    if (_vdb_grids_cached.count(vdb_key)) {
-
-        auto& cached = _vdb_grids_cached[vdb_key];
-
-        if (fileTime == cached->file_time && texVDB.eleType == cached->type) {
-            return true;
-        } else {
-            cleanupVolume(*cached);
-        }
+    if (cachedVolumeIsCurrent(vdb_key)) {
+        return true;
     }
 
     auto volume_ptr = std::make_shared<VolumeWrapper>();
