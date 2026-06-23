@@ -11,6 +11,9 @@ target_sources(zenovis PRIVATE
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
+  NvrtcWorker.cpp
+  NvrtcWorker.h
+  NvrtcCompileProtocol.h
   Host.h
 
   Octree.cpp
@@ -186,6 +189,7 @@ set(FILE_LIST
     ${NVDB_PATH}/@nanovdb/util/SampleFromVoxels.h
     )
 
+set(NVRTC_BUNDLE_SOURCES)
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
     string(MD5 ENCODED_FILE "${FILE_INFO}")
@@ -205,5 +209,21 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
         file(WRITE ${DUMMY_SOURCE_FILE} "/* generated from: ${FILE_PATH} */\n#include <vector>\n#include <sutil/sutil.h>\n\nnamespace sutil {\nstatic const unsigned char mydata[] = {\n${FORMATTED_HEX},\n0};\nstatic int helper = (getIncPathTab().push_back(\"${FILE_NAME}\"), getIncFileTab().push_back((const char *)mydata), 0);\n}")
 
     endif()
+    list(APPEND NVRTC_BUNDLE_SOURCES ${DUMMY_SOURCE_FILE})
     target_sources(zenovis PRIVATE ${DUMMY_SOURCE_FILE})
 endforeach()
+
+add_executable(zeno_nvrtc_helper
+    NvrtcCompileHelper.cpp
+    NvrtcCompileProtocol.h
+    ${NVRTC_BUNDLE_SOURCES}
+)
+target_include_directories(zeno_nvrtc_helper PRIVATE
+    SDK
+    SDK/cuda
+    SDK/sutil
+    .
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(zeno_nvrtc_helper PRIVATE CUDA::nvrtc)
+add_dependencies(zenovis zeno_nvrtc_helper)
