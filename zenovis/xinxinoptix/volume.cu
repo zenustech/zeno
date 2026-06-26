@@ -362,6 +362,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     scattering = vol_out.albedo;
     
     prd->depth += 1;
+    prd->hit_type = DIFFUSE_HIT;
 
     ShadowPRD shadowPRD {};
     shadowPRD.seed = prd->seed ^ 0x9e3779b9u;
