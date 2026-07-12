@@ -1445,12 +1445,11 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
     OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
-        if (!shaders[i]->dirty) continue;
-
+        const bool shader_source_dirty = shaders[i]->dirty;
+        if (!refresh && !shader_source_dirty) { continue; }
         shaders[i]->dirty = false;
-        OptixUtil::rtMaterialShaders[i].dirty = true;
 
-OptixUtil::_compile_group.run([&shaders, i] () {
+OptixUtil::_compile_group.run([&shaders, i, shader_source_dirty] () {
 
         auto& callable_string = shaders[i]->callable;
         
@@ -1461,20 +1460,25 @@ OptixUtil::_compile_group.run([&shaders, i] () {
 
         auto& rtShader = OptixUtil::rtMaterialShaders[i];
 
-        rtShader.core = shaderCore;
-        rtShader.callable_src = shaders[i]->callable;
+        nlohmann::json parameters = nlohmann::json::object();
         if (shaders[i]->parameters != "") {
-            rtShader.parameters = nlohmann::json::parse(shaders[i]->parameters);
+            parameters = nlohmann::json::parse(shaders[i]->parameters);
+        }
+        std::string density_signature {};
+        if (parameters.contains("density_signature") &&
+            parameters["density_signature"].is_string()) {
+            density_signature = parameters["density_signature"].template get<std::string>();
+        } else if (ShaderMark::Volume == shaders[i]->mark) {
+            density_signature = shaders[i]->callable;
         }
         auto macro = globalShaderBufferGroup.code(callable_string);
-        rtShader.macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
-            rtShader.macros["_volu_"] = true;
+            macro["_volu_"] = true;
 
-            if (rtShader.parameters.contains("vol_depth")) {
-                auto vol_depth = rtShader.parameters["vol_depth"];
-                rtShader.macros["_homo_"] = vol_depth == 0;
+            if (parameters.contains("vol_depth")) {
+                auto vol_depth = parameters["vol_depth"];
+                macro["_homo_"] = vol_depth == 0;
             }
         }
 
@@ -1487,10 +1491,31 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         }
         
         const auto& vdbs = shaders[i]->vdb_keys;
-        rtShader.vbds.resize(vdbs.size());
-        for (int j=0; j<vdbs.size(); ++j)
-        {
-            rtShader.vbds[j] = vdbs[j];
+        const auto density_vdb_refs = ShaderMark::Volume == shaders[i]->mark
+            ? resolveDensityVDBSlots(vdbs, density_signature)
+            : DensityVDBSlotRefs {};
+        const bool density_vdb_refs_changed =
+            rtShader.density_vdb_primary_slot != density_vdb_refs.primary_slot ||
+            rtShader.density_vdb_referenced_slots != density_vdb_refs.referenced_slots;
+        rtShader.vbds = vdbs; 
+
+        const bool program_changed = rtShader.core != shaderCore || rtShader.macros != macro || rtShader.callable_src != shaders[i]->callable;
+            
+        const bool density_inputs_changed = rtShader.density_signature != density_signature || density_vdb_refs_changed;
+
+        rtShader.core = shaderCore;
+        rtShader.callable_src = shaders[i]->callable;
+        rtShader.macros = std::move(macro);
+        rtShader.parameters = std::move(parameters);
+        rtShader.density_signature = std::move(density_signature);
+        rtShader.density_vdb_primary_slot = density_vdb_refs.primary_slot;
+        rtShader.density_vdb_referenced_slots = std::move(density_vdb_refs.referenced_slots);
+
+        rtShader.dirty = rtShader.dirty || shader_source_dirty || program_changed;
+        if (ShaderMark::Volume == shaders[i]->mark) {
+            rtShader.force_density_bake = rtShader.force_density_bake || density_inputs_changed;
+        } else {
+            rtShader.force_density_bake = false;
         }
 }); //_compile_group
     } //for

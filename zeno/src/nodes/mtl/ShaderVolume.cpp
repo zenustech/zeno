@@ -21,6 +21,19 @@ struct ShaderVolume : INode {
     virtual void apply() override {
         EmissionPass em;
 
+        auto depth_input = get_input<IObject>("depth", std::make_shared<NumericObject>((float)(999)));
+        auto albedo_input = get_input<IObject>("albedo", std::make_shared<NumericObject>(vec3f(0.5)));
+        auto density_input = get_input<IObject>("density", std::make_shared<NumericObject>(float(0)));
+        auto emission_input = get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0)));
+        auto anisotropy_input = get_input<IObject>("anisotropy", std::make_shared<NumericObject>(float(0)));
+
+        EmissionPass density_em;
+        auto density_signature = density_em.finalizeCode({
+            {1, "density"},
+        }, {
+            density_input,
+        });
+
         auto code = em.finalizeCode({
 
             {1, "depth"},
@@ -33,13 +46,13 @@ struct ShaderVolume : INode {
 
         }, {
            
-            get_input<IObject>("depth", std::make_shared<NumericObject>((float)(999))),
+            depth_input,
             //get_input<IObject>("extinction", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("albedo", std::make_shared<NumericObject>(vec3f(0.5))),
-            get_input<IObject>("anisotropy", std::make_shared<NumericObject>(float(0))),
+            albedo_input,
+            anisotropy_input,
 
-            get_input<IObject>("density", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            density_input,
+            emission_input,
             
         });
 
@@ -78,6 +91,7 @@ struct ShaderVolume : INode {
             
             j["vol_depth"] = vol_depth;
             j["vol_extinction"] = vol_extinction;
+            j["density_signature"] = density_signature;
 
             parameters = j.dump();
         }

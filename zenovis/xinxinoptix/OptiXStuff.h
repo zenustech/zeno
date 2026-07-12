@@ -57,6 +57,7 @@
 #include <sstream>
 #include <iostream>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <filesystem>
@@ -1478,6 +1479,11 @@ struct OptixShaderWrapper
 
     nlohmann::json                    parameters{};
     std::map<std::string, std::string>   macros {};
+
+    std::string                       density_signature {};
+    uint8_t                           density_vdb_primary_slot = 0;
+    std::set<uint8_t>                 density_vdb_referenced_slots {};
+    bool force_density_bake = false;
 
     bool isVol() const {
         return macros.count("_volu_");

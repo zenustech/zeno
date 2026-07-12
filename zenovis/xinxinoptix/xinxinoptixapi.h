@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
+#include <cctype>
 
 #include <glm/glm.hpp>
 #include "optixSphere.h"
@@ -96,6 +98,142 @@ struct ShaderPrepared {
     std::vector<std::shared_ptr<OptixUtil::cuTexture>> texs;
     std::vector<std::string>       vdb_keys;
 };
+
+struct VDBGridKeyChannels {
+    std::string requested;
+    std::string resolved;
+    bool valid = false;
+};
+
+inline VDBGridKeyChannels parseVDBGridKeyChannels(const std::string& vdb_key) {
+    VDBGridKeyChannels channels;
+
+    const auto close = vdb_key.rfind("}#");
+    if (close == std::string::npos) {
+        return channels;
+    }
+
+    const auto open = vdb_key.rfind('{', close);
+    if (open == std::string::npos || open + 1 >= close) {
+        return channels;
+    }
+
+    const auto split = vdb_key.find('|', open + 1);
+    if (split == std::string::npos || split >= close) {
+        return channels;
+    }
+
+    channels.requested = vdb_key.substr(open + 1, split - open - 1);
+    channels.resolved = vdb_key.substr(split + 1, close - split - 1);
+    channels.valid = true;
+    return channels;
+}
+
+inline std::string normalizeVDBChannelName(const std::string& channel) {
+    std::string normalized;
+    normalized.reserve(channel.size());
+    for (unsigned char ch : channel) {
+        if (ch == '_' || ch == '-' || ch == ' ') {
+            continue;
+        }
+        normalized.push_back(static_cast<char>(std::tolower(ch)));
+    }
+    return normalized;
+}
+
+inline bool isDensityVDBChannelName(const std::string& channel) {
+    const auto normalized = normalizeVDBChannelName(channel);
+    return normalized == "density" || normalized == "dens" || normalized == "rho";
+}
+
+inline bool vdbKeyLooksLikeDensity(const std::string& vdb_key) {
+    const auto channels = parseVDBGridKeyChannels(vdb_key);
+    if (!channels.valid) {
+        return isDensityVDBChannelName(vdb_key);
+    }
+    return isDensityVDBChannelName(channels.requested) || isDensityVDBChannelName(channels.resolved);
+}
+
+inline size_t selectDensityVDBSlot(const std::vector<std::string>& vdb_keys, size_t max_slots = 8) {
+    size_t fallback = vdb_keys.size();
+    const auto count = std::min(vdb_keys.size(), max_slots);
+    for (size_t i = 0; i < count; ++i) {
+        if (vdb_keys[i].empty()) {
+            continue;
+        }
+        if (fallback == vdb_keys.size()) {
+            fallback = i;
+        }
+        if (vdbKeyLooksLikeDensity(vdb_keys[i])) {
+            return i;
+        }
+    }
+    return fallback == vdb_keys.size() ? 0 : fallback;
+}
+
+struct DensityVDBSlotRefs {
+    uint8_t primary_slot = 0;
+    std::set<uint8_t> referenced_slots {};
+};
+
+inline void appendVDBSlotsReferencedByDensityCode(
+    const std::string& density_code,
+    std::vector<size_t>& ordered_slots,
+    size_t max_slots = 8)
+{
+    const std::string token = "vdb_grids[";
+    size_t pos = 0;
+    while ((pos = density_code.find(token, pos)) != std::string::npos) {
+        pos += token.size();
+        size_t slot = 0;
+        bool has_digit = false;
+        while (pos < density_code.size()) {
+            const char c = density_code[pos];
+            if (c < '0' || c > '9') {
+                break;
+            }
+            has_digit = true;
+            slot = slot * 10 + static_cast<size_t>(c - '0');
+            ++pos;
+        }
+        if (!has_digit || pos >= density_code.size() || density_code[pos] != ']' || slot >= max_slots) {
+            continue;
+        }
+        if (std::find(ordered_slots.begin(), ordered_slots.end(), slot) == ordered_slots.end()) {
+            ordered_slots.push_back(slot);
+        }
+    }
+}
+
+inline DensityVDBSlotRefs resolveDensityVDBSlots(
+    const std::vector<std::string>& vdb_keys,
+    const std::string& density_code,
+    size_t max_slots = 8)
+{
+    DensityVDBSlotRefs refs {};
+    const size_t count = std::min(vdb_keys.size(), max_slots);
+    std::vector<size_t> ordered_slots;
+    appendVDBSlotsReferencedByDensityCode(density_code, ordered_slots, max_slots);
+
+    for (const size_t slot : ordered_slots) {
+        if (slot >= count || vdb_keys[slot].empty()) {
+            continue;
+        }
+        if (refs.referenced_slots.empty()) {
+            refs.primary_slot = slot;
+        }
+        refs.referenced_slots.insert(slot);
+    }
+
+    if (refs.referenced_slots.empty()) {
+        refs.primary_slot = selectDensityVDBSlot(vdb_keys, max_slots);
+        if (refs.primary_slot < count && !vdb_keys[refs.primary_slot].empty()) {
+            refs.referenced_slots.insert(refs.primary_slot);
+        }
+    }
+
+    return refs;
+}
 
 namespace xinxinoptix {
 
