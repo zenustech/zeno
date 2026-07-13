@@ -711,6 +711,7 @@ public:
     uint64_t dynamicRenderGroup {};
     
     std::unordered_map<std::string, Candidate> candidates {};
+    bool volume_scene_bindings_dirty {};
 
     std::function<OptixTraversableHandle(const std::string&, nlohmann::json& renderGroup, uint& test_depth, 
         decltype(nodeCache)& nodeCache)> treeLook;
@@ -727,6 +728,12 @@ public:
         if (cleanTasks.count(key)==0) return;
         cleanTasks[key](key);
         cleanTasks.erase(key);
+    }
+
+    bool consumeVolumeSceneBindingsDirty() {
+        const bool dirty = volume_scene_bindings_dirty;
+        volume_scene_bindings_dirty = false;
+        return dirty;
     }
 
     void updateDrawObjects(uint16_t sbt_count);
@@ -780,8 +787,10 @@ public:
         cookGeoMatrix(volmats);
 
         std::unordered_set<std::string> required {};
+        std::unordered_set<std::string> accel_required {};
 
         for(auto shader_index : volmats) {
+            if (shader_index >= OptixUtil::rtMaterialShaders.size()) { continue; }
 
             const auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
             if ( shader_ref.vbds.size() == 0 ) { continue; }
@@ -789,26 +798,50 @@ public:
             for (const auto& vdb_key : shader_ref.vbds) {
                 required.insert(vdb_key);
             }    
+            const auto density_slot = shader_ref.density_vdb_primary_slot;
+            if (density_slot < shader_ref.vbds.size()) {
+                accel_required.insert(shader_ref.vbds[density_slot]);
+            }
         }
 
         for (auto const& [key, vol] : _vdb_grids_cached) {
 
-            if (required.count(key)) {
-                if (false == vol->dirty) continue;
-                // UPLOAD to GPU
+            if (!required.count(key)) {
+                if (vol->node->handle != 0) {
+                    volume_scene_bindings_dirty = true;
+                }
+                releaseVolumeDeviceData(*vol);
+                continue;
+            }
+
+            const bool needs_accel = accel_required.count(key) != 0;
+
+            if (vol->dirty) {
                 for (auto& task : vol->tasks) {
                     task();
-                } //val->uploadTasks.clear();
-            } else {      
-                cleanupVolume(*vol); // Remove from GPU-RAM, but keep in SYS-RAM 
+                }
             }
-        }
-    
-        for (const auto& [key, vol] : _vdb_grids_cached) {
-            if (false == vol->dirty) continue;
-            vol->dirty = false;
 
-            buildVolumeAccel( *vol, OptixUtil::context );
+            if (needs_accel) {
+                if (vol->dirty || vol->node->handle == 0) {
+                    if (!vol->grids.empty() && !vol->aggregate.octree.empty()) {
+                        buildVolumeAccel(*vol, OptixUtil::context);
+                        volume_scene_bindings_dirty = true;
+                    } else {
+                        if (vol->node->handle != 0) {
+                            volume_scene_bindings_dirty = true;
+                        }
+                        cleanupVolumeAccel(*vol->node);
+                    }
+                }
+            } else {
+                if (vol->node->handle != 0) {
+                    volume_scene_bindings_dirty = true;
+                }
+                cleanupVolumeAccel(*vol->node);
+            }
+
+            vol->dirty = false;
         }
     }
 

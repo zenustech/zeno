@@ -257,6 +257,8 @@ void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gr
 void unloadGrid(GridWrapper& grid);
 void cleanupVolume( VolumeWrapper& volume );
 
+void releaseVolumeDeviceData(VolumeWrapper& volume);
+
 void getOptixTransform( const VolumeWrapper& volume, float transform[] );
 sutil::Aabb worldAabb( const VolumeWrapper& volume );
 
