@@ -13,8 +13,9 @@
 void checkGridName( const std::string& path, std::string& name) {
     openvdb::initialize();
     openvdb::io::File file(path);
-    
-    file.open(); 
+
+    file.setCopyMaxBytes(0);
+    file.open(true);
 
     if ( file.hasGrid(name) ) { return; }
 
@@ -30,8 +31,9 @@ void checkGridName( const std::string& path, std::string& name) {
 std::string fetchGridName( const std::string& path, uint index ) {
     openvdb::initialize();
     openvdb::io::File file(path);
-    
-    file.open(); 
+
+    file.setCopyMaxBytes(0);
+    file.open(true);
 
     const auto grid_count = file.getGrids()->size();
 
