@@ -231,6 +231,7 @@ struct VolumeWrapper
 	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_octree = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
 
 	std::vector<std::string> selected;
+	uint density_grid_index = 0;
 
 	std::filesystem::file_time_type file_time;
 

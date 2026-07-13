@@ -105,6 +105,36 @@ void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path) {
     }
 }
 
+static uint selectDensityGridIndex(const std::vector<openvdb::GridBase::Ptr>& grids) {
+    uint first_float_grid = 0;
+    bool has_float_grid = false;
+
+    for (uint i = 0; i < grids.size(); ++i) {
+        auto& grid = grids[i];
+        if (!grid || !grid->isType<openvdb::FloatGrid>()) {
+            continue;
+        }
+        if (!has_float_grid) {
+            first_float_grid = i;
+            has_float_grid = true;
+        }
+        if (isDensityVDBChannelName(grid->getName())) {
+            return i;
+        }
+    }
+
+    return has_float_grid ? first_float_grid : 0;
+}
+
+static std::shared_ptr<GridWrapper> densityGridForVolume(const VolumeWrapper& volume) {
+    if (volume.grids.empty()) {
+        return nullptr;
+    }
+
+    const auto index = std::min<size_t>(volume.density_grid_index, volume.grids.size() - 1);
+    return volume.grids[index];
+}
+
 void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     openvdb::initialize();
     openvdb::io::File file(path);
@@ -153,6 +183,8 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
     volume.grids.clear();
     volume.grids.reserve(tmp_grids.size());
+    volume.density_grid_index = selectDensityGridIndex(tmp_grids);
+    volume.aggregate = {};
 
     volume.tasks.clear();
     volume.tasks.reserve(tmp_grids.size());
@@ -336,7 +368,10 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
         return;
     }
 
-    auto baseGrid = volume.grids.front();
+    auto baseGrid = densityGridForVolume(volume);
+    if (!baseGrid) {
+        return;
+    }
     const nanovdb::Map& map = baseGrid->nanoMAP();
 
 	transform[0] = map.mMatF[0]; transform[1] = map.mMatF[1]; transform[2]  = map.mMatF[2]; transform[3]  = map.mVecF[0];
@@ -346,7 +381,10 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 
 sutil::Aabb worldAabb( const VolumeWrapper& volume )
 {
-    auto baseGrid = volume.grids.front();
+    auto baseGrid = densityGridForVolume(volume);
+    if (!baseGrid) {
+        return {};
+    }
 	auto* meta = baseGrid->handle.gridMetaData();
 
 	auto bbox = meta->worldBBox();
