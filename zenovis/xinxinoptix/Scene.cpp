@@ -230,7 +230,6 @@ bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& c
     }
 
     const auto vdb_key = makeVGridKey(channel);
-    combined_key = vdb_key;
 
     zeno::log_debug("loading VDB :{}", path);
 
@@ -244,11 +243,13 @@ bool OptixScene::preloadVDB(const zeno::TextureObjectVDB& texVDB, std::string& c
     volume_ptr->type = texVDB.eleType;
     volume_ptr->dirty = true;
 
-    auto succ = loadVolume(*volume_ptr, path); 
+    auto succ = loadVolume(*volume_ptr, path);
+    if (!succ) { return false; }
 
-    if (!succ) {return false;}
-
-    _vdb_grids_cached[vdb_key] = volume_ptr;
+    const auto resolved_channel = volume_ptr->selected.empty() ? channel : volume_ptr->selected.front();
+    const auto resolved_vdb_key = makeVGridKey(resolved_channel);
+    combined_key = resolved_vdb_key;
+    _vdb_grids_cached[resolved_vdb_key] = volume_ptr;
     return true;
 }
 
