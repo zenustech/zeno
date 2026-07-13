@@ -190,7 +190,11 @@ public:
             const auto material_str = it.value().value("Material", "");
             const auto material_key = std::make_tuple(material_str, geo_type);
 
-            auto shader_index = shader_indice_table[material_key];
+            auto shader_it = shader_indice_table.find(material_key);
+            if (shader_it == shader_indice_table.end()) { continue; }
+
+            auto shader_index = shader_it->second;
+            if (shader_index >= OptixUtil::rtMaterialShaders.size()) { continue; }
 
             const auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
     
@@ -198,7 +202,10 @@ public:
 
                 volmats.insert(shader_index);
 
-                auto vdb_key = shader_ref.vbds.front();
+                const auto density_slot = shader_ref.density_vdb_primary_slot;
+                if (density_slot >= shader_ref.vbds.size()) { continue; }
+
+                auto vdb_key = shader_ref.vbds[density_slot];
                 if (_vdb_grids_cached.count(vdb_key) == 0) continue;
 
                 auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
@@ -417,24 +424,38 @@ public:
                 
             } else if (ShaderMark::Volume == geo_type) {
                 shader_visiable = VisibilityMask::VolumeMaskHeterogeneous;
-                
-                auto shader_index = shader_indice_table[material_key];
 
-                const auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
+                auto shader_it = shader_indice_table.find(material_key);
+                if (shader_it == shader_indice_table.end() ||
+                    shader_it->second >= OptixUtil::rtMaterialShaders.size()) {
+                    shader_visiable = VisibilityMask::NothingMask;
+                } else {
+                    shader_index = shader_it->second;
+                    const auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
 
-                if ( shader_ref.vbds.size() > 0 ) {
-            
-                    auto vdb_key = shader_ref.vbds.front();
+                    if ( shader_ref.vbds.size() > 0 ) {
 
-                    if (_vdb_grids_cached.count(vdb_key)==0) {
-                        shader_visiable = VisibilityMask::NothingMask;
-                    } else {
-                        auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                        candi.handle = vdb_ptr->node->handle;
-                    } //vdb_ptr
-                } 
-                if (shader_ref.isHomoVol())
-                    shader_visiable = VisibilityMask::VolumeMaskAnalytics;
+                        const auto density_slot = shader_ref.density_vdb_primary_slot;
+                        if (density_slot >= shader_ref.vbds.size()) {
+                            shader_visiable = VisibilityMask::NothingMask;
+                        } else {
+                            auto vdb_key = shader_ref.vbds[density_slot];
+
+                            if (_vdb_grids_cached.count(vdb_key)==0) {
+                                shader_visiable = VisibilityMask::NothingMask;
+                            } else {
+                                auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
+                                if (vdb_ptr->node->handle == 0) {
+                                    shader_visiable = VisibilityMask::NothingMask;
+                                } else {
+                                    candi.handle = vdb_ptr->node->handle;
+                                }
+                            }
+                        } //vdb_ptr
+                    }
+                    if (shader_ref.isHomoVol())
+                        shader_visiable = VisibilityMask::VolumeMaskAnalytics;
+                }
             }
 
             candi.sbt = shader_index * RAY_TYPE_COUNT;
