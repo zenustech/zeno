@@ -19,9 +19,12 @@
 #include <rapidjson/rapidjson.h>
 
 #include <cmath>
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdint>
+#include <chrono>
 
 #include <functional>
 
@@ -30,6 +33,7 @@
 
 #include "volume.h"
 #include "magic_enum.hpp"
+#include "VDBDensityBake.h"
 
 #include <zeno/utils/vec.h>
 #include <zeno/utils/type_traits.h>
@@ -51,6 +55,8 @@ struct GridWrapper {
 	virtual const nanovdb::BBox<nanovdb::Coord>& indexedBox() = 0;
 
 	virtual void analysis(const std::string& path) = 0;
+
+    virtual bool isFloatGrid() const = 0;
 };
 
 namespace openvdb {
@@ -140,7 +146,8 @@ struct TypedGridWrapper: GridWrapper {
 		}
 
 		auto src = openvdb::gridPtrCast<OpenVDBGridT>(grid);
-		handle = nanovdb::openToNanoVDB<nanovdb::HostBuffer, OpenVDBGridT::TreeType, T>(*src, nanovdb::StatsMode::All);
+		std::cout << "VDB convert begin {" << grid->getName() << "}" << std::endl;
+		handle = nanovdb::openToNanoVDB<nanovdb::HostBuffer, OpenVDBGridT::TreeType, T>(*src, nanovdb::StatsMode::MinMax);
 		return match;
 	}
 
@@ -197,6 +204,10 @@ struct TypedGridWrapper: GridWrapper {
 		std::cout << "gird indexed box max: {" << ibb.max().x() << ", " << ibb.max().y() << ", "<< ibb.max().z() << "}" << std::endl;
 	}
 
+    bool isFloatGrid() const override {
+        return std::is_same_v<T, float>;
+    }
+
 	TypedGridWrapper(): GridWrapper() {}
 	~TypedGridWrapper() {}
 };
@@ -218,6 +229,33 @@ inline static void makeTypedGridWrapper(zeno::TextureObjectVDB::ElementType et, 
 
 using VolumeAccel = SceneNode;
 
+struct BakedSparseVolume
+{
+    BakedSparseVolumeDevice device {};
+    xinxinoptix::raii<CUdeviceptr> d_descriptor;
+    xinxinoptix::raii<CUdeviceptr> d_brick_table;
+    xinxinoptix::raii<CUdeviceptr> d_brick_origins;
+    xinxinoptix::raii<CUdeviceptr> d_voxel_values;
+    xinxinoptix::raii<CUdeviceptr> d_brick_min;
+    xinxinoptix::raii<CUdeviceptr> d_brick_max;
+    xinxinoptix::raii<CUdeviceptr> d_octree;
+
+    bool valid() const {
+        return d_descriptor.handle != 0 && device.brick_count != 0 && device.octree != nullptr && device.octree_node_count != 0;
+    }
+
+    void reset() {
+        device = {};
+        d_descriptor.reset();
+        d_brick_table.reset();
+        d_brick_origins.reset();
+        d_voxel_values.reset();
+        d_brick_min.reset();
+        d_brick_max.reset();
+        d_octree.reset();
+    }
+};
+
 struct VolumeWrapper
 {
 	bool dirty = true;
@@ -229,11 +267,21 @@ struct VolumeWrapper
 
 	VolumeAggregate aggregate;
 	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_octree = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
+	std::shared_ptr<BakedSparseVolume> baked_density = std::make_shared<BakedSparseVolume>();
+	// Single per-volume control for CPU/GPU octree build depth. Valid SVO range is clamped.
+	uint32_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+	bool use_gpu_baked_octree = true;
+	bool validate_gpu_baked_octree = false;
+	bool use_custom_density_sample_bbox = false;
+	int3 custom_density_sample_min {};
+	// Exclusive max in VDB index space.
+	int3 custom_density_sample_max {};
 
 	std::vector<std::string> selected;
 	uint density_grid_index = 0;
 
 	std::filesystem::file_time_type file_time;
+	std::string density_bake_key;
 
 	std::vector<std::shared_ptr<GridWrapper>> grids;
 	std::vector<std::function<void()>> tasks;
@@ -256,8 +304,14 @@ void loadGrid( GridWrapper& grid, const std::string& path, const std::string& gr
 
 void unloadGrid(GridWrapper& grid);
 void cleanupVolume( VolumeWrapper& volume );
-
 void releaseVolumeDeviceData(VolumeWrapper& volume);
+
+bool bakeDensityGridToSparseBricksOnGPU(
+    GridWrapper& grid,
+    BakedSparseVolume& baked_volume,
+    const xinxinoptix::VDBDensityBakeInputs& inputs,
+    const xinxinoptix::VDBDensityBakeOptions& options,
+    xinxinoptix::VDBDensityBakeResult* result = nullptr);
 
 void getOptixTransform( const VolumeWrapper& volume, float transform[] );
 sutil::Aabb worldAabb( const VolumeWrapper& volume );

@@ -14,6 +14,8 @@ target_sources(zenovis PRIVATE
   NvrtcWorker.cpp
   NvrtcWorker.h
   NvrtcCompileProtocol.h
+  VDBDensityBake.cpp
+  VDBDensityBake.h
   Host.h
 
   Octree.cpp
@@ -64,7 +66,7 @@ file(GLOB curve_src "curve/*.h" "curve/*.cpp")
 target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
-target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc)
+target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc CUDA::cuda_driver)
 
 if (ZENO_SYSTEM_OPENVDB)
     message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")

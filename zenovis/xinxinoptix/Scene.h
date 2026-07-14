@@ -9,9 +9,11 @@
 #include <string.h>
 #include <tuple>
 #include <unordered_map>
+#include <sstream>
 
 #include <tuple>
 #include <array>
+#include <algorithm>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -34,6 +36,7 @@
 #include "XAS.h"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/fwd.hpp"
+#include "magic_enum.hpp"
 #include "optixPathTracer.h"
 #include "optixSphere.h"
 #include "optix_types.h"
@@ -777,6 +780,183 @@ public:
         }
 
         return shader_key_set;
+    }
+
+    void bakeVolumeDensityForCurrentFrame(const Params& params) {
+
+        if (_vdb_grids_cached.empty()) { return; }
+
+        const auto makeReadableVDBKey = [](const std::string& vdb_key) {
+            const auto hash_pos = vdb_key.rfind('#');
+            if (hash_pos == std::string::npos || hash_pos + 1 >= vdb_key.size()) {
+                return vdb_key;
+            }
+
+            try {
+                size_t parsed_chars = 0;
+                const int type_index = std::stoi(vdb_key.substr(hash_pos + 1), &parsed_chars);
+                if (parsed_chars != vdb_key.size() - hash_pos - 1) {
+                    return vdb_key;
+                }
+
+                const auto element_type = static_cast<zeno::TextureObjectVDB::ElementType>(type_index);
+                const auto type_name = magic_enum::enum_name(element_type);
+                if (type_name.empty()) {
+                    return vdb_key;
+                }
+
+                return vdb_key.substr(0, hash_pos + 1) + std::string(type_name);
+            } catch (...) {
+                return vdb_key;
+            }
+        };
+
+        std::unordered_set<uint> volmats{};
+        cookGeoMatrix(volmats);
+
+        for (auto shader_index : volmats) {
+            if (shader_index >= OptixUtil::rtMaterialShaders.size()) { continue; }
+
+            auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
+            if (shader_ref.vbds.empty()) { continue; }
+
+            const auto density_slot = shader_ref.density_vdb_primary_slot;
+            if (density_slot >= shader_ref.vbds.size()) { continue; }
+
+            const auto& density_vdb_key = shader_ref.vbds[density_slot];
+            auto density_volume_it = _vdb_grids_cached.find(density_vdb_key);
+            if (density_volume_it == _vdb_grids_cached.end()) { continue; }
+
+            auto& density_volume = *density_volume_it->second;
+            auto slot = std::min<uint>(density_volume.density_grid_index, density_volume.grids.size() - 1u);
+            auto density_grid = density_volume.grids[slot];
+            if (!density_grid) { continue; }
+            const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(density_volume.octreeBuildDepth);
+
+            if (!density_volume.use_gpu_baked_octree) {
+                if (density_volume.baked_density && density_volume.baked_density->valid()) {
+                    density_volume.baked_density->reset();
+                    density_volume.density_bake_key.clear();
+                    buildVolumeAccel(density_volume, OptixUtil::context);
+                    volume_scene_bindings_dirty = true;
+                }
+                continue;
+            }
+
+            HitGroupData hit_group = {};
+            const auto vdb_count = std::min<size_t>(shader_ref.vbds.size(), 8);
+            for (size_t i = 0; i < vdb_count; ++i) {
+                const auto& vdb_key = shader_ref.vbds[i];
+                auto volume_it = _vdb_grids_cached.find(vdb_key);
+                if (volume_it == _vdb_grids_cached.end()) { continue; }
+
+                const auto& volume = volume_it->second;
+                if (!volume || volume->grids.empty() || !volume->grids.front()) { continue; }
+                hit_group.vdb_grids[i] = volume->grids.front()->buffer.handle;
+            }
+
+            for (uint i = 0; i < 32; ++i) {
+                hit_group.textures[i] = shader_ref.getTexture(i);
+            }
+            if (shader_ref.parameters.contains("vol_depth")) {
+                hit_group.vol_depth = shader_ref.parameters["vol_depth"];
+            }
+            if (shader_ref.parameters.contains("vol_extinction")) {
+                hit_group.vol_extinction = shader_ref.parameters["vol_extinction"];
+            }
+
+            std::vector<std::string> compile_macros;
+            const bool generated_callable = shader_ref.callable_src.find("//COMMON_CODE") == std::string::npos;
+            if (generated_callable) {
+                compile_macros.push_back("--define-macro=__FORWARD__");
+            }
+            for (const auto& [key, value] : shader_ref.macros) {
+                compile_macros.push_back("--define-macro=" + key + "=" + value);
+            }
+
+            std::ostringstream key_stream;
+            const bool has_density_signature = !shader_ref.density_signature.empty();
+            key_stream << shader_index << ':' << density_slot << ':';
+            if (has_density_signature) {
+                key_stream << "density signature=" << shader_ref.density_signature << ';';
+            } else {
+                key_stream << std::hash<std::string>{}(shader_ref.callable_src) << ':'
+                    << shader_ref.callable_src.size() << ':';
+                for (const auto& macro : compile_macros) {
+                    key_stream << macro << ';';
+                }
+            }
+            key_stream << "octreeBuildDepth=" << octreeBuildDepth << ';';
+            if (density_volume.use_custom_density_sample_bbox) {
+                key_stream << "sampleBBox="
+                    << density_volume.custom_density_sample_min.x << ','
+                    << density_volume.custom_density_sample_min.y << ','
+                    << density_volume.custom_density_sample_min.z << ':'
+                    << density_volume.custom_density_sample_max.x << ','
+                    << density_volume.custom_density_sample_max.y << ','
+                    << density_volume.custom_density_sample_max.z << ';';
+            }
+            if (has_density_signature) {
+                for (const size_t slot : shader_ref.density_vdb_referenced_slots) {
+                    if (slot < shader_ref.vbds.size()) {
+                        key_stream << "vdb" << slot << '=' << shader_ref.vbds[slot] << ';';
+                    }
+                }
+            } else {
+                key_stream << "params=" << shader_ref.parameters.dump() << ';';
+                for (const auto& vdb_key : shader_ref.vbds) {
+                    key_stream << "vdb=" << vdb_key << ';';
+                }
+                for (uint i = 0; i < 32; ++i) {
+                    key_stream << "tex" << i << '=' << static_cast<uint64_t>(hit_group.textures[i]) << ';';
+                }
+            }
+            key_stream << "density=" << density_vdb_key;
+            const std::string bake_key = key_stream.str();
+
+            const bool force_density_bake = shader_ref.force_density_bake;
+            shader_ref.force_density_bake = false;
+
+            if (!force_density_bake && density_volume.density_bake_key == bake_key) {
+                continue;
+            }
+
+            std::ostringstream label_stream;
+            label_stream << "shader=" << shader_index
+                << " density_slot=" << density_slot
+                << " " << makeReadableVDBKey(density_vdb_key);
+            const std::string label = label_stream.str();
+
+            xinxinoptix::VDBDensityBakeInputs bake_inputs;
+            bake_inputs.params = &params;
+            bake_inputs.hit_group = &hit_group;
+            bake_inputs.callable_source = shader_ref.callable_src.c_str();
+            bake_inputs.validation_label = label.c_str();
+            bake_inputs.compile_macros = std::move(compile_macros);
+            bake_inputs.seed = 0x12345678u ^ static_cast<uint32_t>(shader_index * 1664525u + density_slot);
+
+            xinxinoptix::VDBDensityBakeResult bake_result;
+            xinxinoptix::VDBDensityBakeOptions bake_options;
+            bake_options.octreeBuildDepth = octreeBuildDepth;
+            bake_options.validate_sparse_octree = density_volume.validate_gpu_baked_octree;
+            bake_options.use_custom_sample_bbox = density_volume.use_custom_density_sample_bbox;
+            bake_options.custom_sample_min = density_volume.custom_density_sample_min;
+            bake_options.custom_sample_max = density_volume.custom_density_sample_max;
+            const bool baked = density_volume.baked_density
+                && bakeDensityGridToSparseBricksOnGPU(*density_grid, *density_volume.baked_density, bake_inputs, bake_options, &bake_result);
+            if (baked) {
+                density_volume.density_bake_key = bake_key;
+                buildVolumeAccel(density_volume, OptixUtil::context);
+                volume_scene_bindings_dirty = true;
+                std::cout << "VDB sparse density bake {" << label << "} max=" << bake_result.max_density << std::endl;
+            } else {
+                density_volume.density_bake_key.clear();
+                if (density_volume.baked_density) {
+                    density_volume.baked_density->reset();
+                }
+                std::cerr << "VDB density bake failed {" << label << "}" << std::endl;
+            }
+        }
     }
 
     void prepareVolumeAssets() {

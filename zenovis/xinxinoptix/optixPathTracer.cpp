@@ -1588,6 +1588,12 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
 
     auto buffers = globalShaderBufferGroup.upload();
     state.params.global_buffers = (void**)buffers;
+    initLaunchParams( state );
+    defaultScene.bakeVolumeDensityForCurrentFrame(state.params);
+    if (defaultScene.consumeVolumeSceneBindingsDirty()) {
+        defaultScene.make_scene(OptixUtil::context);
+        state.params.handle = defaultScene.rootNode.handle;
+    }
 
     if (shaderDirty) {
         timer.tick();
@@ -1601,10 +1607,6 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
         OptixUtil::resetPipelineProgramGroupsDirty(false);
     }
     timer.tock("Pipeline created \n");
-
-    timer.tick();
-    initLaunchParams( state );
-    timer.tock("init params created \n");
 }
 
 void configPipeline(bool shaderDirty) {

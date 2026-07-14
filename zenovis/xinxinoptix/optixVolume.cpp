@@ -1,7 +1,20 @@
 #include "optixVolume.h"
 
+#include "xinxinoptixapi.h"
+#include "TypeCaster.h"
+
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <filesystem>
+#include <random>
+#include <sstream>
+#include <vector>
+#include <limits>
+#include <cstring>
+#include <chrono>
+#include <cuda_runtime_api.h>
 #include <nanovdb/util/IO.h>
 #include <nanovdb/util/GridStats.h>
 #include <nanovdb/util/OpenToNanoVDB.h>
@@ -138,8 +151,7 @@ static std::shared_ptr<GridWrapper> densityGridForVolume(const VolumeWrapper& vo
 void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     openvdb::initialize();
     openvdb::io::File file(path);
-    
-    file.open(); 
+    file.open(false);
 
     const bool picking = volume.selected.size() > 0;
 
@@ -198,6 +210,13 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
 
         makeTypedGridWrapper(volume.type, volume.grids);
         volume.grids[i]->parsing(grid);
+        if (!volume.use_gpu_baked_octree && i == volume.density_grid_index && grid->isType<openvdb::FloatGrid>())
+        {
+            const auto fgrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid);
+            auto& aggregate = volume.aggregate;
+            const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
+            aggregate.aggregate(*fgrid, int(octreeBuildDepth));
+        }
 
         if (picking) {
             auto name = volume.selected[i];
@@ -272,6 +291,237 @@ void unloadGrid(GridWrapper& grid) {
     grid.handle.reset();
 }
 
+static int roundUpInt(int value, int multiple)
+{
+    return ((value + multiple - 1) / multiple) * multiple;
+}
+
+static std::vector<int3> makeDomainBrickOrigins(const int3& voxel_min, const int3& brick_dim)
+{
+    std::vector<int3> origins;
+    origins.reserve(uint64_t(brick_dim.x) * uint64_t(brick_dim.y) * uint64_t(brick_dim.z));
+    for (int z = 0; z < brick_dim.z; ++z) {
+        for (int y = 0; y < brick_dim.y; ++y) {
+            for (int x = 0; x < brick_dim.x; ++x) {
+                origins.push_back(make_int3(
+                    voxel_min.x + x * int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+                    voxel_min.y + y * int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+                    voxel_min.z + z * int(BAKED_SPARSE_VOLUME_BRICK_SIZE)));
+            }
+        }
+    }
+    return origins;
+}
+
+static uint32_t bakedSparseDenseOctreeNodeCapacity(uint32_t octreeBuildDepth)
+{
+    return ((1u << (3u * (octreeBuildDepth + 1u))) - 1u) / 7u;
+}
+
+static uint16_t halfBits(const __half& value)
+{
+    uint16_t bits = 0;
+    std::memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}
+
+static bool sameOcNode(const OcNode& lhs, const OcNode& rhs)
+{
+    return lhs.data == rhs.data
+        && halfBits(lhs.min_d) == halfBits(rhs.min_d)
+        && halfBits(lhs.max_d) == halfBits(rhs.max_d);
+}
+bool bakeDensityGridToSparseBricksOnGPU(
+    GridWrapper& grid,
+    BakedSparseVolume& baked_volume,
+    const xinxinoptix::VDBDensityBakeInputs& inputs,
+    const xinxinoptix::VDBDensityBakeOptions& options,
+    xinxinoptix::VDBDensityBakeResult* result)
+{
+
+    if (grid.handle.size() == 0 || grid.handle.data() == nullptr) {
+        std::cerr << "VDB sparse brick bake skipped: NanoVDB host grid is empty" << std::endl;
+        return false;
+    }
+    double resident_upload_ms = 0.0;
+    if (grid.buffer.handle == 0) {
+        grid.buffer.allocAndUpload(grid.handle.size(), grid.handle.data());
+    }
+
+    const auto bbox = grid.indexedBox();
+    if (bbox.empty()) {
+        std::cerr << "VDB sparse brick bake skipped: empty density bbox" << std::endl;
+        return false;
+    }
+
+    const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(options.octreeBuildDepth);
+    const int3 source_sample_min {
+        bbox.min().x(),
+        bbox.min().y(),
+        bbox.min().z()
+    };
+    const int3 source_sample_max {
+        bbox.max().x() + 1,
+        bbox.max().y() + 1,
+        bbox.max().z() + 1
+    };
+    const int3 sample_min = options.use_custom_sample_bbox
+        ? options.custom_sample_min
+        : source_sample_min;
+    const int3 sample_max = options.use_custom_sample_bbox
+        ? options.custom_sample_max
+        : source_sample_max;
+    if (sample_min.x >= sample_max.x || sample_min.y >= sample_max.y || sample_min.z >= sample_max.z) {
+        std::cerr << "VDB sparse brick bake skipped: empty sample bbox" << std::endl;
+        return false;
+    }
+
+    const int3 sample_dim {
+        sample_max.x - sample_min.x,
+        sample_max.y - sample_min.y,
+        sample_max.z - sample_min.z
+    };
+    const int leaf_res = 1 << octreeBuildDepth;
+    const int padded_x = roundUpInt(sample_dim.x + options.topology_padding_voxels * 2, leaf_res);
+    const int padded_y = roundUpInt(sample_dim.y + options.topology_padding_voxels * 2, leaf_res);
+    const int padded_z = roundUpInt(sample_dim.z + options.topology_padding_voxels * 2, leaf_res);
+    const int3 voxel_min {
+        sample_min.x - options.topology_padding_voxels,
+        sample_min.y - options.topology_padding_voxels,
+        sample_min.z - options.topology_padding_voxels
+    };
+    const int3 voxel_dim { padded_x, padded_y, padded_z };
+    const int3 voxel_max { voxel_min.x + voxel_dim.x, voxel_min.y + voxel_dim.y, voxel_min.z + voxel_dim.z };
+    const int3 brick_dim {
+        roundUpInt(voxel_dim.x, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+        roundUpInt(voxel_dim.y, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+        roundUpInt(voxel_dim.z, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE)
+    };
+    const uint64_t table_count_u64 = uint64_t(brick_dim.x) * uint64_t(brick_dim.y) * uint64_t(brick_dim.z);
+    if (table_count_u64 > std::numeric_limits<uint32_t>::max()) {
+        std::cerr << "VDB sparse brick bake skipped: brick table is too large" << std::endl;
+        return false;
+    }
+    const auto brick_origins = makeDomainBrickOrigins(voxel_min, brick_dim);
+    const uint32_t brick_count = uint32_t(brick_origins.size());
+    if (brick_count == 0) {
+        std::cerr << "VDB sparse brick bake skipped: empty brick domain" << std::endl;
+        return false;
+    }
+    const auto domain_end = std::chrono::steady_clock::now();
+
+    const auto alloc_begin = std::chrono::steady_clock::now();
+    baked_volume.reset();
+    baked_volume.device.voxel_min = voxel_min;
+    baked_volume.device.voxel_dim = voxel_dim;
+    baked_volume.device.voxel_max = voxel_max;
+    baked_volume.device.sample_min = sample_min;
+    baked_volume.device.sample_max = sample_max;
+    baked_volume.device.brick_dim = brick_dim;
+    baked_volume.device.brick_size = BAKED_SPARSE_VOLUME_BRICK_SIZE;
+    baked_volume.device.brick_count = brick_count;
+    baked_volume.device.brick_table_count = uint32_t(table_count_u64);
+    baked_volume.device.octreeBuildDepth = octreeBuildDepth;
+    baked_volume.device.octree_node_count = bakedSparseDenseOctreeNodeCapacity(octreeBuildDepth);
+    baked_volume.device.octree_format = 0;
+
+    baked_volume.d_brick_table.resize(sizeof(int) * baked_volume.device.brick_table_count);
+    baked_volume.d_brick_origins.resize(sizeof(int3) * brick_count);
+    const auto origin_upload_begin = std::chrono::steady_clock::now();
+    const auto origin_copy = cudaMemcpy(
+        reinterpret_cast<void*>(baked_volume.d_brick_origins.handle),
+        brick_origins.data(),
+        sizeof(int3) * brick_origins.size(),
+        cudaMemcpyHostToDevice);
+    if (origin_copy != cudaSuccess) {
+        std::cerr << "VDB sparse brick bake failed to upload brick origins: " << cudaGetErrorString(origin_copy) << std::endl;
+        baked_volume.reset();
+        return false;
+    }
+    const auto origin_upload_end = std::chrono::steady_clock::now();
+    baked_volume.d_voxel_values.resize(sizeof(uint16_t) * uint64_t(brick_count) * 512ull);
+    baked_volume.d_brick_min.resize(sizeof(uint16_t) * brick_count);
+    baked_volume.d_brick_max.resize(sizeof(uint16_t) * brick_count);
+    baked_volume.d_octree.resize(sizeof(OcNode) * bakedSparseDenseOctreeNodeCapacity(octreeBuildDepth));
+    baked_volume.d_descriptor.resize(sizeof(BakedSparseVolumeDevice));
+
+    baked_volume.device.brick_table = reinterpret_cast<int*>(baked_volume.d_brick_table.handle);
+    baked_volume.device.brick_origins = reinterpret_cast<int3*>(baked_volume.d_brick_origins.handle);
+    baked_volume.device.voxel_values = reinterpret_cast<uint16_t*>(baked_volume.d_voxel_values.handle);
+    baked_volume.device.brick_min = reinterpret_cast<uint16_t*>(baked_volume.d_brick_min.handle);
+    baked_volume.device.brick_max = reinterpret_cast<uint16_t*>(baked_volume.d_brick_max.handle);
+    baked_volume.device.octree = reinterpret_cast<OcNode*>(baked_volume.d_octree.handle);
+    xinxinoptix::VDBDensityBakeInputs bake_inputs = inputs;
+
+    const bool baked = xinxinoptix::bakeNanoVDBGridToSparseBricks(
+        grid.buffer.size,
+        baked_volume.device,
+        bake_inputs,
+        options,
+        result);
+    if (!baked) {
+        std::cout << "VDB sparse bake host profile {"
+            << (bake_inputs.validation_label != nullptr ? bake_inputs.validation_label : "density") << std::endl;
+        baked_volume.reset();
+        return false;
+    }
+
+    cudaMemcpy(
+        reinterpret_cast<void*>(baked_volume.d_descriptor.handle),
+        &baked_volume.device,
+        sizeof(BakedSparseVolumeDevice),
+        cudaMemcpyHostToDevice);
+    const uint64_t brick_bytes = uint64_t(brick_count) * 512ull * sizeof(uint16_t);
+    if (result != nullptr) {
+        std::cout << "VDB sparse GPU bake {"
+            << (bake_inputs.validation_label != nullptr ? bake_inputs.validation_label : "density")
+            << "} total_wall=" << result->sparse_total_wall_ms << " ms"
+            << " density_gpu=" << result->sparse_density_gpu_ms << " ms"
+            << " octree_wall=" << result->sparse_octree_wall_ms << " ms"
+            << " octree_gpu=" << result->sparse_octree_gpu_ms << " ms"
+            << " accumulate=" << result->sparse_octree_accumulate_ms << " ms"
+            << " reduce=" << result->sparse_octree_reduce_ms << " ms"
+            << " compact=" << result->sparse_octree_compact_ms << " ms"
+            << std::endl;
+    }
+    return true;
+}
+
+static bool hasVolumeDeviceData(const VolumeWrapper& volume)
+{
+    for (const auto& grid : volume.grids) {
+        if (grid && grid->buffer.handle != 0) {
+            return true;
+        }
+    }
+    return volume.node->handle != 0
+        || volume.d_aabb->handle != 0
+        || volume.d_octree->handle != 0
+        || (volume.baked_density && volume.baked_density->valid());
+}
+
+void releaseVolumeDeviceData(VolumeWrapper& volume)
+{
+    // Keep NanoVDB host handles and the CPU octree cached; only drop device-side residency.
+    volume.dirty = true;
+    if (!hasVolumeDeviceData(volume)) {
+        return;
+    }
+
+    for (auto& grid : volume.grids) {
+        if (grid) {
+            grid->buffer.reset();
+        }
+    }
+    volume.density_bake_key.clear();
+    if (volume.baked_density) {
+        volume.baked_density->reset();
+    }
+    cleanupVolumeAccel(*volume.node);
+    volume.d_aabb->reset();
+    volume.d_octree->reset();
+}
+
 void cleanupVolume( VolumeWrapper& volume )
 {
     // OptiX cleanup
@@ -293,8 +543,13 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 		// get this grid's aabb
         sutil::Aabb aabb = sutil::Aabb( make_float3(0), make_float3(1) );
 
-        if (volume.grids.size()>0) {
-            auto bbox = volume.grids[0]->indexedBox();
+        if (volume.baked_density && volume.baked_density->valid()) {
+            const auto& sample_min = volume.baked_density->device.sample_min;
+            const auto& sample_max = volume.baked_density->device.sample_max;
+            aabb.m_min = make_float3(sample_min.x, sample_min.y, sample_min.z);
+            aabb.m_max = make_float3(sample_max.x, sample_max.y, sample_max.z);
+        } else if (auto grid = densityGridForVolume(volume)) {
+            auto bbox = grid->indexedBox();
             auto min3s = bbox.min().asVec3s();
             auto max3s = bbox.max().asVec3s();
             aabb.m_min = make_float3(min3s[0], min3s[1], min3s[2]);
@@ -303,20 +558,37 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 
         auto aabb_ptr = &aabb;
         auto count = 1;
-
-        if (!volume.aabbs.empty()) {
-            aabb_ptr = volume.aabbs.data();
-            count = volume.aabbs.size();
-        }
+        // if (!volume.aabbs.empty()) {
+        //     aabb_ptr = volume.aabbs.data();
+        //     count = volume.aabbs.size();
+        // }
         size_t byte_size = sizeof(sutil::Aabb) * count;
 
 		// up to device
         auto& d_aabb = *volume.d_aabb;
         d_aabb.allocAndUpload(byte_size, (const uint8_t*)aabb_ptr);
-        {
+
+        uint64_t octree_handle = 0;
+        uint64_t baked_density_handle = 0;
+        uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
+        const bool use_gpu_octree = volume.use_gpu_baked_octree
+            && volume.baked_density
+            && volume.baked_density->valid();
+
+        if (use_gpu_octree) {
+            octree_handle = volume.baked_density->d_octree.handle;
+            baked_density_handle = volume.baked_density->d_descriptor.handle;
+            octreeBuildDepth = volume.baked_density->device.octreeBuildDepth;
+            volume.d_octree->reset();
+        } else if (!volume.aggregate.octree.empty()) {
             auto byte_size = sizeof(OcNode) * volume.aggregate.octree.size();
             volume.d_octree->allocAndUpload( byte_size, (const uint8_t*)volume.aggregate.octree.data() );
+            octree_handle = volume.d_octree->handle;
+            octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(uint32_t(volume.aggregate.octreeBuildDepth));
+        } else {
+            volume.d_octree->reset();
         }
+        octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(octreeBuildDepth);
 
         // Make build input for this grid
         uint32_t aabb_input_flags = OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL;
@@ -339,9 +611,12 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
         cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
         cudaMemcpy((char*)accel.buffer.handle+128-8-24, &aabb, sizeof(sutil::Aabb), cudaMemcpyHostToDevice);
 
-        const auto& d_octree = volume.d_octree;
-        cudaMemcpy((char*)accel.buffer.handle+128-40, &(d_octree->handle), sizeof(uint64_t), cudaMemcpyHostToDevice);
-        printf("d_octree = %llu \n", d_octree->handle);
+        cudaMemcpy((char*)accel.buffer.handle+128-40, &octree_handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
+        cudaMemcpy((char*)accel.buffer.handle+128-48, &baked_density_handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
+        cudaMemcpy((char*)accel.buffer.handle+128-52, &octreeBuildDepth, sizeof(uint32_t), cudaMemcpyHostToDevice);
+        if (octree_handle != 0) {
+            printf("d_octree = %llu (%s octreeBuildDepth=%u)\n", octree_handle, use_gpu_octree ? "gpu" : "cpu", octreeBuildDepth);
+        }
         return;
     }
 }

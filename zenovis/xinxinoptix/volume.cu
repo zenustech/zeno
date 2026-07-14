@@ -20,6 +20,10 @@ using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 #define HF0 __ushort_as_half((unsigned short)0x0000U)
 #define HF1 __ushort_as_half((unsigned short)0x3C00U)
 
+#ifndef VDB_SHADOW_DENSITY_MODE
+#define VDB_SHADOW_DENSITY_MODE 0
+#endif
+
 __inline__ __device__ half clamp( const half f, const half a=HF0, const half b=HF1 )
 {
     return __hmax( a, __hmin( f, b ) );
@@ -94,7 +98,7 @@ struct OcTrace {
 };
 
 #define MAX_STACK_DEPTH 23
-#define USE_STACK_DEPTH 8
+#define USE_STACK_DEPTH BAKED_SPARSE_VOLUME_MAX_OCTREE_DEPTH
 struct OcFrame { 
     uint32_t node;
     float t_max;
@@ -298,6 +302,72 @@ __device__ __forceinline__ int roundUpToMultiple(int v, int m) {
     return ((v + m - 1) / m) * m;
 }
 
+__device__ __forceinline__ bool bakedSparseVolumeReady(const BakedSparseVolumeDevice* volume)
+{
+    return volume != nullptr
+        && volume->brick_table != nullptr
+        && volume->brick_origins != nullptr
+        && volume->voxel_values != nullptr
+        && volume->brick_count != 0u
+        && volume->brick_size == BAKED_SPARSE_VOLUME_BRICK_SIZE
+        && volume->brick_table_count != 0u;
+}
+
+__device__ __forceinline__ uint32_t bakedSparseBrickTableIndexShader(int3 brickCoord, int3 brickDim)
+{
+    return (uint32_t(brickCoord.z) * uint32_t(brickDim.y) + uint32_t(brickCoord.y)) * uint32_t(brickDim.x) + uint32_t(brickCoord.x);
+}
+
+__device__ __forceinline__ half sampleBakedSparseDensityNearest(const BakedSparseVolumeDevice* volume, const float3& point)
+{
+    if (!bakedSparseVolumeReady(volume)) {
+        return HF0;
+    }
+
+    const int3 coord {
+        int(floorf(point.x + 0.5f)),
+        int(floorf(point.y + 0.5f)),
+        int(floorf(point.z + 0.5f))
+    };
+
+    if (coord.x < volume->voxel_min.x || coord.y < volume->voxel_min.y || coord.z < volume->voxel_min.z
+        || coord.x >= volume->voxel_max.x || coord.y >= volume->voxel_max.y || coord.z >= volume->voxel_max.z) {
+        return HF0;
+    }
+
+    const int relX = coord.x - volume->voxel_min.x;
+    const int relY = coord.y - volume->voxel_min.y;
+    const int relZ = coord.z - volume->voxel_min.z;
+    const int brickSize = int(volume->brick_size);
+    const int3 brickCoord { relX / brickSize, relY / brickSize, relZ / brickSize };
+
+    if (brickCoord.x < 0 || brickCoord.y < 0 || brickCoord.z < 0
+        || brickCoord.x >= volume->brick_dim.x || brickCoord.y >= volume->brick_dim.y || brickCoord.z >= volume->brick_dim.z) {
+        return HF0;
+    }
+
+    const uint32_t tableIndex = bakedSparseBrickTableIndexShader(brickCoord, volume->brick_dim);
+    if (tableIndex >= volume->brick_table_count) {
+        return HF0;
+    }
+
+    const int brickIndex = volume->brick_table[tableIndex];
+    if (brickIndex < 0 || uint32_t(brickIndex) >= volume->brick_count) {
+        return HF0;
+    }
+
+    const int3 origin = volume->brick_origins[brickIndex];
+    const int lx = coord.x - origin.x;
+    const int ly = coord.y - origin.y;
+    const int lz = coord.z - origin.z;
+    if (lx < 0 || ly < 0 || lz < 0 || lx >= brickSize || ly >= brickSize || lz >= brickSize) {
+        return HF0;
+    }
+
+    const uint32_t voxelOffset = uint32_t(lx) | (uint32_t(ly) << 3u) | (uint32_t(lz) << 6u);
+    return __ushort_as_half(volume->voxel_values[uint64_t(uint32_t(brickIndex)) * 512ull + voxelOffset]);
+}
+
 extern "C" __global__ void __intersection__volume()
 {
     auto gas = optixGetGASTraversableHandle();
@@ -376,6 +446,10 @@ extern "C" __global__ void __intersection__volume()
 
     const auto octree_ptr = reinterpret_cast<OcNode*>(*(gas_ptr-5));
     if (octree_ptr == nullptr) return;
+#if VDB_SHADOW_DENSITY_MODE == 1
+    const auto baked_density_ptr = reinterpret_cast<const BakedSparseVolumeDevice*>(*(gas_ptr-6));
+    const bool use_baked_density = bakedSparseVolumeReady(baked_density_ptr);
+#endif
 
     const auto bbox = aabb;
     const auto dim = bbox.ext();
@@ -451,10 +525,12 @@ extern "C" __global__ void __intersection__volume()
         }
         prob = prob - homo_prob;
         
-        auto test_point = ray_ori + t_progress * ray_dir;
-        auto& pidx = reinterpret_cast<nanovdb::Vec3f&>(test_point); 
-        auto dens = __half(sampler(pidx));
+#if VDB_SHADOW_DENSITY_MODE == 1
+        const auto test_point = ray_ori + t_progress * ray_dir;
+        auto dens = use_baked_density ? sampleBakedSparseDensityNearest(baked_density_ptr, test_point) : sek.avg_d;
+#else
         auto dens = sek.avg_d;
+#endif
         
         __half density = clamp(dens, HF0, sek.max_d);
         __half ratio = (density-sek.min_d) / (sek.max_d-sek.min_d);
