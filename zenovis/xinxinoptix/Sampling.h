@@ -24,6 +24,10 @@
 using uint = unsigned int;
 #endif
 
+#ifndef ushort
+using ushort = unsigned short;
+#endif
+
 #ifdef __CUDACC_DEBUG__
     #define DCHECK assert
 #else

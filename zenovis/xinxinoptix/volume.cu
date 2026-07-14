@@ -90,7 +90,7 @@ struct AABB {
 
 struct OcTrace {
     float t0 = -1;
-    half min_d, max_d;
+    half min_d, max_d, avg_d;
 };
 
 #define MAX_STACK_DEPTH 23
@@ -196,15 +196,16 @@ __device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_
             uint32_t childIdx = node.childOffset() + child_offset;
 
             float tv_max = fminf(t_max, tc_max);
-            float half = voxel_len * 0.5f;
-            float tx_center = half * tx_coef + tx_corner;
-            float ty_center = half * ty_coef + ty_corner;
-            float tz_center = half * tz_coef + tz_corner;
+            float half_len = voxel_len * 0.5f;
+            float tx_center = half_len * tx_coef + tx_corner;
+            float ty_center = half_len * ty_coef + ty_corner;
+            float tz_center = half_len * tz_coef + tz_corner;
 
             if (t_min <= tv_max) {
 
                 const auto& cnode = buffer[childIdx];                    
-                if (max_depth<=(depth+1) || cnode.childMask()==0) { // leaf
+                const bool actual_leaf = cnode.childMask() == 0;
+                if (max_depth<=(depth+1) || actual_leaf) { // leaf
                     const float node_tmax = tv_max;
                     const float len = node_tmax - t_min; 
                     const float max_d = __half2float(cnode.max_d);
@@ -217,7 +218,8 @@ __device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_
                         thick = thick - thickness;
                         float dt = thick / max_d;
                         // (tc_max - dt) is the sample distance
-                        trace = {node_tmax-dt, cnode.min_d, cnode.max_d};
+                        const __half avg_d = actual_leaf ? __ushort_as_half(cnode.leafAverageBits()) : cnode.max_d;
+                        trace = {node_tmax-dt, cnode.min_d, cnode.max_d, avg_d};
                         break;
                     }
                     //march to next child along ray, or pop stack
@@ -230,7 +232,7 @@ __device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_
 
                     idx = 0;
                     depth++;
-                    voxel_len = half;
+                    voxel_len = half_len;
 
                     if (tx_center > t_min) idx ^= 1, pos.x += voxel_len;
                     if (ty_center > t_min) idx ^= 2, pos.y += voxel_len;
@@ -261,7 +263,7 @@ __device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_
             auto hbit = 31 - __clz(differing_bits); // highest bit position
             depth = MAX_STACK_DEPTH - 1 - hbit;
 
-            if (depth >= USE_STACK_DEPTH) { break; }
+            if (depth >= max_depth || depth >= USE_STACK_DEPTH) { break; }
 
             // voxel_len = exp2f(hbit - MAX_STACK_DEPTH);
             voxel_len = ldexpf(1.0f, hbit - MAX_STACK_DEPTH); 
@@ -373,13 +375,19 @@ extern "C" __global__ void __intersection__volume()
     }
 
     const auto octree_ptr = reinterpret_cast<OcNode*>(*(gas_ptr-5));
-    assert(octree_ptr != nullptr);
+    if (octree_ptr == nullptr) return;
 
     const auto bbox = aabb;
     const auto dim = bbox.ext();
 
-    const int OCTREE_DEPTH = 6;
-    const int leafRes = 1 << OCTREE_DEPTH;
+    uint32_t octreeBuildDepth = *reinterpret_cast<const uint32_t*>((const char*)gas_ptr - 52);
+    if (octreeBuildDepth == 0u) {
+        octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+    }
+    if (octreeBuildDepth > uint32_t(USE_STACK_DEPTH)) {
+        octreeBuildDepth = uint32_t(USE_STACK_DEPTH);
+    }
+    const int leafRes = 1 << int(octreeBuildDepth);
     int3 paddedDim {
             roundUpToMultiple(int(dim.x), leafRes),
             roundUpToMultiple(int(dim.y), leafRes),
@@ -396,7 +404,7 @@ extern "C" __global__ void __intersection__volume()
 
         OcStack stack {};
         auto thickness = -logf(1.0f-prd->rndf())  / (len * sbt_data->vol_extinction);
-        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, obj_t0);
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, obj_t0, uint8_t(octreeBuildDepth));
 
         if (sek.t0<0) {
             return; // empty
@@ -418,13 +426,6 @@ extern "C" __global__ void __intersection__volume()
 
     auto sprd = reinterpret_cast<ShadowPRD*>(prd);
     auto transmittance = sprd->attanuation;
-    
-    using GridTypeNVDB = nanovdb::NanoGrid<nanovdb::Fp16>;
-    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(sbt_data->vdb_grids[0]);
-    const auto& _acc = _grid->tree().getAccessor();
-    
-    using Sampler = nanovdb::SampleFromVoxels<GridTypeNVDB::AccessorType, 0, true>;
-    auto sampler = Sampler(_acc);
 
     auto seed = prd->seed;
     auto scale = 1.0f / (len * sbt_data->vol_extinction);
@@ -434,7 +435,7 @@ extern "C" __global__ void __intersection__volume()
 
     do {
         auto thickness = -logf(1.0f-rnd(seed)) * scale;
-        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, t_progress);
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, t_progress, uint8_t(octreeBuildDepth));
 
         if (sek.t0 >= obj_t1 || sek.t0 < 0) // empty zone
             break;
@@ -453,6 +454,7 @@ extern "C" __global__ void __intersection__volume()
         auto test_point = ray_ori + t_progress * ray_dir;
         auto& pidx = reinterpret_cast<nanovdb::Vec3f&>(test_point); 
         auto dens = __half(sampler(pidx));
+        auto dens = sek.avg_d;
         
         __half density = clamp(dens, HF0, sek.max_d);
         __half ratio = (density-sek.min_d) / (sek.max_d-sek.min_d);
