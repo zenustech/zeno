@@ -56,12 +56,23 @@ public:
         auto it = instances.find(name);
         if (it == instances.end()) {
             it = instances.emplace(name, factories.at(name)(scene)).first;
+            // This will lead to crash while closing program, if opengl panel is pinned on GUI but never viewed. 
+            // Under such situation, opengl resource is actually empty.
         }
         return it->second.get();
     }
 
     RenderEngine *getEngine() {
         return getEngine(defaultEngineName);
+    }
+
+    RenderEngine *findEngine(std::string const &name) {
+        auto it = instances.find(name);
+        return it != instances.end() ? it->second.get() : nullptr;
+    }
+
+    RenderEngine *findEngine() {
+        return findEngine(defaultEngineName);
     }
 
     std::string getDefaultEngineName() const {
