@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <glad/glad.h>
@@ -16,6 +17,34 @@
 #include <zeno/utils/log.h>
 
 namespace zenovis::opengl {
+
+struct OpenGLContextHandle {
+    void *native = nullptr;
+    uint32_t api = 0;
+
+    explicit operator bool() const noexcept {
+        return native != nullptr;
+    }
+};
+
+inline bool operator==(OpenGLContextHandle lhs, OpenGLContextHandle rhs) noexcept {
+    return lhs.native == rhs.native && lhs.api == rhs.api;
+}
+
+OpenGLContextHandle current_context_handle() noexcept;
+
+struct ContextBoundResource {
+    ContextBoundResource() noexcept : owner_context(current_context_handle()) {
+    }
+
+protected:
+    bool owns_current_context() const noexcept {
+        return owner_context && owner_context == current_context_handle();
+    }
+
+private:
+    OpenGLContextHandle owner_context;
+};
 
 static const char *get_opengl_error_string(GLenum err) {
     switch (err) {

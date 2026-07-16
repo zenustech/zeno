@@ -20,7 +20,7 @@ static std::string shader_add_line_info(std::string const &source) {
     return res;
 }
 
-struct Shader : zeno::disable_copy {
+struct Shader : zeno::disable_copy, ContextBoundResource {
     GLuint sha;
     GLuint target{GL_ARRAY_BUFFER};
 
@@ -29,7 +29,8 @@ struct Shader : zeno::disable_copy {
     }
 
     ~Shader() {
-        CHECK_GL(glDeleteShader(sha));
+        if (owns_current_context())
+            CHECK_GL(glDeleteShader(sha));
     }
 
     void compile(std::string const &source) const {
@@ -52,7 +53,7 @@ struct Shader : zeno::disable_copy {
     }
 };
 
-struct Program : zeno::disable_copy {
+struct Program : zeno::disable_copy, ContextBoundResource {
     GLuint pro;
 
     Program() {
@@ -60,7 +61,8 @@ struct Program : zeno::disable_copy {
     }
 
     ~Program() {
-        CHECK_GL(glDeleteProgram(pro));
+        if (owns_current_context())
+            CHECK_GL(glDeleteProgram(pro));
     }
 
     void attach(Shader const &shader) const {
