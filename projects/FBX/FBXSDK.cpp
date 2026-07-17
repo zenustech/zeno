@@ -520,6 +520,11 @@ static Json mat_to_json(FbxSurfaceMaterial* material, bool output_tex_even_missi
             }
         }
     }
+    for (auto& [key, value] : json.items()) {
+        if (ends_with(key, "_tex")) {
+            value = replace_all(value, "\\", "/");
+        }
+    }
     return json;
 }
 

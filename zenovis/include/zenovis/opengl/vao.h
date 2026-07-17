@@ -5,7 +5,7 @@
 
 namespace zenovis::opengl {
 
-struct VAO : zeno::disable_copy {
+struct VAO : zeno::disable_copy, ContextBoundResource {
     GLuint vao;
 
     VAO() {
@@ -13,7 +13,8 @@ struct VAO : zeno::disable_copy {
     }
 
     ~VAO() {
-        CHECK_GL(glDeleteVertexArrays(1, &vao));
+        if (owns_current_context())
+            CHECK_GL(glDeleteVertexArrays(1, &vao));
     }
 
     void bind() const {

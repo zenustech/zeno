@@ -1,8 +1,5 @@
 #pragma once
 
-#include <tinygltf/json.hpp>
-using Json = nlohmann::json;
-
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <Alembic/AbcGeom/Foundation.h>
@@ -12,13 +9,11 @@ using Json = nlohmann::json;
 #include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "zeno/utils/log.h"
+#include "zeno/extra/SceneAssembler.h"
 
 using Alembic::AbcGeom::ObjectVisibility;
 
 namespace zeno {
-struct JsonObject : IObjectClone<JsonObject> {
-    Json json;
-};
 struct ABCArchive : PrimitiveObject {
     Alembic::Abc::v12::IArchive archive;
 };

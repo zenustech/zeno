@@ -315,7 +315,7 @@ void write_attrs(
     }
     if (prim->polys.size() > 0) {
         prim->polys.foreach_attr<std::variant<vec3f, float, int>>([&](auto const &_key, auto &arr) {
-            if (_key == "faceset" || _key == "matid" || _key == "abcpath") {
+            if (_key == "faceset" || _key == "abcpath") {
                 return;
             }
             std::string key = _key;
@@ -389,9 +389,6 @@ void write_user_data(
             continue;
         }
         if (key == "abcpath_count" || zeno::starts_with(key, "abcpath_")) {
-            continue;
-        }
-        if (key == "matNum" || zeno::starts_with(key, "Material_") || key == "mtlid") {
             continue;
         }
         if (ud.has<int>(key)) {
@@ -737,6 +734,108 @@ ZENDEFNODE(WriteAlembic2, {
     {"alembic"},
 });
 
+static void write_prim(
+    std::shared_ptr<PrimitiveObject> prim
+    , std::string path
+    , std::map<std::string, OPolyMesh> &meshyObjs
+    , std::map<std::string, std::any> &verts_attrs
+    , std::map<std::string, std::any> &loops_attrs
+    , std::map<std::string, std::any> &polys_attrs
+    , std::map<std::string, std::any> &user_attrs
+    , std::map<std::string, std::map<std::string, OFaceSet>> &o_faceset
+    , std::map<std::string, std::map<std::string, OFaceSetSchema>> &o_faceset_schema
+    , std::map<std::string, std::map<int, vec3i>> &prim_size_per_frame
+    , int frameid
+    , int real_frame_start
+    , bool outputToMaya
+) {
+    // Create a PolyMesh class.
+    OPolyMeshSchema &mesh = meshyObjs[path].getSchema();
+    auto &ud = prim->userData();
+    std::vector<std::string> faceSetNames;
+    std::vector<std::vector<int>> faceset_idxs;
+    write_faceset(prim, mesh, o_faceset[path], o_faceset_schema[path]);
+
+    OCompoundProperty user = mesh.getUserProperties();
+    write_user_data(user_attrs, path, prim, user, frameid, real_frame_start);
+
+    mesh.setTimeSampling(1);
+
+    // some apps can arbitrarily name their primary UVs, this function allows
+    // you to do that, and must be done before the first time you set UVs
+    // on the schema
+    mesh.setUVSourceName("main_uv");
+
+    // Set a mesh sample.
+    // We're creating the sample inline here,
+    // but we could create a static sample and leave it around,
+    // only modifying the parts that have changed.
+    std::vector<int32_t> vertex_index_per_face;
+    std::vector<int32_t> vertex_count_per_face;
+
+    if (prim->tris.size()) {
+        zeno::primPolygonate(prim.get(), true);
+    }
+    {
+        {
+            prim_size_per_frame[path][frameid] = {
+                int(prim->verts.size()),
+                int(prim->loops.size()),
+                int(prim->polys.size()),
+            };
+        }
+        for (const auto& [start, size]: prim->polys) {
+            for (auto i = 0; i < size; i++) {
+                vertex_index_per_face.push_back(prim->loops[start + i]);
+            }
+            auto base = vertex_index_per_face.size() - size;
+            vertex_count_per_face.push_back(size);
+        }
+        if (prim->loops.has_attr("uvs")) {
+            std::vector<zeno::vec2f> uv_data;
+            for (const auto& uv: prim->uvs) {
+                uv_data.push_back(uv);
+            }
+            std::vector<uint32_t> uv_indices;
+            for (const auto& [start, size]: prim->polys) {
+                for (auto i = 0; i < size; i++) {
+                    auto uv_index = prim->loops.attr<int>("uvs")[start + i];
+                    uv_indices.push_back(uv_index);
+                }
+            }
+            // UVs and Normals use GeomParams, which can be written or read
+            // as indexed or not, as you'd like.
+            OV2fGeomParam::Sample uvsamp;
+            uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
+            uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
+            uvsamp.setScope(kFacevaryingScope);
+            OPolyMeshSchema::Sample mesh_samp(
+            V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
+                    Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
+                    Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
+                    uvsamp);
+            write_velocity(prim, mesh_samp);
+            write_normal(prim, mesh_samp);
+            if (outputToMaya == false) {
+                write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+            }
+            mesh.set( mesh_samp );
+        }
+        else {
+            OPolyMeshSchema::Sample mesh_samp(
+            V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
+                    Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
+                    Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
+            write_velocity(prim, mesh_samp);
+            write_normal(prim, mesh_samp);
+            if (outputToMaya == false) {
+                write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
+            }
+            mesh.set( mesh_samp );
+        }
+    }
+}
+
 struct WriteAlembicPrims : INode {
     OArchive archive;
     std::string usedPath;
@@ -883,93 +982,21 @@ struct WriteAlembicPrims : INode {
             }
             auto path = prim->userData().get2<std::string>("abcpath_0");
 
-            {
-                // Create a PolyMesh class.
-                OPolyMeshSchema &mesh = meshyObjs[path].getSchema();
-                auto &ud = prim->userData();
-                std::vector<std::string> faceSetNames;
-                std::vector<std::vector<int>> faceset_idxs;
-                write_faceset(prim, mesh, o_faceset[path], o_faceset_schema[path]);
-
-                OCompoundProperty user = mesh.getUserProperties();
-                write_user_data(user_attrs, path, prim, user, frameid, real_frame_start);
-
-                mesh.setTimeSampling(1);
-
-                // some apps can arbitrarily name their primary UVs, this function allows
-                // you to do that, and must be done before the first time you set UVs
-                // on the schema
-                mesh.setUVSourceName("main_uv");
-
-                // Set a mesh sample.
-                // We're creating the sample inline here,
-                // but we could create a static sample and leave it around,
-                // only modifying the parts that have changed.
-                std::vector<int32_t> vertex_index_per_face;
-                std::vector<int32_t> vertex_count_per_face;
-
-                if (prim->tris.size()) {
-                    zeno::primPolygonate(prim.get(), true);
-                }
-                {
-                    {
-                        prim_size_per_frame[path][frameid] = {
-                            int(prim->verts.size()),
-                            int(prim->loops.size()),
-                            int(prim->polys.size()),
-                        };
-                    }
-                    for (const auto& [start, size]: prim->polys) {
-                        for (auto i = 0; i < size; i++) {
-                            vertex_index_per_face.push_back(prim->loops[start + i]);
-                        }
-                        auto base = vertex_index_per_face.size() - size;
-                        vertex_count_per_face.push_back(size);
-                    }
-                    if (prim->loops.has_attr("uvs")) {
-                        std::vector<zeno::vec2f> uv_data;
-                        for (const auto& uv: prim->uvs) {
-                            uv_data.push_back(uv);
-                        }
-                        std::vector<uint32_t> uv_indices;
-                        for (const auto& [start, size]: prim->polys) {
-                            for (auto i = 0; i < size; i++) {
-                                auto uv_index = prim->loops.attr<int>("uvs")[start + i];
-                                uv_indices.push_back(uv_index);
-                            }
-                        }
-                        // UVs and Normals use GeomParams, which can be written or read
-                        // as indexed or not, as you'd like.
-                        OV2fGeomParam::Sample uvsamp;
-                        uvsamp.setVals(V2fArraySample( (const V2f *)uv_data.data(), uv_data.size()));
-                        uvsamp.setIndices(UInt32ArraySample( uv_indices.data(), uv_indices.size() ));
-                        uvsamp.setScope(kFacevaryingScope);
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
-                                uvsamp);
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        if (get_input2<bool>("outputToMaya") == false) {
-                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
-                        }
-                        mesh.set( mesh_samp );
-                    }
-                    else {
-                        OPolyMeshSchema::Sample mesh_samp(
-                        V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
-                                Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
-                                Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                        write_velocity(prim, mesh_samp);
-                        write_normal(prim, mesh_samp);
-                        if (get_input2<bool>("outputToMaya") == false) {
-                            write_attrs(verts_attrs, loops_attrs, polys_attrs, path, prim, mesh, frameid, real_frame_start, prim_size_per_frame[path]);
-                        }
-                        mesh.set( mesh_samp );
-                    }
-                }
-            }
+            write_prim(
+                prim
+                , path
+                , meshyObjs
+                , verts_attrs
+                , loops_attrs
+                , polys_attrs
+                , user_attrs
+                , o_faceset
+                , o_faceset_schema
+                , prim_size_per_frame
+                , frameid
+                , real_frame_start
+                , get_input2<bool>("outputToMaya")
+            );
         }
     }
 };
@@ -990,6 +1017,134 @@ ZENDEFNODE(WriteAlembicPrims, {
     },
     {},
     {"alembic"},
+});
+
+struct WriteAlembicScene : INode {
+    OArchive archive;
+    std::string usedPath;
+    std::map<std::string, OPolyMesh> meshyObjs;
+    std::map<std::string, std::any> verts_attrs;
+    std::map<std::string, std::any> loops_attrs;
+    std::map<std::string, std::any> polys_attrs;
+    std::map<std::string, std::any> user_attrs;
+    std::map<std::string, std::map<std::string, OFaceSet>> o_faceset;
+    std::map<std::string, std::map<std::string, OFaceSetSchema>> o_faceset_schema;
+    std::map<std::string, std::map<int, vec3i>> prim_size_per_frame;
+    int real_frame_start = -1;
+
+    virtual void apply() override {
+        std::vector<std::shared_ptr<PrimitiveObject>> new_prims;
+        auto scene_tree = get_scene_tree_from_list2(get_input2<ListObject>("scene"));
+        for (auto [_, prim]: scene_tree->prim_list) {
+            auto obj_name = prim->userData().get2<std::string>("ObjectName", "unnamed");
+            if (starts_with(obj_name, "/")) {
+                obj_name = obj_name.substr(1);
+            }
+            obj_name = replace_all(obj_name, "/", "_");
+            auto abc_path = zeno::format("/ABC/{}", obj_name);
+            prim->userData().set2("abcpath_0", abc_path);
+            new_prims.push_back(prim);
+        }
+
+        bool flipFrontBack = get_input2<int>("flipFrontBack");
+        float fps = get_input2<float>("fps");
+        int frameid = getGlobalState()->frameid;
+        if (has_input("frameid")) {
+            frameid = std::lround(get_input2<float>("frameid"));
+        }
+        int frame_start = get_input2<int>("frame_start");
+        int frame_end = get_input2<int>("frame_end");
+        std::string path = get_input2<std::string>("path");
+        path = create_directories_when_write_file(path);
+
+        if (usedPath != path) {
+            usedPath = path;
+            archive = CreateArchiveWithInfo(
+                Alembic::AbcCoreOgawa::WriteArchive(),
+                path,
+                fps,
+                "Zeno : " + getGlobalState()->zeno_version,
+                "None"
+            );
+            meshyObjs.clear();
+            verts_attrs.clear();
+            loops_attrs.clear();
+            polys_attrs.clear();
+            user_attrs.clear();
+            o_faceset.clear();
+            o_faceset_schema.clear();
+            prim_size_per_frame.clear();
+            real_frame_start = -1;
+            for (auto prim: new_prims) {
+                auto path = prim->userData().get2<std::string>("abcpath_0");
+                if (!starts_with(path, "/ABC/")) {
+                    log_error("abcpath_0 must start with /ABC/");
+                }
+                auto n_path = path.substr(5);
+                auto subnames = split_str(n_path, '/');
+                OObject oObject = OObject( archive, 1 );
+                for (auto i = 0; i < subnames.size() - 1; i++) {
+                    auto child = oObject.getChild(subnames[i]);
+                    if (child.valid()) {
+                        oObject = child;
+                    }
+                    else {
+                        oObject = OObject( oObject, subnames[i] );
+                    }
+                }
+                meshyObjs[path] = OPolyMesh (oObject, subnames[subnames.size() - 1]);
+            }
+        }
+        if (!(frame_start <= frameid && frameid <= frame_end)) {
+            return;
+        }
+        if (real_frame_start == -1) {
+            real_frame_start = frameid;
+            archive.addTimeSampling(TimeSampling(1.0/fps, real_frame_start / fps));
+        }
+        if (archive.valid() == false) {
+            zeno::makeError("Not init. Check whether in correct correct frame range.");
+        }
+        for (auto prim: new_prims) {
+            if (flipFrontBack) {
+                primFlipFaces(prim.get());
+            }
+            auto path = prim->userData().get2<std::string>("abcpath_0");
+
+            write_prim(
+                prim
+                , path
+                , meshyObjs
+                , verts_attrs
+                , loops_attrs
+                , polys_attrs
+                , user_attrs
+                , o_faceset
+                , o_faceset_schema
+                , prim_size_per_frame
+                , frameid
+                , real_frame_start
+                , get_input2<bool>("outputToMaya")
+            );
+        }
+    }
+};
+
+ZENDEFNODE(WriteAlembicScene, {
+    {
+        {"scene"},
+        {"frameid"},
+        {"writepath", "path", ""},
+        {"int", "frame_start", "0"},
+        {"int", "frame_end", "100"},
+        {"float", "fps", "25"},
+        {"bool", "flipFrontBack", "1"},
+        {"bool", "outputToMaya", "0"},
+    },
+    {
+    },
+    {},
+    {"deprecated"},
 });
 
 } // namespace

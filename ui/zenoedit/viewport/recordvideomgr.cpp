@@ -17,6 +17,7 @@
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
 #include <filesystem>
+#include "ffmpeg/ImageSequenceEncoder.h"
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
@@ -119,23 +120,23 @@ REC_RETURN_CODE RecordVideoMgr::endRecToExportVideo()
         return REC_NO_RECORD_OPTION;
     }
     //Zenovis::GetInstance().blockSignals(false);
-    QString imgPath = m_recordInfo.record_path + "/P/%07d.jpg";
-    QString outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
+    QString imgPath = m_recordInfo.record_path + "/P/{:07}.jpg";
+    QString outPath;
+    if (m_recordInfo.videoname.contains('/') || m_recordInfo.videoname.contains('\\')) {
+        outPath = m_recordInfo.videoname;
+    }
+    else {
+        outPath = m_recordInfo.record_path + "/" + m_recordInfo.videoname;
+    }
 
-    QString cmd = QString("ffmpeg -y -start_number %1 -r %2 -i %3 -b:v %4k -c:v mpeg4 %5")
-              .arg(m_recordInfo.frameRange.first)
-              .arg(m_recordInfo.fps)
-              .arg(imgPath)
-              .arg(m_recordInfo.bitrate)
-              .arg(outPath);
-    int ret = QProcess::execute(cmd);
-    if (ret == 0)
+    bool ret_status = videoCompose(imgPath, outPath, m_recordInfo.frameRange.first, m_recordInfo.fps, m_recordInfo.bitrate);
+    if (ret_status)
     {
         if (!m_recordInfo.audioPath.isEmpty()) {
-            cmd = QString("ffmpeg -y -i %1 -i %2 -c:v copy -c:a aac output_av.mp4")
+            auto cmd = QString("ffmpeg -y -i %1 -i %2 -c:v copy -c:a aac output_av.mp4")
                       .arg(outPath)
                       .arg(m_recordInfo.audioPath);
-            ret = QProcess::execute(cmd);
+            int ret = QProcess::execute(cmd);
             if (ret == 0) {
                 emit recordFinished(m_recordInfo.record_path);
                 return REC_NOERROR;

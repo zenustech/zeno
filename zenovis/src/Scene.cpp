@@ -58,7 +58,7 @@ void Scene::cleanupView()
     if (!renderMan)
         return;
 
-    RenderEngine* pEngine = renderMan->getEngine();
+    RenderEngine* pEngine = renderMan->findEngine();
     if (pEngine) {
         pEngine->cleanupWhenExit();
     }
@@ -73,7 +73,7 @@ void Scene::cleanUpScene()
             if (!renderMan)
                 return;
 
-            RenderEngine* pEngine = renderMan->getEngine();
+            RenderEngine* pEngine = renderMan->findEngine();
             if (pEngine) {
                 pEngine->update();
                 pEngine->cleanupAssets();

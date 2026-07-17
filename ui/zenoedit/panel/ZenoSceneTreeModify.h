@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QtWidgets>
 #include <QAbstractTableModel>
@@ -31,7 +31,7 @@ public:
 
 	void insertRow(const QString id, const QString r0, const QString r1, const QString r2, const QString t);
 	void removeRow(int row);
-	QModelIndex& indexFromId(QString id);
+	QModelIndex indexFromId(QString id);
 	std::vector<std::string> getRow(int row) const;
 	void setupModelDataFromMessage(Json const& content);
 

@@ -56,7 +56,7 @@
 #include <map>
 #include <unordered_map>
 #include "xinxinoptixapi.h"
-#include "OptiXStuff.h"
+#include "optiXStuff.h"
 #include <zeno/utils/vec.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/envconfig.h>
@@ -109,7 +109,6 @@ bool minimized    = false;
 bool             camera_changed = true;
 sutil::Camera    camera;
 sutil::Trackball trackball;
-OptiXDenoiser denoiser;
 
 // Mouse state
 int32_t mouse_button = -1;
@@ -146,6 +145,9 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_t;
     raii<CUdeviceptr> accum_buffer_b;
     raii<CUdeviceptr> accum_buffer_m;
+
+    OptiXDenoiser denoiser;
+    raii<CUdeviceptr> denoised_buffer;
     
     raii<CUdeviceptr> pick_buffer;
 
@@ -317,7 +319,8 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
     state.params.frame_buffer  = result_buffer_data;
     state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
-
+    if(denoise == true) state.params.outside_random_number = 0;
+    
         CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
@@ -1791,31 +1794,6 @@ std::vector<float> rgba_to_rgb(const std::vector<float> &rgba_data, int w, int h
     }
     return rgb_data;
 }
-std::vector<float> optixgetimg_color(int w, int h, bool denoising) {
-    auto tex_data = optixgetimg_extra2("color", w, h);
-    if (!denoising) {
-        return tex_data;
-    }
-    auto rgba_data = rgb_to_rgba(tex_data, w, h);
-    auto albedo_data = rgb_to_rgba(optixgetimg_extra2("albedo", w, h), w, h);
-    auto normal_data = rgb_to_rgba(optixgetimg_extra2("normal", w, h), w, h);
-
-    std::vector<float> output_data(w * h * 4);
-    OptiXDenoiser::Data data;
-    data.width     = w;
-    data.height    = h;
-    data.color     = rgba_data.data();
-    data.albedo    = albedo_data.data();
-    data.normal    = normal_data.data();
-    data.flow      = nullptr;
-    data.flowtrust = nullptr;
-    data.outputs.push_back( output_data.data() );
-    denoiser.init(data);
-    denoiser.exec();
-    denoiser.getResults();
-    denoiser.finish();
-    return rgba_to_rgb(output_data, w, h);
-}
 
 std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
     std::vector<Imath::half> tex_data(w * h * 3);
@@ -1955,9 +1933,6 @@ static void updateRayGen(bool aov, bool denoise) {
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 
     bool imageRendered = false;
-    samples = zeno::envconfig::getInt("SAMPLES", samples);
-    // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
-    zeno::log_debug("rendering samples {}", samples);
 
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
 #ifdef OPTIX_BASE_GL
@@ -2000,12 +1975,43 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     }
     state.params.pause = pause;
 
+    const bool up2x = ud.get2("optix_render_up2x", false);
+    if (denoise) {
+        auto w = state.params.width;
+        auto h = state.params.height;
+
+        int output_w = up2x ? 2 * w: w;
+        int output_h = up2x ? 2 * h: h;
+        state.denoised_buffer.resize(output_w * output_h * sizeof(float)*3);
+
+        OptiXDenoiser::Data data {};
+        data.up2x      = up2x;
+        data.width     = w;
+        data.height    = h;
+        data.color     = state.accum_buffer_p.handle;
+        data.albedo    = state.albedo_buffer_p.handle;
+        data.normal    = state.normal_buffer_p.handle;
+        data.outputs.push_back( state.denoised_buffer );
+        
+        auto& denoiser = state.denoiser;
+        denoiser.init(OptixUtil::context, data, 
+            0, 0, false, false, false, 
+            OPTIX_DENOISER_ALPHA_MODE_COPY, false);
+        state.params.denoised_buffer = (float3*)state.denoised_buffer.handle;
+    } else {
+        state.denoiser = {};
+        state.params.denoised_buffer = 0;
+    }
+
     timer.tick();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
+    }
+    if (denoise) {
+        state.denoiser.exec();
     }
     //cudaStreamSynchronize(0);
     output_buffer_o->unmap();
@@ -2093,12 +2099,14 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         else {
             std::string jpg_native_path = zeno::create_directories_when_write_file(path);
             if (denoise) {
-                auto float_data = optixgetimg_color(w, h, true);
-                std::vector<uint8_t> u8_data(w * h * 3);
+                const auto& float_data = state.denoiser.getResult(0);
+                int output_w = up2x ? 2 * w: w;
+                int output_h = up2x ? 2 * h: h;
+                std::vector<uint8_t> u8_data(output_w * output_h * 3);
                 for (auto i = 0; i < u8_data.size(); i++) {
                     u8_data[i] = int(glm::clamp(pow(float_data[i], 1.0f/2.2f) * 255.0f, 0.0f, 255.0f));
                 }
-                stbi_write_jpg(jpg_native_path.c_str(), w, h, 3, u8_data.data(), 100);
+                stbi_write_jpg(jpg_native_path.c_str(), output_w, output_h, 3, u8_data.data(), 100);
             }
             else {
                 stbi_write_jpg(jpg_native_path.c_str(), w, h, 4, p, 100);

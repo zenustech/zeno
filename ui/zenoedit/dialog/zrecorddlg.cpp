@@ -88,6 +88,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
 {
     auto &ud = zeno::getSession().userData();
+    srand((unsigned int)time(NULL));
+    int random_num = rand();
+    ud.set2("render_session_id", random_num);
     ud.set2("output_aov", m_ui->cbAOV->checkState() == Qt::Checked);
     ud.set2("output_mask", m_ui->cbMask->checkState() == Qt::Checked);
     ud.set2("output_exr", m_ui->cbExportEXR->checkState() == Qt::Checked);

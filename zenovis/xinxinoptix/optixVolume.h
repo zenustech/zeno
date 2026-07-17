@@ -139,7 +139,7 @@ struct TypedGridWrapper: GridWrapper {
 			std::cerr << "Error: " << "NanoVDB data type doesn't match openVDB data type" << std::endl;
 			std::cerr << "Error: " << "Using fallback empty grid" << std::endl;
 			
-			grid = OpenVDBGridT::create( OpenVDBGridT::ValueType() );
+			grid = OpenVDBGridT::create( typename OpenVDBGridT::ValueType() );
 			grid->setName("dummy");
 			grid->setTransform(openvdb::math::Transform::createLinearTransform(1.0));
 			match = false;

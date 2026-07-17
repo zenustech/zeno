@@ -47,6 +47,10 @@ __forceinline__ __device__ float to_degrees(float radians) {
     return radians * M_1_PIf * 180.0f;
 }
 
+__inline__ __device__ bool isfinite(const float3& vector) {
+    return isfinite(vector.x) && isfinite(vector.y) && isfinite(vector.z);
+}
+
 template<typename T>
 __forceinline__ __device__ void swap(T& a, T& b) {
     T t = a;

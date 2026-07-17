@@ -5,7 +5,7 @@
 
 namespace zenovis::opengl {
 
-struct Buffer : zeno::disable_copy {
+struct Buffer : zeno::disable_copy, ContextBoundResource {
     GLuint buf;
     GLuint target{GL_ARRAY_BUFFER};
     GLuint m_usage = GL_STATIC_DRAW;
@@ -15,10 +15,8 @@ struct Buffer : zeno::disable_copy {
     }
 
     ~Buffer() {
-        // force release about gpu memory
-        CHECK_GL(glBindBuffer(target, buf));
-        CHECK_GL(glBufferData(target, 0, nullptr, m_usage));
-        CHECK_GL(glDeleteBuffers(1, &buf));
+        if (owns_current_context())
+            CHECK_GL(glDeleteBuffers(1, &buf));
     }
 
     template <typename T> void bind_data(std::vector<T> const &arr) const {

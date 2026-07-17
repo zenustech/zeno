@@ -281,5 +281,25 @@ ZENDEFNODE(DictHasKey, {
     {"dict"},
 });
 
+struct DictToList : zeno::INode {
+    virtual void apply() override {
+        auto dict = get_input<zeno::DictObject>("dict");
+        auto values = std::make_shared<zeno::ListObject>();
+
+        for (auto const &[key, val] : dict->lut) {
+            values->arr.push_back(val);
+        }
+
+        set_output("list", std::move(values));
+    }
+};
+
+ZENDEFNODE(DictToList, {
+    {{"DictObject", "dict"}},
+    {{"ListObject", "list"}},
+    {},
+    {"dict"},
+});
+
 }
 }

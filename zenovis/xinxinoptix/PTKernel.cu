@@ -584,6 +584,10 @@ extern "C" __global__ void __raygen__rg()
         accum_buffer_B[image_index] = __float2half(accum_color_b);
     #endif
 
+    #if DENOISE
+        accum_color = params.denoised_buffer[image_index];
+    #endif
+
     auto uv = float2{idx.x+0.5f, idx.y+0.5f};
     auto dither = InterleavedGradientNoise(uv);
 
@@ -665,6 +669,11 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
 
     prd->origin += prd->direction * ( prd->maxDistance);
+    if (!isfinite(prd->origin)) {
+        prd->done = true;
+        prd->hit_type = 0;
+        return;
+    }
     prd->_tmin_ = 0.0f;
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 

@@ -1,4 +1,4 @@
-﻿#include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/utils/log.h>
@@ -661,7 +661,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         }
         return false;
     };
-    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &runtype, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
+    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
         if (cachedir.empty())
             return false;
 
@@ -772,7 +772,7 @@ bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalCo
         return true;
     };
     //if (!loadPartial) {
-        bool ret = load(cacheFramePath, objs, runtype);
+        bool ret = load(cachedir, objs, runtype);
 //        for (auto& [key, tup] : newFrameStampInfo) {
 //            //if (std::get<0>(tup) == "UnChanged") {
 //            if (std::get<0>(tup) != "TotalChange") {//不是Totalchange的，暂时全部按照unchange处理

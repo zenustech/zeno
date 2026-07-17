@@ -602,14 +602,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
         }
     }
 
-    
-    prd->radiance = vout.emission;
-
     if (!scatter) {
         prd->_tmin_ = t0;
         prd->alphaHit = true;
         return;
-    } 
+    }
+
+    prd->radiance = vout.emission;
+    prd->hit_type = DIFFUSE_HIT;
+    
     // else {
         prd->origin = new_orig;
         prd->depth += 1;

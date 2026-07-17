@@ -108,6 +108,7 @@ inline raii<OptixModule> round_quadratic_ism;
 inline raii<OptixModule> flat_quadratic_ism;
 inline raii<OptixModule> round_cubic_ism;
 
+inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 inline std::vector< std::function<void(void)> > garbageTasks;
 
 inline void clearCallableProgramCache();
@@ -135,6 +136,8 @@ inline void resetAll() {
 
     pipeline.reset();
     context.reset();
+
+    CachedPrimitiveTypeFlags = UINT_MAX;
 }
 
 typedef std::tuple<uint, uint> PipelineMark;
@@ -185,7 +188,6 @@ inline void createContext()
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
-inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
@@ -773,15 +775,16 @@ inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, unsigned char
     texture->blockCompression = blockCompression;
 }
 
+template <typename TF=float>
 inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, float* img, int nx, int ny, int nc)
 {
     cudaFreeArray(texture->gpuImageArray);
     
     auto channel = (nc==3) ? 4:nc;
-    std::vector<half> data(nx * ny * channel, 0);
+    std::vector<TF> data(nx * ny * channel, 0);
     if (nc == channel) {
         for (size_t i=0; i<data.size(); ++i) {
-            data[i] = (Imath::half)img[i];
+            data[i] = (TF)img[i];
         }
     } else {
         auto count = nx * ny;
@@ -790,12 +793,12 @@ inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, float* img, i
             size_t src_idx = i * nc;
 
             for (int c=0; c<nc; ++c)
-                data[dst_idx+c] = (Imath::half)img[src_idx+c];
+                data[dst_idx+c] = (TF)img[src_idx+c];
         }
     }
     
     std::vector<int> xyzw(4, 0);
-    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(Imath::half) * 8;}
+    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(TF) * 8;}
 
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindFloat);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
@@ -806,8 +809,8 @@ inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, float* img, i
     }
 
     rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
-                             nx * sizeof(Imath::half) * channel,
-                             nx * sizeof(Imath::half) * channel,
+                             nx * sizeof(TF) * channel,
+                             nx * sizeof(TF) * channel,
                              ny,
                              cudaMemcpyHostToDevice);
     if (rc != cudaSuccess) {
@@ -817,15 +820,16 @@ inline void changeCudaTexture(std::shared_ptr<cuTexture> &texture, float* img, i
     }
 }
 
+template <typename TF=float>
 inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, int nc, bool commpress=false)
 {
     auto texture = std::make_shared<cuTexture>(nx, ny);
     auto channel = (nc==3) ? 4:nc;
 
-    std::vector<half> data(nx * ny * channel, 0);
+    std::vector<TF> data(nx * ny * channel, 0);
     if (nc == channel) {
         for (size_t i=0; i<data.size(); ++i) {
-            data[i] = (Imath::half)img[i];
+            data[i] = (TF)img[i];
         }
     } else {
         auto count = nx * ny;
@@ -834,12 +838,12 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
             size_t src_idx = i * nc;
 
             for (int c=0; c<nc; ++c)
-                data[dst_idx+c] = (Imath::half)img[src_idx+c];
+                data[dst_idx+c] = (TF)img[src_idx+c];
         }
     }
 
     std::vector<int> xyzw(4, 0);
-    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(Imath::half) * 8;}
+    for (int i=0; i<channel; ++i) {xyzw[i] = sizeof(TF) * 8;}
 
     cudaChannelFormatDesc channelDescriptor = cudaCreateChannelDesc(xyzw[0], xyzw[1], xyzw[2], xyzw[3], cudaChannelFormatKindFloat);
     cudaError_t rc = cudaMallocArray(&texture->gpuImageArray, &channelDescriptor, nx, ny, 0);
@@ -848,8 +852,8 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
         return 0;
     }
     rc = cudaMemcpy2DToArray(texture->gpuImageArray, 0, 0, data.data(),
-                             nx * sizeof(Imath::half) * channel,
-                             nx * sizeof(Imath::half) * channel,
+                             nx * sizeof(TF) * channel,
+                             nx * sizeof(TF) * channel,
                              ny,
                              cudaMemcpyHostToDevice);
     if (rc != cudaSuccess) {
@@ -1138,7 +1142,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         nc = 4;
         auto count = nx * ny * nc;
         for (auto i = 0; i < count; i++) {
-            rgba[i] = zeno::clamp(rgba[i], 0.f, 60000.0f);
+            rgba[i] = zeno::clamp(rgba[i], 0.f, 100000.0f);
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
@@ -1232,7 +1236,7 @@ inline void addTexture(std::string path, bool blockCompression=false, TaskType* 
         }
         auto count = nx * ny * nc;
         for (auto i = 0; i < count; i++) {
-            img[i] = zeno::clamp(img[i], 0.f, 60000.0f);
+            img[i] = zeno::clamp(img[i], 0.f, 100000.0f);
         }
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);

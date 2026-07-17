@@ -14,7 +14,7 @@
 #include "zeno/types/LightObject.h"
 
 #include "Portal.h"
-#include "OptiXStuff.h"
+#include "optiXStuff.h"
 
 enum ShaderMark {
     Mesh, Sphere, Volume,

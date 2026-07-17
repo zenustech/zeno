@@ -1642,7 +1642,12 @@ namespace DisneyBSDF{
         int channel = volume_sample_channel(albedo*throughput, rnd(seed), channel_pdf);
         const float sample_sigma_t = sigma_t[channel];
         float distance = -log(max(1.0f-rnd(seed), _FLT_MIN_)) / sample_sigma_t;
-        return distance;
+
+        if (isfinite(distance))
+            return distance;
+        else {
+            return FLT_MAX;
+        }
     }
 //    static __inline__ __device__ bool randomwalk_subsurface(const vec3 &weight,
 //                                                            const vec3 &albedo,

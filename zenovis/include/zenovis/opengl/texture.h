@@ -10,7 +10,7 @@ namespace zenovis::opengl {
 
 struct OpenGLTextureException {};
 
-struct Texture : zeno::disable_copy {
+struct Texture : zeno::disable_copy, ContextBoundResource {
     GLuint tex;
     GLuint target{GL_TEXTURE_2D};
     GLuint wrap_s{GL_CLAMP_TO_EDGE}, wrap_t{GL_CLAMP_TO_EDGE};
@@ -24,7 +24,8 @@ struct Texture : zeno::disable_copy {
     }
 
     ~Texture() {
-        CHECK_GL(glDeleteTextures(1, &tex));
+        if (owns_current_context())
+            CHECK_GL(glDeleteTextures(1, &tex));
     }
 
     void bind_to(int num) const {
@@ -87,7 +88,7 @@ struct Texture3D : Texture {
     void load(const char *path) = delete;
 };
 
-struct FBO : zeno::disable_copy {
+struct FBO : zeno::disable_copy, ContextBoundResource {
     GLuint fbo;
     GLuint target{GL_FRAMEBUFFER};
 
@@ -96,7 +97,8 @@ struct FBO : zeno::disable_copy {
     }
 
     ~FBO() {
-        CHECK_GL(glDeleteFramebuffers(1, &fbo));
+        if (owns_current_context())
+            CHECK_GL(glDeleteFramebuffers(1, &fbo));
     }
 
     void bind() const {
@@ -124,13 +126,14 @@ struct FBO : zeno::disable_copy {
                                         texture.target, texture.tex, 0));
     }
 };
-struct RenderObject : zeno::disable_copy {
+struct RenderObject : zeno::disable_copy, ContextBoundResource {
     unsigned int rbo;
     explicit RenderObject() {
         CHECK_GL(glGenRenderbuffers(1, &rbo));
     }
     ~RenderObject() {
-        CHECK_GL(glDeleteRenderbuffers(1, &rbo));
+        if (owns_current_context())
+            CHECK_GL(glDeleteRenderbuffers(1, &rbo));
     }
 };
 } // namespace zenovis::opengl

@@ -9,6 +9,7 @@
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "zenovis/RenderEngine.h"
 
 namespace zeno {
 
@@ -714,6 +715,11 @@ void FakeTransformer::doTransform() {
     }
     m_objects_center = _objects_center_start + m_trans;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
+    auto *sess = session();
+    if (sess == nullptr) return;
+    auto *scene = sess->get_scene();
+    if (scene == nullptr) return;
+    scene->renderMan->getEngine()->update();
 }
 
 }

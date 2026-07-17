@@ -54,7 +54,7 @@ struct WriteJson : zeno::INode {
         auto _json = get_input2<JsonObject>("json");
         auto path = get_input2<std::string>("path");
         path = create_directories_when_write_file(path);
-        file_put_content(path, _json->json.dump());
+        file_put_content(path, _json->json.dump(2));
     }
 };
 ZENDEFNODE(WriteJson, {

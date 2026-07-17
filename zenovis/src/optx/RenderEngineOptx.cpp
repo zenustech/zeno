@@ -1,6 +1,8 @@
 #include <tuple>
 #include <unordered_map>
+#ifdef _WIN32
 #include <vcruntime_string.h>
+#endif
 #include <vector_types.h>
 #ifdef ZENO_ENABLE_OPTIX
 
@@ -35,7 +37,7 @@
 #include <zeno/types/UserData.h>
 #include "zeno/core/Session.h"
 #include <variant>
-#include "../../xinxinoptix/OptiXStuff.h"
+#include "../../xinxinoptix/optiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/AttrVector.h>
@@ -1140,7 +1142,10 @@ struct GraphicsManager {
                             ud.get2<bool>("exposure"),
                             ud.get2<bool>("panorama_camera"),
                             ud.get2<bool>("panorama_vr180"),
-                            ud.get2<float>("pupillary_distance")
+                            ud.get2<float>("pupillary_distance"),
+                            ud.get2<int>("num_samples"),
+                            ud.get2<int>("ray_bounce"),
+                            ud.get2<bool>("up2x")
                         );
                     }
                 }
@@ -1194,7 +1199,10 @@ struct GraphicsManager {
                                 ud.get2<bool>("exposure"),
                                 ud.get2<bool>("panorama_camera"),
                                 ud.get2<bool>("panorama_vr180"),
-                                ud.get2<float>("pupillary_distance")
+                                ud.get2<float>("pupillary_distance"),
+                                ud.get2<int>("num_samples"),
+                                ud.get2<int>("ray_bounce"),
+                                ud.get2<bool>("up2x")
                             );
                         }
                     }
@@ -2633,7 +2641,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
+        xinxinoptix::optixrender(0, scene->camera->zOptixCameraSettingInfo.num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 

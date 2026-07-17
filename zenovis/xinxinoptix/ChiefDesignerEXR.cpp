@@ -153,8 +153,6 @@ void SaveMultiLayerEXR_half(std::vector<Imath::half*> pixels, int width, int hei
     using namespace Imath;
     using namespace Imf;
 
-    Imath::half;
-
     Header header(width, height);
     ChannelList channelList;
 
