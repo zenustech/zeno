@@ -3,6 +3,8 @@
 #include "raiicuda.h"
 
 #include <optional>
+#include <stdexcept>
+#include <vector>
 
 #ifndef uint
 using uint = unsigned int;
@@ -58,17 +60,19 @@ private:
                                                                                
 namespace xinxinoptix {
 
-    inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
-                         CUdeviceptr& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t aux_size=0, bool verbose=false)
+    inline void buildXASImpl(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
+                             CUdeviceptr& _bufferXAS_, size_t& retained_buffer_size,
+                             OptixTraversableHandle& _handleXAS_, size_t aux_size=0, bool verbose=false)
     {
 
-        if (OPTIX_BUILD_OPERATION_BUILD == accel_options.operation) 
+        const bool update = OPTIX_BUILD_OPERATION_UPDATE == accel_options.operation;
+        if (!update)
             _handleXAS_ = 0llu;
 
         size_t temp_buffer_size {};  
         size_t output_buffer_size {};
         {
-            OptixAccelBufferSizes xas_buffer_sizes;
+            OptixAccelBufferSizes xas_buffer_sizes{};
             OPTIX_CHECK( optixAccelComputeMemoryUsage(context,
                         &accel_options,
                         &build_input,
@@ -76,7 +80,10 @@ namespace xinxinoptix {
                         &xas_buffer_sizes
                         ) );
 
-            temp_buffer_size = roundUp<size_t>(xas_buffer_sizes.tempSizeInBytes, 8u);
+            const auto required_temp_size = update
+                ? xas_buffer_sizes.tempUpdateSizeInBytes
+                : xas_buffer_sizes.tempSizeInBytes;
+            temp_buffer_size = roundUp<size_t>(required_temp_size, 8u);
             output_buffer_size = roundUp<size_t>( xas_buffer_sizes.outputSizeInBytes, 8u );
 
             if (verbose) {
@@ -88,19 +95,25 @@ namespace xinxinoptix {
 
         aux_size = roundUp<size_t>(aux_size, 128u);
 
-        raii<CUdeviceptr> bufferTemp{};
-        CUDA_CHECK( cudaMallocAsync(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size, 0 ) );
-
-        bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
-        if (OPTIX_BUILD_OPERATION_UPDATE == accel_options.operation) 
-        {
-            COMPACTION = false;
+        if (update && (_bufferXAS_ == 0 || _handleXAS_ == 0 || retained_buffer_size <= aux_size)) {
+            throw std::runtime_error("Cannot update acceleration structure without a retained output buffer");
         }
+
+        raii<CUdeviceptr> bufferTemp{};
+        bufferTemp.resize(temp_buffer_size);
+
+        const bool COMPACTION = !update && (accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION);
 
         if (!COMPACTION) {
 
-            if (OPTIX_BUILD_OPERATION_UPDATE != accel_options.operation) 
+            if (!update) {
                 CUDA_CHECK( cudaMallocAsync( reinterpret_cast<void**>( &_bufferXAS_ ), output_buffer_size + aux_size, 0) );
+                retained_buffer_size = output_buffer_size + aux_size;
+            }
+
+            const auto retained_output_size = update
+                ? retained_buffer_size - aux_size
+                : output_buffer_size;
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             0,  // CUDA stream
@@ -109,7 +122,7 @@ namespace xinxinoptix {
                                             bufferTemp, 
                                             temp_buffer_size,
                                             (CUdeviceptr)( (char*)_bufferXAS_ + aux_size),
-                                            output_buffer_size,
+                                            retained_output_size,
                                             &_handleXAS_,
                                             nullptr,
                                             0 ) );
@@ -146,12 +159,22 @@ namespace xinxinoptix {
                 (CUdeviceptr)( (char*)_bufferXAS_ + aux_size), compacted_size, &_handleXAS_ ) );
 
                 cudaFreeAsync((void*)output_buffer_xas, 0);
+                retained_buffer_size = compacted_size + aux_size;
             }
             else
             {
                 _bufferXAS_ = std::move(output_buffer_xas);
+                retained_buffer_size = output_buffer_size + aux_size;
             }
         } // COMPACTION
+    }
+
+    inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
+                         CUdeviceptr& _bufferXAS_, OptixTraversableHandle& _handleXAS_, size_t aux_size=0, bool verbose=false)
+    {
+        size_t retained_buffer_size{};
+        buildXASImpl(context, accel_options, build_input, _bufferXAS_, retained_buffer_size,
+                     _handleXAS_, aux_size, verbose);
     }
 
     inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
@@ -160,7 +183,9 @@ namespace xinxinoptix {
         if (OPTIX_BUILD_OPERATION_BUILD == accel_options.operation)
             _bufferXAS_.reset();
                                                
-        buildXAS(context, accel_options, build_input, _bufferXAS_.handle, _handleXAS_, aux_size, verbose);
+        buildXASImpl(context, accel_options, build_input, _bufferXAS_.handle, _bufferXAS_.capacity,
+                     _handleXAS_, aux_size, verbose);
+        _bufferXAS_.size = _bufferXAS_.capacity;
     }
 
     template <template <class> class ALLOC>
@@ -196,13 +221,18 @@ namespace xinxinoptix {
     }
 
     template <template <class> class ALLOC>
-    inline void buildIAS(OptixDeviceContext& context, std::vector<OptixInstance, ALLOC<OptixInstance>>& instances, SceneNode& node) 
+    inline void buildIAS(OptixDeviceContext& context,
+                         std::vector<OptixInstance, ALLOC<OptixInstance>>& instances,
+                         SceneNode& node)
     {
-        bool update = node.count == instances.size();
-        if (!update) {
-            node.count = instances.size();
-        }
+        const bool update = node.count == instances.size()
+                   && node.buffer.handle != 0
+                   && node.buffer.capacity > 0
+                   && node.handle != 0;
+
         buildIAS(context, instances, node.buffer, node.handle, update);
+
+        node.count = static_cast<uint32_t>(instances.size());
     }
 
     template <template <class> class ALLOC>
@@ -213,7 +243,7 @@ namespace xinxinoptix {
         if (vertices.empty()) { return; }
 
         OptixBuildOperation operation = OPTIX_BUILD_OPERATION_BUILD;
-        if (update && _bufferXAS_.handle>0 && _handleXAS_>0)
+        if (update && _bufferXAS_.handle>0 && _bufferXAS_.capacity>0 && _handleXAS_>0)
             operation = OPTIX_BUILD_OPERATION_UPDATE;
 
         raii<CUdeviceptr> dverts {};
