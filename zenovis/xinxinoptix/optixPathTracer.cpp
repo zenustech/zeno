@@ -509,6 +509,12 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 if (json.contains("vol_extinction")) {
                     rec.data.vol_extinction = json["vol_extinction"];
                 }
+
+                if (json.contains("vol_transmittance")) {
+                    const auto tracking_name = json["vol_transmittance"].template get<std::string>();
+                    rec.data.vol_transmittance = magic_enum::enum_cast<TransmittanceMethod>(tracking_name)
+                        .value_or(TransmittanceMethod::RatioTracking);
+                }
             }
 
             hitgroup_records[sbt_idx] = rec;

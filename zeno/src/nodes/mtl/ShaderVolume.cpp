@@ -78,6 +78,7 @@ struct ShaderVolume : INode {
 
         int vol_depth = (int)get_input2<float>("depth");
         float vol_extinction = get_input2<float>("extinction");
+        auto transmittance = get_input2<std::string>("Transmittance:");
 
         auto EmissionScale = get_input2<std::string>("EmissionScale:");
         em.commonCode += "#define VolumeEmissionScale VolumeEmissionScaleType::" + EmissionScale + "\n";
@@ -91,6 +92,7 @@ struct ShaderVolume : INode {
             
             j["vol_depth"] = vol_depth;
             j["vol_extinction"] = vol_extinction;
+            j["vol_transmittance"] = transmittance;
             j["density_signature"] = density_signature;
 
             parameters = j.dump();
@@ -180,7 +182,7 @@ ZENDEFNODE(ShaderVolume, {
     },
     { {"MaterialObject", "mtl"} },
     {
-        {"enum RatioTracking", "Transmittance", "RatioTracking"},
+        {"enum RatioTracking DeltaTracking", "Transmittance", "RatioTracking"},
         {"enum Raw Density Absorption", "EmissionScale", "Raw"},
     },
     {"shader"}

@@ -29,6 +29,10 @@ __inline__ __device__ half clamp( const half f, const half a=HF0, const half b=H
     return __hmax( a, __hmin( f, b ) );
 }
 
+__inline__ __device__ float max( const float3& v ) {
+    return fmaxf(fmaxf(v.x, v.y), v.z);
+}
+
 __inline__ __device__ bool valid(const float3& vvv) {
     return vvv.x>0 || vvv.y>0 || vvv.z>0; // && (vvv.x>0 || vvv.y>0 || vvv.z>0);
 }
@@ -498,6 +502,9 @@ extern "C" __global__ void __intersection__volume()
         return;
     }
 
+    const auto tracking_mode = sbt_data->vol_transmittance;
+    const bool use_delta = tracking_mode == TransmittanceMethod::DeltaTracking;
+
     auto sprd = reinterpret_cast<ShadowPRD*>(prd);
     auto transmittance = sprd->attanuation;
 
@@ -516,6 +523,12 @@ extern "C" __global__ void __intersection__volume()
 
         t_progress = sek.t0;
 
+        if (!use_delta && max(transmittance)>0.1f) {
+            __half ratio = sek.avg_d / sek.max_d;
+            transmittance *= clamp(HF1-ratio);
+            continue;
+        }
+
         __half homo_prob = sek.min_d / sek.max_d;
         __half prob = __half( rnd(seed) );
 
@@ -523,7 +536,7 @@ extern "C" __global__ void __intersection__volume()
             transmittance = {};
             break;
         }
-        prob = prob - homo_prob;
+        prob = (prob - homo_prob) / (HF1 - homo_prob);
         
 #if VDB_SHADOW_DENSITY_MODE == 1
         const auto test_point = ray_ori + t_progress * ray_dir;
@@ -540,7 +553,6 @@ extern "C" __global__ void __intersection__volume()
             transmittance = {};
             break;
         }
-        // transmittance = transmittance * vec3(ratio);
     } while(true);
 
     sprd->seed = seed;

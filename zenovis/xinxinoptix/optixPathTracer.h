@@ -275,12 +275,18 @@ struct MissData
     float4 bg_color;
 };
 
+enum class TransmittanceMethod : uint8_t
+{
+    RatioTracking, DeltaTracking
+};
+
 struct HitGroupData
 {
     uint16_t dc_index;
     float opacity = FLT_MAX;
     uint16_t vol_depth=0;
     float vol_extinction=1.0f;
+    TransmittanceMethod vol_transmittance = TransmittanceMethod::RatioTracking;
 
     bool binaryShadowTestDirectRay;
     bool binaryShadowTestIndirectRay;
