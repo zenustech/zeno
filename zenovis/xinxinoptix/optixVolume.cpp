@@ -214,7 +214,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
         {
             const auto fgrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid);
             auto& aggregate = volume.aggregate;
-            const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
+            const uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
             aggregate.aggregate(*fgrid, int(octreeBuildDepth));
         }
 
@@ -291,11 +291,6 @@ void unloadGrid(GridWrapper& grid) {
     grid.handle.reset();
 }
 
-static int roundUpInt(int value, int multiple)
-{
-    return ((value + multiple - 1) / multiple) * multiple;
-}
-
 static std::vector<int3> makeDomainBrickOrigins(const int3& voxel_min, const int3& brick_dim)
 {
     std::vector<int3> origins;
@@ -313,7 +308,7 @@ static std::vector<int3> makeDomainBrickOrigins(const int3& voxel_min, const int
     return origins;
 }
 
-static uint32_t bakedSparseDenseOctreeNodeCapacity(uint32_t octreeBuildDepth)
+static uint32_t bakedSparseDenseOctreeNodeCapacity(uint8_t octreeBuildDepth)
 {
     return ((1u << (3u * (octreeBuildDepth + 1u))) - 1u) / 7u;
 }
@@ -354,7 +349,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
         return false;
     }
 
-    const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(options.octreeBuildDepth);
+    const uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(options.octreeBuildDepth);
     const int3 source_sample_min {
         bbox.min().x(),
         bbox.min().y(),
@@ -381,10 +376,11 @@ bool bakeDensityGridToSparseBricksOnGPU(
         sample_max.y - sample_min.y,
         sample_max.z - sample_min.z
     };
+
     const int leaf_res = 1 << octreeBuildDepth;
-    const int padded_x = roundUpInt(sample_dim.x + options.topology_padding_voxels * 2, leaf_res);
-    const int padded_y = roundUpInt(sample_dim.y + options.topology_padding_voxels * 2, leaf_res);
-    const int padded_z = roundUpInt(sample_dim.z + options.topology_padding_voxels * 2, leaf_res);
+    const int padded_x = roundUpToMultiple(sample_dim.x + options.topology_padding_voxels * 2, leaf_res);
+    const int padded_y = roundUpToMultiple(sample_dim.y + options.topology_padding_voxels * 2, leaf_res);
+    const int padded_z = roundUpToMultiple(sample_dim.z + options.topology_padding_voxels * 2, leaf_res);
     const int3 voxel_min {
         sample_min.x - options.topology_padding_voxels,
         sample_min.y - options.topology_padding_voxels,
@@ -392,10 +388,11 @@ bool bakeDensityGridToSparseBricksOnGPU(
     };
     const int3 voxel_dim { padded_x, padded_y, padded_z };
     const int3 voxel_max { voxel_min.x + voxel_dim.x, voxel_min.y + voxel_dim.y, voxel_min.z + voxel_dim.z };
+    
     const int3 brick_dim {
-        roundUpInt(voxel_dim.x, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
-        roundUpInt(voxel_dim.y, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
-        roundUpInt(voxel_dim.z, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE)
+        roundUpToMultiple(voxel_dim.x, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+        roundUpToMultiple(voxel_dim.y, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE),
+        roundUpToMultiple(voxel_dim.z, int(BAKED_SPARSE_VOLUME_BRICK_SIZE)) / int(BAKED_SPARSE_VOLUME_BRICK_SIZE)
     };
     const uint64_t table_count_u64 = uint64_t(brick_dim.x) * uint64_t(brick_dim.y) * uint64_t(brick_dim.z);
     if (table_count_u64 > std::numeric_limits<uint32_t>::max()) {
@@ -570,7 +567,7 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 
         uint64_t octree_handle = 0;
         uint64_t baked_density_handle = 0;
-        uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
+        uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.octreeBuildDepth);
         const bool use_gpu_octree = volume.use_gpu_baked_octree
             && volume.baked_density
             && volume.baked_density->valid();
@@ -584,7 +581,7 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
             auto byte_size = sizeof(OcNode) * volume.aggregate.octree.size();
             volume.d_octree->allocAndUpload( byte_size, (const uint8_t*)volume.aggregate.octree.data() );
             octree_handle = volume.d_octree->handle;
-            octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(uint32_t(volume.aggregate.octreeBuildDepth));
+            octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(volume.aggregate.octreeBuildDepth);
         } else {
             volume.d_octree->reset();
         }
@@ -609,13 +606,15 @@ void buildVolumeAccel( VolumeWrapper& volume, const OptixDeviceContext& context 
 
         xinxinoptix::buildXAS(context, accel_options, build_input, accel.buffer, accel.handle, 128);
         cudaMemcpy((char*)accel.buffer.handle+128-1, &volume.bounds, sizeof(uint8_t), cudaMemcpyHostToDevice);
+        cudaMemcpy((char*)accel.buffer.handle+128-2, &octreeBuildDepth, sizeof(uint8_t), cudaMemcpyHostToDevice);
         cudaMemcpy((char*)accel.buffer.handle+128-8-24, &aabb, sizeof(sutil::Aabb), cudaMemcpyHostToDevice);
 
         cudaMemcpy((char*)accel.buffer.handle+128-40, &octree_handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
         cudaMemcpy((char*)accel.buffer.handle+128-48, &baked_density_handle, sizeof(uint64_t), cudaMemcpyHostToDevice);
-        cudaMemcpy((char*)accel.buffer.handle+128-52, &octreeBuildDepth, sizeof(uint32_t), cudaMemcpyHostToDevice);
+        
         if (octree_handle != 0) {
-            printf("d_octree = %llu (%s octreeBuildDepth=%u)\n", octree_handle, use_gpu_octree ? "gpu" : "cpu", octreeBuildDepth);
+            printf("d_octree = %llu (%s octreeBuildDepth=%u)\n",
+                octree_handle, use_gpu_octree ? "gpu" : "cpu", unsigned(octreeBuildDepth));
         }
         return;
     }

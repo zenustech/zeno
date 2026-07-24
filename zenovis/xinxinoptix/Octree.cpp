@@ -105,10 +105,6 @@ using SparseAccumMap = std::unordered_map<CellKey, CellAccum, CellKeyHash>;
 using SparseNodeMap = std::unordered_map<CellKey, BuildNode, CellKeyHash>;
 using SparseIndexMap = std::unordered_map<CellKey, size_t, CellKeyHash>;
 
-int roundUpToMultiple(int value, int multiple) {
-    return ((value + multiple - 1) / multiple) * multiple;
-}
-
 size_t denseIndex(int x, int y, int z, int res) {
     return (size_t(z) * size_t(res) + size_t(y)) * size_t(res) + size_t(x);
 }
@@ -617,43 +613,40 @@ void buildBottomUpSparse(std::vector<OcNode>& octree,
     emitSparseLevels(octree, sparseLevels);
 }
 
-void VolumeAggregate::aggregate(openvdb::FloatGrid& vgrid, int buildDepth)
+void VolumeAggregate::aggregate(openvdb::FloatGrid& vgrid, uint8_t buildDepth)
 {
     aggregate(vgrid, vgrid.evalActiveVoxelBoundingBox(), buildDepth);
 }
 
-void VolumeAggregate::aggregate(openvdb::FloatGrid& vgrid, const openvdb::CoordBBox& bbox, int buildDepth)
+void VolumeAggregate::aggregate(openvdb::FloatGrid& vgrid, const openvdb::CoordBBox& bbox, uint8_t buildDepth)
 {
     octbox = {};
     octree = {};
     octreeBuildDepth = OCTREE_DEPTH;
 
     const auto dim = bbox.dim();
-    const unsigned int requestedDepth = buildDepth > 0
-        ? unsigned(buildDepth)
-        : BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
-    const unsigned int clampedDepth = bakedSparseVolumeClampOctreeBuildDepth(requestedDepth);
-    buildDepth = int(clampedDepth);
+    const uint8_t requestedDepth = buildDepth>0? buildDepth : BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+    const uint8_t clampedDepth = bakedSparseVolumeClampOctreeBuildDepth(requestedDepth);
+    buildDepth = clampedDepth;
     octreeBuildDepth = buildDepth;
     const int leafRes = 1 << buildDepth;
-    const openvdb::Coord paddedDim(
-        roundUpToMultiple(dim.x(), leafRes),
-        roundUpToMultiple(dim.y(), leafRes),
-        roundUpToMultiple(dim.z(), leafRes));
+
+    int3 paddedDim = roundUpToMultiple(dim.x(), dim.y(), dim.z(), leafRes);
+
     const auto minCoord = bbox.min();
     const openvdb::Coord maxCoord(
-        minCoord.x() + paddedDim.x(),
-        minCoord.y() + paddedDim.y(),
-        minCoord.z() + paddedDim.z());
+        minCoord.x() + paddedDim.x,
+        minCoord.y() + paddedDim.y,
+        minCoord.z() + paddedDim.z);
     octbox = Box3F(minCoord.asVec3s(), maxCoord.asVec3s());
 
     CppTimer timer;
     timer.tick();
-    const auto leafSize = openvdb::Coord( paddedDim.x()/leafRes, paddedDim.y()/leafRes, paddedDim.z()/leafRes );
+    const auto leafSize = openvdb::Coord( paddedDim.x/leafRes, paddedDim.y/leafRes, paddedDim.z/leafRes );
     buildBottomUpSparse(octree, minCoord, maxCoord, leafSize, buildDepth, vgrid);
     timer.tock("subdivide cost");
 
-    const auto diff = paddedDim - dim;
+    const auto diff = paddedDim - *(int3*)dim.asPointer();
     std::printf("octree size = %zu padding x=%d y=%d z=%d \n",
-                octree.size(), diff.x(), diff.y(), diff.z());
+                octree.size(), diff.x, diff.y, diff.z);
 }

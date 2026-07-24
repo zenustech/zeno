@@ -22,7 +22,7 @@ struct VDBDensityBakeOptions {
     bool clamp_negative = true;
     bool validate_sparse_octree = false;
     int topology_padding_voxels = 0;
-    unsigned int octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+    uint8_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
     bool use_custom_sample_bbox = false;
     int3 custom_sample_min {};
     int3 custom_sample_max {};

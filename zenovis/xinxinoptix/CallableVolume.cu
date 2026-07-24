@@ -374,17 +374,17 @@ static __forceinline__ __device__ unsigned int densityBakeFloatToOrderedUInt(flo
     return static_cast<unsigned int>(__float_as_uint(value));
 }
 
-static __forceinline__ __device__ uint32_t bakedSparseOctreeLevelStart(uint32_t level)
+static __forceinline__ __device__ uint32_t bakedSparseOctreeLevelStart(uint8_t level)
 {
     return ((1u << (3u * level)) - 1u) / 7u;
 }
 
-static __forceinline__ __device__ uint32_t bakedSparseOctreeLevelNodeCount(uint32_t level)
+static __forceinline__ __device__ uint32_t bakedSparseOctreeLevelNodeCount(uint8_t level)
 {
     return 1u << (3u * level);
 }
 
-static __forceinline__ __device__ uint32_t bakedSparseOctreeLeafRes(uint32_t depth)
+static __forceinline__ __device__ uint32_t bakedSparseOctreeLeafRes(uint8_t depth)
 {
     return 1u << depth;
 }
@@ -626,7 +626,7 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
     unsigned int* leafMaxBits,
     unsigned int* leafCoverage,
     unsigned long long* leafQuantizedSum,
-    uint32_t level)
+    uint8_t level)
 {
     const uint32_t nodeCount = bakedSparseOctreeLevelNodeCount(level);
     const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -693,8 +693,8 @@ extern "C" __global__ void countBakedSparseVolumeCompactChildren(
     const OcNode* denseOctree,
     const uint32_t* parentDenseIndices,
     uint32_t parentCount,
-    uint32_t level,
-    uint32_t octreeDepth,
+    uint8_t level,
+    uint8_t octreeDepth,
     uint32_t* childCounts)
 {
     const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -712,8 +712,8 @@ extern "C" __global__ void prefixBakedSparseVolumeCompactChildren(
     uint32_t* childOffsets,
     uint32_t parentCount,
     uint32_t* levelCounts,
-    uint32_t level,
-    uint32_t octreeDepth)
+    uint8_t level,
+    uint8_t octreeDepth)
 {
     if (blockIdx.x != 0u || threadIdx.x != 0u || level >= octreeDepth) {
         return;
@@ -734,8 +734,8 @@ extern "C" __global__ void emitBakedSparseVolumeCompactLevel(
     uint32_t* childDenseIndices,
     const uint32_t* childOffsets,
     uint32_t parentCount,
-    uint32_t level,
-    uint32_t octreeDepth,
+    uint8_t level,
+    uint8_t octreeDepth,
     uint32_t compactLevelStart,
     uint32_t compactNextLevelStart)
 {

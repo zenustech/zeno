@@ -302,10 +302,6 @@ __device__ __forceinline__ auto EvalVolume(VolumeIn& vin, uint16_t dc_index, flo
     optixDirectCall<void, void*, bool, VolumeOut&>( dc_index, (void*)&vin, shadowRay, out);
 }
 
-__device__ __forceinline__ int roundUpToMultiple(int v, int m) {
-    return ((v + m - 1) / m) * m;
-}
-
 __device__ __forceinline__ bool bakedSparseVolumeReady(const BakedSparseVolumeDevice* volume)
 {
     return volume != nullptr
@@ -458,18 +454,16 @@ extern "C" __global__ void __intersection__volume()
     const auto bbox = aabb;
     const auto dim = bbox.ext();
 
-    uint32_t octreeBuildDepth = *reinterpret_cast<const uint32_t*>((const char*)gas_ptr - 52);
+    uint8_t octreeBuildDepth = *((uint8_t*)gas_ptr-2);
     if (octreeBuildDepth == 0u) {
         octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
     }
-    if (octreeBuildDepth > uint32_t(USE_STACK_DEPTH)) {
-        octreeBuildDepth = uint32_t(USE_STACK_DEPTH);
+    if (octreeBuildDepth > USE_STACK_DEPTH) {
+        octreeBuildDepth = USE_STACK_DEPTH;
     }
-    const int leafRes = 1 << int(octreeBuildDepth);
-    int3 paddedDim {
-            roundUpToMultiple(int(dim.x), leafRes),
-            roundUpToMultiple(int(dim.y), leafRes),
-            roundUpToMultiple(int(dim.z), leafRes) };
+    const int leafRes = 1 << octreeBuildDepth;
+    int3 paddedDim = roundUpToMultiple(dim.x, dim.y, dim.z, leafRes);
+
     const float3 minCoord = bbox.mini;
     const float3 maxCoord {
             minCoord.x + paddedDim.x,
@@ -482,7 +476,7 @@ extern "C" __global__ void __intersection__volume()
 
         OcStack stack {};
         auto thickness = -logf(1.0f-prd->rndf())  / (len * sbt_data->vol_extinction);
-        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, obj_t0, uint8_t(octreeBuildDepth));
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, obj_t0, octreeBuildDepth);
 
         if (sek.t0<0) {
             return; // empty
@@ -516,7 +510,7 @@ extern "C" __global__ void __intersection__volume()
 
     do {
         auto thickness = -logf(1.0f-rnd(seed)) * scale;
-        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, t_progress, uint8_t(octreeBuildDepth));
+        auto sek = traverseSVO(octree_ptr, 0, octbox, stack, ray_ori, ray_dir, thickness, t_progress, octreeBuildDepth);
 
         if (sek.t0 >= obj_t1 || sek.t0 < 0) // empty zone
             break;

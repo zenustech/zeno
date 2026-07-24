@@ -1,12 +1,17 @@
 #pragma once
 #include <vector_types.h>
 
-static constexpr unsigned int BAKED_SPARSE_VOLUME_OCTREE_FORMAT_COMPACT = 1u;
-static constexpr unsigned int BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH = 8u;
-static constexpr unsigned int BAKED_SPARSE_VOLUME_MAX_OCTREE_DEPTH = 8u;
-static constexpr unsigned int BAKED_SPARSE_VOLUME_BRICK_SIZE = 8u;
+#ifndef uchar
+using uchar = unsigned char;
+static_assert(sizeof(uchar) == 1);
+#endif
 
-static constexpr int OCTREE_DEPTH = int(BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH);
+static constexpr uchar BAKED_SPARSE_VOLUME_OCTREE_FORMAT_COMPACT = 1u;
+static constexpr uchar BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH = 8u;
+static constexpr uchar BAKED_SPARSE_VOLUME_MAX_OCTREE_DEPTH = 8u;
+static constexpr uchar BAKED_SPARSE_VOLUME_BRICK_SIZE = 8u;
+
+static constexpr uchar OCTREE_DEPTH = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
 
 #ifndef __CUDACC_RTC__
 
@@ -18,10 +23,10 @@ static constexpr int OCTREE_DEPTH = int(BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH
 
 #include <algorithm>
 
-inline constexpr unsigned int bakedSparseVolumeClampOctreeBuildDepth(unsigned int depth)
+inline constexpr uint8_t bakedSparseVolumeClampOctreeBuildDepth(uint8_t depth)
 {
-    depth = std::min(depth, BAKED_SPARSE_VOLUME_MAX_OCTREE_DEPTH);
-    return std::max(depth, 1u);
+    depth = std::min<uint8_t>(depth, BAKED_SPARSE_VOLUME_MAX_OCTREE_DEPTH);
+    return std::max<uint8_t>(depth, 1u);
 }
 #endif
 
@@ -60,6 +65,18 @@ struct OcNode {
     }
 };
 
+__host__ __device__ inline int roundUpToMultiple(int value, int multiple) {
+    return ((value + multiple - 1) / multiple) * multiple;
+}
+
+__host__ __device__ inline int3 roundUpToMultiple(int x, int y, int z, int multiple) {
+    int3 paddedDim {
+        roundUpToMultiple(x, multiple),
+        roundUpToMultiple(y, multiple),
+        roundUpToMultiple(z, multiple) };
+    return paddedDim;
+}
+
 struct BakedSparseVolumeDevice {
     // Padded octree domain. This can be larger than the logical sampling bbox.
     int3 voxel_min {};
@@ -69,19 +86,21 @@ struct BakedSparseVolumeDevice {
     int3 sample_min {};
     int3 sample_max {};
     int3 brick_dim {};
-    unsigned int brick_size = BAKED_SPARSE_VOLUME_BRICK_SIZE;
     unsigned int brick_count = 0;
     unsigned int brick_table_count = 0;
-    unsigned int octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+    unsigned int octree_node_count = 0;
+    uint8_t brick_size = BAKED_SPARSE_VOLUME_BRICK_SIZE;
+    uint8_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+    uint8_t octree_format = 0;
+    uint8_t reserved = 0;
     int* brick_table = nullptr;
     int3* brick_origins = nullptr;
     unsigned short* voxel_values = nullptr;
     unsigned short* brick_min = nullptr;
     unsigned short* brick_max = nullptr;
     OcNode* octree = nullptr;
-    unsigned int octree_node_count = 0;
-    unsigned int octree_format = 0;
 };
+static_assert(sizeof(BakedSparseVolumeDevice) == 136);
 
 #ifndef __CUDACC_RTC__
 
@@ -91,10 +110,10 @@ struct VolumeAggregate {
     
     Box3F octbox;
     std::vector<OcNode> octree;
-    int octreeBuildDepth = OCTREE_DEPTH;
+    uint8_t octreeBuildDepth = OCTREE_DEPTH;
 
-    void aggregate(openvdb::FloatGrid& vgrid, int buildDepth = OCTREE_DEPTH);
-    void aggregate(openvdb::FloatGrid& vgrid, const openvdb::CoordBBox& bbox, int buildDepth = OCTREE_DEPTH);
+    void aggregate(openvdb::FloatGrid& vgrid, uint8_t buildDepth = OCTREE_DEPTH);
+    void aggregate(openvdb::FloatGrid& vgrid, const openvdb::CoordBBox& bbox, uint8_t buildDepth = OCTREE_DEPTH);
 };
 
 #endif

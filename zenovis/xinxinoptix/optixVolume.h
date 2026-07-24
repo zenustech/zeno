@@ -269,7 +269,7 @@ struct VolumeWrapper
 	std::shared_ptr<xinxinoptix::raii<CUdeviceptr>> d_octree = std::make_shared<xinxinoptix::raii<CUdeviceptr>>();
 	std::shared_ptr<BakedSparseVolume> baked_density = std::make_shared<BakedSparseVolume>();
 	// Single per-volume control for CPU/GPU octree build depth. Valid SVO range is clamped.
-	uint32_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
+	uint8_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
 	bool use_gpu_baked_octree = true;
 	bool validate_gpu_baked_octree = false;
 	bool use_custom_density_sample_bbox = false;

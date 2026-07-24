@@ -232,12 +232,12 @@ Params makeBakeParams(const Params& params)
     return bake_params;
 }
 
-uint32_t denseOctreeLevelStart(uint32_t level)
+uint32_t denseOctreeLevelStart(uint8_t level)
 {
     return ((1u << (3u * level)) - 1u) / 7u;
 }
 
-uint32_t denseOctreeNodeCount(uint32_t octreeBuildDepth)
+uint32_t denseOctreeNodeCount(uint8_t octreeBuildDepth)
 {
     return denseOctreeLevelStart(octreeBuildDepth + 1u);
 }
@@ -282,7 +282,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         }
     }
 
-    uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(device_volume.octreeBuildDepth);
+    uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(device_volume.octreeBuildDepth);
     const bool buildDenseGpuOctree = device_volume.octree != nullptr && octreeBuildDepth <= kDenseGpuOctreeStagingDepthLimit;
     const uint32_t bottom_count = buildDenseGpuOctree ? (1u << (3u * octreeBuildDepth)) : 0u;
     const uint32_t dense_octree_node_count = buildDenseGpuOctree ? denseOctreeNodeCount(octreeBuildDepth) : 0u;
@@ -446,17 +446,16 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         cuEventRecord(octree_accumulate_event.event, nullptr);
     }
 
-    for (int level = int(octreeBuildDepth); level >= 0; --level) {
+    for (int8_t level = octreeBuildDepth; level>=0; --level) {
         const uint32_t node_count = 1u << (3u * uint32_t(level));
         const unsigned int reduce_blocks = (node_count + block_size - 1u) / block_size;
-        uint32_t level_arg = uint32_t(level);
         void* reduce_args[] = {
             &device_volume,
             &leaf_min_bits,
             &leaf_max_bits,
             &leaf_coverage,
             &leaf_quantized_sum,
-            &level_arg,
+            &level,
         };
         if (!checkCudaDriver(cuLaunchKernel(
                 bake_module->sparse_reduce_octree_kernel,
@@ -482,7 +481,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
     uint32_t compact_node_count = 0u;
     CUdeviceptr dense_octree = reinterpret_cast<CUdeviceptr>(device_volume.octree);
 
-    for (uint32_t level = 0; level <= octreeBuildDepth && current_count != 0u; ++level) {
+    for (uint8_t level = 0; level <= octreeBuildDepth && current_count != 0u; ++level) {
         const unsigned int compact_blocks = (current_count + block_size - 1u) / block_size;
 
         if (level < octreeBuildDepth) {

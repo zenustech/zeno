@@ -838,7 +838,7 @@ public:
             auto slot = std::min<uint>(density_volume.density_grid_index, density_volume.grids.size() - 1u);
             auto density_grid = density_volume.grids[slot];
             if (!density_grid) { continue; }
-            const uint32_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(density_volume.octreeBuildDepth);
+            const uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(density_volume.octreeBuildDepth);
 
             if (!density_volume.use_gpu_baked_octree) {
                 if (density_volume.baked_density && density_volume.baked_density->valid()) {
@@ -893,7 +893,7 @@ public:
                     key_stream << macro << ';';
                 }
             }
-            key_stream << "octreeBuildDepth=" << octreeBuildDepth << ';';
+            key_stream << "octreeBuildDepth=" << unsigned(octreeBuildDepth) << ';';
             if (density_volume.use_custom_density_sample_bbox) {
                 key_stream << "sampleBBox="
                     << density_volume.custom_density_sample_min.x << ','
