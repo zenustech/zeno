@@ -153,10 +153,8 @@ OcNode makeOcNode(const BuildNode& src) {
     OcNode node {};
     node.min_d = toHalf(src.minmax.mini);
     node.max_d = toHalf(src.minmax.maxi);
+    node.setLeafAverageBits(toHalf(src.average));
     node.setChildMask(src.childMask);
-    if (src.childMask == 0) {
-        node.setLeafAverageBits(toHalf(src.average));
-    }
     return node;
 }
 
@@ -411,6 +409,7 @@ BuildLevel reduceParentDense(const BuildLevel& children)
             const int cy = y * 2 + ((slot >> 1) & 1);
             const int cz = z * 2 + ((slot >> 2) & 1);
             const auto& child = children.nodes[denseIndex(cx, cy, cz, children.res)];
+            parent.average += child.average * 0.125f;
             if (!activeNode(child)) continue;
             parent.childMask |= uint8_t(1u << slot);
             parent.minmax.merge(child.minmax);
@@ -502,6 +501,7 @@ SparseBuildLevel reduceParentSparse(SparseBuildLevel& compactedChildren, const S
         };
         const uint8_t slot = uint8_t((childCell.coord.x & 1) | ((childCell.coord.y & 1) << 1) | ((childCell.coord.z & 1) << 2));
         auto& parent = parentMap[parentKey];
+        parent.average += childCell.node.average * 0.125f;
         parent.childMask |= uint8_t(1u << slot);
         parent.minmax.merge(childCell.node.minmax);
     }
@@ -572,11 +572,19 @@ void emitSparseLevels(std::vector<OcNode>& octree,
         tbb::parallel_for(size_t(0), level.nodes.size(), [&](size_t nodeIdx) {
             const auto& src = level.nodes[nodeIdx];
             OcNode node = makeOcNode(src);
+            const size_t currentNodeIndex = size_t(levelStart[depth]) + nodeIdx;
             if (src.childMask != 0 && depth + 1 < sparseLevels.size()) {
-                node.setChildOffset(levelStart[depth + 1] + src.childStart);
+                const size_t firstChildIndex = size_t(levelStart[depth + 1]) + src.childStart;
+                assert(firstChildIndex >= currentNodeIndex);
+                const size_t childRelativeOffset = firstChildIndex - currentNodeIndex;
+                if (childRelativeOffset <= OCTREE_MAX_RELATIVE_OFFSET) {
+                    node.setChildRelativeOffset(uint32_t(childRelativeOffset));
+                } else {
+                    node.setChildMask(0u);
+                }
             }
 
-            octree[size_t(levelStart[depth]) + nodeIdx] = node;
+            octree[currentNodeIndex] = node;
         });
     }
 }

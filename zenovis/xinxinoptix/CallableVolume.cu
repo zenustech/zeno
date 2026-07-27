@@ -629,6 +629,8 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
     uint8_t level)
 {
     const uint32_t nodeCount = bakedSparseOctreeLevelNodeCount(level);
+    const bool preserveAverageForOffsetFallback =
+        uint64_t(nodeCount) * 8ull - 7ull > uint64_t(OCTREE_MAX_RELATIVE_OFFSET);
     const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= nodeCount || volume.octree == nullptr) {
         return;
@@ -662,10 +664,14 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
     const uint32_t childLevelStart = bakedSparseOctreeLevelStart(level + 1u);
     float minValue = CUDART_INF_F;
     float maxValue = 0.0f;
+    float averageValue = 0.0f;
     uint8_t childMask = 0u;
     for (uint8_t slot = 0; slot < 8u; ++slot) {
         const uint32_t childIndex = bakedSparseDenseChildIndex(tid, slot, parentRes);
         const OcNode& child = volume.octree[childLevelStart + childIndex];
+        if (preserveAverageForOffsetFallback) {
+            averageValue += __half2float(__ushort_as_half(child.leafAverageBits())) * 0.125f;
+        }
         const float childMax = __half2float(child.max_d);
         if (!(childMax > 0.0f)) {
             continue;
@@ -680,10 +686,14 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
         const __half maxHalf = __float2half(maxValue);
         node.min_d = minHalf;
         node.max_d = maxHalf;
+        if (preserveAverageForOffsetFallback) {
+            const __half averageHalf = __float2half(averageValue);
+            node.setLeafAverageBits(*(ushort*)&averageHalf);
+        }
         if (minHalf == maxHalf) {
             node.setLeafAverageBits(*(ushort*)&maxHalf);
         } else {
-            node.data = uint32_t(childMask) << 24u;
+            node.setChildMask(childMask);
         }
     }
     volume.octree[levelStart + tid] = node;
@@ -702,13 +712,13 @@ extern "C" __global__ void countBakedSparseVolumeCompactChildren(
         return;
     }
 
-    const uint32_t parentDenseIndex = tid;
+    const uint32_t parentDenseIndex = parentDenseIndices[tid];
     const OcNode& parent = denseOctree[bakedSparseOctreeLevelStart(level) + parentDenseIndex];
     childCounts[tid] = uint32_t(__popc(uint32_t(parent.childMask())));
 }
 
 extern "C" __global__ void prefixBakedSparseVolumeCompactChildren(
-    const uint32_t* childCounts,
+    uint32_t* childCounts,
     uint32_t* childOffsets,
     uint32_t parentCount,
     uint32_t* levelCounts,
@@ -722,7 +732,16 @@ extern "C" __global__ void prefixBakedSparseVolumeCompactChildren(
     uint32_t total = 0u;
     for (uint32_t i = 0u; i < parentCount; ++i) {
         childOffsets[i] = total;
-        total += childCounts[i];
+        const uint32_t childCount = childCounts[i];
+        if (childCount == 0u) {
+            continue;
+        }
+        const uint32_t childRelativeOffset = parentCount + total - i;
+        if (childRelativeOffset > OCTREE_MAX_RELATIVE_OFFSET) {
+            childCounts[i] = 0u;
+            continue;
+        }
+        total += childCount;
     }
     levelCounts[level + 1u] = total;
 }
@@ -733,6 +752,7 @@ extern "C" __global__ void emitBakedSparseVolumeCompactLevel(
     const uint32_t* parentDenseIndices,
     uint32_t* childDenseIndices,
     const uint32_t* childOffsets,
+    const uint32_t* childCounts,
     uint32_t parentCount,
     uint8_t level,
     uint8_t octreeDepth,
@@ -747,9 +767,9 @@ extern "C" __global__ void emitBakedSparseVolumeCompactLevel(
     const uint32_t parentDenseIndex = parentDenseIndices[tid];
     OcNode node = denseOctree[bakedSparseOctreeLevelStart(level) + parentDenseIndex];
 
-    if (level < octreeDepth) {
+    if (level < octreeDepth && childCounts[tid] != 0u) {
         const uint8_t childMask = node.childMask();
-        const uint32_t childStart = childOffsets[parentDenseIndex];
+        const uint32_t childStart = childOffsets[tid];
         uint32_t childRank = 0u;
         for (uint8_t slot = 0u; slot < 8u; ++slot) {
             const uint8_t bit = uint8_t(1u << slot);
@@ -759,7 +779,12 @@ extern "C" __global__ void emitBakedSparseVolumeCompactLevel(
             childDenseIndices[childStart + childRank] = bakedSparseDenseChildIndex(parentDenseIndex, slot, 1u << level);
             ++childRank;
         }
-        node.data = (uint32_t(childMask) << 24u) | ((compactNextLevelStart + childStart) & 0x00FFFFFFu);
+        const uint32_t currentNodeIndex = compactLevelStart + tid;
+        const uint32_t firstChildIndex = compactNextLevelStart + childStart;
+        const uint32_t childRelativeOffset = firstChildIndex - currentNodeIndex;
+        node.data = (uint32_t(childMask) << 24u) | childRelativeOffset;
+    } else if (level < octreeDepth && node.childMask() != 0u) {
+        node.setChildMask(0u);
     }
 
     compactOctree[compactLevelStart + tid] = node;

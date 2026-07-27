@@ -201,7 +201,7 @@ __device__ OcTrace traverseSVO(const OcNode* __restrict__ buffer, uint32_t root_
             mask_lower = child_mask & mask_lower;
             uint8_t child_offset = __popc(mask_lower);
 
-            uint32_t childIdx = node.childOffset() + child_offset;
+            uint32_t childIdx = nodeIdx + node.childRelativeOffset() + child_offset;
 
             float tv_max = fminf(t_max, tc_max);
             float half_len = voxel_len * 0.5f;

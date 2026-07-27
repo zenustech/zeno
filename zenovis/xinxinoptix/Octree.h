@@ -30,6 +30,8 @@ inline constexpr uint8_t bakedSparseVolumeClampOctreeBuildDepth(uint8_t depth)
 }
 #endif
 
+static constexpr uint32_t OCTREE_MAX_RELATIVE_OFFSET = 0x00FFFFFFu;
+
 struct OcNode {
     uint32_t data = 0;
     __half min_d = 0;
@@ -43,8 +45,8 @@ struct OcNode {
         return *((uint8_t*)&data + 3);
     }
 
-    inline uint32_t childOffset() const {
-        return data & 0x00FFFFFF;
+    inline uint32_t childRelativeOffset() const {
+        return data & OCTREE_MAX_RELATIVE_OFFSET;
     }
 
     inline uint16_t leafAverageBits() const {
@@ -52,12 +54,12 @@ struct OcNode {
     }
 
     inline void setChildMask(uint8_t mask) {
-        data |= uint32_t(mask) << 24;
+        data = (data & OCTREE_MAX_RELATIVE_OFFSET) | (uint32_t(mask) << 24);
     }
 
-    inline void setChildOffset(uint32_t offset) {
-        assert(offset <= 0x00FFFFFF);
-        data = (data & 0xFF000000) | offset;
+    inline void setChildRelativeOffset(uint32_t offset) {
+        assert(offset <= OCTREE_MAX_RELATIVE_OFFSET);
+        data = (data & 0xFF000000) | (offset & OCTREE_MAX_RELATIVE_OFFSET);
     }
 
     inline void setLeafAverageBits(uint16_t bits) {

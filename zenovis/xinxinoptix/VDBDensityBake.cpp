@@ -485,19 +485,17 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         const unsigned int compact_blocks = (current_count + block_size - 1u) / block_size;
 
         if (level < octreeBuildDepth) {
-            uint32_t dense_parent_count = 1u << (3u * level);
-            const unsigned int dense_parent_blocks = (dense_parent_count + block_size - 1u) / block_size;
             void* count_args[] = {
                 &dense_octree,
                 &current_dense_indices,
-                &dense_parent_count,
+                &current_count,
                 &level,
                 &octreeBuildDepth,
                 &child_counts,
             };
             if (!checkCudaDriver(cuLaunchKernel(
                     bake_module->sparse_count_compact_children_kernel,
-                    dense_parent_blocks, 1, 1,
+                    compact_blocks, 1, 1,
                     block_size, 1, 1,
                     0, nullptr,
                     count_args, nullptr), "cuLaunchKernel(countBakedSparseVolumeCompactChildren)")) {
@@ -508,7 +506,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
             void* prefix_args[] = {
                 &child_counts,
                 &child_offsets,
-                &dense_parent_count,
+                &current_count,
                 &level_counts,
                 &level,
                 &octreeBuildDepth,
@@ -538,6 +536,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
                 &current_dense_indices,
                 &next_dense_indices,
                 &child_offsets,
+                &child_counts,
                 &current_count,
                 &level,
                 &octreeBuildDepth,
@@ -570,6 +569,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
                 &current_dense_indices,
                 &next_dense_indices,
                 &child_offsets,
+                &child_counts,
                 &current_count,
                 &level,
                 &octreeBuildDepth,
