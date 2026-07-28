@@ -21,6 +21,19 @@ struct ShaderVolume : INode {
     virtual void apply() override {
         EmissionPass em;
 
+        auto depth_input = get_input<IObject>("depth", std::make_shared<NumericObject>((float)(999)));
+        auto albedo_input = get_input<IObject>("albedo", std::make_shared<NumericObject>(vec3f(0.5)));
+        auto density_input = get_input<IObject>("density", std::make_shared<NumericObject>(float(0)));
+        auto emission_input = get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0)));
+        auto anisotropy_input = get_input<IObject>("anisotropy", std::make_shared<NumericObject>(float(0)));
+
+        EmissionPass density_em;
+        auto density_signature = density_em.finalizeCode({
+            {1, "density"},
+        }, {
+            density_input,
+        });
+
         auto code = em.finalizeCode({
 
             {1, "depth"},
@@ -33,13 +46,13 @@ struct ShaderVolume : INode {
 
         }, {
            
-            get_input<IObject>("depth", std::make_shared<NumericObject>((float)(999))),
+            depth_input,
             //get_input<IObject>("extinction", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("albedo", std::make_shared<NumericObject>(vec3f(0.5))),
-            get_input<IObject>("anisotropy", std::make_shared<NumericObject>(float(0))),
+            albedo_input,
+            anisotropy_input,
 
-            get_input<IObject>("density", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            density_input,
+            emission_input,
             
         });
 
@@ -65,11 +78,12 @@ struct ShaderVolume : INode {
 
         int vol_depth = (int)get_input2<float>("depth");
         float vol_extinction = get_input2<float>("extinction");
+        auto transmittance = get_input2<std::string>("Transmittance:");
 
         auto EmissionScale = get_input2<std::string>("EmissionScale:");
         em.commonCode += "#define VolumeEmissionScale VolumeEmissionScaleType::" + EmissionScale + "\n";
 
-        vol_depth = clamp(vol_depth, 9, 9999);
+        vol_depth = clamp(vol_depth, 1, 9999);
         vol_extinction = clamp(vol_extinction, 1e-5, 1e+5);
 
         std::string parameters = "";
@@ -78,6 +92,8 @@ struct ShaderVolume : INode {
             
             j["vol_depth"] = vol_depth;
             j["vol_extinction"] = vol_extinction;
+            j["vol_transmittance"] = transmittance;
+            j["density_signature"] = density_signature;
 
             parameters = j.dump();
         }
@@ -166,7 +182,7 @@ ZENDEFNODE(ShaderVolume, {
     },
     { {"MaterialObject", "mtl"} },
     {
-        {"enum RatioTracking", "Transmittance", "RatioTracking"},
+        {"enum RatioTracking DeltaTracking", "Transmittance", "RatioTracking"},
         {"enum Raw Density Absorption", "EmissionScale", "Raw"},
     },
     {"shader"}

@@ -96,10 +96,8 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
 void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
     
     const auto& vol = prd.vol;
-    // if (vol.homo_t1 <= vol.homo_t0) return;
-    // if (_tmax_ <= vol.homo_t0) return;
     
-    float tmax = fminf(_tmax_, vol.homo_t1) - vol.homo_t0;
+    float tmax = fminf(_tmax_, vol.t1) - vol.t0;
 
     VolumeOut fog_out;
     optixDirectCall<void, void*, VolumeOut&>( prd.vol.homo_matid, nullptr, fog_out);
@@ -122,8 +120,8 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     float sa = 1.0 - rnd(seed) * cdf_K; //Sample of the survival CDF
     float DT = -logf(sa) / sig_K;
 
-    let new_orig = ray_origin + (prd.vol.homo_t0) * ray_dir;
-    //let new_orig = ray_origin + (prd.vol.homo_t0 + dt) * ray_dir;
+    let new_orig = ray_origin + (prd.vol.t0) * ray_dir;
+    //let new_orig = ray_origin + (prd.vol.t0 + dt) * ray_dir;
     
     ShadowPRD shadowPRD {};
     shadowPRD.seed = seed ^ 0x9e3779b9u;
@@ -365,6 +363,7 @@ extern "C" __global__ void __raygen__rg()
         prd.hair_depth = 0;
         prd.alphaDepth = 0;
         prd.isSS = false;
+        prd.volume_depth = 0;
         prd.curMatIdx = 0;
         prd.test_distance = false;
         prd.ss_alpha_queue[0] = half3(-1.0f);
@@ -388,8 +387,12 @@ extern "C" __global__ void __raygen__rg()
 
         // Primary Ray
         do {
+            _tmin_ = prd._tmin_; 
+            _mask_ = prd._mask_;
+            prd._tmin_ = 0.f;
+            prd._mask_ = 255;
             prd.alphaHit = false;
-            traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, prd._mask_);
+            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
 
         auto _attenuation = prd.attenuation;
@@ -407,7 +410,6 @@ extern "C" __global__ void __raygen__rg()
         }
         if(params.pause) return;
         
-        prd._tmin_ = 0;
         //fuck, SSS or other scattering scheme may return a small maxDistance
         //value, how can we set it back to FLT_MAX here????
         //prd.maxDistance = FLT_MAX;
@@ -433,11 +435,7 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
-            _tmin_ = prd._tmin_;
-            _mask_ = prd._mask_;
-
-
-            if (prd.vol.homo_t1 > prd.vol.homo_t0 && prd._tmax_ > prd.vol.homo_t0) {
+            if (prd.vol.homo_matid!=UINT_MAX && prd.vol.t1 > prd.vol.t0 && prd._tmax_ > prd.vol.t0) {
                 float3 vol_lighting;
                 float3 vol_attenuation;
                 homoVolumeLight(prd, prd._tmax_, ray_origin, ray_direction, vol_lighting, vol_attenuation);
@@ -448,7 +446,7 @@ extern "C" __global__ void __raygen__rg()
             }
             
             prd.vol = {};
-            prd._tmin_ = _tmin_;
+            prd._tmin_ = 0;
             prd._tmax_ = FLT_MAX;
             prd._mask_ = EverythingMask;
 
@@ -471,30 +469,39 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
-            if( prd.done || prd.depth>prd.max_depth){
+            if( prd.done || ( 0==prd.volume_depth && prd.depth>prd.max_depth ) ){
                 break;
             }
 
             if(prd.depth > 1){
                 float RRprob = RgbToY(prd.attenuation);//max(max(prd.attenuation.x, prd.attenuation.y), prd.attenuation.z);
-                RRprob = min(RRprob, 1.0f);
+                if (prd.volume_depth >= 4) {
+                    RRprob = fminf(RRprob, 0.85f);
+                } else {
+                    RRprob = fminf(RRprob, 1.00f);
+                }
 
-                if(rnd(prd.seed) > RRprob) {
+                if(RRprob <= 0.0f || rnd(prd.seed) > RRprob) {
                     break;
                 } else {
+                    // RRprob = fmaxf(RRprob, 1e-3f);
                     prd.attenuation = prd.attenuation / RRprob;
                 }
             }
 
-            if(prd.diffDepth > 0)
-                _mask_ &= ~VolumeMaskAnalytics;
+            const uint8_t mark = prd.diffDepth>0? ~VolumeMaskAnalytics:EverythingMask;
 
-            prd._tmin_ = _tmin_;
             do {
                 _attenuation = prd.attenuation;
+
+                _tmin_ = prd._tmin_;
+                _mask_ = prd._mask_;
+                prd._tmin_ = 0.f;
+                prd._mask_ = 255;
                 prd.alphaHit = false;
-                traceRadiance(params.handle, ray_origin, ray_direction, prd._tmin_, prd.maxDistance, &prd, _mask_ & prd._mask_);
-            }while(prd.alphaHit);
+
+                traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_ & mark);
+            } while(prd.alphaHit);
         }
         seed = prd.seed;
 //        seed1 = prd.offset;
@@ -625,9 +632,12 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
-        envPdf *= params.skyLightProbablity();
+        bool hasenv = params.skynx | params.skyny;
+        hasenv = params.usingHdrSky && hasenv;
+        envPdf = hasenv ? envPdf : (0.25f / M_PIf);
+        envPdf *= DirectSkySelectionWeight();
 
-        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf,1.0f);
+        float misWeight = BRDFBasics::BalanceHeuristic(prd->samplePdf, envPdf);
 
         misWeight = misWeight>0.0f?misWeight:0.0f;
         misWeight = envPdf>0.0f?misWeight:1.0f;

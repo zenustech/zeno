@@ -7,6 +7,7 @@
 #include <cuda_runtime.h>
 
 #include <memory>
+#include <nvrtc.h>
 #include <optix.h>
 #include <optix_stubs.h>
 
@@ -23,6 +24,7 @@
 #include <sutil/vec_math.h>
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
+#include "NvrtcWorker.h"
 #include "optixVolume.h"
 #include "optix_types.h"
 #include "raiicuda.h"
@@ -41,16 +43,25 @@
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
 
-#include <array>
+#include <algorithm>
+#include <atomic>
+#include <condition_variable>
+#include <cstdint>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <cstring>
-#include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <iostream>
+#include <mutex>
+#include <set>
 #include <string>
+#include <unordered_map>
 #include <filesystem>
+#include <thread>
 
 #include "BCX.h"
 #include "ies/ies.h"
@@ -100,6 +111,9 @@ inline raii<OptixModule> round_cubic_ism;
 inline uint CachedPrimitiveTypeFlags = UINT_MAX;
 inline std::vector< std::function<void(void)> > garbageTasks;
 
+inline void clearCallableProgramCache();
+inline void resetPipelineProgramGroupsDirty(bool dirty = false);
+
 inline void resetAll() {
 
     raygen_prog_group.reset();
@@ -117,6 +131,8 @@ inline void resetAll() {
     d_raygen_record.reset();
     d_hitgroup_records.reset();
     d_callable_records.reset();  
+
+    clearCallableProgramCache();
 
     pipeline.reset();
     context.reset();
@@ -141,6 +157,23 @@ inline static auto DefaultCompileOptions() {
     return module_compile_options;
 }
 
+inline unsigned int optixLogCallbackLevel()
+{
+    if (const char* env = std::getenv("ZENO_OPTIX_LOG_LEVEL")) {
+        char* end = nullptr;
+        const long value = std::strtol(env, &end, 10);
+        if (end != env && *end == '\0' && value >= 0 && value <= 4) {
+            return static_cast<unsigned int>(value);
+        }
+    }
+
+#if defined( NDEBUG )
+    return 0;
+#else
+    return 4;
+#endif
+}
+
 inline void createContext()
 {
     // Initialize CUDA
@@ -150,11 +183,7 @@ inline void createContext()
     OPTIX_CHECK_LOG( optixInit() );
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
-#if defined( NDEBUG )
-    options.logCallbackLevel          = 0;
-#else
-    options.logCallbackLevel          = 4;
-#endif
+    options.logCallbackLevel          = optixLogCallbackLevel();
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
@@ -221,6 +250,80 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
 inline tbb::task_group _compile_group;
 
+inline std::atomic<bool> pipeline_program_groups_dirty{false};
+
+inline void resetPipelineProgramGroupsDirty(bool dirty)
+{
+    pipeline_program_groups_dirty.store(dirty, std::memory_order_relaxed);
+}
+
+inline void markPipelineProgramGroupsDirty()
+{
+    pipeline_program_groups_dirty.store(true, std::memory_order_relaxed);
+}
+
+inline bool pipelineProgramGroupsDirty()
+{
+    return pipeline_program_groups_dirty.load(std::memory_order_relaxed);
+}
+
+enum class CompileModuleKind : size_t
+{
+    Raygen = 0,
+    CoreShader,
+    Callable,
+    Other,
+    Count
+};
+
+inline int nvrtcSplitCompileThreadCount(CompileModuleKind kind);
+inline bool nvrtcUseWorkerProcessForModule(CompileModuleKind kind);
+
+inline CompileModuleKind classifyCompileModule(const char* name)
+{
+    if (name == nullptr) {
+        return CompileModuleKind::Other;
+    }
+    if (std::strstr(name, "PTKernel.cu") != nullptr) {
+        return CompileModuleKind::Raygen;
+    }
+    if (std::strstr(name, "Callable.cu") != nullptr) {
+        return CompileModuleKind::Callable;
+    }
+    if (std::strstr(name, "MatShader.cu") != nullptr) {
+        return CompileModuleKind::CoreShader;
+    }
+    return CompileModuleKind::Other;
+}
+
+inline int nvrtcSplitCompileThreadCount(CompileModuleKind kind)
+{
+    switch (kind) {
+        case CompileModuleKind::Callable: return 1;
+        default: return 1;
+    }
+}
+
+inline std::atomic<bool> callable_nvrtc_helper_enabled{true};
+
+inline void setCallableNvrtcHelperEnabled(bool enabled)
+{
+    callable_nvrtc_helper_enabled.store(enabled, std::memory_order_relaxed);
+}
+
+inline int callableNvrtcHelperDirtyThreshold()
+{
+    return 4;
+}
+
+inline bool nvrtcUseWorkerProcessForModule(CompileModuleKind kind)
+{
+    if (kind == CompileModuleKind::Callable) {
+        return callable_nvrtc_helper_enabled.load(std::memory_order_relaxed);
+    }
+    return true;
+}
+
 inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
      
     static const auto processor_count = std::thread::hardware_concurrency();
@@ -270,6 +373,8 @@ static std::vector<char> readData(std::string const& filename) {
 
 inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
 {
+    const auto module_kind = classifyCompileModule(name);
+
     OptixModuleCompileOptions module_compile_options = OptixUtil::DefaultCompileOptions();
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
 
@@ -281,15 +386,33 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
     bool success=false;
 
     std::vector<const char*> compilerOptions {
-        "-std=c++17", "-default-device"
-        //,"-extra-device-vectorization"
-  #if !defined( NDEBUG )      
-        ,"-lineinfo" //"-G"//"--dopt=on",
-  #endif
-        ,"--relocatable-device-code=true"
-        // "--extensible-whole-program"
-        , "--optix-ir"
+        "-std=c++17", "-default-device",
+        "--extra-device-vectorization",
+        "--relocatable-device-code=true",
+        "--use_fast_math",
+        "--optix-ir",
+    #if !defined( NDEBUG )      
+        "-lineinfo" //"-G"//"--dopt=on",
+    #endif
     };
+    std::string split_compile_option;
+    std::string worker_compile_option;
+
+    {  
+        int major, minor; 
+        auto result = nvrtcVersion(&major, &minor);
+        if (result == NVRTC_SUCCESS) {
+            if (major >= 12) {
+                split_compile_option = "--split-compile=" + std::to_string(nvrtcSplitCompileThreadCount(module_kind));
+                compilerOptions.push_back(split_compile_option.c_str());
+            }
+        }
+        if (!nvrtcUseWorkerProcessForModule(module_kind)) {
+            worker_compile_option = "--zeno-nvrtc-worker=0";
+            compilerOptions.push_back(worker_compile_option.c_str());
+        }
+        // printf("NVRTC Version %d.%d \n", major, minor);
+    }
 
     std::string flat_macros = ""; 
 
@@ -298,11 +421,14 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         flat_macros += ele + "\n";
     }
 
-    const auto input = sutil::cuCompiled(source, flat_macros.c_str(), name, inputSize, success, nullptr, compilerOptions);
+    auto compile_result = zeno::nvrtc_worker::compile(source, flat_macros.c_str(), name, compilerOptions);
+    success = compile_result.success;
+    inputSize = compile_result.data.size();
 
     if(!success) {
         return false;
     }
+    const auto input = compile_result.data.data();
 
     if (_c_group == nullptr) {
         //OPTIX_CHECK(
@@ -1272,6 +1398,7 @@ struct OptixShaderCore {
                 "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
                 _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group);
 
+            markPipelineProgramGroupsDirty();
             //_c_group.wait();
             return true;
         }
@@ -1279,20 +1406,88 @@ struct OptixShaderCore {
     }
 };
 
+struct CallableProgram
+{
+    std::string cache_key {};
+    raii<OptixModule> module {};
+    raii<OptixProgramGroup> prog_group {};
+};
+
+struct CallableProgramCacheEntry
+{
+    std::weak_ptr<CallableProgram> program {};
+    bool compiling = false;
+};
+
+inline std::mutex callable_program_cache_mutex;
+inline std::condition_variable callable_program_cache_cv;
+inline std::unordered_map<std::string, CallableProgramCacheEntry> callable_program_cache;
+
+inline void clearCallableProgramCache()
+{
+    std::lock_guard<std::mutex> lock(callable_program_cache_mutex);
+    callable_program_cache.clear();
+}
+
+inline void pruneCallableProgramCacheEntry(const std::string& cache_key)
+{
+    if (cache_key.empty()) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(callable_program_cache_mutex);
+    auto it = callable_program_cache.find(cache_key);
+    if (it != callable_program_cache.end() && !it->second.compiling && it->second.program.expired()) {
+        callable_program_cache.erase(it);
+    }
+}
+
+inline std::string callableProgramCacheKey(
+    const std::string& callable,
+    const std::vector<std::string>& macros)
+{
+    auto hash_bytes = [](uint64_t& hash, std::string_view bytes) {
+        for (unsigned char ch : bytes) {
+            hash ^= ch;
+            hash *= 1099511628211ull;
+        }
+    };
+
+    uint64_t hash0 = 1469598103934665603ull;
+    uint64_t hash1 = 1099511628211ull;
+    hash_bytes(hash0, callable);
+    hash_bytes(hash1, std::to_string(callable.size()));
+    hash_bytes(hash1, callable);
+    for (const auto& macro : macros) {
+        hash_bytes(hash0, std::string_view("\0", 1));
+        hash_bytes(hash0, macro);
+        hash_bytes(hash1, std::to_string(macro.size()));
+        hash_bytes(hash1, macro);
+    }
+
+    std::ostringstream key;
+    key << std::hex << hash0 << ':' << hash1 << ':' << std::dec << callable.size() << ':' << macros.size();
+    return key.str();
+}
+
 struct OptixShaderWrapper
 {
     bool dirty = true;
     std::shared_ptr<OptixShaderCore> core{};
     
-    std::string                 callable {};
-    raii<OptixModule>           callable_module {};
-    raii<OptixProgramGroup> callable_prog_group {};
-   
+    std::string                       callable_src {};
+    std::shared_ptr<CallableProgram>  callable_prg {};
+
     std::vector<uint64_t>                  texs {};
     std::vector<std::string>               vbds {};
 
     nlohmann::json                    parameters{};
     std::map<std::string, std::string>   macros {};
+
+    std::string                       density_signature {};
+    uint8_t                           density_vdb_primary_slot = 0;
+    std::set<uint8_t>                 density_vdb_referenced_slots {};
+    bool force_density_bake = false;
 
     bool isVol() const {
         return macros.count("_volu_");
@@ -1309,13 +1504,15 @@ struct OptixShaderWrapper
     
     OptixShaderWrapper(std::shared_ptr<OptixShaderCore> _core_, const std::string& callableSource) 
     {
-        core = _core_; callable = callableSource;
+        core = _core_; callable_src = callableSource;
     } 
 
     bool loadProgram(uint idx, bool fallback=false, tbb::task_group* _c_group = nullptr)
     {
         std::string tmp_name = "Callable.cu";
         tmp_name = "$" + std::to_string(idx) + tmp_name;
+        const auto old_callable_group = callable_prg ? callable_prg->prog_group.handle : nullptr;
+        const auto old_cache_key = callable_prg ? callable_prg->cache_key : std::string{};
 
         std::vector<std::string> _macros_ {};
 
@@ -1327,27 +1524,84 @@ struct OptixShaderWrapper
             _macros_.push_back("--define-macro=" + k + "=" + v);
         }
 
-        auto callable_done = createModule(callable_module.reset(), context, callable.c_str(), tmp_name.c_str(), _macros_); 
-        if (callable_done) {
+        const auto cache_key = callableProgramCacheKey(callable_src, _macros_);
+        {
+            std::unique_lock<std::mutex> lock(callable_program_cache_mutex);
+            while (true) {
+                auto& entry = callable_program_cache[cache_key];
+                if (auto cached_program = entry.program.lock()) {
+                    callable_prg = std::move(cached_program);
+                    if (old_callable_group != callable_prg->prog_group.handle) {
+                        markPipelineProgramGroupsDirty();
+                    }
+                    if (old_cache_key != cache_key) {
+                        lock.unlock();
+                        pruneCallableProgramCacheEntry(old_cache_key);
+                    }
+                    return true;
+                }
 
-            // Callable programs
-            OptixProgramGroupOptions callable_prog_group_options  = {};
-            OptixProgramGroupDesc    callable_prog_group_descs[1] = {};
+                if (!entry.compiling) {
+                    entry.compiling = true;
+                    break;
+                }
 
-            callable_prog_group_descs[0].kind                          = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
-            callable_prog_group_descs[0].callables.moduleDC            = callable_module;
-            callable_prog_group_descs[0].callables.entryFunctionNameDC = "__direct_callable__evalmat";
-
-            char LOG[2048];
-            size_t LOG_SIZE = sizeof( LOG );
-
-            OPTIX_CHECK( 
-                optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &callable_prog_group.reset())
-            );
-            return true;
+                callable_program_cache_cv.wait(lock);
+            }
         }
 
-        return false;
+        try {
+            auto program = std::make_shared<CallableProgram>();
+            program->cache_key = cache_key;
+            auto callable_done = createModule(program->module.reset(), context, callable_src.c_str(), tmp_name.c_str(), _macros_); 
+            if (callable_done) {
+
+                // Callable programs
+                OptixProgramGroupOptions callable_prog_group_options  = {};
+                OptixProgramGroupDesc    callable_prog_group_descs[1] = {};
+
+                callable_prog_group_descs[0].kind                          = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
+                callable_prog_group_descs[0].callables.moduleDC            = program->module;
+                callable_prog_group_descs[0].callables.entryFunctionNameDC = "__direct_callable__evalmat";
+
+                char LOG[2048];
+                size_t LOG_SIZE = sizeof( LOG );
+
+                OPTIX_CHECK( 
+                    optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &program->prog_group.reset())
+                );
+                callable_prg = program;
+                if (old_callable_group != callable_prg->prog_group.handle) {
+                    markPipelineProgramGroupsDirty();
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(callable_program_cache_mutex);
+                    auto& entry = callable_program_cache[cache_key];
+                    entry.program = program;
+                    entry.compiling = false;
+                }
+                callable_program_cache_cv.notify_all();
+                if (old_cache_key != cache_key) {
+                    pruneCallableProgramCacheEntry(old_cache_key);
+                }
+                return true;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(callable_program_cache_mutex);
+                callable_program_cache.erase(cache_key);
+            }
+            callable_program_cache_cv.notify_all();
+            return false;
+        } catch (...) {
+            {
+                std::lock_guard<std::mutex> lock(callable_program_cache_mutex);
+                callable_program_cache.erase(cache_key);
+            }
+            callable_program_cache_cv.notify_all();
+            throw;
+        }
     }
 
     void clearTextureRecords()
@@ -1387,7 +1641,7 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
         program_groups[3 + i*2] = rtMaterialShaders[i].core->m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].core->m_occlusion_hit_group;
 
-        program_groups[3 + 2 * rtMaterialShaders.size() + i] = rtMaterialShaders[i].callable_prog_group;
+        program_groups[3 + 2 * rtMaterialShaders.size() + i] = rtMaterialShaders[i].callable_prg->prog_group;
     }
     char   log[2048];
     size_t sizeof_log = sizeof( log );
@@ -1417,7 +1671,7 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     {        
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_radiance_hit_group, &stack_sizes, pipeline ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_occlusion_hit_group, &stack_sizes, pipeline ) );
-        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].callable_prog_group, &stack_sizes, pipeline ) );
+        OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].callable_prg->prog_group, &stack_sizes, pipeline ) );
     }
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;

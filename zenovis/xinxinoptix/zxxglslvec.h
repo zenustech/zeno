@@ -1113,17 +1113,15 @@ __forceinline__ __device__ vec4 toHomoColor(float4 x)
     return x;
 }
 
-template <typename T=float4, typename R=vec4>
-__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv, bool use_aces=false) {
+template <typename T=float4, typename R=vec4, bool ACES=false>
+__forceinline__ __device__ R texture2D(cudaTextureObject_t texObj, vec2 uv) {
     auto tmp = tex2D<T>(texObj, uv.x, uv.y);
-    if (use_aces)
-    {
+    if constexpr (ACES) {
         vec4 c_in = toHomoColor(tmp);
         c_in = srgbToLinear(c_in);
         vec4 c = linRec709ToLinAP1(c_in);
         return *(R*)&c;
-    }else
-    {
+    } else { 
         return *(R*)&tmp;
     }
 }

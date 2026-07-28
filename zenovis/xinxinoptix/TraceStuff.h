@@ -29,9 +29,9 @@ static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned
     return ptr;
 }
 
-static __forceinline__ __device__ void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
+static __forceinline__ __device__ void  packPointer( const void* ptr, unsigned int& i0, unsigned int& i1 )
 {
-    const unsigned long long uptr = reinterpret_cast<unsigned long long>( ptr );
+    auto& uptr = reinterpret_cast<const uint64_t&>( ptr );
     i0 = uptr >> 32;
     i1 = uptr & 0x00000000ffffffff;
 }
@@ -42,12 +42,12 @@ enum medium{
 };
 
 struct VolumePRD {
+    uint homo_matid=UINT_MAX;
+    
     float t0;
     float t1;
-
-    float homo_t0;
-    float homo_t1;
-    uint homo_matid;
+    half density_min;
+    half density_max;
 };
 
 struct CommonPRD {
@@ -55,7 +55,7 @@ struct CommonPRD {
     float maxDistance;
 
     uint32_t seed;
-    float rndf() {
+    __device__ float rndf() {
         return rnd(seed);
     }
 
@@ -120,6 +120,7 @@ struct RadiancePRD : CommonPRD {
     uint8_t      diffDepth;
     uint8_t      hair_depth;
     uint8_t      sssDepth;
+    uint8_t      volume_depth;
 
     bool done         : 1;
     bool __aov__      : 1;

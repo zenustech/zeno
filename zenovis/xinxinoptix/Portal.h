@@ -474,7 +474,7 @@ struct PortalLight {
         return uv;
     }
 
-    Vector3f uv_direction(float2 uv, float* duvdw=nullptr) {
+    Vector3f uv_direction(float2 uv, float* duvdw=nullptr) const {
 
         float alpha = -M_PIf / 2.f + uv.x * M_PIf; 
         float beta  = -M_PIf / 2.f + uv.y * M_PIf;
@@ -494,7 +494,7 @@ struct PortalLight {
         return dir;
     }
 
-    void sample(LightSampleRecord& lsr, const Vector3f& pos, float2 uu, float3& color) {
+    void sample(LightSampleRecord& lsr, const Vector3f& pos, float2 uu, float3& color) const {
         Bounds2f bds; // uv bounds
         auto valid = ImageBounds(pos, bds);
         if (!valid) return;
@@ -584,7 +584,7 @@ struct PortalLightList {
     float* cdf;
 #endif
 
-    inline size_t COUNT() {
+    inline size_t COUNT() const {
     #ifndef __CUDACC_RTC__
         return list.size();
     #else
@@ -673,7 +673,7 @@ struct DistantLightList {
     float* cdf;
     uint count;
 #endif
-    inline size_t COUNT() {
+    inline size_t COUNT() const {
 #ifndef __CUDACC_RTC__
         return list.size();
 #else   

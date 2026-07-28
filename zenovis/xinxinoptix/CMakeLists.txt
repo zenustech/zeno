@@ -10,9 +10,16 @@ target_sources(zenovis PRIVATE
   ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
+  NvrtcWorker.cpp
+  NvrtcWorker.h
+  NvrtcCompileProtocol.h
+  VDBDensityBake.cpp
+  VDBDensityBake.h
   optiXStuff.h
   Host.h
 
+  Octree.cpp
+  Octree.h
   optixVolume.cpp
   optixVolume.h
   optixSphere.cpp
@@ -59,7 +66,7 @@ file(GLOB curve_src "curve/*.h" "curve/*.cpp")
 target_sources(zenovis PRIVATE ${curve_src})
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
-target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc)
+target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc CUDA::cuda_driver)
 
 if (ZENO_SYSTEM_OPENVDB)
     message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
@@ -189,6 +196,7 @@ set(FILE_LIST
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Octree.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@GeometryAux.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Curves.h
@@ -209,6 +217,7 @@ set(FILE_LIST
     ${NVDB_PATH}/@nanovdb/util/SampleFromVoxels.h
     )
 
+set(NVRTC_BUNDLE_SOURCES)
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
     string(MD5 ENCODED_FILE "${FILE_INFO}")
@@ -228,5 +237,21 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
         file(WRITE ${DUMMY_SOURCE_FILE} "/* generated from: ${FILE_PATH} */\n#include <vector>\n#include <sutil/sutil.h>\n\nnamespace sutil {\nstatic const unsigned char mydata[] = {\n${FORMATTED_HEX},\n0};\nstatic int helper = (getIncPathTab().push_back(\"${FILE_NAME}\"), getIncFileTab().push_back((const char *)mydata), 0);\n}")
 
     endif()
+    list(APPEND NVRTC_BUNDLE_SOURCES ${DUMMY_SOURCE_FILE})
     target_sources(zenovis PRIVATE ${DUMMY_SOURCE_FILE})
 endforeach()
+
+add_executable(zeno_nvrtc_helper
+    NvrtcCompileHelper.cpp
+    NvrtcCompileProtocol.h
+    ${NVRTC_BUNDLE_SOURCES}
+)
+target_include_directories(zeno_nvrtc_helper PRIVATE
+    SDK
+    SDK/cuda
+    SDK/sutil
+    .
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(zeno_nvrtc_helper PRIVATE CUDA::nvrtc)
+add_dependencies(zenovis zeno_nvrtc_helper)

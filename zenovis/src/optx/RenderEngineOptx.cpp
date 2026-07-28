@@ -536,7 +536,7 @@ struct GraphicsManager {
                     memcpy(transform_ptr+8, row2.data(), sizeof(float)*4);  
                     memcpy(transform_ptr+12, row3.data(), sizeof(float)*4);
 
-                    auto bounds = ud.get2<std::string>("bounds");
+                    auto bounds = ud.get2<std::string>("bounds", "Box");
                     
                     uint8_t boundsID = [&]() {
                         if ("Box" == bounds)
@@ -547,8 +547,28 @@ struct GraphicsManager {
                             return 2;
                     } ();
 
-                    const auto reName = prim_in->userData().get2<std::string>("ObjectName", key);
-                    defaultScene.preloadVolumeBox(reName, mtlid, boundsID, vbox_transform);
+                    auto& raw = prim_in->attr<zeno::vec3f>("raw");
+                    std::vector<sutil::Aabb> aabbs;
+                    aabbs.reserve(raw.size()/8 + 1);
+
+                    float3 min_bd = make_float3(+FLT_MAX); 
+                    float3 max_bd = make_float3(-FLT_MAX);
+
+                    aabbs.push_back(sutil::Aabb{});
+
+                    for (size_t i=0; i<raw.size(); i+=8) {
+                        auto mini = reinterpret_cast<float3&>(raw[i]);
+                        auto maxi = reinterpret_cast<float3&>(raw[i+7]);
+
+                        min_bd = fmaxf(min_bd, mini);
+                        max_bd = fmaxf(max_bd, maxi);
+                        
+                        aabbs.push_back(sutil::Aabb( mini, maxi ));
+                    }
+                    aabbs[0] = sutil::Aabb{min_bd, max_bd};
+
+                    const auto reName = ud.get2<std::string>("ObjectName", key);
+                    defaultScene.preloadVolumeBox(reName, mtlid, boundsID, vbox_transform, aabbs);
                     return;
                 }
 
@@ -2335,8 +2355,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                                 ShaderDirty = true;
                             }
                         } else {
-                            if (!is_dirty) continue;                             
-                            cached_shaders[shader_key] = nullptr;
+                            if (!is_dirty) continue;
                             ShaderDirty = true;
                         }
                     }
@@ -2383,6 +2402,22 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 timer.tock("Texture load");
             }
 
+            const auto vdb_key_matches_texture = [](const std::string& vdb_key, const std::shared_ptr<zeno::TextureObjectVDB>& tex) {
+                const std::string extension = "vdb";
+                if (!zeno::ends_with(tex->path, extension)) {
+                    return vdb_key.empty();
+                }
+
+                const auto prefix = tex->path + "{" + tex->channel + "|";
+                const auto suffix = "}#" + std::to_string(static_cast<int>(tex->eleType));
+                return vdb_key.size() >= prefix.size() + suffix.size()
+                    && vdb_key.compare(0, prefix.size(), prefix) == 0
+                    && vdb_key.compare(vdb_key.size() - suffix.size(), suffix.size(), suffix) == 0;
+            };
+            const auto find_cached_shader = [&](const shader_key_t& shader_key) -> std::shared_ptr<ShaderPrepared> {
+                auto it = cached_shaders.find(shader_key);
+                return it == cached_shaders.end() ? nullptr : it->second;
+            };
             for(auto const &shaderName : dirtyShaderNames)
             {   
                 //if (matMap.count(shaderName) == 0) continue;
@@ -2392,9 +2427,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 mtldet->dirty = false;
 
                     const bool isVol = mtldet->parameters.find("vol") != std::string::npos;
-                    
+
                     const auto& selected_source = isVol? _volume_shader_template : _default_shader_template;
                     const auto& selected_callable = isVol? _volume_callable_template : _default_callable_template; 
+                    std::shared_ptr<ShaderPrepared> previous_shader;
+                    if (isVol) {
+                        previous_shader = find_cached_shader(std::tuple{mtldet->mtlidkey, ShaderMark::Volume});
+                    } else if (required_shader_names.count(mtldet->mtlidkey) > 0) {
+                        for (auto& mark : required_shader_names.at(mtldet->mtlidkey)) {
+                            previous_shader = find_cached_shader(std::tuple{mtldet->mtlidkey, mark});
+                            if (previous_shader) {
+                                break;
+                            }
+                        }
+                    }
 
                     std::string callable;
                     auto common_code = mtldet->common;
@@ -2439,19 +2485,30 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         if (mtldet->tex3Ds.size() > 0) {
 
                             shaderP.vdb_keys.resize(mtldet->tex3Ds.size());
-        
-                            for (uint k=0; k<mtldet->tex3Ds.size(); ++k) 
-                            {
-                                auto& tex = mtldet->tex3Ds.at(k);
-                                auto vdb_path = tex->path;
-        
-                                static const auto extension = std::string("vdb");
-                                auto found_vdb = zeno::ends_with(vdb_path, extension);
-                                if (!found_vdb) { continue; }
-        
-                                std::string vdb_key;
-                                auto loaded = defaultScene.preloadVDB(*tex, vdb_key); 
-                                shaderP.vdb_keys[k] = vdb_key;
+
+                            bool reuse_vdb_keys = previous_shader
+                                && previous_shader->vdb_keys.size() == shaderP.vdb_keys.size();
+                            for (uint k=0; reuse_vdb_keys && k<mtldet->tex3Ds.size(); ++k) {
+                                reuse_vdb_keys = vdb_key_matches_texture(previous_shader->vdb_keys[k], mtldet->tex3Ds.at(k));
+                            }
+
+                            if (reuse_vdb_keys) {
+                                shaderP.vdb_keys = previous_shader->vdb_keys;
+                            } else {
+                                for (uint k=0; k<mtldet->tex3Ds.size(); ++k) 
+                                {
+                                    auto& tex = mtldet->tex3Ds.at(k);
+                                    auto vdb_path = tex->path;
+            
+                                    static const auto extension = std::string("vdb");
+                                    auto found_vdb = zeno::ends_with(vdb_path, extension);
+                                    if (!found_vdb) { continue; }
+            
+                                    std::string vdb_key;
+                                    if (defaultScene.preloadVDB(*tex, vdb_key)) {
+                                        shaderP.vdb_keys[k] = vdb_key;
+                                    }
+                                }
                             }
                         }
 
@@ -2559,7 +2616,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             if (matNeedUpdate || scene->drawOptions->updateMatlOnly)
             {
-                xinxinoptix::configPipeline(ShaderDirty);
+                xinxinoptix::configPipeline(ShaderDirty, OptixUtil::pipelineProgramGroupsDirty());
                 std::cout<< "Finish optix update" << std::endl;
             }
         }

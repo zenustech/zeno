@@ -50,6 +50,7 @@
 #include <cstring>
 
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <map>
@@ -441,7 +442,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
         auto& shader_ref = OptixUtil::rtMaterialShaders[j];
         const uint sbt_idx = RAY_TYPE_COUNT * j;
 
-        OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prog_group, &callable_records[j] ) );
+        OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prg->prog_group, &callable_records[j] ) );
 
         if (!shader_ref.isVol()) {
 
@@ -507,6 +508,12 @@ static void createSBT( PathTracerState& state, bool raygen=false)
 
                 if (json.contains("vol_extinction")) {
                     rec.data.vol_extinction = json["vol_extinction"];
+                }
+
+                if (json.contains("vol_transmittance")) {
+                    const auto tracking_name = json["vol_transmittance"].template get<std::string>();
+                    rec.data.vol_transmittance = magic_enum::enum_cast<TransmittanceMethod>(tracking_name)
+                        .value_or(TransmittanceMethod::RatioTracking);
                 }
             }
 
@@ -1299,7 +1306,28 @@ void buildLightTree() {
     defaultScene.prepare_light_ias(OptixUtil::context);
 }
 
-inline std::map<std::tuple<std::string, ShaderMark>, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
+using ShaderCoreKey = std::tuple<std::string, ShaderMark>;
+inline std::map<ShaderCoreKey, std::shared_ptr<OptixUtil::OptixShaderCore>> shaderCoreLUT {};
+inline std::mutex shaderCoreLUTMutex;
+
+inline void clearShaderCoreLUT()
+{
+    std::lock_guard<std::mutex> lock(shaderCoreLUTMutex);
+    shaderCoreLUT.clear();
+}
+
+inline void storeShaderCore(ShaderCoreKey key, std::shared_ptr<OptixUtil::OptixShaderCore> shaderCore)
+{
+    std::lock_guard<std::mutex> lock(shaderCoreLUTMutex);
+    shaderCoreLUT[std::move(key)] = std::move(shaderCore);
+}
+
+inline std::shared_ptr<OptixUtil::OptixShaderCore> findShaderCore(const ShaderCoreKey& key)
+{
+    std::lock_guard<std::mutex> lock(shaderCoreLUTMutex);
+    auto it = shaderCoreLUT.find(key);
+    return it == shaderCoreLUT.end() ? nullptr : it->second;
+}
 
 void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders, 
                    bool requireTriangObj, bool requireTriangLight, 
@@ -1309,10 +1337,19 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
     camera_changed = true;
 
     timer.tick();
+    OptixUtil::resetPipelineProgramGroupsDirty(refresh);
+    int dirty_shader_count = 0;
+    for (const auto& shader : shaders) {
+        if (shader && shader->dirty) {
+            ++dirty_shader_count;
+        }
+    }
+    OptixUtil::setCallableNvrtcHelperEnabled(
+        refresh || dirty_shader_count >= OptixUtil::callableNvrtcHelperDirtyThreshold());
     
     if (refresh) {
 
-        shaderCoreLUT = {};
+        clearShaderCoreLUT();
         OptixUtil::_compile_group.run([&] () {
 
             if (!OptixUtil::createModule(
@@ -1333,7 +1370,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
                 std::vector<std::string> macros = {"--undefine-macro=_P_TYPE_", "--define-macro=_P_TYPE_=0"};
                 shaderCore->loadProgram(0, macros);
-                shaderCoreLUT[ std::tuple{"DeflMatShader.cu", ShaderMark::Mesh} ] = shaderCore;
+                storeShaderCore(ShaderCoreKey{"DeflMatShader.cu", ShaderMark::Mesh}, shaderCore);
             });    
         }
 
@@ -1346,7 +1383,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
                 std::vector<std::string> macros = {"--undefine-macro=_P_TYPE_", "--define-macro=_P_TYPE_=1"};
                 shaderCore->loadProgram(1, macros);
-                shaderCoreLUT[ std::tuple{"DeflMatShader.cu", ShaderMark::Sphere} ] = shaderCore;
+                storeShaderCore(ShaderCoreKey{"DeflMatShader.cu", ShaderMark::Sphere}, shaderCore);
             });
         }
 
@@ -1357,7 +1394,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                 auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, 
                                                         "__closesthit__radiance_volume", "__anyhit__occlusion_volume", "__intersection__volume");
                 shaderCore->loadProgram(4);
-                shaderCoreLUT[ std::tuple{"volume.cu", ShaderMark::Volume} ] = shaderCore;
+                storeShaderCore(ShaderCoreKey{"volume.cu", ShaderMark::Volume}, shaderCore);
             });
         }
 
@@ -1387,7 +1424,7 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                     shaderCore->moduleIS = module_ptr;
 
                     shaderCore->loadProgram(10, macros);
-                    shaderCoreLUT[ std::tuple{"DeflMatShader.cu", mark} ] = shaderCore;
+                    storeShaderCore(ShaderCoreKey{"DeflMatShader.cu", mark}, shaderCore);
                 }
             });
         } // usesCurveTypeFlags
@@ -1400,14 +1437,14 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
         if (requireTriangLight) {
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->loadProgram(2);
-            shaderCoreLUT[ std::tuple{"Light.cu", ShaderMark::Mesh} ] = shaderCore;
+            storeShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Mesh}, shaderCore);
         }
 
         if (requireSphereLight) {
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->moduleIS = &OptixUtil::sphere_ism;
             shaderCore->loadProgram(3);
-            shaderCoreLUT[ std::tuple{"Light.cu", ShaderMark::Sphere} ] = shaderCore;
+            storeShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Sphere}, shaderCore);
         }
     });
 
@@ -1417,38 +1454,40 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
     OptixUtil::rtMaterialShaders.resize(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
-        if (!shaders[i]->dirty) continue;
-
+        const bool shader_source_dirty = shaders[i]->dirty;
+        if (!refresh && !shader_source_dirty) { continue; }
         shaders[i]->dirty = false;
-        OptixUtil::rtMaterialShaders[i].dirty = true;
 
-OptixUtil::_compile_group.run([&shaders, i] () {
+OptixUtil::_compile_group.run([&shaders, i, shader_source_dirty] () {
 
         auto& callable_string = shaders[i]->callable;
         
         std::shared_ptr<OptixUtil::OptixShaderCore> shaderCore = nullptr;
         auto key = std::tuple{shaders[i]->filename, shaders[i]->mark};
 
-        if (shaderCoreLUT.count(key) > 0) {
-            shaderCore = shaderCoreLUT.at(key);
-        }
+        shaderCore = findShaderCore(key);
 
         auto& rtShader = OptixUtil::rtMaterialShaders[i];
 
-        rtShader.core = shaderCore;
-        rtShader.callable = shaders[i]->callable;
+        nlohmann::json parameters = nlohmann::json::object();
         if (shaders[i]->parameters != "") {
-            rtShader.parameters = nlohmann::json::parse(shaders[i]->parameters);
+            parameters = nlohmann::json::parse(shaders[i]->parameters);
+        }
+        std::string density_signature {};
+        if (parameters.contains("density_signature") &&
+            parameters["density_signature"].is_string()) {
+            density_signature = parameters["density_signature"].template get<std::string>();
+        } else if (ShaderMark::Volume == shaders[i]->mark) {
+            density_signature = shaders[i]->callable;
         }
         auto macro = globalShaderBufferGroup.code(callable_string);
-        rtShader.macros = macro;
 
         if (ShaderMark::Volume == shaders[i]->mark) {
-            rtShader.macros["_volu_"] = true;
+            macro["_volu_"] = true;
 
-            if (rtShader.parameters.contains("vol_depth")) {
-                auto vol_depth = rtShader.parameters["vol_depth"];
-                rtShader.macros["_homo_"] = vol_depth == 0;
+            if (parameters.contains("vol_depth")) {
+                auto vol_depth = parameters["vol_depth"];
+                macro["_homo_"] = vol_depth == 0;
             }
         }
 
@@ -1461,10 +1500,31 @@ OptixUtil::_compile_group.run([&shaders, i] () {
         }
         
         const auto& vdbs = shaders[i]->vdb_keys;
-        rtShader.vbds.resize(vdbs.size());
-        for (int j=0; j<vdbs.size(); ++j)
-        {
-            rtShader.vbds[j] = vdbs[j];
+        const auto density_vdb_refs = ShaderMark::Volume == shaders[i]->mark
+            ? resolveDensityVDBSlots(vdbs, density_signature)
+            : DensityVDBSlotRefs {};
+        const bool density_vdb_refs_changed =
+            rtShader.density_vdb_primary_slot != density_vdb_refs.primary_slot ||
+            rtShader.density_vdb_referenced_slots != density_vdb_refs.referenced_slots;
+        rtShader.vbds = vdbs; 
+
+        const bool program_changed = rtShader.core != shaderCore || rtShader.macros != macro || rtShader.callable_src != shaders[i]->callable;
+            
+        const bool density_inputs_changed = rtShader.density_signature != density_signature || density_vdb_refs_changed;
+
+        rtShader.core = shaderCore;
+        rtShader.callable_src = shaders[i]->callable;
+        rtShader.macros = std::move(macro);
+        rtShader.parameters = std::move(parameters);
+        rtShader.density_signature = std::move(density_signature);
+        rtShader.density_vdb_primary_slot = density_vdb_refs.primary_slot;
+        rtShader.density_vdb_referenced_slots = std::move(density_vdb_refs.referenced_slots);
+
+        rtShader.dirty = rtShader.dirty || shader_source_dirty || program_changed;
+        if (ShaderMark::Volume == shaders[i]->mark) {
+            rtShader.force_density_bake = rtShader.force_density_bake || density_inputs_changed;
+        } else {
+            rtShader.force_density_bake = false;
         }
 }); //_compile_group
     } //for
@@ -1532,11 +1592,17 @@ OptixUtil::_compile_group.wait();
 
 }
 
-void configPipeline(bool shaderDirty) {
+void configPipeline(bool shaderDirty, bool pipelineDirty) {
     camera_changed = true;
 
     auto buffers = globalShaderBufferGroup.upload();
     state.params.global_buffers = (void**)buffers;
+    initLaunchParams( state );
+    defaultScene.bakeVolumeDensityForCurrentFrame(state.params);
+    if (defaultScene.consumeVolumeSceneBindingsDirty()) {
+        defaultScene.make_scene(OptixUtil::context);
+        state.params.handle = defaultScene.rootNode.handle;
+    }
 
     if (shaderDirty) {
         timer.tick();
@@ -1545,12 +1611,15 @@ void configPipeline(bool shaderDirty) {
     }
 
     timer.tick();
-    OptixUtil::createPipeline(defaultScene.maxNodeDepth, shaderDirty);
+    OptixUtil::createPipeline(defaultScene.maxNodeDepth, pipelineDirty);
+    if (pipelineDirty) {
+        OptixUtil::resetPipelineProgramGroupsDirty(false);
+    }
     timer.tock("Pipeline created \n");
+}
 
-    timer.tick();
-    initLaunchParams( state );
-    timer.tock("init params created \n");
+void configPipeline(bool shaderDirty) {
+    configPipeline(shaderDirty, shaderDirty);
 }
 
 void prepareScene()
@@ -2136,7 +2205,7 @@ void optixDestroy() {
         optixCleanup();
 
         rtMaterialShaders.clear();
-        shaderCoreLUT.clear();
+        clearShaderCoreLUT();
         OptixUtil::resetAll();
     }
     catch (sutil::Exception const& e) {

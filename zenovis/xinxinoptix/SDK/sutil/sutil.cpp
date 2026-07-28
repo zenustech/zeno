@@ -33,7 +33,6 @@
 #include <sutil/PPMLoader.h>
 #include <sutil/sutil.h>
 #include <sutil/vec_math.h>
-#include <unordered_map>
 
 #include <glad/glad.h>
 //#include <GLFW/glfw3.h>
@@ -47,12 +46,11 @@
 //#define TINYEXR_IMPLEMENTATION
 //#include <tinyexr/tinyexr.h>
 
-#include <nvrtc.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -60,6 +58,8 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <thread>
+#include <utility>
 #include <vector>
 #if defined(_WIN32)
 #    ifndef WIN32_LEAN_AND_MEAN
@@ -69,6 +69,8 @@
 #    include<mmsystem.h>
 #else
 #    include<sys/time.h>
+#    include<sys/wait.h>
+#    include<signal.h>
 #    include <unistd.h>
 #    include <dirent.h>
 #endif
@@ -820,50 +822,6 @@ double currentTime()
 }
 
 
-#define STRINGIFY( x ) STRINGIFY2( x )
-#define STRINGIFY2( x ) #x
-#define LINE_STR STRINGIFY( __LINE__ )
-
-// Error check/report helper for users of the C API
-#define NVRTC_CHECK_ERROR( func )                                                                                           \
-    do                                                                                                                      \
-    {                                                                                                                       \
-        nvrtcResult code = func;                                                                                            \
-        if( code != NVRTC_SUCCESS )                                                                                         \
-            throw std::runtime_error( "ERROR: " __FILE__ "(" LINE_STR "): " + std::string( nvrtcGetErrorString( code ) ) ); \
-    } while( 0 )
-
-static bool readSourceFile( std::string& str, const std::string& filename )
-{
-    // Try to open file
-    std::ifstream file( filename.c_str(), std::ios::binary );
-    if( file.good() )
-    {
-        // Found usable source file
-        std::vector<unsigned char> buffer = std::vector<unsigned char>( std::istreambuf_iterator<char>( file ), {} );
-        str.assign(buffer.begin(), buffer.end());
-        return true;
-    }
-    return false;
-}
-
-#if CUDA_NVRTC_ENABLED
-
-static void getCuStringFromFile( std::string& cu, std::string& location, const char* sampleDir, const char* filename )
-{
-    // Potential source locations (in priority order)
-
-        // Try to get source code from file
-        if( readSourceFile( cu, filename ) )
-        {
-            location = filename;
-            return;
-        }
-
-    // Wasn't able to find or open the requested file
-    throw std::runtime_error( "Couldn't open source file " + std::string( filename ) );
-}
-
 std::vector<const char *> &getIncFileTab() {
     static std::vector<const char *> ret;
     return ret;
@@ -876,214 +834,6 @@ const char *lookupIncFile(const char *name) {
     auto const &pathtab = getIncPathTab();
     auto it = std::find(pathtab.begin(), pathtab.end(), std::string_view(name));
     return getIncFileTab().at(it - pathtab.begin());
-}
-
-inline bool compileShaderCuda(  std::string&                    compiled,
-                                const char*                     source,
-                                const char*                     name,
-                                const char**                    log,
-                                const std::vector<const char*>& options)
-{
-    // Create program
-    nvrtcProgram prog;
-    NVRTC_CHECK_ERROR( nvrtcCreateProgram( &prog, source, name, getIncFileTab().size(), getIncFileTab().data(), getIncPathTab().data() ) );
-
-    const nvrtcResult compileRes = nvrtcCompileProgram( prog, (int)options.size(), options.data() );
-
-    std::string _nvrtcLog;
-    // Retrieve log output
-    size_t log_size = 0;
-    NVRTC_CHECK_ERROR( nvrtcGetProgramLogSize( prog, &log_size ) );
-    
-    if( log_size > 1 )
-    {
-        _nvrtcLog.resize( log_size );
-        NVRTC_CHECK_ERROR( nvrtcGetProgramLog( prog, &_nvrtcLog[0] ) );
-        if( log ) {
-            //*log_string = ;
-            //std::cout << _nvrtcLog.c_str() << std::endl;
-        }
-    }
-    if( compileRes != NVRTC_SUCCESS ) {
-#if 1
-        
-        //const char mymark[] = "/*BEGIN_PENGSENSEI*/\n";
-        //auto lencus = strlen(cu_source);
-        //const char *cu_source_beg = strchr(cu_source, '\xfd');
-        //if (cu_source_beg) cu_source_beg++;
-        //else cu_source_beg = cu_source;
-        std::string mod_cu_source = "1 ";
-        int line = 1;
-        mod_cu_source.reserve(strlen(source));
-        for (const char *p = source; *p; p++) {
-            mod_cu_source.push_back(*p);
-            if (*p == '\n') {
-                mod_cu_source += std::to_string(++line) + ' ';
-            }
-        }
-#else
-        const char *mod_cu_source = cu_source;
-#endif
-        // throw std::runtime_error( "NVRTC Compilation failed.\n====BEGIN====\n"
-        //                          + mod_cu_source + "\n=====END=====\n" + g_nvrtcLog );
-        std::cout<<"NVRTC Compilation failed.\n===================BEGIN============\n";
-        std::cout<<mod_cu_source<<"\n=============END==============\n";
-        std::cout<<_nvrtcLog<<std::endl;
-        NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
-        std::cout<<"mabimabi not compiled!!!!!"<<std::endl;
-        return false;
-    }
-
-    size_t code_size = 0;
-    bool using_ir  = false;
-    for (auto opt : options) {
-        if (opt == "--optix-ir") {
-            using_ir = true; break;
-        }
-    }
-
-    if (using_ir) {
-        NVRTC_CHECK_ERROR( nvrtcGetOptiXIRSize(prog, &code_size) );
-        compiled.resize( code_size );
-        NVRTC_CHECK_ERROR( nvrtcGetOptiXIR( prog, &compiled[0] ) );
-
-    } else {
-        NVRTC_CHECK_ERROR( nvrtcGetPTXSize( prog, &code_size ) );
-        compiled.resize( code_size );
-        NVRTC_CHECK_ERROR( nvrtcGetPTX( prog, &compiled[0] ) );
-    }
-
-    // Cleanup
-    NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
-    return true;
-}
-
-#else  // CUDA_NVRTC_ENABLED
-
-static std::string sampleInputFilePath( const char* sampleName, const char* fileName )
-{
-    // Allow for overrides.
-    static const char* directories[] =
-    {
-        // TODO: Remove the environment variable OPTIX_EXP_SAMPLES_SDK_PTX_DIR once SDK 6/7 packages are split
-        getenv( "OPTIX_EXP_SAMPLES_SDK_PTX_DIR" ),
-        getenv( "OPTIX_SAMPLES_SDK_PTX_DIR" ),
-        SAMPLES_PTX_DIR,
-        "."
-    };
-
-    // Allow overriding the file extension
-    std::string extension = ".ptx";
-    if( const char* ext = getenv("OPTIX_SAMPLES_INPUT_EXTENSION") )
-    {
-        extension = ext;
-        if( extension.size() && extension[0] != '.' )
-            extension = "." + extension;
-    }
-    
-    if( !sampleName )
-        sampleName = "cuda_compile_ptx";
-    for( const char* directory : directories )
-    {
-        if( directory )
-        {
-            std::string path = directory;
-            path += '/';
-            path += sampleName;
-            path += "_generated_";
-            path += fileName;
-            path += extension;
-            if( fileExists( path ) )
-                return path;
-        }
-    }
-
-    std::string error = "sutil::samplePTXFilePath couldn't locate ";
-    error += fileName;
-    error += " for sample ";
-    error += sampleName;
-    throw Exception( error.c_str() );
-}
-
-static void getInputDataFromFile( std::string& ptx, const char* sample_name, const char* filename )
-{
-    const std::string sourceFilePath = sampleInputFilePath( sample_name, filename );
-
-    // Try to open source PTX file
-    if( !readSourceFile( ptx, sourceFilePath ) )
-    {
-        std::string err = "Couldn't open source file " + sourceFilePath;
-        throw std::runtime_error( err.c_str() );
-    }
-}
-
-#endif  // CUDA_NVRTC_ENABLED
-
-using CuShaderCacheCompiled = std::unordered_map< std::string, std::shared_ptr<std::string> >;
-static CuShaderCacheCompiled cuShaderCacheCompiled{};
-
-static std::string ridincs(std::string s) {
-    while (1) if (auto p = s.find("#include"); p != std::string::npos) {
-        if (auto q = s.find('\n', p); q != std::string::npos) {
-            s.replace(p, q - p, "/*wasinclude*/\n");
-        }
-    } else break;
-    return s;
-}
-
-#if 0
-static const char* getOptixHeader() {
-    static std::string s =
-    R"(
-    #if !defined(__OPTIX_INCLUDE_INTERNAL_HEADERS__)
-#  define __OPTIX_INCLUDE_INTERNAL_HEADERS__
-#  define __UNDEF_OPTIX_INCLUDE_INTERNAL_HEADERS_OPTIX_DEVICE_H__
-#endif
-)"
-        + ridincs(zeno_header_optix_types_h())
-        + ridincs(zeno_header_optix_device_h())
-        + ridincs(zeno_header_internal_optix_device_impl_exception_h())
-        + ridincs(zeno_header_internal_optix_device_impl_transformations_h())
-        + ridincs(zeno_header_internal_optix_device_impl_h())
-        + R"(
-#if defined( __UNDEF_OPTIX_INCLUDE_INTERNAL_HEADERS_OPTIX_DEVICE_H__ )
-#  undef __OPTIX_INCLUDE_INTERNAL_HEADERS__
-#  undef __UNDEF_OPTIX_INCLUDE_INTERNAL_HEADERS_OPTIX_DEVICE_H__
-#endif
-#line 2  //
-)";
-    return s.c_str();
-}
-#endif
-
-const char* cuCompiled( const char*                     source,
-                        const char*                     macro,
-                        const char*                     name,
-                        size_t&                         dataSize,
-                        bool&                           success,
-                        const char**                    log,
-                        const std::vector<const char*>& compilerOptions)
-{
-    if( log )
-        *log = NULL;
-
-    std::shared_ptr<std::string> compiled;
-    std::string key = (macro!=nullptr? std::string(macro):"") + std::string( source );
-
-    if( cuShaderCacheCompiled.count(key) == 0 )
-    {
-        compiled = std::make_shared<std::string>();
-        success = compileShaderCuda( *compiled, source, name, log, compilerOptions );
-        if(success==true)
-            cuShaderCacheCompiled[key] = compiled;
-    }
-    else
-    {
-        compiled = cuShaderCacheCompiled[key];
-        success = true;
-    }
-    dataSize = compiled->size();
-    return compiled->c_str();
 }
 
 void ensureMinimumSize( int& w, int& h )

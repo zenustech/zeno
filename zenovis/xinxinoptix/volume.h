@@ -24,38 +24,22 @@ namespace nanovdb {
 };
 
 struct VolumeIn {
-    float3 pos_world;
     float3 pos_view;
 
-    bool isShadowRay;
-
-    float sigma_t;
     uint32_t* seed;
-
     void* sbt_ptr;
+    
     float4 objectToWorld[3];
     float4 worldToObject[3];
-    
-    float3 _local_pos_;
-    float3 _uniform_pos_;
-
-    void resetCache() {
-        _local_pos_.x = CUDART_NAN_F;
-        _uniform_pos_.x = CUDART_NAN_F;
-    }
 };
 
 struct VolumeOut {
-    float step_scale=__FLT_MAX__;
-
-    float max_density;
-    float density;
+    __half density;
+    __half anisotropy;
+    float albedoAmp;
 
     float3 albedo;
     float3 extinction;
-    float albedoAmp;
-    
-    float anisotropy;
     float3 emission;
 };
 
@@ -63,7 +47,8 @@ namespace pbrt {
 
 struct HenyeyGreenstein {
     float g, gg;
-    __device__ HenyeyGreenstein(float g) : g(g), gg(g*g) {}
+    __device__ HenyeyGreenstein(float g)
+        : g(fminf(fmaxf(g, -0.999f), 0.999f)), gg(this->g * this->g) {}
     
     float p(const float3 &wo, const float3 &wi) const;
     float sample(const float3 &wo, float3 &wi, const float2 &uu) const;
@@ -72,14 +57,11 @@ struct HenyeyGreenstein {
 // Media Inline Functions
 inline float PhaseHG(float cosTheta, float g, float gg) {
 
-    float denom = 1 + gg + 2 * g * cosTheta;
-
-    if (denom < __FLT_EPSILON__) {
-        return 1.0f;
-    }
+    cosTheta = fminf(fmaxf(cosTheta, -1.0f), 1.0f);
+    float denom = fmaxf(1 + gg + 2 * g * cosTheta, 1e-20f);
 
     auto P = (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
-    return clamp(P, 0.0f, 1.0f);
+    return fmaxf(P, 0.0f);
 }
 
 // HenyeyGreenstein Method Definitions
