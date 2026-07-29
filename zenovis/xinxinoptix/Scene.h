@@ -312,6 +312,14 @@ public:
         uint32_t sbt;
         glm::mat4* matrix{};
         VisibilityMask vmask;
+
+        bool operator!=(const Candidate& other) const {
+            return handle!=other.handle || sbt!=other.sbt || matrix!=other.matrix || vmask!=other.vmask;
+        }
+
+        bool operator==(const Candidate& other) const {
+            return !(*this != other);
+        }
     };
 
     inline void make_scene( OptixDeviceContext& context, float3 cam=make_float3(INFINITY) ) {
@@ -390,7 +398,10 @@ public:
         matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
         static const std::vector fallback_keys { "" };
         
+        std::unordered_map<std::string, Candidate> next_candidates;
+        std::unordered_set<std::string> candidate_dirty;
         const auto& bri = sceneJson[brikey];
+        next_candidates.reserve(bri.size());
         for (auto it = bri.begin(); it != bri.end(); ++it) {
             //std::cout << it.key() << " : " << it.value() << "\n";
             const auto candi_name = it.key();
@@ -463,8 +474,19 @@ public:
 
             candi.sbt = shader_index * RAY_TYPE_COUNT;
             candi.vmask = shader_visiable;
-            candidates[candi_name] = candi;
+            const auto previous = candidates.find(candi_name);
+            if (previous == candidates.end() || previous->second != candi) {
+                candidate_dirty.insert(candi_name);
+            }
+            next_candidates.emplace(candi_name, candi);
         } //bri
+
+        for (const auto& [name, _] : candidates) {
+            if (next_candidates.count(name) == 0) {
+                candidate_dirty.insert(name);
+            }
+        }
+        candidates = std::move(next_candidates);
 
         if (!cleanTasks.empty()) {
             for (auto& [k, task] : cleanTasks) {
@@ -485,7 +507,9 @@ public:
             }
 
             auto find_obj = renderGroup.find(key);
-            if (find_obj == renderGroup.end()) { return true; }
+            if (find_obj == renderGroup.end()) {
+                return candidate_dirty.count(key)>0 || candidates.count(key)==0;
+            }
             auto& ref = *find_obj;
 
             bool dirty = false;
@@ -509,19 +533,25 @@ public:
 
         auto dirtyGroup = [&](std::string_view group_key, std::string_view entry_key, decltype(nodeCache)& nodeCache) 
         {
-            if (!sceneJson.contains(group_key)) return;
-            if (!sceneJson.contains(entry_key)) return;
+            if (!sceneJson.contains(group_key)) return false;
+            if (!sceneJson.contains(entry_key)) return false;
 
             auto& rg = sceneJson[group_key];
             auto& entrys = sceneJson[entry_key];
 
+            bool dirty = false;
             for (const auto& kv : entrys.items()) {
-                dirtyCheck(kv.key(), rg, nodeCache);
+                dirty |= dirtyCheck(kv.key(), rg, nodeCache);
             }
+            return dirty;
         };
 
-        if (!matrix_dirty.empty()) {
+        if (!matrix_dirty.empty() || !candidate_dirty.empty()) {
             dirtyGroup("DynamicRenderGroups", "DynamicEntries", nodeCache);
+            if (!candidate_dirty.empty()
+                && dirtyGroup("StaticRenderGroups", "StaticEntries", nodeCacheStatic)) {
+                staticRenderGroup = 0;
+            }
             matrix_dirty.clear();
         }
         
