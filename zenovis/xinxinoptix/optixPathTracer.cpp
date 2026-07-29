@@ -1491,12 +1491,11 @@ OptixUtil::_compile_group.run([&shaders, i, shader_source_dirty] () {
             }
         }
 
-        auto& texs = shaders[i]->texs;
-        rtShader.texs = {};
-        rtShader.texs.reserve(texs.size());
+        const auto& texs = shaders[i]->texs;
+        auto& _texs = rtShader.texs;
+        _texs.resize(texs.size(), {});
         for(int j=0; j<texs.size(); j++) {
-            auto tid = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
-            rtShader.texs.push_back(tid);
+            _texs[j] = (texs[j] == nullptr) ? 0llu : texs[j]->texture;
         }
         
         const auto& vdbs = shaders[i]->vdb_keys;

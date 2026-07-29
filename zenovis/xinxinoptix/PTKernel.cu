@@ -469,7 +469,7 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance = make_float3(0);
             prd.emission = make_float3(0);
 
-            if( prd.done || ( 0==prd.volume_depth && prd.depth>prd.max_depth ) ){
+            if( prd.done || (prd.depth > prd.max_depth) ) {
                 break;
             }
 

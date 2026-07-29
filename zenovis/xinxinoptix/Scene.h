@@ -109,6 +109,8 @@ public:
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
         shader_indice_table = table;
 
+        mesh_sbt_max = 0;
+        dc_index_to_mat.clear();
         for (const auto& [k, v] : shader_indice_table) {
             const auto& [_, mark] = k;
             if (mark == ShaderMark::Mesh) mesh_sbt_max = max(mesh_sbt_max, v);
