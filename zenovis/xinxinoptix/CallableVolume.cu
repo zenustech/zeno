@@ -3,7 +3,7 @@
 #include <nanovdb/util/HDDA.h>
 #include <nanovdb/util/SampleFromVoxels.h>
 
-#ifdef __VDB_DENSITY_BAKE__
+#ifdef __VOLUME_DENSITY_BAKE__
 
 #include <cuda_fp16.h>
 #include <cuda/random.h>
@@ -61,7 +61,7 @@ struct VolumeInX : VolumeIn {
 	}
 
     __device__ vec3 localPosLazy() const {
-#ifdef __VDB_DENSITY_BAKE__
+#ifdef __VOLUME_DENSITY_BAKE__
         // A bake invocation already supplies the exact GAS-local/index
         // lattice coordinate. Do not reconstruct it through any transform.
         return pos_view;
@@ -111,7 +111,7 @@ inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd
     
     using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-#ifdef __VDB_DENSITY_BAKE__
+#ifdef __VOLUME_DENSITY_BAKE__
     const int3 coord = make_int3(
         __float2int_rn(point_indexd[0]),
         __float2int_rn(point_indexd[1]),
@@ -198,7 +198,7 @@ __device__ void evalVolumeMaterialCore(VolumeInX& attrs, bool shadowRay, VolumeO
 
     auto& prd = attrs;
 
-#ifdef __VDB_DENSITY_BAKE__
+#ifdef __VOLUME_DENSITY_BAKE__
     // Keep the material position in the baker's local/index coordinate system.
     // This is an exact integer-valued float3 for every lattice invocation.
     vec3 att_pos = attrs.pos_view;
@@ -262,7 +262,7 @@ __device__ void __proxy_callable__evalmat(void* attrs_ptr, bool shadowRay, Volum
     evalVolumeMaterialCore<DENSITY>(attrs, shadowRay, output);
 }
 
-#ifdef __VDB_DENSITY_BAKE__
+#ifdef __VOLUME_DENSITY_BAKE__
 static __forceinline__ __device__ unsigned int densityBakeFloatToOrderedUInt(float value)
 {
     value = sanitizeVolumeDensity(value);

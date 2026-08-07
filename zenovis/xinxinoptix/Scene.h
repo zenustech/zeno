@@ -966,7 +966,7 @@ public:
                 << " " << makeReadableVDBKey(density_vdb_key);
             const std::string label = label_stream.str();
 
-            xinxinoptix::VDBDensityBakeInputs bake_inputs;
+            xinxinoptix::VolumeDensityBakeInputs bake_inputs;
             bake_inputs.params = &params;
             bake_inputs.hit_group = &hit_group;
             bake_inputs.callable_source = shader_ref.callable_src.c_str();
@@ -975,8 +975,8 @@ public:
             bake_inputs.compile_macros = std::move(compile_macros);
             bake_inputs.seed = 0x12345678u ^ static_cast<uint32_t>(shader_index * 1664525u + density_slot);
 
-            xinxinoptix::VDBDensityBakeResult bake_result;
-            xinxinoptix::VDBDensityBakeOptions bake_options;
+            xinxinoptix::VolumeDensityBakeResult bake_result;
+            xinxinoptix::VolumeDensityBakeOptions bake_options;
             bake_options.octreeBuildDepth = octreeBuildDepth;
             bake_options.validate_sparse_octree = density_volume.validate_gpu_baked_octree;
             bake_options.use_custom_sample_bbox = density_volume.use_custom_density_sample_bbox;
@@ -988,13 +988,13 @@ public:
                 density_volume.density_bake_key = bake_key;
                 buildVolumeAccel(density_volume, OptixUtil::context);
                 volume_scene_bindings_dirty = true;
-                std::cout << "VDB sparse density bake {" << label << "} max=" << bake_result.max_density << std::endl;
+                std::cout << "Volume density sparse bake {" << label << "} max=" << bake_result.max_density << std::endl;
             } else {
                 density_volume.density_bake_key.clear();
                 if (density_volume.baked_density) {
                     density_volume.baked_density->reset();
                 }
-                std::cerr << "VDB density bake failed {" << label << "}" << std::endl;
+                std::cerr << "Volume density bake failed {" << label << "}" << std::endl;
             }
         }
     }

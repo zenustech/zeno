@@ -13,12 +13,12 @@ struct Params;
 
 namespace xinxinoptix {
 
-enum class VDBDensityBakeGridType {
+enum class VolumeDensityBakeGridType {
     Unsupported, Float,
     Fp16, Fp8, Fp4
 };
 
-struct VDBDensityBakeOptions {
+struct VolumeDensityBakeOptions {
     bool clamp_negative = true;
     bool validate_sparse_octree = false;
     int topology_padding_voxels = 0;
@@ -28,7 +28,7 @@ struct VDBDensityBakeOptions {
     int3 custom_sample_max {};
 };
 
-struct VDBDensityBakeInputs {
+struct VolumeDensityBakeInputs {
     const Params* params = nullptr;
     const HitGroupData* hit_group = nullptr;
     const char* callable_source = nullptr;
@@ -38,7 +38,7 @@ struct VDBDensityBakeInputs {
     uint32_t seed = 1u;
 };
 
-struct VDBDensityBakeResult {
+struct VolumeDensityBakeResult {
     float max_density = 0.0f;
     float sparse_total_wall_ms = 0.0f;
     float sparse_density_gpu_ms = 0.0f;
@@ -53,8 +53,8 @@ struct VDBDensityBakeResult {
 bool bakeDensityToSparseBricks(
     std::size_t grid_size,
     BakedSparseVolumeDevice& device_volume,
-    const VDBDensityBakeInputs& inputs,
-    const VDBDensityBakeOptions& options,
-    VDBDensityBakeResult* result = nullptr);
+    const VolumeDensityBakeInputs& inputs,
+    const VolumeDensityBakeOptions& options,
+    VolumeDensityBakeResult* result = nullptr);
 
 } // namespace xinxinoptix

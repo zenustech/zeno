@@ -329,13 +329,13 @@ static bool sameOcNode(const OcNode& lhs, const OcNode& rhs)
 bool bakeDensityGridToSparseBricksOnGPU(
     GridWrapper& grid,
     BakedSparseVolume& baked_volume,
-    const xinxinoptix::VDBDensityBakeInputs& inputs,
-    const xinxinoptix::VDBDensityBakeOptions& options,
-    xinxinoptix::VDBDensityBakeResult* result)
+    const xinxinoptix::VolumeDensityBakeInputs& inputs,
+    const xinxinoptix::VolumeDensityBakeOptions& options,
+    xinxinoptix::VolumeDensityBakeResult* result)
 {
 
     if (grid.handle.size() == 0 || grid.handle.data() == nullptr) {
-        std::cerr << "VDB sparse brick bake skipped: NanoVDB host grid is empty" << std::endl;
+        std::cerr << "Volume density sparse bake skipped: NanoVDB topology grid is empty" << std::endl;
         return false;
     }
     double resident_upload_ms = 0.0;
@@ -345,7 +345,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
 
     const auto bbox = grid.indexedBox();
     if (bbox.empty()) {
-        std::cerr << "VDB sparse brick bake skipped: empty density bbox" << std::endl;
+        std::cerr << "Volume density sparse bake skipped: empty density bbox" << std::endl;
         return false;
     }
 
@@ -367,7 +367,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
         ? options.custom_sample_max
         : source_sample_max;
     if (sample_min.x >= sample_max.x || sample_min.y >= sample_max.y || sample_min.z >= sample_max.z) {
-        std::cerr << "VDB sparse brick bake skipped: empty sample bbox" << std::endl;
+        std::cerr << "Volume density sparse bake skipped: empty sample bbox" << std::endl;
         return false;
     }
 
@@ -396,13 +396,13 @@ bool bakeDensityGridToSparseBricksOnGPU(
     };
     const uint64_t table_count_u64 = uint64_t(brick_dim.x) * uint64_t(brick_dim.y) * uint64_t(brick_dim.z);
     if (table_count_u64 > std::numeric_limits<uint32_t>::max()) {
-        std::cerr << "VDB sparse brick bake skipped: brick table is too large" << std::endl;
+        std::cerr << "Volume density sparse bake skipped: brick table is too large" << std::endl;
         return false;
     }
     const auto brick_origins = makeDomainBrickOrigins(voxel_min, brick_dim);
     const uint32_t brick_count = uint32_t(brick_origins.size());
     if (brick_count == 0) {
-        std::cerr << "VDB sparse brick bake skipped: empty brick domain" << std::endl;
+        std::cerr << "Volume density sparse bake skipped: empty brick domain" << std::endl;
         return false;
     }
     const auto domain_end = std::chrono::steady_clock::now();
@@ -431,7 +431,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
         sizeof(int3) * brick_origins.size(),
         cudaMemcpyHostToDevice);
     if (origin_copy != cudaSuccess) {
-        std::cerr << "VDB sparse brick bake failed to upload brick origins: " << cudaGetErrorString(origin_copy) << std::endl;
+        std::cerr << "Volume density sparse bake failed to upload brick origins: " << cudaGetErrorString(origin_copy) << std::endl;
         baked_volume.reset();
         return false;
     }
@@ -444,7 +444,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
     baked_volume.device.brick_origins = reinterpret_cast<int3*>(baked_volume.d_brick_origins.handle);
     baked_volume.device.voxel_values = reinterpret_cast<uint16_t*>(baked_volume.d_voxel_values.handle);
     baked_volume.device.octree = reinterpret_cast<OcNode*>(baked_volume.d_octree.handle);
-    xinxinoptix::VDBDensityBakeInputs bake_inputs = inputs;
+    xinxinoptix::VolumeDensityBakeInputs bake_inputs = inputs;
 
     const bool baked = xinxinoptix::bakeDensityToSparseBricks(
         grid.buffer.size,
@@ -453,7 +453,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
         options,
         result);
     if (!baked) {
-        std::cout << "VDB sparse bake host profile {"
+        std::cout << "Volume density sparse bake host profile {"
             << (bake_inputs.validation_label != nullptr ? bake_inputs.validation_label : "density") << std::endl;
         baked_volume.reset();
         return false;
@@ -466,7 +466,7 @@ bool bakeDensityGridToSparseBricksOnGPU(
         cudaMemcpyHostToDevice);
     const uint64_t brick_bytes = uint64_t(brick_count) * 512ull * sizeof(uint16_t);
     if (result != nullptr) {
-        std::cout << "VDB sparse GPU bake {"
+        std::cout << "Volume density sparse GPU bake {"
             << (bake_inputs.validation_label != nullptr ? bake_inputs.validation_label : "density")
             << "} total_wall=" << result->sparse_total_wall_ms << " ms"
             << " filter_order=" << unsigned(baked_volume.device.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK)

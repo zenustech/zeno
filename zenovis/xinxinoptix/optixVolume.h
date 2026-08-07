@@ -33,7 +33,7 @@
 
 #include "volume.h"
 #include "magic_enum.hpp"
-#include "VDBDensityBake.h"
+#include "VolumeDensityBake.h"
 
 #include <zeno/utils/vec.h>
 #include <zeno/utils/type_traits.h>
@@ -305,9 +305,9 @@ void releaseVolumeDeviceData(VolumeWrapper& volume);
 bool bakeDensityGridToSparseBricksOnGPU(
     GridWrapper& grid,
     BakedSparseVolume& baked_volume,
-    const xinxinoptix::VDBDensityBakeInputs& inputs,
-    const xinxinoptix::VDBDensityBakeOptions& options,
-    xinxinoptix::VDBDensityBakeResult* result = nullptr);
+    const xinxinoptix::VolumeDensityBakeInputs& inputs,
+    const xinxinoptix::VolumeDensityBakeOptions& options,
+    xinxinoptix::VolumeDensityBakeResult* result = nullptr);
 
 void getOptixTransform( const VolumeWrapper& volume, float transform[] );
 sutil::Aabb worldAabb( const VolumeWrapper& volume );

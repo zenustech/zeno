@@ -1,4 +1,4 @@
-#include "VDBDensityBake.h"
+#include "VolumeDensityBake.h"
 
 #include "NvrtcWorker.h"
 #include "Octree.h"
@@ -141,7 +141,7 @@ DensityBakeModule* compileDensityBakeModule(
         "-default-device",
         "--use_fast_math",
         "--zeno-nvrtc-worker=1",
-        "--define-macro=__VDB_DENSITY_BAKE__",
+        "--define-macro=__VOLUME_DENSITY_BAKE__",
     };
 
     if (!architecture_option.empty()) {
@@ -158,7 +158,7 @@ DensityBakeModule* compileDensityBakeModule(
         compiler_options);
 
     if (!compile_result.success) {
-        std::cerr << "Failed to compile VDB density bake kernel";
+        std::cerr << "Failed to compile volume density bake kernel";
         if (!compile_result.log.empty()) {
             std::cerr << ":\n" << compile_result.log;
         }
@@ -211,7 +211,7 @@ DensityBakeModule* compileDensityBakeModule(
     return module.release();
 }
 
-DensityBakeModule* ensureDensityBakeKernel(const VDBDensityBakeInputs& inputs)
+DensityBakeModule* ensureDensityBakeKernel(const VolumeDensityBakeInputs& inputs)
 {
     static std::mutex mutex;
     static std::unordered_map<std::string, std::unique_ptr<DensityBakeModule>> cache;
@@ -274,9 +274,9 @@ uint32_t denseOctreeNodeCount(uint8_t octreeBuildDepth)
 bool bakeDensityToSparseBricks(
     std::size_t grid_size,
     BakedSparseVolumeDevice& device_volume,
-    const VDBDensityBakeInputs& inputs,
-    const VDBDensityBakeOptions& options,
-    VDBDensityBakeResult* result)
+    const VolumeDensityBakeInputs& inputs,
+    const VolumeDensityBakeOptions& options,
+    VolumeDensityBakeResult* result)
 {
     if (grid_size == 0 || device_volume.brick_count == 0 ||
         device_volume.brick_table == nullptr || device_volume.brick_origins == nullptr ||

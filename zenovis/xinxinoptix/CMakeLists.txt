@@ -13,8 +13,8 @@ target_sources(zenovis PRIVATE
   NvrtcWorker.cpp
   NvrtcWorker.h
   NvrtcCompileProtocol.h
-  VDBDensityBake.cpp
-  VDBDensityBake.h
+  VolumeDensityBake.cpp
+  VolumeDensityBake.h
   optiXStuff.h
   Host.h
 
