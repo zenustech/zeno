@@ -98,3 +98,122 @@ inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2
 }
 
 } // namespace pbrt
+
+inline int3 interp_trilinear_stochastic(const float3& P, float randu)
+{
+    const float ix = floorf(P.x);
+    const float iy = floorf(P.y);
+    const float iz = floorf(P.z);
+    int idx[3] = {(int)ix, (int)iy, (int)iz};
+
+    const float tx = P.x - ix;
+    const float ty = P.y - iy;
+    const float tz = P.z - iz;
+
+    if (randu < tx) {
+        idx[0]++;
+        randu /= tx;
+    }
+    else {
+        randu = (randu - tx) / (1 - tx);
+    }
+
+    if (randu < ty) {
+        idx[1]++;
+        randu /= ty;
+    }
+    else {
+        randu = (randu - ty) / (1 - ty);
+    }
+
+    if (randu < tz) {
+        idx[2]++;
+    }
+
+    return make_int3(idx[0], idx[1], idx[2]);
+}
+
+inline float3 interp_triquadratic_to_trilinear_stochastic(const float3& P, float randu)
+{
+    const float3 p = floor(P);
+    const float3 t = P - p;
+
+    // Corrected quadratic B-spline weights
+    const float3 w_minus1 = 0.5f * (1.0f - t) * (1.0f - t);
+    const float3 w_0 = 0.5f + t - t * t;
+    const float3 w_plus1 = 0.5f * t * t;
+
+    const float3 g0 = w_minus1 + w_0;
+
+    const float3 P0 = p + (w_0 / g0) - 1.0f;
+    const float3 P1 = p + 1.0f;
+
+    float3 Pnew = P0;
+
+    if (randu < g0.x) {
+        randu /= g0.x;
+    }
+    else {
+        Pnew.x = P1.x;
+        randu = (randu - g0.x) / (1.0f - g0.x);
+    }
+
+    if (randu < g0.y) {
+        randu /= g0.y;
+    }
+    else {
+        Pnew.y = P1.y;
+        randu = (randu - g0.y) / (1.0f - g0.y);
+    }
+
+    if (randu < g0.z) {
+        // stay with P0.z
+    }
+    else {
+        Pnew.z = P1.z;
+    }
+
+    return Pnew;
+}
+
+inline float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
+{
+    const float3 p = floor(P);
+    const float3 t = P - p;
+
+    /* Cubic weights. */
+    const float3 w0 = (1.0f / 6.0f) * (t * (t * (-t + 3.0f) - 3.0f) + 1.0f);
+    const float3 w1 = (1.0f / 6.0f) * (t * t * (3.0f * t - 6.0f) + 4.0f);
+    //    float3 w2 = (1.0f / 6.0f) * (t * (t * (-3.0f * t + 3.0f) + 3.0f) + 1.0f);
+    const float3 w3 = (1.0f / 6.0f) * (t * t * t);
+
+    const float3 g0 = w0 + w1;
+    const float3 P0 = p + (w1 / g0) - 1.0f;
+    const float3 P1 = p + (w3 / (make_float3(1.0f) - g0)) + 1.0f;
+
+    float3 Pnew = P0;
+
+    if (randu < g0.x) {
+        randu /= g0.x;
+    }
+    else {
+        Pnew.x = P1.x;
+        randu = (randu - g0.x) / (1 - g0.x);
+    }
+
+    if (randu < g0.y) {
+        randu /= g0.y;
+    }
+    else {
+        Pnew.y = P1.y;
+        randu = (randu - g0.y) / (1 - g0.y);
+    }
+
+    if (randu < g0.z) {
+    }
+    else {
+        Pnew.z = P1.z;
+    }
+
+    return Pnew;
+}

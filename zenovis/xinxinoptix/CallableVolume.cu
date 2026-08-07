@@ -48,125 +48,6 @@ using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 //COMMON_CODE
 #endif
 
-inline int3 interp_trilinear_stochastic(const float3& P, float randu)
-{
-    const float ix = floorf(P.x);
-    const float iy = floorf(P.y);
-    const float iz = floorf(P.z);
-    int idx[3] = {(int)ix, (int)iy, (int)iz};
-
-    const float tx = P.x - ix;
-    const float ty = P.y - iy;
-    const float tz = P.z - iz;
-
-    if (randu < tx) {
-        idx[0]++;
-        randu /= tx;
-    }
-    else {
-        randu = (randu - tx) / (1 - tx);
-    }
-
-    if (randu < ty) {
-        idx[1]++;
-        randu /= ty;
-    }
-    else {
-        randu = (randu - ty) / (1 - ty);
-    }
-
-    if (randu < tz) {
-        idx[2]++;
-    }
-
-    return make_int3(idx[0], idx[1], idx[2]);
-}
-
-inline float3 interp_triquadratic_to_trilinear_stochastic(const float3& P, float randu)
-{
-    const float3 p = floor(P);
-    const float3 t = P - p;
-
-    // Corrected quadratic B-spline weights
-    const float3 w_minus1 = 0.5f * (1.0f - t) * (1.0f - t);
-    const float3 w_0 = 0.5f + t - t * t;
-    const float3 w_plus1 = 0.5f * t * t;
-
-    const float3 g0 = w_minus1 + w_0;
-
-    const float3 P0 = p + (w_0 / g0) - 1.0f;
-    const float3 P1 = p + 1.0f;
-
-    float3 Pnew = P0;
-
-    if (randu < g0.x) {
-        randu /= g0.x;
-    }
-    else {
-        Pnew.x = P1.x;
-        randu = (randu - g0.x) / (1.0f - g0.x);
-    }
-
-    if (randu < g0.y) {
-        randu /= g0.y;
-    }
-    else {
-        Pnew.y = P1.y;
-        randu = (randu - g0.y) / (1.0f - g0.y);
-    }
-
-    if (randu < g0.z) {
-        // stay with P0.z
-    }
-    else {
-        Pnew.z = P1.z;
-    }
-
-    return Pnew;
-}
-
-inline float3 interp_tricubic_to_trilinear_stochastic(const float3& P, float randu)
-{
-    const float3 p = floor(P);
-    const float3 t = P - p;
-
-    /* Cubic weights. */
-    const float3 w0 = (1.0f / 6.0f) * (t * (t * (-t + 3.0f) - 3.0f) + 1.0f);
-    const float3 w1 = (1.0f / 6.0f) * (t * t * (3.0f * t - 6.0f) + 4.0f);
-    //    float3 w2 = (1.0f / 6.0f) * (t * (t * (-3.0f * t + 3.0f) + 3.0f) + 1.0f);
-    const float3 w3 = (1.0f / 6.0f) * (t * t * t);
-
-    const float3 g0 = w0 + w1;
-    const float3 P0 = p + (w1 / g0) - 1.0f;
-    const float3 P1 = p + (w3 / (make_float3(1.0f) - g0)) + 1.0f;
-
-    float3 Pnew = P0;
-
-    if (randu < g0.x) {
-        randu /= g0.x;
-    }
-    else {
-        Pnew.x = P1.x;
-        randu = (randu - g0.x) / (1 - g0.x);
-    }
-
-    if (randu < g0.y) {
-        randu /= g0.y;
-    }
-    else {
-        Pnew.y = P1.y;
-        randu = (randu - g0.y) / (1 - g0.y);
-    }
-
-    if (randu < g0.z) {
-    }
-    else {
-        Pnew.z = P1.z;
-    }
-
-    return Pnew;
-}
-
 inline __device__ float _LERP_(float t, float s1, float s2)
 {
     //return (1 - t) * s1 + t * s2;
@@ -180,7 +61,13 @@ struct VolumeInX : VolumeIn {
 	}
 
     __device__ vec3 localPosLazy() const {
+#ifdef __VDB_DENSITY_BAKE__
+        // A bake invocation already supplies the exact GAS-local/index
+        // lattice coordinate. Do not reconstruct it through any transform.
+        return pos_view;
+#else
         return transformPoint(pos_view, this->worldToObject);
+#endif
     };
 
     __device__ vec3 uniformPosLazy() const {
@@ -226,9 +113,9 @@ inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd
 
 #ifdef __VDB_DENSITY_BAKE__
     const int3 coord = make_int3(
-        int(point_indexd[0]),
-        int(point_indexd[1]),
-        int(point_indexd[2]));
+        __float2int_rn(point_indexd[0]),
+        __float2int_rn(point_indexd[1]),
+        __float2int_rn(point_indexd[2]));
     return acc.getValue(reinterpret_cast<const nanovdb::Coord&>(coord));
 #else
     if constexpr(0 == Order) {
@@ -245,15 +132,17 @@ inline __device__ ReturnType nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd
         auto fff = reinterpret_cast<float3&>(point_indexd);
         fff += make_float3(0.5f);
         fff = interp_triquadratic_to_trilinear_stochastic(fff, volin.rndf());
-        auto iii = interp_trilinear_stochastic(fff, volin.rndf());
-        return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, false>;
+        const nanovdb::Vec3f trilinearPoint(fff.x, fff.y, fff.z);
+        return Sampler(acc)(trilinearPoint);
     }
 
     if constexpr(3 == Order) {
         auto fff = reinterpret_cast<float3&>(point_indexd);
         fff = interp_tricubic_to_trilinear_stochastic(fff, volin.rndf());
-        auto iii = interp_trilinear_stochastic(fff, volin.rndf());
-        return acc.getValue(reinterpret_cast<nanovdb::Coord&>(iii));
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, false>;
+        const nanovdb::Vec3f trilinearPoint(fff.x, fff.y, fff.z);
+        return Sampler(acc)(trilinearPoint);
     }
     
     if constexpr(4 == Order) {
@@ -309,7 +198,13 @@ __device__ void evalVolumeMaterialCore(VolumeInX& attrs, bool shadowRay, VolumeO
 
     auto& prd = attrs;
 
+#ifdef __VDB_DENSITY_BAKE__
+    // Keep the material position in the baker's local/index coordinate system.
+    // This is an exact integer-valued float3 for every lattice invocation.
+    vec3 att_pos = attrs.pos_view;
+#else
     vec3 att_pos = attrs.pos_view + params.cam.eye;
+#endif
     auto att_clr = vec3(0);
     auto att_uv = vec3(0);
     auto att_nrm = vec3(0);
@@ -472,21 +367,16 @@ extern "C" __global__ void initBakedSparseVolumeBuffers(
     }
 }
 
-extern "C" __global__ void bakeNanoVDBDensityToSparseBricks(
+extern "C" __global__ void bakeDensityToSparseBricks(
     BakedSparseVolumeDevice volume,
     HitGroupData hitGroup,
     int clampNegative,
-    uint32_t seedBase,
-    unsigned int* maxDensityBits)
+    uint32_t seedBase)
 {
     if (volume.voxel_values == nullptr || volume.brick_table == nullptr ||
-        volume.brick_origins == nullptr || volume.brick_min == nullptr || volume.brick_max == nullptr) {
+        volume.brick_origins == nullptr) {
         return;
     }
-
-    __shared__ float bakedValues[512];
-    __shared__ float reduceMin[256];
-    __shared__ float reduceMax[256];
 
     for (uint32_t brickIndex = blockIdx.x; brickIndex < volume.brick_count; brickIndex += gridDim.x) {
         const int3 origin = volume.brick_origins[brickIndex];
@@ -501,22 +391,21 @@ extern "C" __global__ void bakeNanoVDBDensityToSparseBricks(
             }
         }
 
-        float threadMin = CUDART_INF_F;
-        float threadMax = 0.0f;
-
         for (uint32_t offset = threadIdx.x; offset < 512u; offset += blockDim.x) {
             const nanovdb::Coord coord(
                 origin.x + int(offset & 7u),
                 origin.y + int((offset >> 3u) & 7u),
                 origin.z + int((offset >> 6u) & 7u));
             if (!bakedSparseInsideSampleDomain(coord, volume)) {
-                bakedValues[offset] = 0.0f;
                 volume.voxel_values[brickIndex * 512u + offset] = 0u;
                 continue;
             }
             uint32_t seed = seedBase;
 
             VolumeInX attrs = {};
+            // The volume GAS local domain is the indexed VDB box. Feed the
+            // material the lattice coordinate directly: no NanoVDB map and no
+            // world/local round trip are part of the density-bake contract.
             attrs.pos_view = make_float3(
                 static_cast<float>(coord[0]),
                 static_cast<float>(coord[1]),
@@ -538,36 +427,364 @@ extern "C" __global__ void bakeNanoVDBDensityToSparseBricks(
             if (clampNegative && value < 0.0f) {
                 value = 0.0f;
             }
-            value = sanitizeVolumeDensity(value);
+            value = fminf(sanitizeVolumeDensity(value), 65504.0f);
 
-            bakedValues[offset] = value;
-            volume.voxel_values[brickIndex * 512u + offset] = __half_as_ushort(__float2half_rn(value));
-            threadMin = fminf(threadMin, value);
-            threadMax = fmaxf(threadMax, value);
-        }
-
-        reduceMin[threadIdx.x] = threadMin;
-        reduceMax[threadIdx.x] = threadMax;
-        __syncthreads();
-
-        for (uint32_t stride = blockDim.x >> 1u; stride > 0u; stride >>= 1u) {
-            if (threadIdx.x < stride) {
-                reduceMin[threadIdx.x] = fminf(reduceMin[threadIdx.x], reduceMin[threadIdx.x + stride]);
-                reduceMax[threadIdx.x] = fmaxf(reduceMax[threadIdx.x], reduceMax[threadIdx.x + stride]);
-            }
-            __syncthreads();
-        }
-
-        if (threadIdx.x == 0u) {
-            const float brickMin = reduceMax[0] > 0.0f ? reduceMin[0] : 0.0f;
-            volume.brick_min[brickIndex] = __half_as_ushort(__float2half_rn(brickMin));
-            volume.brick_max[brickIndex] = __half_as_ushort(__float2half_rn(reduceMax[0]));
-            if (maxDensityBits != nullptr && reduceMax[0] > 0.0f) {
-                atomicMax(maxDensityBits, densityBakeFloatToOrderedUInt(reduceMax[0]));
-            }
+            // Round upward so zero stays exactly zero while every positive
+            // shader result is enclosed by [previous_half(bits), bits].
+            volume.voxel_values[brickIndex * 512u + offset] =
+                __half_as_ushort(__float2half_ru(value));
         }
         __syncthreads();
     }
+}
+
+struct BakedSparseInterval
+{
+    float lower;
+    float upper;
+};
+
+struct BakedSparseWeightInterval
+{
+    float lower;
+    float upper;
+};
+
+static __forceinline__ __device__ 
+BakedSparseInterval bakedSparseLoadDensityInterval(const BakedSparseVolumeDevice& volume, const int3& coord)
+{
+    const int3 rel {
+        coord.x - volume.voxel_min.x,
+        coord.y - volume.voxel_min.y,
+        coord.z - volume.voxel_min.z
+    };
+    if (rel.x < 0 || rel.y < 0 || rel.z < 0 ||
+        rel.x >= volume.voxel_dim.x || rel.y >= volume.voxel_dim.y || rel.z >= volume.voxel_dim.z) {
+        return { 0.0f, 0.0f };
+    }
+
+    const int brickSize = int(volume.brick_size);
+    const int3 brickCoord { rel.x / brickSize, rel.y / brickSize, rel.z / brickSize };
+    if (!bakedSparseInsideBrickDomain(brickCoord, volume.brick_dim)) {
+        return { 0.0f, 0.0f };
+    }
+    const int brickIndex = volume.brick_table[bakedSparseBrickTableIndex(brickCoord, volume.brick_dim)];
+    if (brickIndex < 0 || uint32_t(brickIndex) >= volume.brick_count) {
+        return { 0.0f, 0.0f };
+    }
+
+    const int lx = rel.x - brickCoord.x * brickSize;
+    const int ly = rel.y - brickCoord.y * brickSize;
+    const int lz = rel.z - brickCoord.z * brickSize;
+    const uint32_t offset = uint32_t((lz * brickSize + ly) * brickSize + lx);
+    const uint16_t upperBits = volume.voxel_values[uint32_t(brickIndex) * 512u + offset];
+    if (upperBits == 0u) {
+        return { 0.0f, 0.0f };
+    }
+
+    // Lattice values were rounded toward +infinity. For finite non-negative
+    // binary16, adjacent bit patterns are adjacent representable values.
+    const uint16_t lowerBits = upperBits - 1u;
+    return {
+        __half2float(__ushort_as_half(lowerBits)),
+        __half2float(__ushort_as_half(upperBits))
+    };
+}
+
+static __forceinline__ __device__ int3 bakedSparseCellCoord(const BakedSparseVolumeDevice& volume, uint64_t cellIndex)
+{
+    const uint32_t brickIndex = uint32_t(cellIndex >> 9u);
+    const uint32_t offset = uint32_t(cellIndex & 511ull);
+    const int3 brickOrigin = volume.brick_origins[brickIndex];
+    return {
+        brickOrigin.x + int(offset & 7u),
+        brickOrigin.y + int((offset >> 3u) & 7u),
+        brickOrigin.z + int((offset >> 6u) & 7u)
+    };
+}
+
+static __forceinline__ __device__ bool bakedSparseValidCell(const BakedSparseVolumeDevice& volume, const int3& cellCoord)
+{
+    return cellCoord.x >= volume.sample_min.x && cellCoord.y >= volume.sample_min.y && cellCoord.z >= volume.sample_min.z &&
+        cellCoord.x < volume.sample_max.x && cellCoord.y < volume.sample_max.y && cellCoord.z < volume.sample_max.z;
+}
+
+static __forceinline__ __device__ BakedSparseInterval bakedSparseWeightedPair(
+    const BakedSparseInterval& first,
+    const BakedSparseInterval& second,
+    const BakedSparseWeightInterval& firstWeight,
+    const BakedSparseWeightInterval& secondWeight)
+{
+    return {
+        __fadd_rd(
+            __fmul_rd(firstWeight.lower, first.lower),
+            __fmul_rd(secondWeight.lower, second.lower)),
+        __fadd_ru(
+            __fmul_ru(firstWeight.upper, first.upper),
+            __fmul_ru(secondWeight.upper, second.upper))
+    };
+}
+
+static __forceinline__ __device__ BakedSparseWeightInterval bakedSparseWeightOneSeventh()
+{
+    // Precomputed downward/upward IEEE-754 neighbors. These are bit-identical
+    // to __fdiv_rd/__fdiv_ru, without repeating divisions for every cell.
+    return { __uint_as_float(0x3e124924u), __uint_as_float(0x3e124925u) };
+}
+
+static __forceinline__ __device__ BakedSparseWeightInterval bakedSparseWeightSixSevenths()
+{
+    return { __uint_as_float(0x3f5b6db6u), __uint_as_float(0x3f5b6db7u) };
+}
+
+static __forceinline__ __device__ BakedSparseWeightInterval bakedSparseWeightOneFifth()
+{
+    return { __uint_as_float(0x3e4cccccu), __uint_as_float(0x3e4ccccdu) };
+}
+
+static __forceinline__ __device__ BakedSparseWeightInterval bakedSparseWeightFourFifths()
+{
+    return { __uint_as_float(0x3f4cccccu), __uint_as_float(0x3f4ccccdu) };
+}
+
+template <uint8_t Order>
+static __forceinline__ __device__ 
+BakedSparseInterval bakedSparseFilterCoefficient(const BakedSparseInterval* input, int stride, int coefficient)
+{
+    if constexpr (Order == 2u) {
+        switch (coefficient) {
+        case 0:
+            return bakedSparseWeightedPair(
+                input[0], input[stride],
+                bakedSparseWeightOneSeventh(), bakedSparseWeightSixSevenths());
+        case 1:
+            return input[stride];
+        case 2:
+            return input[stride * 2];
+        default:
+            return input[stride * 3];
+        }
+    } else {
+        switch (coefficient) {
+        case 0:
+            return bakedSparseWeightedPair(
+                input[0], input[stride],
+                bakedSparseWeightOneFifth(), bakedSparseWeightFourFifths());
+        case 1:
+            return input[stride];
+        case 2:
+            return input[stride * 2];
+        default:
+            return bakedSparseWeightedPair(
+                input[stride * 2], input[stride * 3],
+                bakedSparseWeightFourFifths(), bakedSparseWeightOneFifth());
+        }
+    }
+}
+
+static __forceinline__ __device__ 
+float bakedSparseStoreCellInterval(BakedSparseVolumeDevice& volume, uint64_t cellIndex, float cellLower, float cellUpper)
+{
+    cellLower = fmaxf(cellLower, 0.0f);
+    cellUpper = fminf(fmaxf(cellUpper, 0.0f), 65504.0f);
+    volume.cell_min[cellIndex] = __half_as_ushort(__float2half_rd(cellLower));
+    volume.cell_max[cellIndex] = __half_as_ushort(__float2half_ru(cellUpper));
+    return cellUpper;
+}
+
+extern "C" __global__ void bakeBakedSparseVolumeCellBoundsLinear(BakedSparseVolumeDevice volume, unsigned int* maxDensityBits)
+{
+    if (volume.voxel_values == nullptr || volume.cell_min == nullptr || volume.cell_max == nullptr) {
+        return;
+    }
+
+    const uint64_t totalCellCount = uint64_t(volume.brick_count) * 512ull;
+    const uint64_t firstCell = uint64_t(blockIdx.x) * uint64_t(blockDim.x) + uint64_t(threadIdx.x);
+    const uint64_t cellStride = uint64_t(gridDim.x) * uint64_t(blockDim.x);
+    float threadMaximum = 0.0f;
+
+    for (uint64_t cellIndex = firstCell; cellIndex < totalCellCount; cellIndex += cellStride) {
+        const int3 cellCoord = bakedSparseCellCoord(volume, cellIndex);
+        if (!bakedSparseValidCell(volume, cellCoord)) {
+            volume.cell_min[cellIndex] = 0u;
+            volume.cell_max[cellIndex] = 0u;
+            continue;
+        }
+
+        float cellLower = CUDART_INF_F;
+        float cellUpper = 0.0f;
+#pragma unroll
+        for (int z = 0; z < 2; ++z) {
+#pragma unroll
+            for (int y = 0; y < 2; ++y) {
+#pragma unroll
+                for (int x = 0; x < 2; ++x) {
+                    const auto interval = bakedSparseLoadDensityInterval(
+                        volume, make_int3(cellCoord.x + x, cellCoord.y + y, cellCoord.z + z));
+                    cellLower = fminf(cellLower, interval.lower);
+                    cellUpper = fmaxf(cellUpper, interval.upper);
+                }
+            }
+        }
+
+        cellUpper = bakedSparseStoreCellInterval(volume, cellIndex, cellLower, cellUpper);
+        threadMaximum = fmaxf(threadMaximum, cellUpper);
+    }
+
+    __shared__ float blockMaximum[256];
+    blockMaximum[threadIdx.x] = threadMaximum;
+    __syncthreads();
+    for (uint32_t stride = blockDim.x >> 1u; stride != 0u; stride >>= 1u) {
+        if (threadIdx.x < stride) {
+            blockMaximum[threadIdx.x] = fmaxf(blockMaximum[threadIdx.x], blockMaximum[threadIdx.x + stride]);
+        }
+        __syncthreads();
+    }
+    if (threadIdx.x == 0u && maxDensityBits != nullptr && blockMaximum[0] > 0.0f) {
+        atomicMax(maxDensityBits, densityBakeFloatToOrderedUInt(blockMaximum[0]));
+    }
+}
+
+template <uint8_t Order>
+static __forceinline__ __device__ void bakeBakedSparseVolumeCellBoundsFiltered(
+    BakedSparseVolumeDevice volume,
+    unsigned int* maxDensityBits,
+    BakedSparseInterval* raw,
+    BakedSparseInterval* stageX,
+    BakedSparseInterval* stageY,
+    float* blockMaximum)
+{
+    constexpr uint32_t warpSizeValue = 32u;
+    constexpr uint32_t warpsPerBlock = 8u;
+    constexpr int sampleCount = 4;
+    // The quadratic envelope originally has six rows. Its 1/2 and 1/7--6/7
+    // blends of samples 1 and 2 are convex combinations of the two selector
+    // rows already present. By multilinearity, tensor products containing
+    // either row are convex combinations of tensor products of those selector
+    // rows, so they cannot introduce a new minimum or maximum. The four rows
+    // retained here therefore give the same exact extrema with 64 instead of
+    // 216 three-dimensional candidates.
+    constexpr int coefficientCount = 4;
+    constexpr uint32_t rawCount = sampleCount * sampleCount * sampleCount;
+    constexpr uint32_t stageXCount = coefficientCount * sampleCount * sampleCount;
+    constexpr uint32_t stageYCount = coefficientCount * coefficientCount * sampleCount;
+    constexpr uint32_t coefficientTotal = coefficientCount * coefficientCount * coefficientCount;
+
+    if (volume.voxel_values == nullptr || volume.cell_min == nullptr || volume.cell_max == nullptr) {
+        return;
+    }
+
+    const uint32_t lane = threadIdx.x & (warpSizeValue - 1u);
+    const uint32_t warp = threadIdx.x / warpSizeValue;
+    const uint64_t firstCell = uint64_t(blockIdx.x) * warpsPerBlock + warp;
+    const uint64_t cellStride = uint64_t(gridDim.x) * warpsPerBlock;
+    const uint64_t totalCellCount = uint64_t(volume.brick_count) * 512ull;
+    BakedSparseInterval* warpRaw = raw + warp * rawCount;
+    BakedSparseInterval* warpStageX = stageX + warp * stageXCount;
+    BakedSparseInterval* warpStageY = stageY + warp * stageYCount;
+    float warpMaximum = 0.0f;
+
+    for (uint64_t cellIndex = firstCell; cellIndex < totalCellCount; cellIndex += cellStride) {
+        const int3 cellCoord = bakedSparseCellCoord(volume, cellIndex);
+        if (!bakedSparseValidCell(volume, cellCoord)) {
+            if (lane == 0u) {
+                volume.cell_min[cellIndex] = 0u;
+                volume.cell_max[cellIndex] = 0u;
+            }
+            continue;
+        }
+
+        for (uint32_t i = lane; i < rawCount; i += warpSizeValue) {
+            uint32_t index = i;
+            const int sx = int(index & 3u); index >>= 2u;
+            const int sy = int(index & 3u);
+            const int sz = int(index >> 2u);
+            warpRaw[i] = bakedSparseLoadDensityInterval(
+                volume,
+                make_int3(cellCoord.x + sx - 1, cellCoord.y + sy - 1, cellCoord.z + sz - 1));
+        }
+        __syncwarp();
+
+        for (uint32_t i = lane; i < stageXCount; i += warpSizeValue) {
+            uint32_t index = i;
+            const int coefficientX = int(index % coefficientCount); index /= coefficientCount;
+            const int sampleY = int(index & 3u);
+            const int sampleZ = int(index >> 2u);
+            const auto* input = warpRaw + (sampleZ * sampleCount + sampleY) * sampleCount;
+            warpStageX[i] = bakedSparseFilterCoefficient<Order>(input, 1, coefficientX);
+        }
+        __syncwarp();
+
+        for (uint32_t i = lane; i < stageYCount; i += warpSizeValue) {
+            uint32_t index = i;
+            const int coefficientX = int(index % coefficientCount); index /= coefficientCount;
+            const int coefficientY = int(index % coefficientCount);
+            const int sampleZ = int(index / coefficientCount);
+            const auto* input = warpStageX + sampleZ * sampleCount * coefficientCount + coefficientX;
+            warpStageY[i] = bakedSparseFilterCoefficient<Order>(input, coefficientCount, coefficientY);
+        }
+        __syncwarp();
+
+        float cellLower = CUDART_INF_F;
+        float cellUpper = 0.0f;
+        for (uint32_t i = lane; i < coefficientTotal; i += warpSizeValue) {
+            uint32_t index = i;
+            const int coefficientX = int(index % coefficientCount); index /= coefficientCount;
+            const int coefficientY = int(index % coefficientCount);
+            const int coefficientZ = int(index / coefficientCount);
+            const auto* input = warpStageY + coefficientY * coefficientCount + coefficientX;
+            const auto interval = bakedSparseFilterCoefficient<Order>(
+                input, coefficientCount * coefficientCount, coefficientZ);
+            cellLower = fminf(cellLower, interval.lower);
+            cellUpper = fmaxf(cellUpper, interval.upper);
+        }
+
+        for (uint32_t delta = 16u; delta != 0u; delta >>= 1u) {
+            cellLower = fminf(cellLower, __shfl_down_sync(0xFFFFFFFFu, cellLower, delta));
+            cellUpper = fmaxf(cellUpper, __shfl_down_sync(0xFFFFFFFFu, cellUpper, delta));
+        }
+        if (lane == 0u) {
+            cellUpper = bakedSparseStoreCellInterval(volume, cellIndex, cellLower, cellUpper);
+            warpMaximum = fmaxf(warpMaximum, cellUpper);
+        }
+        __syncwarp();
+    }
+
+    if (lane == 0u) {
+        blockMaximum[warp] = warpMaximum;
+    }
+    __syncthreads();
+    if (warp == 0u) {
+        float maximum = lane < warpsPerBlock ? blockMaximum[lane] : 0.0f;
+        for (uint32_t delta = 16u; delta != 0u; delta >>= 1u) {
+            maximum = fmaxf(maximum, __shfl_down_sync(0xFFFFFFFFu, maximum, delta));
+        }
+        if (lane == 0u && maxDensityBits != nullptr && maximum > 0.0f) {
+            atomicMax(maxDensityBits, densityBakeFloatToOrderedUInt(maximum));
+        }
+    }
+}
+
+extern "C" __global__ void bakeBakedSparseVolumeCellBoundsQuadratic(BakedSparseVolumeDevice volume, unsigned int* maxDensityBits)
+{
+    constexpr uint32_t warpsPerBlock = 8u;
+    __shared__ BakedSparseInterval raw[warpsPerBlock * 64u];
+    __shared__ BakedSparseInterval stageX[warpsPerBlock * 64u];
+    __shared__ BakedSparseInterval stageY[warpsPerBlock * 64u];
+    __shared__ float blockMaximum[warpsPerBlock];
+    bakeBakedSparseVolumeCellBoundsFiltered<2u>(
+        volume, maxDensityBits, raw, stageX, stageY, blockMaximum);
+}
+
+extern "C" __global__ void bakeBakedSparseVolumeCellBoundsCubic(BakedSparseVolumeDevice volume, unsigned int* maxDensityBits)
+{
+    constexpr uint32_t warpsPerBlock = 8u;
+    __shared__ BakedSparseInterval raw[warpsPerBlock * 64u];
+    __shared__ BakedSparseInterval stageX[warpsPerBlock * 64u];
+    __shared__ BakedSparseInterval stageY[warpsPerBlock * 64u];
+    __shared__ float blockMaximum[warpsPerBlock];
+    bakeBakedSparseVolumeCellBoundsFiltered<3u>(
+        volume, maxDensityBits, raw, stageX, stageY, blockMaximum);
 }
 
 extern "C" __global__ void accumulateBakedSparseVolumeOctreeLeaves(
@@ -586,36 +803,38 @@ extern "C" __global__ void accumulateBakedSparseVolumeOctreeLeaves(
 
     for (uint32_t brickIndex = blockIdx.x; brickIndex < volume.brick_count; brickIndex += gridDim.x) {
         const int3 brickOrigin = volume.brick_origins[brickIndex];
-
         for (uint32_t offset = threadIdx.x; offset < 512u; offset += blockDim.x) {
-            const uint16_t bits = volume.voxel_values[brickIndex * 512u + offset];
-            const float value = __half2float(__ushort_as_half(bits));
-            if (!(value > 0.0f)) {
+            const int cx = int(offset & 7u);
+            const int cy = int((offset >> 3u) & 7u);
+            const int cz = int((offset >> 6u) & 7u);
+            const int3 cellCoord { brickOrigin.x + cx, brickOrigin.y + cy, brickOrigin.z + cz };
+            if (cellCoord.x < volume.sample_min.x || cellCoord.y < volume.sample_min.y || cellCoord.z < volume.sample_min.z ||
+                cellCoord.x >= volume.sample_max.x || cellCoord.y >= volume.sample_max.y || cellCoord.z >= volume.sample_max.z) {
                 continue;
             }
 
-            const int lx = int(offset & 7u);
-            const int ly = int((offset >> 3u) & 7u);
-            const int lz = int((offset >> 6u) & 7u);
+            const uint64_t cellIndex = uint64_t(brickIndex) * 512ull + uint64_t(offset);
+            const float cellMin = __half2float(__ushort_as_half(volume.cell_min[cellIndex]));
+            const float cellMax = __half2float(__ushort_as_half(volume.cell_max[cellIndex]));
+            if (!(cellMax > 0.0f)) {
+                continue;
+            }
+
             const int3 rel {
-                brickOrigin.x + lx - volume.voxel_min.x,
-                brickOrigin.y + ly - volume.voxel_min.y,
-                brickOrigin.z + lz - volume.voxel_min.z
+                cellCoord.x - volume.voxel_min.x,
+                cellCoord.y - volume.voxel_min.y,
+                cellCoord.z - volume.voxel_min.z
             };
-            if (rel.x < 0 || rel.y < 0 || rel.z < 0 ||
-                rel.x >= volume.voxel_dim.x || rel.y >= volume.voxel_dim.y || rel.z >= volume.voxel_dim.z) {
-                continue;
-            }
-
-            const uint32_t cx = min(uint32_t(rel.x / leafSize.x), leafRes - 1u);
-            const uint32_t cy = min(uint32_t(rel.y / leafSize.y), leafRes - 1u);
-            const uint32_t cz = min(uint32_t(rel.z / leafSize.z), leafRes - 1u);
-            const uint32_t cellIndex = bakedSparseDenseIndex(cx, cy, cz, leafRes);
-            bakedSparseAtomicMinFloatBits(leafMinBits + cellIndex, value);
-            bakedSparseAtomicMaxFloatBits(leafMaxBits + cellIndex, value);
-            atomicAdd(leafCoverage + cellIndex, 1u);
-            const auto quantized = static_cast<unsigned long long>(value * kBakedSparseLeafAverageQuantizationScale + 0.5f);
-            atomicAdd(leafQuantizedSum + cellIndex, quantized);
+            const uint32_t leafX = min(uint32_t(rel.x / leafSize.x), leafRes - 1u);
+            const uint32_t leafY = min(uint32_t(rel.y / leafSize.y), leafRes - 1u);
+            const uint32_t leafZ = min(uint32_t(rel.z / leafSize.z), leafRes - 1u);
+            const uint32_t leafIndex = bakedSparseDenseIndex(leafX, leafY, leafZ, leafRes);
+            bakedSparseAtomicMinFloatBits(leafMinBits + leafIndex, cellMin);
+            bakedSparseAtomicMaxFloatBits(leafMaxBits + leafIndex, cellMax);
+            atomicAdd(leafCoverage + leafIndex, 1u);
+            const auto quantizedAverage = static_cast<unsigned long long>(
+                0.5f * (cellMin + cellMax) * kBakedSparseLeafAverageQuantizationScale + 0.5f);
+            atomicAdd(leafQuantizedSum + leafIndex, quantizedAverage);
         }
     }
 }
@@ -648,11 +867,12 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
                 max(volume.voxel_dim.y >> volume.octreeBuildDepth, 1),
                 max(volume.voxel_dim.z >> volume.octreeBuildDepth, 1)
             };
-            const uint32_t cellVolume = uint32_t(leafSize.x * leafSize.y * leafSize.z);
-            const float minValue = coverage < cellVolume ? 0.0f : __uint_as_float(leafMinBits[tid]);
-            const float avgValue = float(double(leafQuantizedSum[tid]) / (double(kBakedSparseLeafAverageQuantizationScale) * double(cellVolume)));
-            node.min_d = __float2half(minValue);
-            node.max_d = __float2half(maxValue);
+            const uint32_t cellCount = uint32_t(leafSize.x * leafSize.y * leafSize.z);
+            const float minValue = coverage < cellCount ? 0.0f : __uint_as_float(leafMinBits[tid]);
+            const float avgValue = float(double(leafQuantizedSum[tid]) / (double(kBakedSparseLeafAverageQuantizationScale) * double(cellCount)));
+            // Tracking requires conservative bounds after FP16 storage.
+            node.min_d = __float2half_rd(minValue);
+            node.max_d = __float2half_ru(maxValue);
             auto avg_d = __float2half(avgValue);
             node.setLeafAverageBits(*(ushort*)&avg_d);
         }
@@ -682,8 +902,13 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
     }
 
     if (childMask != 0u) {
-        const __half minHalf = __float2half(minValue);
-        const __half maxHalf = __float2half(maxValue);
+        // Missing children are empty spatial octants. Include their zero in
+        // the parent bound so a sparse node cannot collapse into a solid leaf.
+        if (childMask != 0xFFu) {
+            minValue = 0.0f;
+        }
+        const __half minHalf = __float2half_rd(minValue);
+        const __half maxHalf = __float2half_ru(maxValue);
         node.min_d = minHalf;
         node.max_d = maxHalf;
         if (preserveAverageForOffsetFallback) {

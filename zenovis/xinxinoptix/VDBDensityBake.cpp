@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -48,6 +49,9 @@ struct DensityBakeModule {
     CUmodule module = nullptr;
     CUfunction kernel = nullptr;
     CUfunction sparse_brick_kernel = nullptr;
+    CUfunction sparse_cell_bounds_linear_kernel = nullptr;
+    CUfunction sparse_cell_bounds_quadratic_kernel = nullptr;
+    CUfunction sparse_cell_bounds_cubic_kernel = nullptr;
     CUfunction sparse_init_kernel = nullptr;
     CUfunction sparse_accumulate_octree_kernel = nullptr;
     CUfunction sparse_reduce_octree_kernel = nullptr;
@@ -169,7 +173,16 @@ DensityBakeModule* compileDensityBakeModule(
         return nullptr;
     }
 
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_brick_kernel, module->module, "bakeNanoVDBDensityToSparseBricks"), "cuModuleGetFunction(bakeNanoVDBDensityToSparseBricks)")) {
+    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_brick_kernel, module->module, "bakeDensityToSparseBricks"), "cuModuleGetFunction(bakeDensityToSparseBricks)")) {
+        return nullptr;
+    }
+    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_linear_kernel, module->module, "bakeBakedSparseVolumeCellBoundsLinear"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsLinear)")) {
+        return nullptr;
+    }
+    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_quadratic_kernel, module->module, "bakeBakedSparseVolumeCellBoundsQuadratic"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsQuadratic)")) {
+        return nullptr;
+    }
+    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_cubic_kernel, module->module, "bakeBakedSparseVolumeCellBoundsCubic"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsCubic)")) {
         return nullptr;
     }
     if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_init_kernel, module->module, "initBakedSparseVolumeBuffers"), "cuModuleGetFunction(initBakedSparseVolumeBuffers)")) {
@@ -232,6 +245,20 @@ Params makeBakeParams(const Params& params)
     return bake_params;
 }
 
+uint8_t densityBakeFilterOrder(const char* callable_source)
+{
+    if (callable_source == nullptr) {
+        return 0u;
+    }
+
+    const std::string_view source(callable_source);
+    if (source.find("samplingVDB<3,") != std::string_view::npos) return 3u;
+    if (source.find("samplingVDB<2,") != std::string_view::npos) return 2u;
+    if (source.find("samplingVDB<1,") != std::string_view::npos) return 1u;
+    if (source.find("samplingVDB<4,") != std::string_view::npos) return 4u;
+    return 0u;
+}
+
 uint32_t denseOctreeLevelStart(uint8_t level)
 {
     return ((1u << (3u * level)) - 1u) / 7u;
@@ -244,7 +271,7 @@ uint32_t denseOctreeNodeCount(uint8_t octreeBuildDepth)
 
 } // namespace
 
-bool bakeNanoVDBGridToSparseBricks(
+bool bakeDensityToSparseBricks(
     std::size_t grid_size,
     BakedSparseVolumeDevice& device_volume,
     const VDBDensityBakeInputs& inputs,
@@ -283,9 +310,16 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
     }
 
     uint8_t octreeBuildDepth = bakedSparseVolumeClampOctreeBuildDepth(device_volume.octreeBuildDepth);
+    const char* density_filter_source = inputs.density_signature != nullptr && inputs.density_signature[0] != '\0'
+        ? inputs.density_signature
+        : inputs.callable_source;
+    device_volume.octree_filter = densityBakeFilterOrder(density_filter_source);
     const bool buildDenseGpuOctree = device_volume.octree != nullptr && octreeBuildDepth <= kDenseGpuOctreeStagingDepthLimit;
     const uint32_t bottom_count = buildDenseGpuOctree ? (1u << (3u * octreeBuildDepth)) : 0u;
     const uint32_t dense_octree_node_count = buildDenseGpuOctree ? denseOctreeNodeCount(octreeBuildDepth) : 0u;
+    const uint64_t cell_count = uint64_t(device_volume.brick_count) * 512ull;
+    CUdeviceptr cell_min = 0;
+    CUdeviceptr cell_max = 0;
     CUdeviceptr leaf_min_bits = 0;
     CUdeviceptr leaf_max_bits = 0;
     CUdeviceptr leaf_coverage = 0;
@@ -300,6 +334,8 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
     unsigned int max_density_host = 0;
 
     auto cleanup = [&] {
+        if (cell_min != 0) { cuMemFree(cell_min); }
+        if (cell_max != 0) { cuMemFree(cell_max); }
         if (leaf_min_bits != 0) { cuMemFree(leaf_min_bits); }
         if (leaf_max_bits != 0) { cuMemFree(leaf_max_bits); }
         if (leaf_coverage != 0) { cuMemFree(leaf_coverage); }
@@ -311,7 +347,17 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         if (child_offsets != 0) { cuMemFree(child_offsets); }
         if (level_counts != 0) { cuMemFree(level_counts); }
         if (max_density_bits != 0) { cuMemFree(max_density_bits); }
+        device_volume.cell_min = nullptr;
+        device_volume.cell_max = nullptr;
     };
+
+    if (!checkCudaDriver(cuMemAlloc(&cell_min, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMin)") ||
+        !checkCudaDriver(cuMemAlloc(&cell_max, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMax)")) {
+        cleanup();
+        return false;
+    }
+    device_volume.cell_min = reinterpret_cast<unsigned short*>(cell_min);
+    device_volume.cell_max = reinterpret_cast<unsigned short*>(cell_max);
 
     if (buildDenseGpuOctree &&
         (!checkCudaDriver(cuMemAlloc(&leaf_min_bits, sizeof(unsigned int) * bottom_count), "cuMemAlloc(leafMinBits)") ||
@@ -368,11 +414,11 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         &hit_group,
         &clamp_negative,
         &seed,
-        &max_density_bits,
     };
     const unsigned int bake_blocks = std::min<unsigned int>(std::max<uint32_t>(device_volume.brick_count, 1u), 65535u);
     CudaEventScope density_start_event;
     CudaEventScope density_end_event;
+    CudaEventScope bounds_end_event;
     const auto sparse_wall_start = std::chrono::steady_clock::now();
     if (density_start_event.valid()) {
         cuEventRecord(density_start_event.event, nullptr);
@@ -382,14 +428,44 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
             bake_blocks, 1, 1,
             block_size, 1, 1,
             0, nullptr,
-            bake_args, nullptr), "cuLaunchKernel(bakeNanoVDBDensityToSparseBricks)")) {
+            bake_args, nullptr), "cuLaunchKernel(bakeDensityToSparseBricks)")) {
         cleanup();
         return false;
     }
     if (density_end_event.valid()) {
         cuEventRecord(density_end_event.event, nullptr);
     }
-    if (!checkCudaDriver(cuStreamSynchronize(nullptr), "cuStreamSynchronize(bakeNanoVDBDensityToSparseBricks)")) {
+
+    void* cell_bounds_args[] = {
+        &device_volume,
+        &max_density_bits,
+    };
+    const uint8_t filter_order = device_volume.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK;
+    CUfunction cell_bounds_kernel = bake_module->sparse_cell_bounds_linear_kernel;
+    uint64_t cells_per_bounds_block = block_size;
+    if (filter_order == 2u) {
+        cell_bounds_kernel = bake_module->sparse_cell_bounds_quadratic_kernel;
+        cells_per_bounds_block = 8ull;
+    } else if (filter_order == 3u) {
+        cell_bounds_kernel = bake_module->sparse_cell_bounds_cubic_kernel;
+        cells_per_bounds_block = 8ull;
+    }
+    const unsigned int cell_bounds_blocks = static_cast<unsigned int>(std::min<uint64_t>(
+        (cell_count + cells_per_bounds_block - 1ull) / cells_per_bounds_block,
+        65535ull));
+    if (!checkCudaDriver(cuLaunchKernel(
+            cell_bounds_kernel,
+            cell_bounds_blocks, 1, 1,
+            block_size, 1, 1,
+            0, nullptr,
+            cell_bounds_args, nullptr), "cuLaunchKernel(bakeBakedSparseVolumeCellBounds*)")) {
+        cleanup();
+        return false;
+    }
+    if (bounds_end_event.valid()) {
+        cuEventRecord(bounds_end_event.event, nullptr);
+    }
+    if (!checkCudaDriver(cuStreamSynchronize(nullptr), "cuStreamSynchronize(bakeDensityToSparseBricks)")) {
         cleanup();
         return false;
     }
@@ -410,6 +486,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
             std::memcpy(&result->max_density, &max_density_host, sizeof(result->max_density));
             result->sparse_total_wall_ms = std::chrono::duration<float, std::milli>(sparse_wall_end - sparse_wall_start).count();
             result->sparse_density_gpu_ms = elapsedMs(density_start_event, density_end_event);
+            result->sparse_bounds_gpu_ms = elapsedMs(density_end_event, bounds_end_event);
             result->sparse_octree_wall_ms = 0.0f;
             result->sparse_octree_accumulate_ms = 0.0f;
             result->sparse_octree_reduce_ms = 0.0f;
@@ -620,6 +697,7 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         std::memcpy(&result->max_density, &max_density_host, sizeof(result->max_density));
         result->sparse_total_wall_ms = std::chrono::duration<float, std::milli>(octree_wall_end - sparse_wall_start).count();
         result->sparse_density_gpu_ms = elapsedMs(density_start_event, density_end_event);
+        result->sparse_bounds_gpu_ms = elapsedMs(density_end_event, bounds_end_event);
         result->sparse_octree_wall_ms = std::chrono::duration<float, std::milli>(octree_wall_end - octree_wall_start).count();
         result->sparse_octree_accumulate_ms = elapsedMs(octree_start_event, octree_accumulate_event);
         result->sparse_octree_reduce_ms = elapsedMs(octree_accumulate_event, octree_reduce_event);

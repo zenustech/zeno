@@ -970,6 +970,7 @@ public:
             bake_inputs.params = &params;
             bake_inputs.hit_group = &hit_group;
             bake_inputs.callable_source = shader_ref.callable_src.c_str();
+            bake_inputs.density_signature = shader_ref.density_signature.c_str();
             bake_inputs.validation_label = label.c_str();
             bake_inputs.compile_macros = std::move(compile_macros);
             bake_inputs.seed = 0x12345678u ^ static_cast<uint32_t>(shader_index * 1664525u + density_slot);

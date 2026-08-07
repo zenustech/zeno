@@ -236,8 +236,6 @@ struct BakedSparseVolume
     xinxinoptix::raii<CUdeviceptr> d_brick_table;
     xinxinoptix::raii<CUdeviceptr> d_brick_origins;
     xinxinoptix::raii<CUdeviceptr> d_voxel_values;
-    xinxinoptix::raii<CUdeviceptr> d_brick_min;
-    xinxinoptix::raii<CUdeviceptr> d_brick_max;
     xinxinoptix::raii<CUdeviceptr> d_octree;
 
     bool valid() const {
@@ -250,8 +248,6 @@ struct BakedSparseVolume
         d_brick_table.reset();
         d_brick_origins.reset();
         d_voxel_values.reset();
-        d_brick_min.reset();
-        d_brick_max.reset();
         d_octree.reset();
     }
 };

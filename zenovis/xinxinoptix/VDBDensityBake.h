@@ -32,6 +32,7 @@ struct VDBDensityBakeInputs {
     const Params* params = nullptr;
     const HitGroupData* hit_group = nullptr;
     const char* callable_source = nullptr;
+    const char* density_signature = nullptr;
     const char* validation_label = nullptr;
     std::vector<std::string> compile_macros;
     uint32_t seed = 1u;
@@ -41,6 +42,7 @@ struct VDBDensityBakeResult {
     float max_density = 0.0f;
     float sparse_total_wall_ms = 0.0f;
     float sparse_density_gpu_ms = 0.0f;
+    float sparse_bounds_gpu_ms = 0.0f;
     float sparse_octree_wall_ms = 0.0f;
     float sparse_octree_accumulate_ms = 0.0f;
     float sparse_octree_reduce_ms = 0.0f;
@@ -48,7 +50,7 @@ struct VDBDensityBakeResult {
     float sparse_octree_gpu_ms = 0.0f;
 };
 
-bool bakeNanoVDBGridToSparseBricks(
+bool bakeDensityToSparseBricks(
     std::size_t grid_size,
     BakedSparseVolumeDevice& device_volume,
     const VDBDensityBakeInputs& inputs,

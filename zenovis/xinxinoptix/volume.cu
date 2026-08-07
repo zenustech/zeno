@@ -20,8 +20,9 @@ using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 #define HF0 __ushort_as_half((unsigned short)0x0000U)
 #define HF1 __ushort_as_half((unsigned short)0x3C00U)
 
-#ifndef VDB_SHADOW_DENSITY_MODE
-#define VDB_SHADOW_DENSITY_MODE 0
+// 0: deterministic eight-voxel trilinear; 1: unbiased one-voxel stochastic trilinear.
+#ifndef VDB_SHADOW_SPARSE_TRILINEAR_MODE
+#define VDB_SHADOW_SPARSE_TRILINEAR_MODE 0
 #endif
 
 __inline__ __device__ half clamp( const half f, const half a=HF0, const half b=HF1 )
@@ -318,18 +319,8 @@ __device__ __forceinline__ uint32_t bakedSparseBrickTableIndexShader(int3 brickC
     return (uint32_t(brickCoord.z) * uint32_t(brickDim.y) + uint32_t(brickCoord.y)) * uint32_t(brickDim.x) + uint32_t(brickCoord.x);
 }
 
-__device__ __forceinline__ half sampleBakedSparseDensityNearest(const BakedSparseVolumeDevice* volume, const float3& point)
+__device__ __forceinline__ half loadBakedSparseDensityVoxel(const BakedSparseVolumeDevice* volume, const int3& coord)
 {
-    if (!bakedSparseVolumeReady(volume)) {
-        return HF0;
-    }
-
-    const int3 coord {
-        int(floorf(point.x + 0.5f)),
-        int(floorf(point.y + 0.5f)),
-        int(floorf(point.z + 0.5f))
-    };
-
     if (coord.x < volume->voxel_min.x || coord.y < volume->voxel_min.y || coord.z < volume->voxel_min.z
         || coord.x >= volume->voxel_max.x || coord.y >= volume->voxel_max.y || coord.z >= volume->voxel_max.z) {
         return HF0;
@@ -366,6 +357,56 @@ __device__ __forceinline__ half sampleBakedSparseDensityNearest(const BakedSpars
 
     const uint32_t voxelOffset = uint32_t(lx) | (uint32_t(ly) << 3u) | (uint32_t(lz) << 6u);
     return __ushort_as_half(volume->voxel_values[uint64_t(uint32_t(brickIndex)) * 512ull + voxelOffset]);
+}
+
+__device__ __forceinline__ half sampleBakedSparseDensityTrilinearStochastic(
+    const BakedSparseVolumeDevice* volume,
+    const float3& point,
+    float random)
+{
+    if (!bakedSparseVolumeReady(volume)) {
+        return HF0;
+    }
+    const int3 coord = interp_trilinear_stochastic(point, random);
+    return loadBakedSparseDensityVoxel(volume, coord);
+}
+
+__device__ __forceinline__ half sampleBakedSparseDensityTrilinear(
+    const BakedSparseVolumeDevice* volume,
+    const float3& point)
+{
+    if (!bakedSparseVolumeReady(volume)) {
+        return HF0;
+    }
+
+    const int3 base {
+        int(floorf(point.x)),
+        int(floorf(point.y)),
+        int(floorf(point.z))
+    };
+    const float3 fraction {
+        point.x - float(base.x),
+        point.y - float(base.y),
+        point.z - float(base.z)
+    };
+
+    const float d000 = loadBakedSparseDensityVoxel(volume, base);
+    const float d100 = loadBakedSparseDensityVoxel(volume, make_int3(base.x + 1, base.y, base.z));
+    const float d010 = loadBakedSparseDensityVoxel(volume, make_int3(base.x, base.y + 1, base.z));
+    const float d110 = loadBakedSparseDensityVoxel(volume, make_int3(base.x + 1, base.y + 1, base.z));
+    const float d001 = loadBakedSparseDensityVoxel(volume, make_int3(base.x, base.y, base.z + 1));
+    const float d101 = loadBakedSparseDensityVoxel(volume, make_int3(base.x + 1, base.y, base.z + 1));
+    const float d011 = loadBakedSparseDensityVoxel(volume, make_int3(base.x, base.y + 1, base.z + 1));
+    const float d111 = loadBakedSparseDensityVoxel(volume, make_int3(base.x + 1, base.y + 1, base.z + 1));
+
+    const float d00 = fmaf(fraction.x, d100 - d000, d000);
+    const float d10 = fmaf(fraction.x, d110 - d010, d010);
+    const float d01 = fmaf(fraction.x, d101 - d001, d001);
+    const float d11 = fmaf(fraction.x, d111 - d011, d011);
+    const float d0 = fmaf(fraction.y, d10 - d00, d00);
+    const float d1 = fmaf(fraction.y, d11 - d01, d01);
+    const float density = fmaf(fraction.z, d1 - d0, d0);
+    return __float2half_rn(fminf(fmaxf(density, 0.0f), 65504.0f));
 }
 
 extern "C" __global__ void __intersection__volume()
@@ -446,10 +487,8 @@ extern "C" __global__ void __intersection__volume()
 
     const auto octree_ptr = reinterpret_cast<OcNode*>(*(gas_ptr-5));
     if (octree_ptr == nullptr) return;
-#if VDB_SHADOW_DENSITY_MODE == 1
     const auto baked_density_ptr = reinterpret_cast<const BakedSparseVolumeDevice*>(*(gas_ptr-6));
     const bool use_baked_density = bakedSparseVolumeReady(baked_density_ptr);
-#endif
 
     const auto bbox = aabb;
     const auto dim = bbox.ext();
@@ -464,7 +503,14 @@ extern "C" __global__ void __intersection__volume()
     const int leafRes = 1 << octreeBuildDepth;
     int3 paddedDim = roundUpToMultiple(dim.x, dim.y, dim.z, leafRes);
 
-    const float3 minCoord = bbox.mini;
+    float3 minCoord = bbox.mini;
+    if (use_baked_density) {
+        paddedDim = baked_density_ptr->voxel_dim;
+        minCoord = make_float3(
+            float(baked_density_ptr->voxel_min.x),
+            float(baked_density_ptr->voxel_min.y),
+            float(baked_density_ptr->voxel_min.z));
+    }
     const float3 maxCoord {
             minCoord.x + paddedDim.x,
             minCoord.y + paddedDim.y,
@@ -517,8 +563,18 @@ extern "C" __global__ void __intersection__volume()
 
         t_progress = sek.t0;
 
+        const auto test_point = ray_ori + t_progress * ray_dir;
+        auto dens = sek.avg_d;
+        if (use_baked_density) {
+#if VDB_SHADOW_SPARSE_TRILINEAR_MODE == 1
+            dens = sampleBakedSparseDensityTrilinearStochastic(baked_density_ptr, test_point, rnd(seed));
+#else
+            dens = sampleBakedSparseDensityTrilinear(baked_density_ptr, test_point);
+#endif
+        }
+
         if (!use_delta && max(transmittance)>0.1f) {
-            __half ratio = sek.avg_d / sek.max_d;
+            __half ratio = clamp(dens, HF0, sek.max_d) / sek.max_d;
             transmittance *= clamp(HF1-ratio);
             continue;
         }
@@ -531,13 +587,6 @@ extern "C" __global__ void __intersection__volume()
             break;
         }
         prob = (prob - homo_prob) / (HF1 - homo_prob);
-        
-#if VDB_SHADOW_DENSITY_MODE == 1
-        const auto test_point = ray_ori + t_progress * ray_dir;
-        auto dens = use_baked_density ? sampleBakedSparseDensityNearest(baked_density_ptr, test_point) : sek.avg_d;
-#else
-        auto dens = sek.avg_d;
-#endif
         
         __half density = clamp(dens, HF0, sek.max_d);
         __half ratio = (density-sek.min_d) / (sek.max_d-sek.min_d);

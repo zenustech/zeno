@@ -94,15 +94,20 @@ struct BakedSparseVolumeDevice {
     uint8_t brick_size = BAKED_SPARSE_VOLUME_BRICK_SIZE;
     uint8_t octreeBuildDepth = BAKED_SPARSE_VOLUME_DEFAULT_OCTREE_DEPTH;
     uint8_t octree_format = 0;
-    uint8_t reserved = 0;
+    // VDB sampling order whose individual runtime estimator is bounded by the SVO.
+    uint8_t octree_filter = 0;
     int* brick_table = nullptr;
     int3* brick_origins = nullptr;
+    // Integer-lattice shader samples. The cell interval arrays are temporary
+    // bake storage and are cleared after the SVO has reduced them.
     unsigned short* voxel_values = nullptr;
-    unsigned short* brick_min = nullptr;
-    unsigned short* brick_max = nullptr;
+    unsigned short* cell_min = nullptr;
+    unsigned short* cell_max = nullptr;
     OcNode* octree = nullptr;
 };
 static_assert(sizeof(BakedSparseVolumeDevice) == 136);
+
+static constexpr uint8_t BAKED_SPARSE_FILTER_ORDER_MASK = 0x07u;
 
 #ifndef __CUDACC_RTC__
 

@@ -437,20 +437,16 @@ bool bakeDensityGridToSparseBricksOnGPU(
     }
     const auto origin_upload_end = std::chrono::steady_clock::now();
     baked_volume.d_voxel_values.resize(sizeof(uint16_t) * uint64_t(brick_count) * 512ull);
-    baked_volume.d_brick_min.resize(sizeof(uint16_t) * brick_count);
-    baked_volume.d_brick_max.resize(sizeof(uint16_t) * brick_count);
     baked_volume.d_octree.resize(sizeof(OcNode) * bakedSparseDenseOctreeNodeCapacity(octreeBuildDepth));
     baked_volume.d_descriptor.resize(sizeof(BakedSparseVolumeDevice));
 
     baked_volume.device.brick_table = reinterpret_cast<int*>(baked_volume.d_brick_table.handle);
     baked_volume.device.brick_origins = reinterpret_cast<int3*>(baked_volume.d_brick_origins.handle);
     baked_volume.device.voxel_values = reinterpret_cast<uint16_t*>(baked_volume.d_voxel_values.handle);
-    baked_volume.device.brick_min = reinterpret_cast<uint16_t*>(baked_volume.d_brick_min.handle);
-    baked_volume.device.brick_max = reinterpret_cast<uint16_t*>(baked_volume.d_brick_max.handle);
     baked_volume.device.octree = reinterpret_cast<OcNode*>(baked_volume.d_octree.handle);
     xinxinoptix::VDBDensityBakeInputs bake_inputs = inputs;
 
-    const bool baked = xinxinoptix::bakeNanoVDBGridToSparseBricks(
+    const bool baked = xinxinoptix::bakeDensityToSparseBricks(
         grid.buffer.size,
         baked_volume.device,
         bake_inputs,
@@ -473,7 +469,9 @@ bool bakeDensityGridToSparseBricksOnGPU(
         std::cout << "VDB sparse GPU bake {"
             << (bake_inputs.validation_label != nullptr ? bake_inputs.validation_label : "density")
             << "} total_wall=" << result->sparse_total_wall_ms << " ms"
+            << " filter_order=" << unsigned(baked_volume.device.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK)
             << " density_gpu=" << result->sparse_density_gpu_ms << " ms"
+            << " bounds_gpu=" << result->sparse_bounds_gpu_ms << " ms"
             << " octree_wall=" << result->sparse_octree_wall_ms << " ms"
             << " octree_gpu=" << result->sparse_octree_gpu_ms << " ms"
             << " accumulate=" << result->sparse_octree_accumulate_ms << " ms"
