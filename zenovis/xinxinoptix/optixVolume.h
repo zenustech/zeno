@@ -147,7 +147,7 @@ struct TypedGridWrapper: GridWrapper {
 
 		auto src = openvdb::gridPtrCast<OpenVDBGridT>(grid);
 		std::cout << "VDB convert begin {" << grid->getName() << "}" << std::endl;
-		handle = nanovdb::openToNanoVDB<nanovdb::HostBuffer, OpenVDBGridT::TreeType, T>(*src, nanovdb::StatsMode::MinMax);
+		handle = nanovdb::openToNanoVDB<nanovdb::HostBuffer, typename OpenVDBGridT::TreeType, T>(*src, nanovdb::StatsMode::MinMax);
 		return match;
 	}
 
