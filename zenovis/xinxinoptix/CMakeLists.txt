@@ -65,7 +65,46 @@ target_sources(zenovis PRIVATE
 file(GLOB curve_src "curve/*.h" "curve/*.cpp")
 target_sources(zenovis PRIVATE ${curve_src})
 
-find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
+if (NOT TARGET CUDA::cudart_static OR
+    NOT TARGET CUDA::nvrtc OR
+    NOT TARGET CUDA::cuda_driver)
+    # FindCUDAToolkit currently probes every optional CUDA library even though
+    # we only link the targets below. Limit those probes to the toolkit's own 
+    # explicit paths while the module runs. The function scope restores normal discovery automatically.
+    function(_zeno_find_cuda_toolkit)
+        # CUDA's static runtime needs the platform real-time library on Linux;
+        # locate that one required system dependency before narrowing searches.
+        if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "QNX")
+            find_library(CUDAToolkit_rt_LIBRARY rt)
+        endif()
+
+        set(CMAKE_FIND_USE_CMAKE_PATH FALSE)
+        set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)
+        set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)
+        set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)
+        set(CMAKE_FIND_USE_INSTALL_PREFIX FALSE)
+        set(CMAKE_FIND_USE_PACKAGE_REGISTRY FALSE)
+        set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY FALSE)
+
+        find_package(CUDAToolkit REQUIRED)
+
+        foreach(_cuda_result IN ITEMS
+                CUDAToolkit_FOUND
+                CUDAToolkit_VERSION
+                CUDAToolkit_INCLUDE_DIRS
+                CUDAToolkit_LIBRARY_DIR
+                CUDAToolkit_BIN_DIR
+                CUDAToolkit_NVCC_EXECUTABLE)
+            set(${_cuda_result} "${${_cuda_result}}" PARENT_SCOPE)
+        endforeach()
+    endfunction()
+
+    message(STATUS "Finding CUDA Toolkit for Optix")
+    _zeno_find_cuda_toolkit()
+    message(STATUS "Found CUDA Toolkit ${CUDAToolkit_VERSION} for Optix")
+else()
+    message(STATUS "Reusing existing CUDA Toolkit targets for Optix")
+endif()
 target_link_libraries(zenovis PRIVATE CUDA::cudart_static CUDA::nvrtc CUDA::cuda_driver)
 
 if (ZENO_SYSTEM_OPENVDB)
@@ -85,7 +124,52 @@ target_include_directories(zenovis PRIVATE ${CMAKE_SOURCE_DIR}/projects/ordered-
 
 set(OptiX_ROOT_DIR ${OPTIX_PATH} CACHE PATH "Path to OptiX" FORCE)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk)
+# xinxinoptix already found CUDA above and vendors the OptiX headers it uses.
+# Publish that result in the form OTK expects so its nested project does not
+# repeat the expensive CUDAToolkit/OptiX discovery through the vcpkg toolchain.
+file(STRINGS "${OptiX_ROOT_DIR}/include/optix.h" _optix_version_line
+    REGEX "^#define OPTIX_VERSION [0-9]+$")
+string(REGEX MATCH "[0-9]+" _optix_version_number "${_optix_version_line}")
+math(EXPR _optix_version_major "${_optix_version_number} / 10000")
+math(EXPR _optix_version_minor "(${_optix_version_number} / 100) % 100")
+math(EXPR _optix_version_patch "${_optix_version_number} % 100")
+set(OPTIX_VERSION
+    "${_optix_version_major}.${_optix_version_minor}.${_optix_version_patch}")
+set(OptiX_VERSION "${OPTIX_VERSION}")
+set(OptiX_INCLUDE_DIR "${OptiX_ROOT_DIR}/include")
+set(OptiX_FOUND TRUE)
+if (NOT TARGET OptiX::OptiX)
+    add_library(OptiX::OptiX INTERFACE IMPORTED GLOBAL)
+    target_include_directories(OptiX::OptiX INTERFACE
+        "${OptiX_INCLUDE_DIR}" "${CUDAToolkit_INCLUDE_DIRS}")
+    target_link_libraries(OptiX::OptiX INTERFACE ${CMAKE_DL_LIBS})
+endif()
+
+# OptiX Toolkit is a vendored implementation detail of xinxinoptix. Keep its
+# optional standalone content out of every Zeno configure and default build.
+set(OTK_USE_VCPKG OFF CACHE BOOL "Use vcpkg for OptiX Toolkit dependencies" FORCE)
+set(OTK_FETCH_CONTENT OFF CACHE BOOL "Fetch OptiX Toolkit dependencies" FORCE)
+set(OTK_BUILD_DOCS OFF CACHE BOOL "Build OptiX Toolkit documentation" FORCE)
+set(OTK_BUILD_TESTS OFF CACHE BOOL "Build OptiX Toolkit tests" FORCE)
+set(OTK_BUILD_EXAMPLES OFF CACHE BOOL "Build OptiX Toolkit examples" FORCE)
+set(OTK_LIBRARIES OmmBaking CACHE STRING "OptiX Toolkit libraries required by Zeno" FORCE)
+
+if (DEFINED CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit)
+    set(_zeno_saved_disable_find_cudatoolkit
+        "${CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit}")
+    set(_zeno_had_disable_find_cudatoolkit TRUE)
+endif()
+set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit TRUE)
+add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk EXCLUDE_FROM_ALL)
+if (_zeno_had_disable_find_cudatoolkit)
+    set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit
+        "${_zeno_saved_disable_find_cudatoolkit}")
+else()
+    unset(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit)
+endif()
+unset(_zeno_saved_disable_find_cudatoolkit)
+unset(_zeno_had_disable_find_cudatoolkit)
+
 target_link_libraries(zenovis PRIVATE OptiXToolkit::CuOmmBaking)
 
 get_target_property(_incs CuOmmBaking INTERFACE_INCLUDE_DIRECTORIES)

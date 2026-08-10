@@ -25,15 +25,6 @@ endif()
 
 option(ZENO_ENABLE_OPTIX "Enable NVIDIA OptiX in ZENO for path tracing" OFF)
 if (ZENO_ENABLE_OPTIX)
-    # set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
-    # target_compile_definitions(zenovis PRIVATE OTK_USE_VCPKG:BOOL=0)
-    # target_compile_definitions(zenovis PRIVATE OTK_FETCH_CONTENT:BOOL=0)
-    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_DOCS:BOOL=0)
-    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_TESTS:BOOL=0)
-    # target_compile_definitions(zenovis PRIVATE OTK_BUILD_EXAMPLES:BOOL=0)
-    # target_compile_definitions(zenovis PRIVATE OTK_LIBRARIES=OmmBaking)
-    # target_compile_definitions(zenovis PRIVATE BUILD_SHARED_LIBS:BOOL=0)
-
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
     target_include_directories(zenovis PRIVATE xinxinoptix)

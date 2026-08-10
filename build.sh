@@ -94,12 +94,6 @@ CMAKE_ARGS=(
     "-DZENO_WITH_Alembic:BOOL=ON"
     "-DZENO_WITH_MeshSubdiv:BOOL=ON"
     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DOTK_USE_VCPKG:BOOL=OFF"
-    "-DOTK_FETCH_CONTENT:BOOL=OFF"
-    "-DOTK_BUILD_DOCS:BOOL=OFF"
-    "-DOTK_BUILD_TESTS:BOOL=OFF"
-    "-DOTK_BUILD_EXAMPLES:BOOL=OFF"
-    "-DOTK_LIBRARIES=OmmBaking"
 )
 
 # Append extra arguments based on preset selection
