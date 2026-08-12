@@ -1,12 +1,12 @@
 #include "VolumeDensityBake.h"
 
-#include "NvrtcWorker.h"
 #include "Octree.h"
 #include "optixPathTracer.h"
 
 #include <cuda_runtime_api.h>
 
 #include <cstring>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -21,11 +21,6 @@ namespace xinxinoptix {
 namespace {
 
 static constexpr uint32_t kDenseGpuOctreeStagingDepthLimit = 8u;
-
-const char* fallbackDensityBakeSource()
-{
-    return "#include \"CallableVolume.cu\"\n";
-}
 
 const char* cudaDriverErrorString(CUresult result)
 {
@@ -42,6 +37,15 @@ bool checkCudaDriver(CUresult result, const char* expr)
         return true;
     }
     std::cerr << expr << " failed: " << cudaDriverErrorString(result) << std::endl;
+    return false;
+}
+
+bool checkCudaRuntime(cudaError_t result, const char* expr)
+{
+    if (result == cudaSuccess) {
+        return true;
+    }
+    std::cerr << expr << " failed: " << cudaGetErrorString(result) << std::endl;
     return false;
 }
 
@@ -103,137 +107,133 @@ float elapsedMs(const CudaEventScope& start, const CudaEventScope& end)
     return ms;
 }
 
-std::string currentComputeArchitectureOption()
-{
-    int device = 0;
-    cudaDeviceProp prop = {};
-    if (cudaGetDevice(&device) != cudaSuccess || cudaGetDeviceProperties(&prop, device) != cudaSuccess) {
-        return {};
-    }
-
-    return "--gpu-architecture=compute_" + std::to_string(prop.major) + std::to_string(prop.minor);
-}
-
-std::string makeBakeModuleKey(
-    const std::string& source,
-    const std::vector<std::string>& compile_macros,
-    const std::string& architecture_option)
-{
-    std::string key = architecture_option;
-    key.push_back('\n');
-    for (const auto& macro : compile_macros) {
-        key += macro;
-        key.push_back('\n');
-    }
-    key += source;
-    return key;
-}
-
-DensityBakeModule* compileDensityBakeModule(
-    const std::string& source,
-    const std::vector<std::string>& compile_macros,
-    const std::string& architecture_option)
+DensityBakeModule* loadDensityBakeModuleImage(const std::string& material_image)
 {
     auto module = std::make_unique<DensityBakeModule>();
-
-    std::vector<const char*> compiler_options {
-        "-std=c++17",
-        "-default-device",
-        "--use_fast_math",
-        "--zeno-nvrtc-worker=1",
-        "--define-macro=__VOLUME_DENSITY_BAKE__",
-    };
-
-    if (!architecture_option.empty()) {
-        compiler_options.push_back(architecture_option.c_str());
-    }
-    for (const auto& macro : compile_macros) {
-        compiler_options.push_back(macro.c_str());
-    }
-
-    auto compile_result = zeno::nvrtc_worker::compile(
-        source.c_str(),
-        "",
-        "CallableVolumeBake.cu",
-        compiler_options);
-
-    if (!compile_result.success) {
-        std::cerr << "Failed to compile volume density bake kernel";
-        if (!compile_result.log.empty()) {
-            std::cerr << ":\n" << compile_result.log;
-        }
-        std::cerr << std::endl;
-        return nullptr;
-    }
 
     if (!checkCudaDriver(cuInit(0), "cuInit")) {
         return nullptr;
     }
-    if (!checkCudaDriver(cuModuleLoadData(&module->module, compile_result.data.data()), "cuModuleLoadData")) {
+    if (!checkCudaDriver(
+            cuModuleLoadData(&module->module, material_image.data()),
+            "cuModuleLoadData(volume density bake)")) {
         return nullptr;
     }
 
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_brick_kernel, module->module, "bakeDensityToSparseBricks"), "cuModuleGetFunction(bakeDensityToSparseBricks)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_linear_kernel, module->module, "bakeBakedSparseVolumeCellBoundsLinear"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsLinear)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_quadratic_kernel, module->module, "bakeBakedSparseVolumeCellBoundsQuadratic"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsQuadratic)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_cell_bounds_cubic_kernel, module->module, "bakeBakedSparseVolumeCellBoundsCubic"), "cuModuleGetFunction(bakeBakedSparseVolumeCellBoundsCubic)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_init_kernel, module->module, "initBakedSparseVolumeBuffers"), "cuModuleGetFunction(initBakedSparseVolumeBuffers)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_accumulate_octree_kernel, module->module, "accumulateBakedSparseVolumeOctreeLeaves"), "cuModuleGetFunction(accumulateBakedSparseVolumeOctreeLeaves)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_reduce_octree_kernel, module->module, "reduceBakedSparseVolumeOctreeLevel"), "cuModuleGetFunction(reduceBakedSparseVolumeOctreeLevel)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_count_compact_children_kernel, module->module, "countBakedSparseVolumeCompactChildren"), "cuModuleGetFunction(countBakedSparseVolumeCompactChildren)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_prefix_compact_children_kernel, module->module, "prefixBakedSparseVolumeCompactChildren"), "cuModuleGetFunction(prefixBakedSparseVolumeCompactChildren)")) {
-        return nullptr;
-    }
-    if (!checkCudaDriver(cuModuleGetFunction(&module->sparse_emit_compact_level_kernel, module->module, "emitBakedSparseVolumeCompactLevel"), "cuModuleGetFunction(emitBakedSparseVolumeCompactLevel)")) {
+    const auto load_function = [&](CUfunction& function, const char* name) {
+        if (!checkCudaDriver(cuModuleGetFunction(&function, module->module, name), name)) {
+            return false;
+        }
+        return checkCudaDriver(cuFuncLoad(function), name);
+    };
+
+    if (!load_function(module->sparse_brick_kernel, "bakeDensityToSparseBricks") ||
+        !load_function(module->sparse_cell_bounds_linear_kernel, "bakeBakedSparseVolumeCellBoundsLinear") ||
+        !load_function(module->sparse_cell_bounds_quadratic_kernel, "bakeBakedSparseVolumeCellBoundsQuadratic") ||
+        !load_function(module->sparse_cell_bounds_cubic_kernel, "bakeBakedSparseVolumeCellBoundsCubic") ||
+        !load_function(module->sparse_init_kernel, "initBakedSparseVolumeBuffers") ||
+        !load_function(module->sparse_accumulate_octree_kernel, "accumulateBakedSparseVolumeOctreeLeaves") ||
+        !load_function(module->sparse_reduce_octree_kernel, "reduceBakedSparseVolumeOctreeLevel") ||
+        !load_function(module->sparse_count_compact_children_kernel, "countBakedSparseVolumeCompactChildren") ||
+        !load_function(module->sparse_prefix_compact_children_kernel, "prefixBakedSparseVolumeCompactChildren") ||
+        !load_function(module->sparse_emit_compact_level_kernel, "emitBakedSparseVolumeCompactLevel")) {
         return nullptr;
     }
 
-    if (!checkCudaDriver(cuModuleGetGlobal(&module->params_symbol, &module->params_symbol_size, module->module, "params"), "cuModuleGetGlobal(params)")) {
+    const CUresult params_result = cuModuleGetGlobal(
+        &module->params_symbol,
+        &module->params_symbol_size,
+        module->module,
+        "params");
+    if (params_result == CUDA_ERROR_NOT_FOUND) {
+        module->params_symbol = 0;
+        module->params_symbol_size = 0;
+    } else if (!checkCudaDriver(params_result, "cuModuleGetGlobal(params)")) {
         return nullptr;
     }
 
     return module.release();
 }
 
-DensityBakeModule* ensureDensityBakeKernel(const VolumeDensityBakeInputs& inputs)
+using DensityBakeModulePtr = std::shared_ptr<DensityBakeModule>;
+using DensityBakeModuleFuture = std::shared_future<DensityBakeModulePtr>;
+
+struct DensityBakeModuleCache {
+    std::mutex mutex;
+    std::unordered_map<std::string, DensityBakeModuleFuture> entries;
+};
+
+DensityBakeModuleCache& densityBakeModuleCache()
 {
-    static std::mutex mutex;
-    static std::unordered_map<std::string, std::unique_ptr<DensityBakeModule>> cache;
+    static DensityBakeModuleCache cache;
+    return cache;
+}
 
-    std::string source = inputs.callable_source != nullptr
-        ? std::string(inputs.callable_source)
-        : std::string(fallbackDensityBakeSource());
-    std::string architecture_option = currentComputeArchitectureOption();
-    const std::string key = makeBakeModuleKey(source, inputs.compile_macros, architecture_option);
-
-    std::lock_guard<std::mutex> lock(mutex);
-    if (auto it = cache.find(key); it != cache.end()) {
-        return it->second.get();
+DensityBakeModuleFuture requestDensityBakeModule(
+    const std::string& callable_module_key,
+    const std::string& callable_ptx)
+{
+    if (callable_module_key.empty() || callable_ptx.empty()) {
+        return {};
     }
 
-    auto* module = compileDensityBakeModule(source, inputs.compile_macros, architecture_option);
-    if (module == nullptr) {
+    auto& cache = densityBakeModuleCache();
+    std::lock_guard<std::mutex> lock(cache.mutex);
+    if (auto it = cache.entries.find(callable_module_key); it != cache.entries.end()) {
+        return it->second;
+    }
+
+    int device = 0;
+    if (!checkCudaRuntime(cudaGetDevice(&device), "cudaGetDevice(volume density module)")) {
+        return {};
+    }
+
+    auto future = std::async(
+        std::launch::async,
+        [callable_ptx, device]() -> DensityBakeModulePtr {
+            if (!checkCudaRuntime(cudaSetDevice(device), "cudaSetDevice(volume density module)")) {
+                return {};
+            }
+            try {
+                return DensityBakeModulePtr(loadDensityBakeModuleImage(callable_ptx));
+            } catch (const std::exception& error) {
+                std::cerr << "volume density CUDA module preparation failed: "
+                          << error.what() << std::endl;
+                return {};
+            }
+        }).share();
+    cache.entries.emplace(callable_module_key, future);
+    return future;
+}
+
+void discardDensityBakeModule(const std::string& callable_module_key)
+{
+    auto& cache = densityBakeModuleCache();
+    std::lock_guard<std::mutex> lock(cache.mutex);
+    cache.entries.erase(callable_module_key);
+}
+
+DensityBakeModule* ensureDensityBakeKernel(const VolumeDensityBakeInputs& inputs)
+{
+    if (inputs.callable_ptx == nullptr || inputs.callable_ptx->empty() ||
+        inputs.callable_module_key == nullptr || inputs.callable_module_key->empty()) {
+        std::cerr << "volume density bake requires compiled callable PTX" << std::endl;
         return nullptr;
     }
 
-    auto [it, _] = cache.emplace(key, std::unique_ptr<DensityBakeModule>(module));
-    return it->second.get();
+    auto future = requestDensityBakeModule(
+        *inputs.callable_module_key,
+        *inputs.callable_ptx);
+    if (!future.valid()) {
+        return nullptr;
+    }
+
+    auto module = future.get();
+    if (module == nullptr) {
+        discardDensityBakeModule(*inputs.callable_module_key);
+        return nullptr;
+    }
+    return module.get();
 }
 
 Params makeBakeParams(const Params& params)
@@ -270,6 +270,11 @@ uint32_t denseOctreeNodeCount(uint8_t octreeBuildDepth)
 }
 
 } // namespace
+
+void prepareVolumeDensityBakeModuleAsync(const std::string& callable_module_key, const std::string& callable_ptx)
+{
+    (void)requestDensityBakeModule(callable_module_key, callable_ptx);
+}
 
 bool bakeDensityToSparseBricks(
     std::size_t grid_size,

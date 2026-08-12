@@ -594,7 +594,13 @@ CompileResult compile(
 
     CompileResult result;
     const char* log = nullptr;
-    result.success = compileShaderCuda(result.data, source, name, &log, effectiveCompilerOptions, allow_helper);
+    result.success = compileShaderCuda(
+        result.data,
+        source,
+        name,
+        &log,
+        effectiveCompilerOptions,
+        allow_helper);
     if (log != nullptr) {
         result.log = log;
     }

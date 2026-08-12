@@ -371,14 +371,108 @@ static std::vector<char> readData(std::string const& filename) {
     return data;
 } // readData
 
-inline bool createModule(OptixModule &module, OptixDeviceContext &context, const char *source, const char *name, const std::vector<std::string>& macros={}, tbb::task_group* _c_group = nullptr)
+inline std::string currentComputeArchitectureOption()
+{
+    int device = 0;
+    cudaDeviceProp prop = {};
+    if (cudaGetDevice(&device) != cudaSuccess ||
+        cudaGetDeviceProperties(&prop, device) != cudaSuccess) {
+        return {};
+    }
+    return "--gpu-architecture=compute_" +
+        std::to_string(prop.major) + std::to_string(prop.minor);
+}
+
+inline bool isPtxEntryDeclaration(std::string_view line)
+{
+    const auto first = line.find_first_not_of(" \t\r");
+    if (first == std::string_view::npos || line[first] == '/') {
+        return false;
+    }
+
+    auto tokenBegin = first;
+    while (tokenBegin < line.size()) {
+        const auto tokenEnd = line.find_first_of(" \t\r", tokenBegin);
+        const auto token = line.substr(tokenBegin, tokenEnd - tokenBegin);
+        if (token == ".entry") {
+            return true;
+        }
+        if (token != ".visible" && token != ".weak" && token != ".extern") {
+            return false;
+        }
+        if (tokenEnd == std::string_view::npos) {
+            return false;
+        }
+        tokenBegin = line.find_first_not_of(" \t\r", tokenEnd);
+    }
+    return false;
+}
+
+inline bool makeOptixPtxView(
+    const std::string& compiled_ptx,
+    std::string& optix_ptx,
+    size_t& removed_entry_count)
+{
+    optix_ptx.clear();
+    optix_ptx.reserve(compiled_ptx.size());
+    removed_entry_count = 0;
+
+    bool removing_entry = false;
+    bool found_entry_body = false;
+    int brace_depth = 0;
+    size_t line_begin = 0;
+    while (line_begin < compiled_ptx.size()) {
+        const auto newline = compiled_ptx.find('\n', line_begin);
+        const auto line_end = newline == std::string::npos ? compiled_ptx.size() : newline + 1;
+        const std::string_view line(compiled_ptx.data() + line_begin, line_end - line_begin);
+
+        if (!removing_entry && isPtxEntryDeclaration(line)) {
+            removing_entry = true;
+            found_entry_body = false;
+            brace_depth = 0;
+            ++removed_entry_count;
+        }
+
+        if (removing_entry) {
+            for (const char ch : line) {
+                if (ch == '{') {
+                    found_entry_body = true;
+                    ++brace_depth;
+                } else if (ch == '}' && found_entry_body) {
+                    --brace_depth;
+                    if (brace_depth < 0) {
+                        return false;
+                    }
+                }
+            }
+            if (found_entry_body && brace_depth == 0) {
+                removing_entry = false;
+            }
+        } else {
+            optix_ptx.append(line.data(), line.size());
+        }
+
+        line_begin = line_end;
+    }
+
+    return !removing_entry && brace_depth == 0;
+}
+
+inline bool createModule(
+    OptixModule &module,
+    OptixDeviceContext &context,
+    const char *source,
+    const char *name,
+    const std::vector<std::string>& macros = {},
+    tbb::task_group* _c_group = nullptr,
+    std::string* compiled_ptx = nullptr)
 {
     const auto module_kind = classifyCompileModule(name);
 
     OptixModuleCompileOptions module_compile_options = OptixUtil::DefaultCompileOptions();
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
 
-    char log[2048];
+    char log[16384] = {};
     size_t sizeof_log = sizeof( log );
 
     size_t      inputSize = 0;
@@ -390,11 +484,20 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
         "--extra-device-vectorization",
         "--relocatable-device-code=true",
         "--use_fast_math",
-        "--optix-ir",
     #if !defined( NDEBUG )      
         "-lineinfo" //"-G"//"--dopt=on",
     #endif
     };
+    if (compiled_ptx == nullptr) {
+        compilerOptions.push_back("--optix-ir");
+    }
+    std::string architecture_option;
+    if (compiled_ptx != nullptr) {
+        architecture_option = currentComputeArchitectureOption();
+        if (!architecture_option.empty()) {
+            compilerOptions.push_back(architecture_option.c_str());
+        }
+    }
     std::string split_compile_option;
     std::string worker_compile_option;
 
@@ -426,37 +529,77 @@ inline bool createModule(OptixModule &module, OptixDeviceContext &context, const
     inputSize = compile_result.data.size();
 
     if(!success) {
+        std::cerr << "NVRTC compilation failed {" << name << '}';
+        if (!compile_result.log.empty()) {
+            std::cerr << ":\n" << compile_result.log;
+        }
+        std::cerr << std::endl;
         return false;
     }
-    const auto input = compile_result.data.data();
+    std::string optix_ptx;
+    const char* input = compile_result.data.data();
+    if (compiled_ptx != nullptr) {
+        size_t removed_entry_count = 0;
+        if (!makeOptixPtxView(compile_result.data, optix_ptx, removed_entry_count)) {
+            std::cerr << "Failed to separate CUDA kernels from OptiX PTX {" << name << "}" << std::endl;
+            return false;
+        }
+        if (removed_entry_count == 0) {
+            std::cerr << "Combined volume PTX contains no CUDA kernels {" << name << "}" << std::endl;
+            return false;
+        }
+        input = optix_ptx.data();
+        inputSize = optix_ptx.size();
+    }
 
     if (_c_group == nullptr) {
         //OPTIX_CHECK(
         auto resu = optixModuleCreate(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module);
         if (resu != OPTIX_SUCCESS) {
-            printf(" optix error %d \n source = %s \n", resu, source);
+            module = nullptr;
+            std::cerr
+                << "OptiX module creation failed {" << name << "}: "
+                << optixGetErrorName(resu) << " (" << static_cast<int>(resu) << "): "
+                << optixGetErrorString(resu) << '\n';
+            if (log[0] != '\0') {
+                std::cerr << "OptiX module log:\n" << log << '\n';
+            }
+            return false;
         }
         //);
     } else {
         
         OptixTask firstTask;
-        OPTIX_CHECK(
-            optixModuleCreateWithTasks( 
-                context, 
-                &module_compile_options, 
-                &pipeline_compile_options,
-                input, 
-                inputSize, 
-                log, &sizeof_log, 
-                &module, 
-                &firstTask)
-        );
+        auto resu = optixModuleCreateWithTasks(
+            context,
+            &module_compile_options,
+            &pipeline_compile_options,
+            input,
+            inputSize,
+            log,
+            &sizeof_log,
+            &module,
+            &firstTask);
+        if (resu != OPTIX_SUCCESS) {
+            module = nullptr;
+            std::cerr
+                << "OptiX module creation failed {" << name << "}: "
+                << optixGetErrorName(resu) << " (" << static_cast<int>(resu) << "): "
+                << optixGetErrorString(resu) << '\n';
+            if (log[0] != '\0') {
+                std::cerr << "OptiX module log:\n" << log << '\n';
+            }
+            return false;
+        }
 
         executeOptixTask(firstTask, *_c_group);
         //COMPILE_WITH_TASKS_CHECK( //);
         _c_group->wait();  
     }
 
+    if (compiled_ptx != nullptr) {
+        *compiled_ptx = std::move(compile_result.data);
+    }
     return true;
 }
 
@@ -1409,6 +1552,7 @@ struct OptixShaderCore {
 struct CallableProgram
 {
     std::string cache_key {};
+    std::string ptx {};
     raii<OptixModule> module {};
     raii<OptixProgramGroup> prog_group {};
 };
@@ -1524,13 +1668,22 @@ struct OptixShaderWrapper
             _macros_.push_back("--define-macro=" + k + "=" + v);
         }
 
-        const auto cache_key = callableProgramCacheKey(callable_src, _macros_);
+        const bool compile_shared_volume_artifacts = isVol();
+        std::string cache_key = callableProgramCacheKey(callable_src, _macros_);
+        if (compile_shared_volume_artifacts) {
+            cache_key += ':' + currentComputeArchitectureOption();
+        }
         {
             std::unique_lock<std::mutex> lock(callable_program_cache_mutex);
             while (true) {
                 auto& entry = callable_program_cache[cache_key];
                 if (auto cached_program = entry.program.lock()) {
                     callable_prg = std::move(cached_program);
+                    if (compile_shared_volume_artifacts) {
+                        xinxinoptix::prepareVolumeDensityBakeModuleAsync(
+                            callable_prg->cache_key,
+                            callable_prg->ptx);
+                    }
                     if (old_callable_group != callable_prg->prog_group.handle) {
                         markPipelineProgramGroupsDirty();
                     }
@@ -1553,8 +1706,21 @@ struct OptixShaderWrapper
         try {
             auto program = std::make_shared<CallableProgram>();
             program->cache_key = cache_key;
-            auto callable_done = createModule(program->module.reset(), context, callable_src.c_str(), tmp_name.c_str(), _macros_); 
+            auto callable_done = createModule(
+                program->module.reset(),
+                context,
+                callable_src.c_str(),
+                tmp_name.c_str(),
+                _macros_,
+                compile_shared_volume_artifacts ? nullptr : _c_group,
+                compile_shared_volume_artifacts ? &program->ptx : nullptr);
             if (callable_done) {
+
+                if (compile_shared_volume_artifacts) {
+                    xinxinoptix::prepareVolumeDensityBakeModuleAsync(
+                        program->cache_key,
+                        program->ptx);
+                }
 
                 // Callable programs
                 OptixProgramGroupOptions callable_prog_group_options  = {};

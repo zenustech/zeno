@@ -28,6 +28,7 @@ struct VolumeIn {
 
     uint32_t* seed;
     void* sbt_ptr;
+    uint8_t forceNearestVDBSampling;
     
     float4 objectToWorld[3];
     float4 worldToObject[3];

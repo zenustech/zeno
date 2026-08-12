@@ -31,12 +31,17 @@ struct VolumeDensityBakeOptions {
 struct VolumeDensityBakeInputs {
     const Params* params = nullptr;
     const HitGroupData* hit_group = nullptr;
+    const std::string* callable_ptx = nullptr;
+    const std::string* callable_module_key = nullptr;
     const char* callable_source = nullptr;
     const char* density_signature = nullptr;
     const char* validation_label = nullptr;
-    std::vector<std::string> compile_macros;
     uint32_t seed = 1u;
 };
+
+void prepareVolumeDensityBakeModuleAsync(
+    const std::string& callable_module_key,
+    const std::string& callable_ptx);
 
 struct VolumeDensityBakeResult {
     float max_density = 0.0f;
