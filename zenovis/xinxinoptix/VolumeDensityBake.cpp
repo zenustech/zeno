@@ -5,9 +5,12 @@
 
 #include <cuda_runtime_api.h>
 
+#include <atomic>
+#include <cmath>
 #include <cstring>
 #include <future>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <algorithm>
@@ -38,6 +41,25 @@ bool checkCudaDriver(CUresult result, const char* expr)
     }
     std::cerr << expr << " failed: " << cudaDriverErrorString(result) << std::endl;
     return false;
+}
+
+float halfBitsToFloat(uint16_t bits)
+{
+    const uint32_t sign = uint32_t(bits >> 15u);
+    const uint32_t exponent = uint32_t(bits >> 10u) & 0x1Fu;
+    const uint32_t mantissa = uint32_t(bits) & 0x03FFu;
+
+    float value = 0.0f;
+    if (exponent == 0u) {
+        value = std::ldexp(float(mantissa), -24);
+    } else if (exponent < 31u) {
+        value = std::ldexp(float(mantissa + 1024u), int(exponent) - 25);
+    } else {
+        value = mantissa == 0u
+            ? std::numeric_limits<float>::infinity()
+            : std::numeric_limits<float>::quiet_NaN();
+    }
+    return sign != 0u ? -value : value;
 }
 
 bool checkCudaRuntime(cudaError_t result, const char* expr)
@@ -283,9 +305,8 @@ bool bakeDensityToSparseBricks(
     const VolumeDensityBakeOptions& options,
     VolumeDensityBakeResult* result)
 {
-    if (grid_size == 0 || device_volume.brick_count == 0 ||
-        device_volume.brick_table == nullptr || device_volume.brick_origins == nullptr ||
-        device_volume.voxel_values == nullptr) {
+    if (grid_size == 0 || device_volume.brick_count == 0 || device_volume.brick_table == nullptr ||
+        device_volume.brick_origins == nullptr || device_volume.voxel_values == nullptr) {
         return false;
     }
 
@@ -320,6 +341,8 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         : inputs.callable_source;
     device_volume.octree_filter = densityBakeFilterOrder(density_filter_source);
     const bool buildDenseGpuOctree = device_volume.octree != nullptr && octreeBuildDepth <= kDenseGpuOctreeStagingDepthLimit;
+    const uint8_t filter_order = device_volume.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK;
+    const bool requires_cell_bounds = !buildDenseGpuOctree;
     const uint32_t bottom_count = buildDenseGpuOctree ? (1u << (3u * octreeBuildDepth)) : 0u;
     const uint32_t dense_octree_node_count = buildDenseGpuOctree ? denseOctreeNodeCount(octreeBuildDepth) : 0u;
     const uint64_t cell_count = uint64_t(device_volume.brick_count) * 512ull;
@@ -356,13 +379,15 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         device_volume.cell_max = nullptr;
     };
 
-    if (!checkCudaDriver(cuMemAlloc(&cell_min, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMin)") ||
-        !checkCudaDriver(cuMemAlloc(&cell_max, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMax)")) {
-        cleanup();
-        return false;
+    if (requires_cell_bounds) {
+        if (!checkCudaDriver(cuMemAlloc(&cell_min, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMin)") ||
+            !checkCudaDriver(cuMemAlloc(&cell_max, sizeof(unsigned short) * cell_count), "cuMemAlloc(cellMax)")) {
+            cleanup();
+            return false;
+        }
+        device_volume.cell_min = reinterpret_cast<unsigned short*>(cell_min);
+        device_volume.cell_max = reinterpret_cast<unsigned short*>(cell_max);
     }
-    device_volume.cell_min = reinterpret_cast<unsigned short*>(cell_min);
-    device_volume.cell_max = reinterpret_cast<unsigned short*>(cell_max);
 
     if (buildDenseGpuOctree &&
         (!checkCudaDriver(cuMemAlloc(&leaf_min_bits, sizeof(unsigned int) * bottom_count), "cuMemAlloc(leafMinBits)") ||
@@ -445,7 +470,6 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         &device_volume,
         &max_density_bits,
     };
-    const uint8_t filter_order = device_volume.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK;
     CUfunction cell_bounds_kernel = bake_module->sparse_cell_bounds_linear_kernel;
     uint64_t cells_per_bounds_block = block_size;
     if (filter_order == 2u) {
@@ -458,14 +482,16 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
     const unsigned int cell_bounds_blocks = static_cast<unsigned int>(std::min<uint64_t>(
         (cell_count + cells_per_bounds_block - 1ull) / cells_per_bounds_block,
         65535ull));
-    if (!checkCudaDriver(cuLaunchKernel(
-            cell_bounds_kernel,
-            cell_bounds_blocks, 1, 1,
-            block_size, 1, 1,
-            0, nullptr,
-            cell_bounds_args, nullptr), "cuLaunchKernel(bakeBakedSparseVolumeCellBounds*)")) {
-        cleanup();
-        return false;
+    if (requires_cell_bounds) {
+        if (!checkCudaDriver(cuLaunchKernel(
+                cell_bounds_kernel,
+                cell_bounds_blocks, 1, 1,
+                block_size, 1, 1,
+                0, nullptr,
+                cell_bounds_args, nullptr), "cuLaunchKernel(bakeBakedSparseVolumeCellBounds*)")) {
+            cleanup();
+            return false;
+        }
     }
     if (bounds_end_event.valid()) {
         cuEventRecord(bounds_end_event.event, nullptr);
@@ -515,9 +541,13 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
         &leaf_coverage,
         &leaf_quantized_sum,
     };
+    constexpr unsigned int accumulation_warps_per_block = block_size / 32u;
+    const unsigned int accumulation_blocks = std::min<unsigned int>(
+        (bottom_count + accumulation_warps_per_block - 1u) / accumulation_warps_per_block,
+        65535u);
     if (!checkCudaDriver(cuLaunchKernel(
             bake_module->sparse_accumulate_octree_kernel,
-            bake_blocks, 1, 1,
+            accumulation_blocks, 1, 1,
             block_size, 1, 1,
             0, nullptr,
             accum_args, nullptr), "cuLaunchKernel(accumulateBakedSparseVolumeOctreeLeaves)")) {
@@ -616,10 +646,10 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
                 &dense_octree,
                 &compact_octree,
                 &current_dense_indices,
+                &current_count,
                 &next_dense_indices,
                 &child_offsets,
                 &child_counts,
-                &current_count,
                 &level,
                 &octreeBuildDepth,
                 &compact_level_start,
@@ -649,10 +679,10 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
                 &dense_octree,
                 &compact_octree,
                 &current_dense_indices,
+                &current_count,
                 &next_dense_indices,
                 &child_offsets,
                 &child_counts,
-                &current_count,
                 &level,
                 &octreeBuildDepth,
                 &compact_level_start,
@@ -695,11 +725,22 @@ std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_m
     const auto octree_wall_end = std::chrono::steady_clock::now();
 
     if (result != nullptr) {
-        if (!checkCudaDriver(cuMemcpyDtoH(&max_density_host, max_density_bits, sizeof(max_density_host)), "cuMemcpyDtoH(maxDensityBits)")) {
-            cleanup();
-            return false;
+        if (requires_cell_bounds) {
+            if (!checkCudaDriver(cuMemcpyDtoH(&max_density_host, max_density_bits, sizeof(max_density_host)), "cuMemcpyDtoH(maxDensityBits)")) {
+                cleanup();
+                return false;
+            }
+            std::memcpy(&result->max_density, &max_density_host, sizeof(result->max_density));
+        } else {
+            OcNode root_node {};
+            if (!checkCudaDriver(cuMemcpyDtoH(&root_node, dense_octree, sizeof(root_node)), "cuMemcpyDtoH(octreeRoot)")) {
+                cleanup();
+                return false;
+            }
+            uint16_t root_max_bits = 0u;
+            std::memcpy(&root_max_bits, &root_node.max_d, sizeof(root_max_bits));
+            result->max_density = halfBitsToFloat(root_max_bits);
         }
-        std::memcpy(&result->max_density, &max_density_host, sizeof(result->max_density));
         result->sparse_total_wall_ms = std::chrono::duration<float, std::milli>(octree_wall_end - sparse_wall_start).count();
         result->sparse_density_gpu_ms = elapsedMs(density_start_event, density_end_event);
         result->sparse_bounds_gpu_ms = elapsedMs(density_end_event, bounds_end_event);

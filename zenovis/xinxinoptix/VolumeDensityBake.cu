@@ -70,16 +70,6 @@ static __forceinline__ __device__ bool bakedSparseInsideSampleDomain(const nanov
         && coord[0] < volume.sample_max.x && coord[1] < volume.sample_max.y && coord[2] < volume.sample_max.z;
 }
 
-static __forceinline__ __device__ void bakedSparseAtomicMinFloatBits(unsigned int* address, float value)
-{
-    atomicMin(address, __float_as_uint(value));
-}
-
-static __forceinline__ __device__ void bakedSparseAtomicMaxFloatBits(unsigned int* address, float value)
-{
-    atomicMax(address, __float_as_uint(value));
-}
-
 static constexpr float kBakedSparseLeafAverageQuantizationScale = 4096.0f;
 
 extern "C" __global__ void initBakedSparseVolumeBuffers(
@@ -111,14 +101,9 @@ extern "C" __global__ void initBakedSparseVolumeBuffers(
     }
 }
 
-extern "C" __global__ void bakeDensityToSparseBricks(
-    BakedSparseVolumeDevice volume,
-    HitGroupData hitGroup,
-    int clampNegative,
-    uint32_t seedBase)
+extern "C" __global__ void bakeDensityToSparseBricks(BakedSparseVolumeDevice volume, HitGroupData hitGroup, int clampNegative, uint32_t seedBase)
 {
-    if (volume.voxel_values == nullptr || volume.brick_table == nullptr ||
-        volume.brick_origins == nullptr) {
+    if (volume.voxel_values == nullptr || volume.brick_table == nullptr || volume.brick_origins == nullptr) {
         return;
     }
 
@@ -530,65 +515,287 @@ extern "C" __global__ void bakeBakedSparseVolumeCellBoundsCubic(BakedSparseVolum
         volume, maxDensityBits, raw, stageX, stageY, blockMaximum);
 }
 
-extern "C" __global__ void accumulateBakedSparseVolumeOctreeLeaves(
-    BakedSparseVolumeDevice volume,
-    unsigned int* leafMinBits,
-    unsigned int* leafMaxBits,
-    unsigned int* leafCoverage,
-    unsigned long long* leafQuantizedSum)
+struct BakedSparseAxisFunctional
 {
+    int first;
+    int second;
+    BakedSparseWeightInterval firstWeight;
+    BakedSparseWeightInterval secondWeight;
+};
+
+template <uint8_t Order>
+static __forceinline__ __device__ BakedSparseAxisFunctional bakedSparseLeafAxisFunctional(int origin, int cellCount, int index)
+{
+    if (index == 0) {
+        if constexpr (Order == 2u) {
+            return { origin - 1, origin, bakedSparseWeightOneSeventh(), bakedSparseWeightSixSevenths() };
+        } else {
+            return { origin - 1, origin, bakedSparseWeightOneFifth(), bakedSparseWeightFourFifths() };
+        }
+    }
+
+    if constexpr (Order == 3u) {
+        if (index == cellCount + 2) {
+            return {
+                origin + cellCount,
+                origin + cellCount + 1,
+                bakedSparseWeightFourFifths(),
+                bakedSparseWeightOneFifth()
+            };
+        }
+    }
+
+    const int coord = origin + index - 1;
+    return { coord, coord, { 1.0f, 1.0f }, { 0.0f, 0.0f } };
+}
+
+static __forceinline__ __device__ BakedSparseInterval bakedSparseEvaluateXFunctional(
+    const BakedSparseVolumeDevice& volume, const BakedSparseAxisFunctional& x, int y, int z)
+{
+    const auto first = bakedSparseLoadDensityInterval(volume, make_int3(x.first, y, z));
+    if (x.first == x.second) {
+        return first;
+    }
+    return bakedSparseWeightedPair(
+        first,
+        bakedSparseLoadDensityInterval(volume, make_int3(x.second, y, z)),
+        x.firstWeight,
+        x.secondWeight);
+}
+
+static __forceinline__ __device__ BakedSparseInterval bakedSparseEvaluateXYFunctional(
+    const BakedSparseVolumeDevice& volume, const BakedSparseAxisFunctional& x, const BakedSparseAxisFunctional& y, int z)
+{
+    const auto first = bakedSparseEvaluateXFunctional(volume, x, y.first, z);
+    if (y.first == y.second) {
+        return first;
+    }
+    return bakedSparseWeightedPair(
+        first,
+        bakedSparseEvaluateXFunctional(volume, x, y.second, z),
+        y.firstWeight,
+        y.secondWeight);
+}
+
+static __forceinline__ __device__ BakedSparseInterval bakedSparseEvaluateXYZFunctional(
+    const BakedSparseVolumeDevice& volume, const BakedSparseAxisFunctional& x, const BakedSparseAxisFunctional& y, const BakedSparseAxisFunctional& z)
+{
+    const auto first = bakedSparseEvaluateXYFunctional(volume, x, y, z.first);
+    if (z.first == z.second) {
+        return first;
+    }
+    return bakedSparseWeightedPair(
+        first,
+        bakedSparseEvaluateXYFunctional(volume, x, y, z.second),
+        z.firstWeight,
+        z.secondWeight);
+}
+
+template <uint8_t Order>
+static __forceinline__ __device__ void bakedSparseAccumulateFilteredLeafEnvelope(
+    const BakedSparseVolumeDevice& volume, const int3& validMin, const int3& validSize, uint32_t lane, float& leafMin, float& leafMax)
+{
+    const uint32_t functionalCountX = uint32_t(validSize.x + 3);
+    const uint32_t functionalCountY = uint32_t(validSize.y + 3);
+    const uint32_t functionalCountZ = uint32_t(validSize.z + 3);
+    const uint64_t functionalSlice = uint64_t(functionalCountX) * uint64_t(functionalCountY);
+    const uint64_t functionalCount = functionalSlice * uint64_t(functionalCountZ);
+
+    // Across all cells in a leaf, interior weighted coefficients are convex
+    // combinations of selector coefficients already in the set. Only the
+    // outer blends can introduce a new extremum. This is the same
+    // tensor-product envelope as the per-cell path, with duplicate and
+    // dominated coefficients removed.
+    for (uint64_t functionalIndex = lane;
+         functionalIndex < functionalCount;
+         functionalIndex += 32u) {
+        const uint32_t fz = uint32_t(functionalIndex / functionalSlice);
+        const uint64_t sliceIndex = functionalIndex - uint64_t(fz) * functionalSlice;
+        const uint32_t fy = uint32_t(sliceIndex / uint64_t(functionalCountX));
+        const uint32_t fx = uint32_t(sliceIndex - uint64_t(fy) * uint64_t(functionalCountX));
+        const auto interval = bakedSparseEvaluateXYZFunctional(
+            volume,
+            bakedSparseLeafAxisFunctional<Order>(validMin.x, validSize.x, int(fx)),
+            bakedSparseLeafAxisFunctional<Order>(validMin.y, validSize.y, int(fy)),
+            bakedSparseLeafAxisFunctional<Order>(validMin.z, validSize.z, int(fz)));
+        leafMin = fminf(leafMin, interval.lower);
+        leafMax = fmaxf(leafMax, interval.upper);
+    }
+}
+
+extern "C" __global__ void accumulateBakedSparseVolumeOctreeLeaves(
+    BakedSparseVolumeDevice volume, unsigned int* leafMinBits, unsigned int* leafMaxBits, unsigned int* leafCoverage, unsigned long long* leafQuantizedSum)
+{
+    constexpr uint32_t warpSizeValue = 32u;
+    constexpr uint32_t warpsPerBlock = 8u;
     const int3 leafSize {
         max(volume.voxel_dim.x >> volume.octreeBuildDepth, 1),
         max(volume.voxel_dim.y >> volume.octreeBuildDepth, 1),
         max(volume.voxel_dim.z >> volume.octreeBuildDepth, 1)
     };
     const uint32_t leafRes = bakedSparseOctreeLeafRes(volume.octreeBuildDepth);
+    const uint32_t leafCount = bakedSparseOctreeLevelNodeCount(volume.octreeBuildDepth);
+    const uint32_t lane = threadIdx.x & (warpSizeValue - 1u);
+    const uint32_t warp = threadIdx.x / warpSizeValue;
+    const uint32_t firstLeaf = blockIdx.x * warpsPerBlock + warp;
+    const uint32_t leafStride = gridDim.x * warpsPerBlock;
+    const uint64_t leafCellCount =
+        uint64_t(leafSize.x) * uint64_t(leafSize.y) * uint64_t(leafSize.z);
+    const uint64_t leafSlice = uint64_t(leafSize.x) * uint64_t(leafSize.y);
+    const uint8_t filterOrder = volume.octree_filter & BAKED_SPARSE_FILTER_ORDER_MASK;
 
-    for (uint32_t brickIndex = blockIdx.x; brickIndex < volume.brick_count; brickIndex += gridDim.x) {
-        const int3 brickOrigin = volume.brick_origins[brickIndex];
-        for (uint32_t offset = threadIdx.x; offset < 512u; offset += blockDim.x) {
-            const int cx = int(offset & 7u);
-            const int cy = int((offset >> 3u) & 7u);
-            const int cz = int((offset >> 6u) & 7u);
-            const int3 cellCoord { brickOrigin.x + cx, brickOrigin.y + cy, brickOrigin.z + cz };
+    // A warp owns one leaf, so each result is written once without contended
+    // global atomics when many high-resolution cells map to the same leaf.
+    for (uint32_t leafIndex = firstLeaf; leafIndex < leafCount; leafIndex += leafStride) {
+        const uint3 leafCoord = bakedSparseDecodeDenseIndex(leafIndex, leafRes);
+        const int3 leafOrigin {
+            volume.voxel_min.x + int(leafCoord.x) * leafSize.x,
+            volume.voxel_min.y + int(leafCoord.y) * leafSize.y,
+            volume.voxel_min.z + int(leafCoord.z) * leafSize.z
+        };
+        float leafMin = CUDART_INF_F;
+        float leafMax = 0.0f;
+        uint32_t coverage = 0u;
+        unsigned long long quantizedSum = 0ull;
+
+        if (filterOrder > 1u) {
+            const int3 validMin {
+                max(leafOrigin.x, volume.sample_min.x),
+                max(leafOrigin.y, volume.sample_min.y),
+                max(leafOrigin.z, volume.sample_min.z)
+            };
+            const int3 validMax {
+                min(leafOrigin.x + leafSize.x, volume.sample_max.x),
+                min(leafOrigin.y + leafSize.y, volume.sample_max.y),
+                min(leafOrigin.z + leafSize.z, volume.sample_max.z)
+            };
+            const int3 validSize {
+                max(validMax.x - validMin.x, 0),
+                max(validMax.y - validMin.y, 0),
+                max(validMax.z - validMin.z, 0)
+            };
+
+            if (validSize.x > 0 && validSize.y > 0 && validSize.z > 0) {
+                if (filterOrder == 2u) {
+                    bakedSparseAccumulateFilteredLeafEnvelope<2u>(
+                        volume, validMin, validSize, lane, leafMin, leafMax);
+                } else {
+                    bakedSparseAccumulateFilteredLeafEnvelope<3u>(
+                        volume, validMin, validSize, lane, leafMin, leafMax);
+                }
+
+                const uint64_t validCellCount =
+                    uint64_t(validSize.x) * uint64_t(validSize.y) * uint64_t(validSize.z);
+                const uint64_t validCellSlice = uint64_t(validSize.x) * uint64_t(validSize.y);
+                for (uint64_t localIndex = lane; localIndex < validCellCount; localIndex += warpSizeValue) {
+                    const int cz = int(localIndex / validCellSlice);
+                    const uint64_t sliceIndex = localIndex - uint64_t(cz) * validCellSlice;
+                    const int cy = int(sliceIndex / uint64_t(validSize.x));
+                    const int cx = int(sliceIndex - uint64_t(cy) * uint64_t(validSize.x));
+                    const auto interval = bakedSparseLoadDensityInterval(
+                        volume, make_int3(validMin.x + cx, validMin.y + cy, validMin.z + cz));
+                    ++coverage;
+                    quantizedSum += static_cast<unsigned long long>(
+                        0.5f * (interval.lower + interval.upper) *
+                        kBakedSparseLeafAverageQuantizationScale + 0.5f);
+                }
+            }
+
+            for (uint32_t delta = warpSizeValue >> 1u; delta != 0u; delta >>= 1u) {
+                leafMin = fminf(leafMin, __shfl_down_sync(0xFFFFFFFFu, leafMin, delta));
+                leafMax = fmaxf(leafMax, __shfl_down_sync(0xFFFFFFFFu, leafMax, delta));
+                coverage += __shfl_down_sync(0xFFFFFFFFu, coverage, delta);
+                quantizedSum += __shfl_down_sync(0xFFFFFFFFu, quantizedSum, delta);
+            }
+            if (lane == 0u) {
+                if (!(leafMax > 0.0f)) {
+                    coverage = 0u;
+                    quantizedSum = 0ull;
+                }
+                leafMinBits[leafIndex] = __float_as_uint(leafMin);
+                leafMaxBits[leafIndex] = __float_as_uint(leafMax);
+                leafCoverage[leafIndex] = coverage;
+                leafQuantizedSum[leafIndex] = quantizedSum;
+            }
+            continue;
+        }
+
+        for (uint64_t localIndex = lane; localIndex < leafCellCount; localIndex += warpSizeValue) {
+            const int cz = int(localIndex / leafSlice);
+            const uint64_t sliceIndex = localIndex - uint64_t(cz) * leafSlice;
+            const int cy = int(sliceIndex / uint64_t(leafSize.x));
+            const int cx = int(sliceIndex - uint64_t(cy) * uint64_t(leafSize.x));
+            const int3 cellCoord { leafOrigin.x + cx, leafOrigin.y + cy, leafOrigin.z + cz };
             if (cellCoord.x < volume.sample_min.x || cellCoord.y < volume.sample_min.y || cellCoord.z < volume.sample_min.z ||
                 cellCoord.x >= volume.sample_max.x || cellCoord.y >= volume.sample_max.y || cellCoord.z >= volume.sample_max.z) {
                 continue;
             }
 
-            const uint64_t cellIndex = uint64_t(brickIndex) * 512ull + uint64_t(offset);
-            const float cellMin = __half2float(__ushort_as_half(volume.cell_min[cellIndex]));
-            const float cellMax = __half2float(__ushort_as_half(volume.cell_max[cellIndex]));
+            float cellMin = CUDART_INF_F;
+            float cellMax = 0.0f;
+            if (filterOrder <= 1u) {
+#pragma unroll
+                for (int z = 0; z < 2; ++z) {
+#pragma unroll
+                    for (int y = 0; y < 2; ++y) {
+#pragma unroll
+                        for (int x = 0; x < 2; ++x) {
+                            const auto interval = bakedSparseLoadDensityInterval(
+                                volume, make_int3(cellCoord.x + x, cellCoord.y + y, cellCoord.z + z));
+                            cellMin = fminf(cellMin, interval.lower);
+                            cellMax = fmaxf(cellMax, interval.upper);
+                        }
+                    }
+                }
+            } else {
+                const int3 rel {
+                    cellCoord.x - volume.voxel_min.x,
+                    cellCoord.y - volume.voxel_min.y,
+                    cellCoord.z - volume.voxel_min.z
+                };
+                const int3 brickCoord { rel.x >> 3, rel.y >> 3, rel.z >> 3 };
+                if (!bakedSparseInsideBrickDomain(brickCoord, volume.brick_dim)) {
+                    continue;
+                }
+                const int brickIndex = volume.brick_table[bakedSparseBrickTableIndex(brickCoord, volume.brick_dim)];
+                if (brickIndex < 0 || uint32_t(brickIndex) >= volume.brick_count) {
+                    continue;
+                }
+                const uint32_t cellOffset = uint32_t(rel.x & 7)
+                    | (uint32_t(rel.y & 7) << 3u)
+                    | (uint32_t(rel.z & 7) << 6u);
+                const uint64_t cellIndex = uint64_t(uint32_t(brickIndex)) * 512ull + uint64_t(cellOffset);
+                cellMin = __half2float(__ushort_as_half(volume.cell_min[cellIndex]));
+                cellMax = __half2float(__ushort_as_half(volume.cell_max[cellIndex]));
+            }
             if (!(cellMax > 0.0f)) {
                 continue;
             }
 
-            const int3 rel {
-                cellCoord.x - volume.voxel_min.x,
-                cellCoord.y - volume.voxel_min.y,
-                cellCoord.z - volume.voxel_min.z
-            };
-            const uint32_t leafX = min(uint32_t(rel.x / leafSize.x), leafRes - 1u);
-            const uint32_t leafY = min(uint32_t(rel.y / leafSize.y), leafRes - 1u);
-            const uint32_t leafZ = min(uint32_t(rel.z / leafSize.z), leafRes - 1u);
-            const uint32_t leafIndex = bakedSparseDenseIndex(leafX, leafY, leafZ, leafRes);
-            bakedSparseAtomicMinFloatBits(leafMinBits + leafIndex, cellMin);
-            bakedSparseAtomicMaxFloatBits(leafMaxBits + leafIndex, cellMax);
-            atomicAdd(leafCoverage + leafIndex, 1u);
-            const auto quantizedAverage = static_cast<unsigned long long>(
+            leafMin = fminf(leafMin, cellMin);
+            leafMax = fmaxf(leafMax, cellMax);
+            ++coverage;
+            quantizedSum += static_cast<unsigned long long>(
                 0.5f * (cellMin + cellMax) * kBakedSparseLeafAverageQuantizationScale + 0.5f);
-            atomicAdd(leafQuantizedSum + leafIndex, quantizedAverage);
+        }
+
+        for (uint32_t delta = warpSizeValue >> 1u; delta != 0u; delta >>= 1u) {
+            leafMin = fminf(leafMin, __shfl_down_sync(0xFFFFFFFFu, leafMin, delta));
+            leafMax = fmaxf(leafMax, __shfl_down_sync(0xFFFFFFFFu, leafMax, delta));
+            coverage += __shfl_down_sync(0xFFFFFFFFu, coverage, delta);
+            quantizedSum += __shfl_down_sync(0xFFFFFFFFu, quantizedSum, delta);
+        }
+        if (lane == 0u) {
+            leafMinBits[leafIndex] = __float_as_uint(leafMin);
+            leafMaxBits[leafIndex] = __float_as_uint(leafMax);
+            leafCoverage[leafIndex] = coverage;
+            leafQuantizedSum[leafIndex] = quantizedSum;
         }
     }
 }
 
 extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
-    BakedSparseVolumeDevice volume,
-    unsigned int* leafMinBits,
-    unsigned int* leafMaxBits,
-    unsigned int* leafCoverage,
-    unsigned long long* leafQuantizedSum,
-    uint8_t level)
+    BakedSparseVolumeDevice volume, uint32_t* leafMinBits, uint32_t* leafMaxBits, uint32_t* leafCoverage, uint64_t* leafQuantizedSum, uint8_t level)
 {
     const uint32_t nodeCount = bakedSparseOctreeLevelNodeCount(level);
     const bool preserveAverageForOffsetFallback =
@@ -668,12 +875,7 @@ extern "C" __global__ void reduceBakedSparseVolumeOctreeLevel(
 }
 
 extern "C" __global__ void countBakedSparseVolumeCompactChildren(
-    const OcNode* denseOctree,
-    const uint32_t* parentDenseIndices,
-    uint32_t parentCount,
-    uint8_t level,
-    uint8_t octreeDepth,
-    uint32_t* childCounts)
+    const OcNode* denseOctree, const uint32_t* parentDenseIndices, uint32_t parentCount, uint8_t level, uint8_t octreeDepth, uint32_t* childCounts)
 {
     const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= parentCount || level >= octreeDepth) {
@@ -686,12 +888,7 @@ extern "C" __global__ void countBakedSparseVolumeCompactChildren(
 }
 
 extern "C" __global__ void prefixBakedSparseVolumeCompactChildren(
-    uint32_t* childCounts,
-    uint32_t* childOffsets,
-    uint32_t parentCount,
-    uint32_t* levelCounts,
-    uint8_t level,
-    uint8_t octreeDepth)
+    uint32_t* childCounts, uint32_t* childOffsets, uint32_t parentCount, uint32_t* levelCounts, uint8_t level, uint8_t octreeDepth)
 {
     if (blockIdx.x != 0u || threadIdx.x != 0u || level >= octreeDepth) {
         return;
@@ -715,17 +912,11 @@ extern "C" __global__ void prefixBakedSparseVolumeCompactChildren(
 }
 
 extern "C" __global__ void emitBakedSparseVolumeCompactLevel(
-    const OcNode* denseOctree,
-    OcNode* compactOctree,
-    const uint32_t* parentDenseIndices,
-    uint32_t* childDenseIndices,
-    const uint32_t* childOffsets,
-    const uint32_t* childCounts,
-    uint32_t parentCount,
-    uint8_t level,
-    uint8_t octreeDepth,
-    uint32_t compactLevelStart,
-    uint32_t compactNextLevelStart)
+    const OcNode* denseOctree, OcNode* compactOctree,
+    const uint32_t* parentDenseIndices, uint32_t parentCount,
+    uint32_t* childDenseIndices, const uint32_t* childOffsets, const uint32_t* childCounts,
+    uint8_t level, uint8_t octreeDepth,
+    uint32_t compactLevelStart, uint32_t compactNextLevelStart)
 {
     const uint32_t tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= parentCount || level > octreeDepth) {
