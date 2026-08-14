@@ -136,12 +136,13 @@ extern "C" __global__ void bakeDensityToSparseBricks(
         }
 
         for (uint32_t offset = threadIdx.x; offset < 512u; offset += blockDim.x) {
+            const uint64_t voxelIndex = uint64_t(brickIndex) * 512ull + uint64_t(offset);
             const nanovdb::Coord coord(
                 origin.x + int(offset & 7u),
                 origin.y + int((offset >> 3u) & 7u),
                 origin.z + int((offset >> 6u) & 7u));
             if (!bakedSparseInsideSampleDomain(coord, volume)) {
-                volume.voxel_values[brickIndex * 512u + offset] = 0u;
+                volume.voxel_values[voxelIndex] = 0u;
                 continue;
             }
             uint32_t seed = seedBase;
@@ -172,7 +173,7 @@ extern "C" __global__ void bakeDensityToSparseBricks(
             value = fminf(sanitizeVolumeDensity(value), 65504.0f);
             // Round upward so zero stays exactly zero while every positive
             // shader result is enclosed by [previous_half(bits), bits].
-            volume.voxel_values[brickIndex * 512u + offset] =
+            volume.voxel_values[voxelIndex] =
                 __half_as_ushort(__float2half_ru(value));
         }
         __syncthreads();
@@ -218,7 +219,8 @@ BakedSparseInterval bakedSparseLoadDensityInterval(const BakedSparseVolumeDevice
     const int ly = rel.y - brickCoord.y * brickSize;
     const int lz = rel.z - brickCoord.z * brickSize;
     const uint32_t offset = uint32_t((lz * brickSize + ly) * brickSize + lx);
-    const uint16_t upperBits = volume.voxel_values[uint32_t(brickIndex) * 512u + offset];
+    const uint64_t voxelIndex = uint64_t(uint32_t(brickIndex)) * 512ull + uint64_t(offset);
+    const uint16_t upperBits = volume.voxel_values[voxelIndex];
     if (upperBits == 0u) {
         return { 0.0f, 0.0f };
     }
