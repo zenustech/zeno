@@ -1336,6 +1336,8 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 {
     camera_changed = true;
 
+    OptixUtil::resetShaderModuleBuildStats();
+
     timer.tick();
     OptixUtil::resetPipelineProgramGroupsDirty(refresh);
     int dirty_shader_count = 0;
@@ -1598,6 +1600,25 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
     state.params.global_buffers = (void**)buffers;
     initLaunchParams( state );
     defaultScene.bakeVolumeDensityForCurrentFrame(state.params);
+    const auto build_stats = OptixUtil::consumeShaderModuleBuildStats();
+    if (build_stats.shader_count != 0u ||
+        build_stats.optix_ir_count != 0u ||
+        build_stats.ptx_count != 0u ||
+        build_stats.optix_module_count != 0u ||
+        build_stats.cuda_module_count != 0u) {
+        std::cout << "---Shader Summary Begin---" << std::endl
+                  << "  shader       count=" << build_stats.shader_count
+                  << "  time=" << build_stats.shader_compile_time_ms << " ms"   << std::endl
+                  << "  optix_ir     count=" << build_stats.optix_ir_count
+                  << "  time=" << build_stats.optix_ir_compile_time_ms << " ms" << std::endl
+                  << "  ptx          count=" << build_stats.ptx_count
+                  << "  time=" << build_stats.ptx_compile_time_ms << " ms"      << std::endl
+                  << "  optix_module count=" << build_stats.optix_module_count
+                  << "  time=" << build_stats.optix_module_time_ms << " ms"     << std::endl
+                  << "  cuda_module  count=" << build_stats.cuda_module_count
+                  << "  time=" << build_stats.cuda_module_time_ms << " ms"      << std::endl;
+        std::cout << "---Shader Summary End---" << std::endl;
+    }
     if (defaultScene.consumeVolumeSceneBindingsDirty()) {
         defaultScene.make_scene(OptixUtil::context);
         state.params.handle = defaultScene.rootNode.handle;

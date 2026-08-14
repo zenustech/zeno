@@ -129,8 +129,73 @@ float elapsedMs(const CudaEventScope& start, const CudaEventScope& end)
     return ms;
 }
 
+std::atomic<unsigned int>& densityBakeModuleBuildCount()
+{
+    static std::atomic<unsigned int> count {0};
+    return count;
+}
+
+// Count overlapping module loads once while still accumulating sequential waves.
+struct DensityBakeModuleTimingIntervals {
+    using Clock = std::chrono::steady_clock;
+    using Interval = std::pair<Clock::time_point, Clock::time_point>;
+
+    std::mutex mutex;
+    std::vector<Interval> intervals;
+
+    void reset()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        intervals.clear();
+    }
+
+    void add(Clock::time_point begin, Clock::time_point end)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        intervals.emplace_back(begin, end);
+    }
+
+    uint64_t consumeMilliseconds()
+    {
+        std::vector<Interval> pending;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            pending.swap(intervals);
+        }
+        if (pending.empty()) {
+            return 0u;
+        }
+
+        std::sort(pending.begin(), pending.end(), [](const Interval& lhs, const Interval& rhs) {
+            return lhs.first < rhs.first;
+        });
+        auto interval_begin = pending.front().first;
+        auto interval_end = pending.front().second;
+        Clock::duration elapsed {};
+        for (size_t i = 1; i < pending.size(); ++i) {
+            if (pending[i].first <= interval_end) {
+                interval_end = std::max(interval_end, pending[i].second);
+            } else {
+                elapsed += interval_end - interval_begin;
+                interval_begin = pending[i].first;
+                interval_end = pending[i].second;
+            }
+        }
+        elapsed += interval_end - interval_begin;
+        return static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    }
+};
+
+DensityBakeModuleTimingIntervals& densityBakeModuleBuildTiming()
+{
+    static DensityBakeModuleTimingIntervals timing;
+    return timing;
+}
+
 DensityBakeModule* loadDensityBakeModuleImage(const std::string& material_image)
 {
+    const auto total_begin = std::chrono::steady_clock::now();
     auto module = std::make_unique<DensityBakeModule>();
 
     if (!checkCudaDriver(cuInit(0), "cuInit")) {
@@ -174,6 +239,9 @@ DensityBakeModule* loadDensityBakeModuleImage(const std::string& material_image)
         return nullptr;
     }
 
+    const auto total_end = std::chrono::steady_clock::now();
+    densityBakeModuleBuildCount().fetch_add(1u, std::memory_order_relaxed);
+    densityBakeModuleBuildTiming().add(total_begin, total_end);
     return module.release();
 }
 
@@ -293,6 +361,18 @@ uint32_t denseOctreeNodeCount(uint8_t octreeBuildDepth)
 
 } // namespace
 
+void resetVolumeDensityModuleBuildStats()
+{
+    densityBakeModuleBuildCount().store(0u, std::memory_order_relaxed);
+    densityBakeModuleBuildTiming().reset();
+}
+
+void consumeVolumeDensityModuleBuildStats(unsigned int& cuda_module_count, uint64_t& cuda_module_time_ms)
+{
+    cuda_module_count = densityBakeModuleBuildCount().exchange(0u, std::memory_order_relaxed);
+    cuda_module_time_ms = densityBakeModuleBuildTiming().consumeMilliseconds();
+}
+
 void prepareVolumeDensityBakeModuleAsync(const std::string& callable_module_key, const std::string& callable_ptx)
 {
     (void)requestDensityBakeModule(callable_module_key, callable_ptx);
@@ -310,14 +390,7 @@ bool bakeDensityToSparseBricks(
         return false;
     }
 
-    const auto elapsed_ms = [](auto begin, auto end) {
-        return std::chrono::duration<double, std::milli>(end - begin).count();
-    };
-
-const auto bake_module_begin = std::chrono::steady_clock::now();
     auto* bake_module = ensureDensityBakeKernel(inputs);
-const auto bake_module_end = std::chrono::steady_clock::now();
-std::cout << "\n bake cuda module cost:" << elapsed_ms(bake_module_begin, bake_module_end) << "ms \n";
 
     if (bake_module == nullptr) {
         return false;

@@ -43,6 +43,9 @@ void prepareVolumeDensityBakeModuleAsync(
     const std::string& callable_module_key,
     const std::string& callable_ptx);
 
+void resetVolumeDensityModuleBuildStats();
+void consumeVolumeDensityModuleBuildStats(unsigned int& cuda_module_count, uint64_t& cuda_module_time_ms);
+
 struct VolumeDensityBakeResult {
     float max_density = 0.0f;
     float sparse_total_wall_ms = 0.0f;

@@ -45,8 +45,10 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <utility>
 #include <vector>
 #include <string>
 #include <string_view>
@@ -251,6 +253,112 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 inline tbb::task_group _compile_group;
 
 inline std::atomic<bool> pipeline_program_groups_dirty{false};
+
+struct ShaderModuleBuildStats {
+    unsigned int shader_count = 0;
+    unsigned int optix_ir_count = 0;
+    unsigned int ptx_count = 0;
+    unsigned int optix_module_count = 0;
+    unsigned int cuda_module_count = 0;
+    uint32_t shader_compile_time_ms = 0;
+    uint32_t optix_ir_compile_time_ms = 0;
+    uint32_t ptx_compile_time_ms = 0;
+    uint32_t optix_module_time_ms = 0;
+    uint64_t cuda_module_time_ms = 0;
+};
+
+// Count overlapping worker intervals once while still accumulating sequential waves.
+struct ShaderBuildTimingIntervals {
+    using Clock = std::chrono::steady_clock;
+    using Interval = std::pair<Clock::time_point, Clock::time_point>;
+
+    std::mutex mutex;
+    std::vector<Interval> intervals;
+
+    void reset()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        intervals.clear();
+    }
+
+    void add(Clock::time_point begin, Clock::time_point end)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        intervals.emplace_back(begin, end);
+    }
+
+    uint32_t consumeMilliseconds()
+    {
+        std::vector<Interval> pending;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            pending.swap(intervals);
+        }
+        if (pending.empty()) {
+            return 0u;
+        }
+
+        std::sort(pending.begin(), pending.end(), [](const Interval& lhs, const Interval& rhs) {
+            return lhs.first < rhs.first;
+        });
+        auto interval_begin = pending.front().first;
+        auto interval_end = pending.front().second;
+        Clock::duration elapsed {};
+        for (size_t i = 1; i < pending.size(); ++i) {
+            if (pending[i].first <= interval_end) {
+                interval_end = std::max(interval_end, pending[i].second);
+            } else {
+                elapsed += interval_end - interval_begin;
+                interval_begin = pending[i].first;
+                interval_end = pending[i].second;
+            }
+        }
+        elapsed += interval_end - interval_begin;
+        return static_cast<uint32_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    }
+};
+
+struct ShaderModuleBuildCounters {
+    std::atomic<unsigned int> shader_count {0};
+    std::atomic<unsigned int> optix_ir_count {0};
+    std::atomic<unsigned int> ptx_count {0};
+    std::atomic<unsigned int> optix_module_count {0};
+    ShaderBuildTimingIntervals shader_compile_time;
+    ShaderBuildTimingIntervals optix_ir_compile_time;
+    ShaderBuildTimingIntervals ptx_compile_time;
+    ShaderBuildTimingIntervals optix_module_time;
+};
+
+inline ShaderModuleBuildCounters shader_module_build_counters;
+
+inline void resetShaderModuleBuildStats()
+{
+    shader_module_build_counters.shader_count.store(0u, std::memory_order_relaxed);
+    shader_module_build_counters.optix_ir_count.store(0u, std::memory_order_relaxed);
+    shader_module_build_counters.ptx_count.store(0u, std::memory_order_relaxed);
+    shader_module_build_counters.optix_module_count.store(0u, std::memory_order_relaxed);
+    shader_module_build_counters.shader_compile_time.reset();
+    shader_module_build_counters.optix_ir_compile_time.reset();
+    shader_module_build_counters.ptx_compile_time.reset();
+    shader_module_build_counters.optix_module_time.reset();
+    xinxinoptix::resetVolumeDensityModuleBuildStats();
+}
+
+inline ShaderModuleBuildStats consumeShaderModuleBuildStats()
+{
+    ShaderModuleBuildStats stats;
+    stats.shader_count = shader_module_build_counters.shader_count.exchange(0u, std::memory_order_relaxed);
+    stats.optix_ir_count = shader_module_build_counters.optix_ir_count.exchange(0u, std::memory_order_relaxed);
+    stats.ptx_count = shader_module_build_counters.ptx_count.exchange(0u, std::memory_order_relaxed);
+    stats.optix_module_count = shader_module_build_counters.optix_module_count.exchange(0u, std::memory_order_relaxed);
+    stats.shader_compile_time_ms = shader_module_build_counters.shader_compile_time.consumeMilliseconds();
+    stats.optix_ir_compile_time_ms = shader_module_build_counters.optix_ir_compile_time.consumeMilliseconds();
+    stats.ptx_compile_time_ms = shader_module_build_counters.ptx_compile_time.consumeMilliseconds();
+    stats.optix_module_time_ms = shader_module_build_counters.optix_module_time.consumeMilliseconds();
+    xinxinoptix::consumeVolumeDensityModuleBuildStats(stats.cuda_module_count, stats.cuda_module_time_ms);
+    return stats;
+}
 
 inline void resetPipelineProgramGroupsDirty(bool dirty)
 {
@@ -524,7 +632,9 @@ inline bool createModule(
         flat_macros += ele + "\n";
     }
 
+    const auto shader_compile_begin = std::chrono::steady_clock::now();
     auto compile_result = zeno::nvrtc_worker::compile(source, flat_macros.c_str(), name, compilerOptions);
+    const auto shader_compile_end = std::chrono::steady_clock::now();
     success = compile_result.success;
     inputSize = compile_result.data.size();
 
@@ -536,6 +646,22 @@ inline bool createModule(
         std::cerr << std::endl;
         return false;
     }
+    shader_module_build_counters.shader_count.fetch_add(1u, std::memory_order_relaxed);
+    shader_module_build_counters.shader_compile_time.add(
+        shader_compile_begin,
+        shader_compile_end);
+    if (compiled_ptx != nullptr) {
+        shader_module_build_counters.ptx_count.fetch_add(1u, std::memory_order_relaxed);
+        shader_module_build_counters.ptx_compile_time.add(
+            shader_compile_begin,
+            shader_compile_end);
+    } else {
+        shader_module_build_counters.optix_ir_count.fetch_add(1u, std::memory_order_relaxed);
+        shader_module_build_counters.optix_ir_compile_time.add(
+            shader_compile_begin,
+            shader_compile_end);
+    }
+
     std::string optix_ptx;
     const char* input = compile_result.data.data();
     if (compiled_ptx != nullptr) {
@@ -552,6 +678,7 @@ inline bool createModule(
         inputSize = optix_ptx.size();
     }
 
+    const auto optix_module_begin = std::chrono::steady_clock::now();
     if (_c_group == nullptr) {
         //OPTIX_CHECK(
         auto resu = optixModuleCreate(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &module);
@@ -596,6 +723,12 @@ inline bool createModule(
         //COMPILE_WITH_TASKS_CHECK( //);
         _c_group->wait();  
     }
+
+    const auto optix_module_end = std::chrono::steady_clock::now();
+    shader_module_build_counters.optix_module_count.fetch_add(1u, std::memory_order_relaxed);
+    shader_module_build_counters.optix_module_time.add(
+        optix_module_begin,
+        optix_module_end);
 
     if (compiled_ptx != nullptr) {
         *compiled_ptx = std::move(compile_result.data);
