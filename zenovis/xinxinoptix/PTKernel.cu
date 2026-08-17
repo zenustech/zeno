@@ -392,7 +392,7 @@ extern "C" __global__ void __raygen__rg()
             prd._tmin_ = 0.f;
             prd._mask_ = 255;
             prd.alphaHit = false;
-            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
+            traceRadianceSER(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
 
         auto _attenuation = prd.attenuation;
@@ -500,7 +500,7 @@ extern "C" __global__ void __raygen__rg()
                 prd._mask_ = 255;
                 prd.alphaHit = false;
 
-                traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_ & mark);
+                traceRadianceSER(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_ & mark);
             } while(prd.alphaHit);
         }
         seed = prd.seed;

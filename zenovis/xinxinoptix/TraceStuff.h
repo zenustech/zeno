@@ -216,6 +216,41 @@ static __forceinline__ __device__ void traceRadiance(
             u0, u1);
 }
 
+static __forceinline__ __device__ void traceRadianceSER(
+    OptixTraversableHandle handle,
+    float3                 ray_origin,
+    float3                 ray_direction,
+    float                  tmin,
+    float                  tmax,
+    void*                  prd,
+    OptixVisibilityMask    mask = 255u)
+{
+    unsigned int u0, u1;
+    packPointer(prd, u0, u1);
+
+    optixTraverse(
+        handle,
+        ray_origin,
+        ray_direction,
+        tmin,
+        tmax,
+        0.0f,                       // rayTime
+        mask,
+        OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+        RAY_TYPE_RADIANCE,          // SBT offset
+        RAY_TYPE_COUNT,             // SBT stride
+        RAY_TYPE_RADIANCE,          // missSBTIndex
+        u0, u1);
+
+    unsigned int coherence_hint = 0u; // Reserved miss key.
+    if (optixHitObjectIsHit()) {
+        const auto* rt_data = (const HitGroupData*)optixHitObjectGetSbtDataPointer();
+    }
+    // optixReorder(coherence_hint, params.ser_material_hint_bits);
+    optixReorder();
+    optixInvoke(u0, u1);
+}
+
 static __forceinline__ __device__ bool traceShadowCheap(
         OptixTraversableHandle handle,
         float3                 ray_origin,
