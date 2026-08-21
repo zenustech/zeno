@@ -326,7 +326,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     cudaMemcpyHostToDevice
                     ) );
 
-                optixLaunch(
+                OPTIX_CHECK( optixLaunch(
                     OptixUtil::pipeline,
                     0,
                     (CUdeviceptr)state.d_params.handle,
@@ -334,7 +334,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
                     &state.sbt,
                     state.params.width,
                     state.params.height,
-                    1);
+                    1) );
 }
 
 

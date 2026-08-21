@@ -102,6 +102,13 @@ namespace xinxinoptix {
         raii<CUdeviceptr> bufferTemp{};
         bufferTemp.resize(temp_buffer_size);
 
+        // Do not synchronize here: report a completed failure from earlier
+        // work on stream 0 before attributing it to optixAccelBuild. A busy
+        // stream is expected and remains ordered with the build below.
+        const cudaError_t stream_status = cudaStreamQuery(0);
+        if (stream_status != cudaErrorNotReady)
+            CUDA_CHECK(stream_status);
+
         const bool COMPACTION = !update && (accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION);
 
         if (!COMPACTION) {
@@ -115,17 +122,42 @@ namespace xinxinoptix {
                 ? retained_buffer_size - aux_size
                 : output_buffer_size;
 
-            OPTIX_CHECK( optixAccelBuild(   context,
+            const auto build_result = optixAccelBuild(
+                                            context,
                                             0,  // CUDA stream
                                             &accel_options, &build_input,
                                             1,  // num build inputs
-                                            bufferTemp, 
+                                            bufferTemp,
                                             temp_buffer_size,
                                             (CUdeviceptr)( (char*)_bufferXAS_ + aux_size),
                                             retained_output_size,
                                             &_handleXAS_,
                                             nullptr,
-                                            0 ) );
+                                            0);
+                                            
+            if (build_result != OPTIX_SUCCESS) {
+                unsigned int instance_count = 0;
+                if (build_input.type == OPTIX_BUILD_INPUT_TYPE_INSTANCES)
+                    instance_count = build_input.instanceArray.numInstances;
+
+                std::fprintf(
+                    stderr,
+                    "optixAccelBuild failed: result=%d operation=%u flags=0x%x "
+                    "inputType=%u instances=%u temp=%zu output=%zu retained=%zu "
+                    "buffer=0x%llx handle=0x%llx priorStream=%s\n",
+                    static_cast<int>(build_result),
+                    static_cast<unsigned int>(accel_options.operation),
+                    static_cast<unsigned int>(accel_options.buildFlags),
+                    static_cast<unsigned int>(build_input.type),
+                    instance_count,
+                    temp_buffer_size,
+                    retained_output_size,
+                    retained_buffer_size,
+                    static_cast<unsigned long long>(_bufferXAS_),
+                    static_cast<unsigned long long>(_handleXAS_),
+                    cudaGetErrorString(stream_status));
+            }
+            OPTIX_CHECK(build_result);
         } else {
 
             CUdeviceptr output_buffer_xas {};
@@ -158,7 +190,7 @@ namespace xinxinoptix {
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, 
                 (CUdeviceptr)( (char*)_bufferXAS_ + aux_size), compacted_size, &_handleXAS_ ) );
 
-                cudaFreeAsync((void*)output_buffer_xas, 0);
+                CUDA_CHECK(cudaFreeAsync((void*)output_buffer_xas, 0));
                 retained_buffer_size = compacted_size + aux_size;
             }
             else
