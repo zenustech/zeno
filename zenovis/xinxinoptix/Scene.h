@@ -33,7 +33,7 @@
 #include <sutil/vec_math.h>
 #include <tinygltf/json.hpp>
 
-#include "XAS.h"
+#include "optixCommon.h"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/fwd.hpp"
 #include "magic_enum.hpp"
@@ -73,6 +73,10 @@ private:
     phmap::parallel_flat_hash_map_m<std::string, glm::mat4> renderObjectMatrixMap;
 
     nlohmann::json sceneJson;
+    std::optional<std::string> sceneJsonSource;
+    bool candidateBindingsDirty {true};
+    bool sceneGraphDirty {true};
+    std::unordered_map<std::string, std::vector<std::string>> dynamicMatrixDependencies;
 
     phmap::parallel_node_hash_set_m<std::string> matrix_dirty;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
@@ -107,7 +111,15 @@ public:
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
+        const bool unchanged = table.size() == shader_indice_table.size()
+            && std::all_of(table.begin(), table.end(), [&](const auto& item) {
+                const auto current = shader_indice_table.find(item.first);
+                return current != shader_indice_table.end() && current->second == item.second;
+            });
+        if (unchanged) return;
+
         shader_indice_table = table;
+        candidateBindingsDirty = true;
 
         mesh_sbt_max = 0;
         dc_index_to_mat.clear();
@@ -151,8 +163,13 @@ public:
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
         matrix_map[key] = std::move(matrix_list);
         matrix_dirty.insert(key);
-        if (instance_ids.size() > 0) {
+        if (!instance_ids.empty()) {
             instance_ids_map[key] = std::move(instance_ids);
+        } else {
+            // Frame data may stop supplying custom IDs. Do not retain a
+            // shorter vector from an earlier frame and index through it while
+            // rebuilding the IAS.
+            instance_ids_map.erase(key);
         }
     }    
 
@@ -168,8 +185,17 @@ public:
     std::vector<std::string> cur_link;
 
     inline void preload_scene(const std::string& jsonString) {
+        if (sceneJsonSource && *sceneJsonSource == jsonString) return;
+
         try {
-            sceneJson = nlohmann::json::parse(jsonString);
+            auto nextScene = nlohmann::json::parse(jsonString);
+            sceneJsonSource = jsonString;
+            if (nextScene == sceneJson) return;
+
+            sceneJson = std::move(nextScene);
+            rebuildDynamicMatrixDependencies();
+            candidateBindingsDirty = true;
+            sceneGraphDirty = true;
         }
         catch (...) {
             zeno::log_error("Can not parse json in preload_scene");
@@ -177,7 +203,13 @@ public:
     }
 
     inline void updateGeoType(const std::string& key, ShaderMark mark) {
-        geoTypeMap.insert( {key, mark} );
+        const auto [it, inserted] = geoTypeMap.insert({key, mark});
+        if (inserted) {
+            candidateBindingsDirty = true;
+        } else if (it->second != mark) {
+            it->second = mark;
+            candidateBindingsDirty = true;
+        }
     }
 
     void cookGeoMatrix(std::unordered_set<uint>& volmats) {
@@ -306,7 +338,7 @@ public:
             optix_instances.push_back( opinstance );
         }
 
-        xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle);
+        xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle, false, &iasBuildWorkspace, true);
     }
 
     struct Candidate {
@@ -324,12 +356,249 @@ public:
         }
     };
 
-    inline void make_scene( OptixDeviceContext& context, float3 cam=make_float3(INFINITY) ) {
+private:
+    struct TreeLookPolicy {
+        bool collapseSingleChild{};
+        bool allowUpdate{};
+        bool preferFastBuild{};
+    };
+
+    static m3r4c composeAffine(const m3r4c& parent, const m3r4c& local) {
+        m3r4c result{};
+        for (int row = 0; row < 3; ++row) {
+            for (int column = 0; column < 3; ++column) {
+                result[row * 4 + column] =
+                    parent[row * 4 + 0] * local[0 * 4 + column]
+                  + parent[row * 4 + 1] * local[1 * 4 + column]
+                  + parent[row * 4 + 2] * local[2 * 4 + column];
+            }
+            result[row * 4 + 3] = parent[row * 4 + 3]
+              + parent[row * 4 + 0] * local[0 * 4 + 3]
+              + parent[row * 4 + 1] * local[1 * 4 + 3]
+              + parent[row * 4 + 2] * local[2 * 4 + 3];
+        }
+        return result;
+    }
+
+    static void appendInstance(InstanceCollector& collector, OptixTraversableHandle handle, const m3r4c& transform,
+                               uint32_t instance_id, uint32_t sbt_offset = 0, uint8_t visibility_mask = EverythingMask) {
+        OptixInstance instance{};
+        memcpy(instance.transform, transform.data(), sizeof(float) * 12);
+        instance.instanceId = instance_id;
+        instance.sbtOffset = sbt_offset;
+        instance.visibilityMask = visibility_mask;
+        instance.traversableHandle = handle;
+        collector.append(instance);
+    }
+
+    template <class Visitor>
+    void forEachGroupChildInstance(const nlohmann::json& group, InstanceCollector& destination, Visitor&& visit) {
+        for (const auto& item : group.items()) {
+            const auto& item_key = item.key();
+            const auto& matrix_keys = item.value();
+            const auto candidate_it = candidates.find(item_key);
+
+            glm::mat4 geometry_transform(1.0f);
+            const bool has_geometry_transform =
+                candidate_it != candidates.end() && candidate_it->second.matrix != nullptr;
+            if (has_geometry_transform) {
+                memcpy(glm::value_ptr(geometry_transform), candidate_it->second.matrix, sizeof(float) * 16);
+                const auto object_matrix_it = renderObjectMatrixMap.find(item_key);
+                if (object_matrix_it != renderObjectMatrixMap.end()) {
+                    geometry_transform = object_matrix_it->second * geometry_transform;
+                }
+            }
+
+            auto visitMatrix = [&](const m3r4c& matrix, size_t matrix_index, const std::vector<int>* instance_ids) {
+                const bool has_custom_id = instance_ids != nullptr && matrix_index < instance_ids->size();
+                const uint32_t instance_id = has_custom_id? static_cast<uint32_t>((*instance_ids)[matrix_index]) : 0u;
+
+                m3r4c local_transform = matrix;
+                if (has_geometry_transform) {
+                    glm::mat4 matrix_with_geometry(1.0f);
+                    memcpy(glm::value_ptr(matrix_with_geometry), matrix.data(), sizeof(float) * 12);
+                    matrix_with_geometry = geometry_transform * matrix_with_geometry;
+                    memcpy(local_transform.data(), glm::value_ptr(matrix_with_geometry), sizeof(float) * 12);
+                }
+                visit(item_key, local_transform, instance_id);
+            };
+
+            if (matrix_keys.empty()) {
+                destination.reserveAdditional(1);
+                visitMatrix(IdentityMatrix, 0, nullptr);
+                continue;
+            }
+
+            for (const auto& matrix_key_json : matrix_keys.items()) {
+                const auto& matrix_key = matrix_key_json.value().get_ref<const std::string&>();
+                const auto matrix_it = matrix_map.find(matrix_key);
+                if (matrix_it == matrix_map.end()) continue;
+                const auto& matrix_list = matrix_it->second;
+                const auto id_it = instance_ids_map.find(matrix_key);
+                const auto* instance_ids = id_it == instance_ids_map.end()? nullptr : std::addressof(id_it->second);
+                destination.reserveAdditional(matrix_list.size());
+                for (size_t i = 0; i < matrix_list.size(); ++i) {
+                    visitMatrix(matrix_list[i], i, instance_ids);
+                }
+            }
+        }
+    }
+
+    void rebuildDynamicMatrixDependencies() {
+        dynamicMatrixDependencies.clear();
+
+        const auto groups_it = sceneJson.find("DynamicRenderGroups");
+        if (groups_it == sceneJson.end() || !groups_it->is_object()) return;
+        const auto& groups = *groups_it;
+
+        std::unordered_map<std::string, std::vector<std::string>> parents;
+        std::unordered_map<std::string, std::unordered_set<std::string>> direct_dependencies;
+
+        for (const auto& group : groups.items()) {
+            if (!group.value().is_object()) continue;
+            for (const auto& child : group.value().items()) {
+                if (groups.contains(child.key())) {
+                    parents[child.key()].push_back(group.key());
+                }
+                for (const auto& matrix : child.value().items()) {
+                    if (!matrix.value().is_string()) continue;
+                    const auto& matrix_key = matrix.value().get_ref<const std::string&>();
+                    direct_dependencies[matrix_key].insert(group.key());
+                }
+            }
+        }
+
+        for (auto& [matrix_key, direct] : direct_dependencies) {
+            std::unordered_set<std::string> dependencies = std::move(direct);
+            std::vector<std::string> pending(dependencies.begin(), dependencies.end());
+            while (!pending.empty()) {
+                auto group_name = std::move(pending.back());
+                pending.pop_back();
+
+                const auto parent_it = parents.find(group_name);
+                if (parent_it == parents.end()) continue;
+                for (const auto& parent : parent_it->second) {
+                    if (dependencies.insert(parent).second) {
+                        pending.push_back(parent);
+                    }
+                }
+            }
+
+            auto& cached = dynamicMatrixDependencies[matrix_key];
+            cached.reserve(dependencies.size());
+            for (const auto& group_name : dependencies) {
+                cached.push_back(group_name);
+            }
+        }
+    }
+
+    void invalidateDynamicMatrixDependencies() {
+        for (const auto& matrix_key : matrix_dirty) {
+            const auto dependency_it = dynamicMatrixDependencies.find(matrix_key);
+            if (dependency_it == dynamicMatrixDependencies.end()) continue;
+
+            for (const auto& group_name : dependency_it->second) {
+                const auto node_it = nodeCache.find(group_name);
+                if (node_it != nodeCache.end() && node_it->second) {
+                    node_it->second->frame = UINT32_MAX;
+                }
+            }
+        }
+    }
+
+    void refreshCandidateBindings(const std::unordered_set<std::string>& geometry_dirty, std::unordered_set<std::string>& candidate_dirty) {
+        const auto& bri = sceneJson[brikey];
+
+        for (auto candidate_it = candidates.begin(); candidate_it != candidates.end();) {
+            if (!bri.contains(candidate_it->first)) {
+                candidate_dirty.insert(candidate_it->first);
+                candidate_it = candidates.erase(candidate_it);
+            } else {
+                ++candidate_it;
+            }
+        }
+
+        candidates.reserve(bri.size());
+        for (auto it = bri.begin(); it != bri.end(); ++it) {
+            const auto& candidate_name = it.key();
+            const auto& geometry_name = it.value()["Geom"].get_ref<const std::string&>();
+
+            cleanTasks.erase(geometry_name);
+
+            glm::mat4* matrix = nullptr;
+            const auto geometry_type = checkGeoType(geometry_name, &matrix);
+
+            Candidate candidate {};
+            candidate.handle = gas_handles[geometry_name];
+            candidate.matrix = matrix;
+
+            const auto material = it.value().value("Material", "");
+            const auto material_key = std::make_tuple(material, geometry_type);
+            const auto shader_it = shader_indice_table.find(material_key);
+
+            uint16_t shader_index = 0u;
+            auto visibility = VisibilityMask::NothingMask;
+            if (shader_it != shader_indice_table.end()) {
+                shader_index = shader_it->second;
+                visibility = VisibilityMask::DefaultMatMask;
+            }
+
+            if (geometry_type == ShaderMark::Mesh) {
+                const auto mesh = _meshes_[geometry_name];
+                shader_index = mesh != nullptr && mesh->mat_idx.size() == 1 ? mesh->mat_idx[0] : 0u;
+                visibility = VisibilityMask::DefaultMatMask;
+            } else if (geometry_type == ShaderMark::Volume) {
+                visibility = VisibilityMask::VolumeMaskHeterogeneous;
+                if (shader_it == shader_indice_table.end()
+                    || shader_it->second >= OptixUtil::rtMaterialShaders.size()) {
+                    visibility = VisibilityMask::NothingMask;
+                } else {
+                    shader_index = shader_it->second;
+                    const auto& shader = OptixUtil::rtMaterialShaders[shader_index];
+                    if (!shader.vbds.empty()) {
+                        const auto density_slot = shader.density_vdb_primary_slot;
+                        if (density_slot >= shader.vbds.size()) {
+                            visibility = VisibilityMask::NothingMask;
+                        } else {
+                            const auto& vdb_key = shader.vbds[density_slot];
+                            const auto vdb_it = _vdb_grids_cached.find(vdb_key);
+                            if (vdb_it == _vdb_grids_cached.end() || vdb_it->second->node->handle == 0) {
+                                visibility = VisibilityMask::NothingMask;
+                            } else {
+                                candidate.handle = vdb_it->second->node->handle;
+                            }
+                        }
+                    }
+                    if (shader.isHomoVol()) {
+                        visibility = VisibilityMask::VolumeMaskAnalytics;
+                    }
+                }
+            }
+
+            candidate.sbt = shader_index * RAY_TYPE_COUNT;
+            candidate.vmask = visibility;
+
+            const auto previous = candidates.find(candidate_name);
+            if (geometry_dirty.count(geometry_name) != 0
+                || previous == candidates.end() || previous->second != candidate) {
+                candidate_dirty.insert(candidate_name);
+            }
+            if (previous == candidates.end()) {
+                candidates.emplace(candidate_name, candidate);
+            } else {
+                previous->second = candidate;
+            }
+        }
+
+        candidateBindingsDirty = false;
+    }
+
+public:
+
+    inline void make_scene(OptixDeviceContext& context, float3 cam, bool camera_only) {
 
         this->cameraPos = cam;
         auto gather = [&]() {
-
-            if (std::isinf(cam.x)) { cam = {}; }
             
             auto CameraSapceMatrix = IdentityMatrix;
             CameraSapceMatrix[3] -= cam.x;
@@ -365,22 +634,35 @@ public:
                 instanced.push_back(opi);
             }
 
-            xinxinoptix::buildIAS(context, instanced, this->rootNode);
+            const bool same_children = rootLightChild == lightsWrapper.lightIasHandle
+                                && rootStaticChild == staticRenderGroup
+                                && rootDynamicChild == dynamicRenderGroup;
+            xinxinoptix::buildIAS(context, instanced, this->rootNode, same_children, true);
+            rootLightChild = lightsWrapper.lightIasHandle;
+            rootStaticChild = staticRenderGroup;
+            rootDynamicChild = dynamicRenderGroup;
         };
 
-        if (cam.x != INFINITY || !sceneJson.contains(brikey) ) { 
+        if (camera_only || !sceneJson.contains(brikey)) {
             if (!nodeCache.empty())
-                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache);
+                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, true);
             gather();
             return;
         }
 
         dynamicRenderGroup = 0;
         //nodeCache = {};
-        
+
+        // A child GAS UPDATE keeps its traversable handle, but OptiX still
+        // requires every ancestor IAS to be updated or rebuilt. Preserve the
+        // dirty task keys through the existing candidate pass so dependency
+        // invalidation does not depend on the opaque handle changing.
+        std::unordered_set<std::string> geometry_dirty;
+        geometry_dirty.reserve(dirtyTasks.size());
         if (!dirtyTasks.empty()) {
             
             for(auto& [key, task] : dirtyTasks) {
+                geometry_dirty.insert(key);
                 auto handle = task(context);
                 gas_handles[key] = handle;
                 gas_to_obj_id[handle] = key;
@@ -397,98 +679,10 @@ public:
             dirtyTextures.clear();
         }
 
-        matrix_map[""] = std::vector<m3r4c> { IdentityMatrix };
-        static const std::vector fallback_keys { "" };
-        
-        std::unordered_map<std::string, Candidate> next_candidates;
         std::unordered_set<std::string> candidate_dirty;
-        const auto& bri = sceneJson[brikey];
-        next_candidates.reserve(bri.size());
-        for (auto it = bri.begin(); it != bri.end(); ++it) {
-            //std::cout << it.key() << " : " << it.value() << "\n";
-            const auto candi_name = it.key();
-            const auto geo_name = it.value()["Geom"].template get<std::string>();
-
-            cleanTasks.erase(geo_name);
-
-            glm::mat4* matrix_ptr = nullptr;
-            const auto geo_type = checkGeoType(geo_name, &matrix_ptr);
-
-            Candidate candi {};
-            candi.handle = gas_handles[geo_name];
-            candi.matrix = matrix_ptr;
-
-            const auto material_str = it.value().value("Material", "");
-            auto material_key = std::make_tuple(material_str, geo_type);
-
-            uint16_t shader_index = 0u;
-            auto shader_visiable = VisibilityMask::NothingMask;
-
-            if (shader_indice_table.count(material_key)) {
-                shader_index = shader_indice_table.at(material_key);
-                shader_visiable = VisibilityMask::DefaultMatMask;
-            }
-            if (ShaderMark::Mesh == geo_type) {
-
-                auto mesh = _meshes_[geo_name];
-                if (mesh != nullptr && mesh->mat_idx.size()==1) {
-                    shader_index = mesh->mat_idx[0];
-                } else {
-                    shader_index = 0u;
-                }
-                shader_visiable = VisibilityMask::DefaultMatMask;
-                
-            } else if (ShaderMark::Volume == geo_type) {
-                shader_visiable = VisibilityMask::VolumeMaskHeterogeneous;
-
-                auto shader_it = shader_indice_table.find(material_key);
-                if (shader_it == shader_indice_table.end() ||
-                    shader_it->second >= OptixUtil::rtMaterialShaders.size()) {
-                    shader_visiable = VisibilityMask::NothingMask;
-                } else {
-                    shader_index = shader_it->second;
-                    const auto& shader_ref = OptixUtil::rtMaterialShaders[shader_index];
-
-                    if ( shader_ref.vbds.size() > 0 ) {
-
-                        const auto density_slot = shader_ref.density_vdb_primary_slot;
-                        if (density_slot >= shader_ref.vbds.size()) {
-                            shader_visiable = VisibilityMask::NothingMask;
-                        } else {
-                            auto vdb_key = shader_ref.vbds[density_slot];
-
-                            if (_vdb_grids_cached.count(vdb_key)==0) {
-                                shader_visiable = VisibilityMask::NothingMask;
-                            } else {
-                                auto vdb_ptr = _vdb_grids_cached.at(vdb_key);
-                                if (vdb_ptr->node->handle == 0) {
-                                    shader_visiable = VisibilityMask::NothingMask;
-                                } else {
-                                    candi.handle = vdb_ptr->node->handle;
-                                }
-                            }
-                        } //vdb_ptr
-                    }
-                    if (shader_ref.isHomoVol())
-                        shader_visiable = VisibilityMask::VolumeMaskAnalytics;
-                }
-            }
-
-            candi.sbt = shader_index * RAY_TYPE_COUNT;
-            candi.vmask = shader_visiable;
-            const auto previous = candidates.find(candi_name);
-            if (previous == candidates.end() || previous->second != candi) {
-                candidate_dirty.insert(candi_name);
-            }
-            next_candidates.emplace(candi_name, candi);
-        } //bri
-
-        for (const auto& [name, _] : candidates) {
-            if (next_candidates.count(name) == 0) {
-                candidate_dirty.insert(name);
-            }
+        if (candidateBindingsDirty || !geometry_dirty.empty() || !cleanTasks.empty()) {
+            refreshCandidateBindings(geometry_dirty, candidate_dirty);
         }
-        candidates = std::move(next_candidates);
 
         if (!cleanTasks.empty()) {
             for (auto& [k, task] : cleanTasks) {
@@ -496,6 +690,17 @@ public:
                 gas_handles.erase(k);
             }
             cleanTasks.clear();
+        }
+
+        if (sceneGraphDirty) {
+            for (auto& [_, node] : nodeCache) {
+                if (node) node->frame = UINT32_MAX;
+            }
+            for (auto& [_, node] : nodeCacheStatic) {
+                if (node) node->frame = UINT32_MAX;
+            }
+            staticRenderGroup = 0;
+            sceneGraphDirty = false;
         }
 
         std::function<bool(const std::string&, nlohmann::json&, decltype(nodeCache)&)> dirtyCheck;
@@ -522,7 +727,8 @@ public:
 
                 auto& matrix_keys = item.value();
                 for (auto& matrix_key : matrix_keys.items()) {
-                    if ( matrix_dirty.contains(matrix_key.value().get<std::string>()) ) {
+                    const auto& matrix_name = matrix_key.value().get_ref<const std::string&>();
+                    if (matrix_dirty.contains(matrix_name)) {
                         dirty |= true; break;
                     }
                 }
@@ -549,187 +755,136 @@ public:
         };
 
         if (!matrix_dirty.empty() || !candidate_dirty.empty()) {
-            dirtyGroup("DynamicRenderGroups", "DynamicEntries", nodeCache);
-            if (!candidate_dirty.empty()
-                && dirtyGroup("StaticRenderGroups", "StaticEntries", nodeCacheStatic)) {
+            if (candidate_dirty.empty()) {
+                invalidateDynamicMatrixDependencies();
+            } else {
+                // Candidate/GAS changes are rare and can affect topology, so
+                // retain the recursive dependency check for that general case.
+                dirtyGroup("DynamicRenderGroups", "DynamicEntries", nodeCache);
+            }
+            if (collapseDynamicSingleChildIAS && !candidate_dirty.empty()) {
+                // Candidate changes can alter the collapsed topology itself.
+                for (auto& [_, node] : nodeCache) {
+                    if (node) node->frame = UINT32_MAX;
+                }
+            }
+            if (!candidate_dirty.empty() && dirtyGroup("StaticRenderGroups", "StaticEntries", nodeCacheStatic)) {
                 staticRenderGroup = 0;
             }
             matrix_dirty.clear();
         }
         
-        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, uint& test_depth, 
-                            decltype(nodeCache)& nodeCache) -> OptixTraversableHandle 
+        // Emit obj_key into destination and return its traversable depth.
+        // Unary groups emit their descendants directly; other groups append a
+        // cached or newly built IAS instance.
+        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache,
+                                   InstanceCollector& destination, const m3r4c& transform, const uint32_t instance_id, const TreeLookPolicy& policy) -> uint
         {
-            auto& candidates = this->candidates;
-            {
-                auto find = candidates.find(obj_key);
-                if (find != candidates.end()) { //leaf node
-                    test_depth = 1;
-                    return find->second.handle;
-                }
+            const auto candidate_it = candidates.find(obj_key);
+            if (candidate_it != candidates.end()) {
+                const auto& candidate = candidate_it->second;
+                if (candidate.handle == 0) return 0;
+                appendInstance(destination, candidate.handle, transform, instance_id, candidate.sbt, candidate.vmask);
+                return 1;
+            }
+
+            const auto group_it = renderGroup.find(obj_key);
+            if (group_it == renderGroup.end() || group_it->empty()) return 0;
+
+            if (group_it->size() == 1 && policy.collapseSingleChild) {
+
+                uint8_t max_depth = 0;
+                // One child key can still expand to many matrix instances.
+                forEachGroupChildInstance(*group_it, destination, [&](const std::string& item_key, const m3r4c& local_transform, uint32_t child_instance_id) {
+                    auto tmp_matrix = composeAffine(transform, local_transform);
+                    auto test_depth = treeLook(item_key, renderGroup, nodeCache, destination, tmp_matrix, child_instance_id, policy);
+                    max_depth = max(max_depth, test_depth);
+                });
+                return max_depth;
             }
 
             auto& node = nodeCache[obj_key];
             if (nullptr == node) {
                 node = std::make_shared<SceneNode>();
-            } else {
-                if (node->frame == frameid) {
-                    test_depth = node->depth;
-                    return node->handle;
-                }
+            } else if (node->frame != UINT32_MAX && node->handle != 0) {
+                appendInstance(destination, node->handle, transform, instance_id);
+                return node->depth;
             }
+
+            InstanceCollector collector(*node);
+            uint8_t child_depth = 0;
+            forEachGroupChildInstance(*group_it, collector, [&](const std::string& item_key, const m3r4c& local_transform, uint32_t child_instance_id) {
+                auto test_depth = treeLook(item_key, renderGroup, nodeCache, collector, local_transform, child_instance_id, policy);
+                child_depth = max(child_depth, test_depth);
+            });
+
+            xinxinoptix::buildIAS(context, node->hostInstances, *node,
+                policy.allowUpdate && collector.canUpdate(), policy.preferFastBuild, !policy.preferFastBuild);
+            collector.commit();
+
+            if (node->handle == 0) return 0;
             node->frame = frameid;
-            std::vector<OptixInstance> instanced {};
+            node->depth = node->hostInstances.empty()? 0 : child_depth + 1;
 
-            auto find_obj = renderGroup.find(obj_key);
-            if (find_obj == renderGroup.end()) { return 0; }
-            auto& ref = *find_obj;
-            
-            uint instanceId = 0;
-            uint maxDepth = 0;
-
-            for (auto& item : ref.items()) {
-                auto& item_key = item.key();
-
-                OptixTraversableHandle handle;
-                uint theDepth = 0;
-
-                handle = treeLook(item_key, renderGroup, theDepth, nodeCache);
-                maxDepth = max(maxDepth, theDepth);
-
-                const bool leaf = candidates.count(item_key) > 0;
-               
-                uint sbtOffset = 0u;
-                auto vMask = EverythingMask;
-                glm::mat4* matrix_ptr = nullptr;
-
-                if (leaf) {
-                    auto& candi = candidates.at(item_key);
-                    sbtOffset = candi.sbt;
-                    vMask = candi.vmask;
-                    matrix_ptr = candi.matrix;
-                }
-
-                if (handle == 0u) { continue; }
-
-                auto& matrix_keys = item.value();
-                if (matrix_keys.empty()) {
-                    matrix_keys = fallback_keys;
-                }
-
-                OptixInstance opi {};
-                opi.sbtOffset = sbtOffset;
-                opi.visibilityMask = vMask;
-                opi.traversableHandle = handle;
-
-                for (auto& matrix_key : matrix_keys.items()) {
-
-                    const auto& matrix_list = matrix_map[matrix_key.value().get<std::string>()];
-                    const auto id_it = instance_ids_map.find(matrix_key.value().get<std::string>());
-                    const auto has_custom_id = id_it != instance_ids_map.end();
-
-                    instanced.reserve(instanced.size() + matrix_list.size());
-
-                    for (size_t i=0; i<matrix_list.size(); ++i) {
-
-                        if (has_custom_id) {
-                            opi.instanceId = id_it->second[i];
-                        }
-
-                        if (nullptr != matrix_ptr) {
-
-                            glm::mat4 geo_matrix(1.0f);
-                            memcpy(glm::value_ptr(geo_matrix), matrix_ptr, sizeof(float)*16);
-
-                            if (renderObjectMatrixMap.count(item_key)) {
-
-                                auto objectMatrix = renderObjectMatrixMap.at(item_key);
-                                geo_matrix = objectMatrix * geo_matrix;
-                            }
-
-                            glm::mat4 the_matrix(1.0f);
-                            memcpy(glm::value_ptr(the_matrix), matrix_list[i].data(), sizeof(float)*12);
-
-                            the_matrix = geo_matrix * the_matrix;
-
-                            //auto dummy = glm::transpose(the_matrix);
-                            auto dummy_ptr = glm::value_ptr( the_matrix );
-                            memcpy(opi.transform, dummy_ptr, sizeof(float)*12);
-                            
-                        } else {
-                            memcpy(opi.transform, matrix_list[i].data(), sizeof(float)*12);
-                        }
-                        instanced.push_back(opi);
-                    }
-                }
-            }
-
-            xinxinoptix::buildIAS(context, instanced, *node);
-            test_depth = maxDepth+1;
-            node->depth = test_depth;
-            return node->handle;
+            appendInstance(destination, node->handle, transform, instance_id);
+            return node->depth;
         };
 
-        groupTask = [&](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache) -> OptixTraversableHandle 
+        groupTask = [this, &context](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache, bool allow_update) -> uint64_t
         {
             if (!sceneJson.contains(group_key)) return 0;
             if (!sceneJson.contains(entry_key)) return 0;
 
             auto& rg = sceneJson[group_key];
             auto& entrys = sceneJson[entry_key];
+            const TreeLookPolicy policy { cameraSpace && collapseDynamicSingleChildIAS, allow_update, cameraSpace };
 
-            std::vector<OptixInstance> instanced {};
-            instanced.reserve(entrys.size());
+            auto& top_node = nodeCache[group_key.data()];
+            if (nullptr == top_node) top_node = std::make_shared<SceneNode>();
+            InstanceCollector collector(*top_node);
+            uint8_t child_depth = 0;
+            uint32_t instance_id = 0;
 
-            uint instanceId = 0;
-            uint test_depth = 0;
-
-            for (const auto& kv : entrys.items()) {
-
-                auto& key = kv.key();
-                auto& matrix_keys = kv.value();
-
-                uint depth = 0u;
-                auto handle = treeLook(key, rg, depth, nodeCache);
-                test_depth = max(test_depth, depth);
-
-                OptixInstance opi {};
-                opi.visibilityMask = EverythingMask;
-                opi.traversableHandle = handle;
-
-                //auto matrix_keys = fallback_keys;
-                for (auto& mkey : matrix_keys.items()) {
-                    const auto& mlist = matrix_map[mkey.value().get<std::string>()];
-                    for (size_t i=0; i<mlist.size(); ++i) {
-                        auto& matrix = mlist[i];
-                        memcpy(opi.transform, matrix.data(), sizeof(float)*12);
+            for (const auto& entry : entrys.items()) {
+                const auto& key = entry.key();
+                const auto& matrix_keys = entry.value();
+                for (const auto& matrix_key_json : matrix_keys.items()) {
+                    const auto& matrix_key = matrix_key_json.value().get_ref<const std::string&>();
+                    const auto matrix_it = matrix_map.find(matrix_key);
+                    if (matrix_it == matrix_map.end()) continue;
+                    collector.reserveAdditional(matrix_it->second.size());
+                    for (auto matrix : matrix_it->second) {
                         if (cameraSpace) {
-                            opi.transform[3] -= cameraPos.x;
-                            opi.transform[7] -= cameraPos.y;
-                            opi.transform[11] -= cameraPos.z;
+                            matrix[3] -= cameraPos.x;
+                            matrix[7] -= cameraPos.y;
+                            matrix[11] -= cameraPos.z;
                         }
-                        opi.instanceId = instanceId++;
-                        instanced.push_back(opi);
+                        auto test_depth = treeLook(key, rg, nodeCache, collector, matrix, instance_id++, policy);
+                        child_depth = max(child_depth, test_depth);
                     }
                 }
             }
 
-            if (instanced.size() == 0) return 0;
+            if (top_node->hostInstances.empty()) {
+                collector.commit();
+                top_node->depth = 0;
+                return 0;
+            }
 
-            auto& node = nodeCache[group_key.data()];
-            if (nullptr == node) node = std::make_shared<SceneNode>();
-            xinxinoptix::buildIAS(context, instanced, *node);
-            node->depth = test_depth+1;
-            maxNodeDepth = max(node->depth, maxNodeDepth);
-            return node->handle;
+            xinxinoptix::buildIAS(context, top_node->hostInstances, *top_node, policy.allowUpdate && collector.canUpdate(), policy.preferFastBuild, !policy.preferFastBuild);
+            collector.commit();
+            top_node->frame = frameid;
+            top_node->depth = child_depth + 1;
+            maxNodeDepth = max(top_node->depth, maxNodeDepth);
+            return top_node->handle;
         };
 
         maxNodeDepth = 1;
         {
-            dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache);
+            dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, true);
         }
         if (0 == staticRenderGroup) {
-            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic);
+            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic, false);
         } else {
             uint8_t depth = 1;
             auto find = nodeCacheStatic.find("StaticRenderGroups");
@@ -745,9 +900,14 @@ public:
     uint8_t maxNodeDepth = 1;
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCache {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
+    bool collapseDynamicSingleChildIAS{true};
 
     float3 cameraPos;
     SceneNode rootNode;
+    IASBuildWorkspace iasBuildWorkspace;
+    uint64_t rootLightChild {};
+    uint64_t rootStaticChild {};
+    uint64_t rootDynamicChild {};
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
@@ -755,11 +915,11 @@ public:
     std::unordered_map<std::string, Candidate> candidates {};
     bool volume_scene_bindings_dirty {};
 
-    std::function<OptixTraversableHandle(const std::string&, nlohmann::json& renderGroup, uint& test_depth, 
-        decltype(nodeCache)& nodeCache)> treeLook;
+    std::function<uint8_t(const std::string&, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache, 
+        InstanceCollector& destination, const m3r4c& transform, const uint32_t instance_id, const TreeLookPolicy& policy)> treeLook;
 
-    std::function<OptixTraversableHandle(std::string_view group_key, std::string_view entry_key, bool cameraSpace,  
-        decltype(nodeCache)& nodeCache)> groupTask; 
+    std::function<uint64_t(std::string_view group_key, std::string_view entry_key, bool cameraSpace,
+        decltype(nodeCache)& nodeCache, bool allow_update)> groupTask;
 
     void preload_mesh(const std::string &key, const std::string &mtlid, 
         const std::vector<std::string> &matNames, const int *matIds,
@@ -775,7 +935,19 @@ public:
     bool consumeVolumeSceneBindingsDirty() {
         const bool dirty = volume_scene_bindings_dirty;
         volume_scene_bindings_dirty = false;
+        if (dirty) candidateBindingsDirty = true;
         return dirty;
+    }
+
+    void setCollapseDynamicSingleChildIAS(bool enabled) {
+        if (collapseDynamicSingleChildIAS == enabled) return;
+        collapseDynamicSingleChildIAS = enabled;
+        for (auto& [_, node] : nodeCache) {
+            if (!node) continue;
+            node->frame = UINT32_MAX;
+            node->childHandles.clear();
+            node->childHandlesScratch.clear();
+        }
     }
 
     void updateDrawObjects(uint16_t sbt_count);

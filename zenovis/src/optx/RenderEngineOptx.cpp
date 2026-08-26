@@ -1170,13 +1170,15 @@ struct GraphicsManager {
         }
 
         timer.tick();
-        //tbb::task_arena limited(12);
-        tbb::task_group run_group;
-        tbb::mutex ig_mutex;
+        static auto arena_threads = tbb::this_task_arena::max_concurrency();
+        static tbb::task_arena run_arena(std::max(-2 + arena_threads/2, 4));
+        static tbb::task_group run_group;
+        static tbb::mutex ig_mutex;
         
         for (auto const &[key, obj] : objs) {
 
-            run_group.run([&]() {
+            run_arena.execute([&] {
+              run_group.run([&]() {
                     
                 ig_mutex.lock();
                 auto may = ins.may_emplace(key);
@@ -1222,10 +1224,14 @@ struct GraphicsManager {
                     ins.try_emplace(key, std::move(ig));
                     ig_mutex.unlock();
                 }
-            });
+              }); // run_group
+            }); // run_arena
         }
-        run_group.wait();
-        timer.tock("Objects load");
+
+        run_arena.execute([&] { 
+            run_group.wait();
+        });
+        zeno::log_info("loading {}ms", timer.tock());
 
         {   //when turn off last node in always mode
             static int objsNum = 0;
@@ -2239,6 +2245,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 cam.zOptixCameraSettingInfo.pupillary_distance
             );
         }
+        bool scenePrepared = false;
         bool second_matNeedUpdate = zeno::getSession().userData().get2<bool>("viewport-optix-matNeedUpdate", true);
         second_matNeedUpdate = second_matNeedUpdate || cached_shaders.empty();
         if ((meshNeedUpdate || matNeedUpdate || staticNeedUpdate) && second_matNeedUpdate) {
@@ -2612,6 +2619,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             {
                 defaultScene.updateMeshMaterials();
                 xinxinoptix::prepareScene();
+                scenePrepared = true;
             }
 
             if (matNeedUpdate || scene->drawOptions->updateMatlOnly)
@@ -2620,7 +2628,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 std::cout<< "Finish optix update" << std::endl;
             }
         }
-            if (meshNeedUpdate)
+            if (meshNeedUpdate && !scenePrepared)
             {
                 defaultScene.updateMeshMaterials();
                 xinxinoptix::prepareScene();

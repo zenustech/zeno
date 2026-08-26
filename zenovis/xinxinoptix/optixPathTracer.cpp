@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <optional>
 #include <cstring>
 
@@ -100,7 +101,6 @@ using namespace zeno::ChiefDesignerEXR;
 static CppTimer timer, localTimer;
 
 namespace xinxinoptix {
-
 
 bool resize_dirty = false;
 bool minimized    = false;
@@ -255,11 +255,6 @@ static void handleCameraUpdate( Params& params )
         return;
     camera_changed = false;
     updateRootIAS();
-    //params.vp1 = cam_vp1;
-    //params.vp2 = cam_vp2;
-    //params.vp3 = cam_vp3;
-    //params.vp4 = cam_vp4;
-
     camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
 
     //params.eye = camera.eye();
@@ -321,10 +316,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
     state.params.denoise = denoise;
     if(denoise == true) state.params.outside_random_number = 0;
     
-        CUDA_CHECK( cudaMemcpy((void*)state.d_params.handle,
-                    &state.params, sizeof( Params ),
-                    cudaMemcpyHostToDevice
-                    ) );
+        CUDA_CHECK( cudaMemcpyAsync((void*)state.d_params.handle, &state.params, sizeof( Params ), cudaMemcpyHostToDevice, 0) );
 
                 OPTIX_CHECK( optixLaunch(
                     OptixUtil::pipeline,
@@ -377,7 +369,7 @@ static void initCameraState()
 
 void updateRootIAS()
 {
-    defaultScene.make_scene(OptixUtil::context, state.params.cam.eye);
+    defaultScene.make_scene(OptixUtil::context, state.params.cam.eye, true);
     state.params.handle = defaultScene.rootNode.handle;
     return;
 
@@ -644,6 +636,7 @@ void optixinit( int argc, char* argv[] )
         //
         //createContext( state );
         OptixUtil::createContext();
+        OptixUtil::configureAsyncMemoryPool();
 
     //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
     state.d_params.resize( sizeof( Params ) );
@@ -1350,8 +1343,8 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
         refresh || dirty_shader_count >= OptixUtil::callableNvrtcHelperDirtyThreshold());
     
     if (refresh) {
-
         clearShaderCoreLUT();
+
         OptixUtil::_compile_group.run([&] () {
 
             if (!OptixUtil::createModule(
@@ -1593,6 +1586,25 @@ OptixUtil::_compile_group.wait();
 
 }
 
+static void rebuildSceneAndBenchmark()
+{
+    auto& ud = zeno::getSession().userData();
+    const bool collapse_single_child_ias =
+        ud.get2<bool>("optix-collapse-single-child-ias", true);
+    static std::optional<bool> last_reported_collapse_mode;
+    if (!last_reported_collapse_mode
+        || *last_reported_collapse_mode != collapse_single_child_ias) {
+        zeno::log_info("OptiX collapse single-child dynamic IAS: {}",
+                       collapse_single_child_ias ? "ON" : "OFF");
+        last_reported_collapse_mode = collapse_single_child_ias;
+    }
+timer.tick();
+    defaultScene.setCollapseDynamicSingleChildIAS(collapse_single_child_ias);
+    defaultScene.make_scene(OptixUtil::context, state.params.cam.eye, false);
+zeno::log_info("make_scene {}ms", timer.tock());
+    camera_changed = false;
+}
+
 void configPipeline(bool shaderDirty, bool pipelineDirty) {
     camera_changed = true;
 
@@ -1620,7 +1632,7 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
         std::cout << "---Shader Summary End---" << std::endl;
     }
     if (defaultScene.consumeVolumeSceneBindingsDirty()) {
-        defaultScene.make_scene(OptixUtil::context);
+        rebuildSceneAndBenchmark();
         state.params.handle = defaultScene.rootNode.handle;
     }
 
@@ -1644,7 +1656,9 @@ void configPipeline(bool shaderDirty) {
 
 void prepareScene()
 {
-    defaultScene.make_scene(OptixUtil::context);
+    rebuildSceneAndBenchmark();
+    state.params.handle = defaultScene.rootNode.handle;
+    state.params.subframe_index = 0;
 }
 
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
@@ -1662,8 +1676,6 @@ void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno
   float sy = (float)t[1]/(float)dy;
 }
 void set_window_size(int nx, int ny) {
-    camera_changed = true;
-
     if (nx == state.params.width && ny == state.params.height) return;
     state.params.width = nx;
     state.params.height = ny;
@@ -2039,7 +2051,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     if (denoise) {
         state.denoiser.exec();
     }
-    //cudaStreamSynchronize(0);
     output_buffer_o->unmap();
     timer.tock();
     state.params.frame_time = timer.elapsed();
@@ -2171,6 +2182,10 @@ void *optixgetimg(int &w, int &h) {
 
 void optixCleanup() {
 
+    CUDA_SYNC_CHECK();
+    OptixUtil::pipeline.reset();
+    OptixUtil::pipelineMark = {};
+
     state.dlights = {};
     state.params.dlights_ptr = 0u;
 
@@ -2207,29 +2222,34 @@ void optixCleanup() {
 
     using namespace OptixUtil;
 
-    pipelineMark = {};
-
-    try {
-        CUDA_SYNC_CHECK();
-    }
-    catch(std::exception const& e)
-    {
-        std::cout << "Exception: " << e.what() << "\n";
-    }
 }
 
 void optixDestroy() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
+    }
+    catch (std::exception const& e) {
+        std::cerr << "OptixCleanupSyncError: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cerr << "OptixCleanupSyncError: unknown exception" << std::endl;
+    }
+
+    try {
         optixCleanup();
 
+        // Program groups must be released before the modules they reference.
         rtMaterialShaders.clear();
         clearShaderCoreLUT();
         OptixUtil::resetAll();
+        output_buffer_o.reset();
     }
-    catch (sutil::Exception const& e) {
+    catch (std::exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cout << "OptixCleanupError: unknown exception" << std::endl;
     }
 
     context                  .handle=0;
@@ -2240,9 +2260,16 @@ void optixDestroy() {
     radiance_miss_group      .handle=0;
     occlusion_miss_group     .handle=0;
 
-    output_buffer_o           .reset();
-    state = {};
-    pipelineMark = {};         
+    try {
+        state = {};
+        pipelineMark = {};
+    }
+    catch (std::exception const& e) {
+        std::cerr << "OptixCleanupFinalizerError: " << e.what() << std::endl;
+    }
+    catch (...) {
+        std::cerr << "OptixCleanupFinalizerError: unknown exception" << std::endl;
+    }
 }
 
 #if 0

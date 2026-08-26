@@ -190,6 +190,27 @@ inline void createContext()
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
+inline void configureAsyncMemoryPool()
+{
+    int device = 0;
+    CUDA_CHECK(cudaGetDevice(&device));
+
+    cudaMemPool_t pool = nullptr;
+    CUDA_CHECK(cudaDeviceGetDefaultMemPool(&pool, device));
+
+    size_t free_bytes = 0;
+    size_t total_bytes = 0;
+    CUDA_CHECK(cudaMemGetInfo(&free_bytes, &total_bytes));
+
+    // Retain up to half of the VRAM currently available to this process. This
+    // is a release threshold, not an eager allocation: the pool only keeps
+    // memory that cudaMallocAsync has actually used.
+    uint64_t release_threshold = static_cast<uint64_t>(free_bytes) / 2ull;
+    CUDA_CHECK(cudaMemPoolSetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &release_threshold));
+    zeno::log_info("CUDA async pool release threshold: {:.2f} GiB (50% of {:.2f} GiB currently free)",
+        static_cast<double>(release_threshold) / (1024.0 * 1024.0 * 1024.0),
+        static_cast<double>(free_bytes) / (1024.0 * 1024.0 * 1024.0));
+}
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
 
