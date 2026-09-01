@@ -361,6 +361,137 @@ namespace zeno {
             {},
             {"command"},
             });
+
+        struct PythonContextObject : IObjectClone<PythonContextObject> {
+        private:
+            PyObject* globals = nullptr;
+
+        public:
+            PythonContextObject() = default;
+
+            PythonContextObject(PyObject* globals_) : globals(globals_) {
+                Py_XINCREF(globals);
+            }
+
+            PythonContextObject(const PythonContextObject& other) : globals(other.globals) {
+                Py_XINCREF(globals);
+            }
+
+            PythonContextObject(PythonContextObject&& other) noexcept : globals(other.globals) {
+                other.globals = nullptr;
+            }
+
+            PythonContextObject& operator=(const PythonContextObject& other) {
+                if (this != &other) {
+                    Py_XDECREF(globals);
+                    globals = other.globals;
+                    Py_XINCREF(globals);
+                }
+                return *this;
+            }
+
+            PythonContextObject& operator=(PythonContextObject&& other) noexcept {
+                if (this != &other) {
+                    Py_XDECREF(globals);
+                    globals = other.globals;
+                    other.globals = nullptr;
+                }
+                return *this;
+            }
+
+            ~PythonContextObject() {
+                Py_XDECREF(globals);
+            }
+
+            PyObject* getGlobals() const {
+                return globals;
+            }
+        };
+
+        struct SequentialPythonNode : zeno::INode {
+            virtual void apply() override {
+                auto code = get_input2<std::string>("code");
+                auto prevContext = has_input("prev_context") ? get_input<PythonContextObject>("prev_context") : nullptr;
+                auto args = has_input("args") ? get_input<DictObject>("args") : nullptr;
+
+                PyObject* globals = nullptr;
+                if (prevContext) {
+                    globals = prevContext->getGlobals();
+                } else {
+                    PyObject* mainMod = PyImport_AddModule("__main__");
+                    globals = PyModule_GetDict(mainMod);
+                }
+
+                PyObject* zeMod = PyImport_AddModule("ze");
+                PyObject* zeModDict = PyModule_GetDict(zeMod);
+
+                PyObject* argsDict = PyDict_New();
+                if (args) {
+                    int idx = 0;
+                    for (auto const& [k, v] : args->lut) {
+                        PyObject* pyVal = nullptr;
+                        if (auto numObj = std::dynamic_pointer_cast<NumericObject>(v)) {
+                            auto& val = numObj->get();
+                            std::visit([&](auto const& e) {
+                                using T = std::decay_t<decltype(e)>;
+                                if constexpr (std::is_same_v<T, int>) {
+                                    pyVal = PyLong_FromLong(e);
+                                } else if constexpr (std::is_same_v<T, float>) {
+                                    pyVal = PyFloat_FromDouble(e);
+                                } else if constexpr (std::is_same_v<T, double>) {
+                                    pyVal = PyFloat_FromDouble(e);
+                                }
+                            }, val);
+                        } else if (auto strObj = std::dynamic_pointer_cast<StringObject>(v)) {
+                            pyVal = PyUnicode_FromString(strObj->get().c_str());
+                        }
+                        if (pyVal) {
+                            PyDict_SetItemString(argsDict, k.c_str(), pyVal);
+                            //PyDict_SetItemString(argsDict, ("arg" + std::to_string(idx)).c_str(), pyVal);
+                            Py_DECREF(pyVal);
+                        }
+                        idx++;
+                    }
+                }
+                PyDict_SetItemString(zeModDict, "args", argsDict);
+                Py_DECREF(argsDict);
+
+                PyObject* compiled = Py_CompileString(code.c_str(), "<code>", Py_file_input);
+                if (!compiled) {
+                    PyErr_Print();
+                    throw makeError("failed to compile code");
+                }
+
+                PyObject* result = PyEval_EvalCode(compiled, globals, globals);
+                Py_DECREF(compiled);
+                if (!result) {
+                    PyErr_Print();
+                    throw makeError("Python exception occurred, see console for more details");
+                }
+                Py_DECREF(result);
+
+                if (prevContext) {
+                    set_output("context", prevContext);
+                } else {
+                    auto outputContext = std::make_shared<PythonContextObject>(globals);
+                    set_output("context", std::move(outputContext));
+                    Py_DECREF(globals);
+                }
+            }
+        };
+
+        ZENDEFNODE(SequentialPythonNode, {
+            {
+                {"multiline_string", "code"},
+                {"dict", "args"},
+                {"pythoncontext", "prev_context"},
+            },
+            {
+                {"pythoncontext", "context"},
+            },
+            {},
+            {"command"},
+            });
     }
 }
 #endif
