@@ -117,6 +117,33 @@ std::shared_ptr<zeno::CurveObject> createCurvePoint(std::vector<float> &t, std::
     }
     return curve;
 }
+glm::quat bezierSlerp(const glm::quat &q0, const glm::quat &q1,
+                      const glm::quat &q2, const glm::quat &q3, float t) {
+    // Spherical de Casteljau: replace each lerp in cubic Bezier with slerp.
+    const auto q01 = glm::normalize(glm::slerp(q0, q1, t));
+    const auto q12 = glm::normalize(glm::slerp(q1, q2, t));
+    const auto q23 = glm::normalize(glm::slerp(q2, q3, t));
+    const auto q012 = glm::normalize(glm::slerp(q01, q12, t));
+    const auto q123 = glm::normalize(glm::slerp(q12, q23, t));
+    return glm::normalize(glm::slerp(q012, q123, t));
+}
+
+// Return incoming/outgoing handles using createCurvePoint's coefficients.
+std::pair<glm::quat, glm::quat> quaternionBezierControls(
+    const glm::quat &previous, const glm::quat &current, const glm::quat &next,
+    float previousDuration, float nextDuration) {
+    if (previousDuration <= 0.0f || nextDuration <= 0.0f) {
+        return {current, current};
+    }
+    const float extrap = nextDuration / previousDuration;
+    const auto r = glm::normalize(glm::slerp(previous, current, 1.0f + extrap));
+    const auto midpoint = glm::normalize(glm::slerp(r, next, 0.5f));
+    const auto outgoing = glm::normalize(glm::slerp(current, midpoint, 1.0f / 3.0f));
+    const auto incoming = glm::normalize(glm::slerp(
+        current, outgoing, -previousDuration / nextDuration));
+    return {incoming, outgoing};
+}
+
 struct CameraEval : zeno::INode {
 
     std::shared_ptr<zeno::CurveObject> curve_x = {};
@@ -269,6 +296,8 @@ struct CameraEval : zeno::INode {
             camera->pos[2] = curve_z->eval(frameid);
             camera->fov = curve_fov->eval(frameid);
             camera->aperture = curve_apertures->eval(frameid);
+            const bool autoFocus = nodelist.size() == target_camera_count &&
+                nodelist[0]->userData().get2<int>("AutoFocus", 1) != 0;
             if (nodelist.size() == target_camera_count) {
                 auto refUp = zeno::vec3f(curve_ux->eval(frameid),curve_uy->eval(frameid),curve_uz->eval(frameid));
                 refUp = normalize(refUp);
@@ -276,8 +305,7 @@ struct CameraEval : zeno::INode {
                 camera->view = zeno::normalize(tarPos - camera->pos);
                 auto cur_right = zeno::normalize(zeno::cross(camera->view, refUp));
                 camera->up = zeno::normalize(zeno::cross(cur_right, camera->view));
-                auto af = nodelist[0]->userData().get2<int>("AutoFocus", 1);
-                if (af) {
+                if (autoFocus) {
                     camera->focalPlaneDistance = zeno::distance(camera->pos, tarPos);
                 }
             }
@@ -290,6 +318,56 @@ struct CameraEval : zeno::INode {
                 camera->up = zeno::normalize(zeno::cross(cur_right, camera->view));
                 camera->focalPlaneDistance = curve_fPD->eval(frameid);
             }
+            const auto rotateInterpolation = get_input2<std::string>("rotateInterpolation");
+            if (!autoFocus && (rotateInterpolation == "slerp" || rotateInterpolation == "bezierSlerp")) {
+                // Interpolate the camera's world orientation, with local -Z forward.
+                auto rotation = [](const zeno::CameraObject &key) {
+                    const auto view = zeno::normalize(key.view);
+                    const auto right = zeno::normalize(zeno::cross(view, key.up));
+                    const auto up = zeno::normalize(zeno::cross(right, view));
+                    const glm::mat3 basis(
+                        glm::vec3(right[0], right[1], right[2]),
+                        glm::vec3(up[0], up[1], up[2]),
+                        glm::vec3(-view[0], -view[1], -view[2]));
+                    return glm::normalize(glm::quat_cast(basis));
+                };
+
+                size_t left = 0;
+                while (left + 2 < nodelist.size() &&
+                       nodelist[left + 1]->userData().get2<float>("frame") <= frameid) {
+                    ++left;
+                }
+                const float start = nodelist[left]->userData().get2<float>("frame");
+                const float end = nodelist[left + 1]->userData().get2<float>("frame");
+                const float t = end > start
+                    ? glm::clamp((frameid - start) / (end - start), 0.0f, 1.0f)
+                    : 0.0f;
+                // GLM slerp selects the shortest arc, including opposite quaternion signs.
+                const auto q0 = rotation(*nodelist[left]);
+                const auto q3 = rotation(*nodelist[left + 1]);
+                auto q = glm::normalize(glm::slerp(q0, q3, t));
+                if (rotateInterpolation == "bezierSlerp") {
+                    auto controls = [&](size_t index, const glm::quat &current) {
+                        // Match the scalar curve's stationary first/last handles.
+                        if (index == 0 || index + 1 == nodelist.size()) {
+                            return std::make_pair(current, current);
+                        }
+                        const float previousFrame = nodelist[index - 1]->userData().get2<float>("frame");
+                        const float currentFrame = nodelist[index]->userData().get2<float>("frame");
+                        const float nextFrame = nodelist[index + 1]->userData().get2<float>("frame");
+                        return quaternionBezierControls(
+                            rotation(*nodelist[index - 1]), current, rotation(*nodelist[index + 1]),
+                            currentFrame - previousFrame, nextFrame - currentFrame);
+                    };
+                    const auto outgoing = controls(left, q0).second;
+                    const auto incoming = controls(left + 1, q3).first;
+                    q = bezierSlerp(q0, outgoing, incoming, q3, t);
+                }
+                const auto view = q * glm::vec3(0.0f, 0.0f, -1.0f);
+                const auto up = q * glm::vec3(0.0f, 1.0f, 0.0f);
+                camera->view = zeno::vec3f(view.x, view.y, view.z);
+                camera->up = zeno::vec3f(up.x, up.y, up.z);
+            }
             set_output("camera", std::move(camera));
         }
 
@@ -299,6 +377,7 @@ struct CameraEval : zeno::INode {
 ZENO_DEFNODE(CameraEval)({
     {
         {"frameid"},
+        {"enum old slerp bezierSlerp", "rotateInterpolation", "old"},
         {"list", "nodelist"}
     },
     {
