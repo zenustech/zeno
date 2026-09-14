@@ -1,13 +1,13 @@
-/* 
-* SPDX-FileCopyrightText: Copyright (c) 2019 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
-* SPDX-License-Identifier: LicenseRef-NvidiaProprietary 
-* 
-* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual 
-* property and proprietary rights in and to this material, related 
-* documentation and any modifications thereto. Any use, reproduction, 
-* disclosure or distribution of this material and related documentation 
-* without an express license agreement from NVIDIA CORPORATION or 
-* its affiliates is strictly prohibited. 
+/*
+* SPDX-FileCopyrightText: Copyright (c) 2019 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+*
+* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+* property and proprietary rights in and to this material, related
+* documentation and any modifications thereto. Any use, reproduction,
+* disclosure or distribution of this material and related documentation
+* without an express license agreement from NVIDIA CORPORATION or
+* its affiliates is strictly prohibited.
 */
 /**
 * @file   optix_device_impl.h
@@ -348,147 +348,43 @@ static __forceinline__ __device__ void optixInvoke( Payload&... payload )
     (void)std::initializer_list<unsigned int>{index, ( payload = p[index++] )...};
 }
 
-template <typename... RegAttributes>
-static __forceinline__ __device__ void optixMakeHitObject( OptixTraversableHandle handle,
-                                                           float3                 rayOrigin,
-                                                           float3                 rayDirection,
-                                                           float                  tmin,
-                                                           float                  tmax,
-                                                           float                  rayTime,
-                                                           unsigned int           sbtOffset,
-                                                           unsigned int           sbtStride,
-                                                           unsigned int           instIdx,
-                                                           unsigned int           sbtGASIdx,
-                                                           unsigned int           primIdx,
-                                                           unsigned int           hitKind,
-                                                           RegAttributes... regAttributes )
-{
-    // std::is_same compares each type in the two TypePacks to make sure that all types are unsigned int.
-    // TypePack 1    unsigned int    T0      T1      T2   ...   Tn-1        Tn
-    // TypePack 2      T0            T1      T2      T3   ...   Tn        unsigned int
-    static_assert( sizeof...( RegAttributes ) <= 8, "Only up to 8 register attribute values are allowed." );
-#ifndef __CUDACC_RTC__
-    static_assert(
-        std::is_same<optix_internal::TypePack<unsigned int, RegAttributes...>, optix_internal::TypePack<RegAttributes..., unsigned int>>::value,
-        "All register attribute parameters need to be unsigned int." );
-#endif
-
-    float        ox = rayOrigin.x, oy = rayOrigin.y, oz = rayOrigin.z;
-    float        dx = rayDirection.x, dy = rayDirection.y, dz = rayDirection.z;
-    unsigned int a[9]     = {0, regAttributes...};
-    int          attrSize = (int)sizeof...( RegAttributes );
-
-    OptixTraversableHandle* transforms    = nullptr;
-    unsigned int            numTransforms = 0;
-
-    asm volatile(
-         "call"
-         "(),"
-         "_optix_hitobject_make_hit,"
-         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20,%21,%22,%23,%24,%25,%26);"
-         :
-         : "l"( handle ), "f"( ox ), "f"( oy ), "f"( oz ), "f"( dx ), "f"( dy ), "f"( dz ), "f"( tmin ), "f"( tmax ),
-           "f"( rayTime ), "r"( sbtOffset ), "r"( sbtStride ), "r"( instIdx ), "l"( transforms ), "r"( numTransforms ),
-           "r"( sbtGASIdx ), "r"( primIdx ), "r"( hitKind ), "r"( attrSize ), "r"( a[1] ), "r"( a[2] ), "r"( a[3] ),
-           "r"( a[4] ), "r"( a[5] ), "r"( a[6] ), "r"( a[7] ), "r"( a[8] )
-         : );
-}
-
-template <typename... RegAttributes>
 static __forceinline__ __device__ void optixMakeHitObject( OptixTraversableHandle        handle,
                                                            float3                        rayOrigin,
                                                            float3                        rayDirection,
                                                            float                         tmin,
-                                                           float                         tmax,
                                                            float                         rayTime,
-                                                           unsigned int                  sbtOffset,
-                                                           unsigned int                  sbtStride,
-                                                           unsigned int                  instIdx,
+                                                           unsigned int                  rayFlags,
+                                                           OptixTraverseData             traverseData,
                                                            const OptixTraversableHandle* transforms,
-                                                           unsigned int                  numTransforms,
-                                                           unsigned int                  sbtGASIdx,
-                                                           unsigned int                  primIdx,
-                                                           unsigned int                  hitKind,
-                                                           RegAttributes... regAttributes )
+                                                           unsigned int                  numTransforms )
 {
-    // std::is_same compares each type in the two TypePacks to make sure that all types are unsigned int.
-    // TypePack 1    unsigned int    T0      T1      T2   ...   Tn-1        Tn
-    // TypePack 2      T0            T1      T2      T3   ...   Tn        unsigned int
-    static_assert( sizeof...( RegAttributes ) <= 8, "Only up to 8 register attribute values are allowed." );
-#ifndef __CUDACC_RTC__
-    static_assert(
-        std::is_same<optix_internal::TypePack<unsigned int, RegAttributes...>, optix_internal::TypePack<RegAttributes..., unsigned int>>::value,
-        "All register attribute parameters need to be unsigned int." );
-#endif
-
-    float        ox = rayOrigin.x, oy = rayOrigin.y, oz = rayOrigin.z;
-    float        dx = rayDirection.x, dy = rayDirection.y, dz = rayDirection.z;
-    unsigned int a[9]     = {0, regAttributes...};
-    int          attrSize = (int)sizeof...( RegAttributes );
+    float ox = rayOrigin.x, oy = rayOrigin.y, oz = rayOrigin.z;
+    float dx = rayDirection.x, dy = rayDirection.y, dz = rayDirection.z;
 
     asm volatile(
-         "call"
-         "(),"
-         "_optix_hitobject_make_hit,"
-         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20,%21,%22,%23,%24,%25,%26);"
-         :
-         : "l"( handle ), "f"( ox ), "f"( oy ), "f"( oz ), "f"( dx ), "f"( dy ), "f"( dz ), "f"( tmin ), "f"( tmax ),
-           "f"( rayTime ), "r"( sbtOffset ), "r"( sbtStride ), "r"( instIdx ), "l"( transforms ), "r"( numTransforms ),
-           "r"( sbtGASIdx ), "r"( primIdx ), "r"( hitKind ), "r"( attrSize ), "r"( a[1] ), "r"( a[2] ), "r"( a[3] ),
-           "r"( a[4] ), "r"( a[5] ), "r"( a[6] ), "r"( a[7] ), "r"( a[8] )
-         : );
+        "call"
+        "(),"
+        "_optix_hitobject_make_with_traverse_data_v2,"
+        "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20,%21,%22,%23,%24,%25,%26,%27,%28,%29,%30,%31);"
+        :
+        : "l"( handle ), "f"( ox ), "f"( oy ), "f"( oz ), "f"( dx ), "f"( dy ), "f"( dz ), "f"( tmin ), "f"( rayTime ), "r"( rayFlags ),
+          "r"( traverseData.data[0] ), "r"( traverseData.data[1] ), "r"( traverseData.data[2] ),
+          "r"( traverseData.data[3] ), "r"( traverseData.data[4] ), "r"( traverseData.data[5] ),
+          "r"( traverseData.data[6] ), "r"( traverseData.data[7] ), "r"( traverseData.data[8] ),
+          "r"( traverseData.data[9] ), "r"( traverseData.data[10] ), "r"( traverseData.data[11] ),
+          "r"( traverseData.data[12] ), "r"( traverseData.data[13] ), "r"( traverseData.data[14] ),
+          "r"( traverseData.data[15] ), "r"( traverseData.data[16] ), "r"( traverseData.data[17] ),
+          "r"( traverseData.data[18] ), "r"( traverseData.data[19] ), "l"( transforms ), "r"( numTransforms )
+        : );
 }
 
-template <typename... RegAttributes>
-static __forceinline__ __device__ void optixMakeHitObjectWithRecord( OptixTraversableHandle        handle,
-                                                                     float3                        rayOrigin,
-                                                                     float3                        rayDirection,
-                                                                     float                         tmin,
-                                                                     float                         tmax,
-                                                                     float                         rayTime,
-                                                                     unsigned int                  sbtRecordIndex,
-                                                                     unsigned int                  instIdx,
-                                                                     const OptixTraversableHandle* transforms,
-                                                                     unsigned int                  numTransforms,
-                                                                     unsigned int                  sbtGASIdx,
-                                                                     unsigned int                  primIdx,
-                                                                     unsigned int                  hitKind,
-                                                                     RegAttributes... regAttributes )
-{
-    // std::is_same compares each type in the two TypePacks to make sure that all types are unsigned int.
-    // TypePack 1    unsigned int    T0      T1      T2   ...   Tn-1        Tn
-    // TypePack 2      T0            T1      T2      T3   ...   Tn        unsigned int
-    static_assert( sizeof...( RegAttributes ) <= 8, "Only up to 8 register attribute values are allowed." );
-#ifndef __CUDACC_RTC__
-    static_assert(
-        std::is_same<optix_internal::TypePack<unsigned int, RegAttributes...>, optix_internal::TypePack<RegAttributes..., unsigned int>>::value,
-        "All register attribute parameters need to be unsigned int." );
-#endif
-
-    float        ox = rayOrigin.x, oy = rayOrigin.y, oz = rayOrigin.z;
-    float        dx = rayDirection.x, dy = rayDirection.y, dz = rayDirection.z;
-    unsigned int a[9]     = {0, regAttributes...};
-    int          attrSize = (int)sizeof...( RegAttributes );
-
-    asm volatile(
-         "call"
-         "(),"
-         "_optix_hitobject_make_hit_with_record,"
-         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20,%21,%22,%23,%24,%25);"
-         :
-         : "l"( handle ), "f"( ox ), "f"( oy ), "f"( oz ), "f"( dx ), "f"( dy ), "f"( dz ), "f"( tmin ), "f"( tmax ),
-           "f"( rayTime ), "r"( sbtRecordIndex ), "r"( instIdx ), "l"( transforms ), "r"( numTransforms ),
-           "r"( sbtGASIdx ), "r"( primIdx ), "r"( hitKind ), "r"( attrSize ), "r"( a[1] ), "r"( a[2] ), "r"( a[3] ),
-           "r"( a[4] ), "r"( a[5] ), "r"( a[6] ), "r"( a[7] ), "r"( a[8] )
-         : );
-}
-
-static __forceinline__ __device__ void optixMakeMissHitObject( unsigned int missSBTIndex,
-                                                               float3       rayOrigin,
-                                                               float3       rayDirection,
-                                                               float        tmin,
-                                                               float        tmax,
-                                                               float        rayTime )
+ static __forceinline__ __device__ void optixMakeMissHitObject( unsigned int missSBTIndex,
+                                                                float3       rayOrigin,
+                                                                float3       rayDirection,
+                                                                float        tmin,
+                                                                float        tmax,
+                                                                float        rayTime,
+                                                                unsigned int rayFlags )
 {
     float ox = rayOrigin.x, oy = rayOrigin.y, oz = rayOrigin.z;
     float dx = rayDirection.x, dy = rayDirection.y, dz = rayDirection.z;
@@ -496,11 +392,11 @@ static __forceinline__ __device__ void optixMakeMissHitObject( unsigned int miss
     asm volatile(
          "call"
          "(),"
-         "_optix_hitobject_make_miss,"
-         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9);"
+         "_optix_hitobject_make_miss_v2,"
+         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10);"
          :
          : "r"( missSBTIndex ), "f"( ox ), "f"( oy ), "f"( oz ), "f"( dx ), "f"( dy ), "f"( dz ), "f"( tmin ),
-           "f"( tmax ), "f"( rayTime )
+           "f"( tmax ), "f"( rayTime ), "r"( rayFlags )
          : );
 }
 
@@ -512,6 +408,21 @@ static __forceinline__ __device__ void optixMakeNopHitObject()
          "_optix_hitobject_make_nop,"
          "();"
          :
+         :
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetTraverseData( OptixTraverseData* data )
+{
+    asm volatile(
+         "call"
+         "(%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19),"
+         "_optix_hitobject_get_traverse_data,"
+         "();"
+         : "=r"( data->data[0] ), "=r"( data->data[1] ), "=r"( data->data[2] ), "=r"( data->data[3] ), "=r"( data->data[4] ),
+           "=r"( data->data[5] ), "=r"( data->data[6] ), "=r"( data->data[7] ), "=r"( data->data[8] ), "=r"( data->data[9] ),
+           "=r"( data->data[10] ), "=r"( data->data[11] ), "=r"( data->data[12] ), "=r"( data->data[13] ), "=r"( data->data[14] ),
+           "=r"( data->data[15] ), "=r"( data->data[16] ), "=r"( data->data[17] ), "=r"( data->data[18] ), "=r"( data->data[19] )
          :
          : );
 }
@@ -828,6 +739,16 @@ static __forceinline__ __device__ unsigned int optixHitObjectGetSbtRecordIndex()
     return result;
 }
 
+static __forceinline__ __device__ void optixHitObjectSetSbtRecordIndex( unsigned int sbtRecordIndex )
+{
+    asm volatile(
+        "call (), _optix_hitobject_set_sbt_record_index,"
+        "(%0);"
+        :
+        : "r"(sbtRecordIndex)
+        : );
+}
+
 static __forceinline__ __device__ CUdeviceptr optixHitObjectGetSbtDataPointer()
 {
     unsigned long long ptr;
@@ -839,6 +760,23 @@ static __forceinline__ __device__ CUdeviceptr optixHitObjectGetSbtDataPointer()
          : );
     return ptr;
 }
+
+
+static __forceinline__ __device__ OptixTraversableHandle optixHitObjectGetGASTraversableHandle()
+{
+    unsigned long long handle;
+    asm( "call (%0), _optix_hitobject_get_gas_traversable_handle, ();" : "=l"( handle ) : );
+    return (OptixTraversableHandle)handle;
+}
+
+
+static __forceinline__ __device__ unsigned int optixHitObjectGetRayFlags()
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_hitobject_get_ray_flags, ();" : "=r"( u0 ) : );
+    return u0;
+}
+
 
 static __forceinline__ __device__ void optixSetPayload_0( unsigned int p )
 {
@@ -1236,6 +1174,18 @@ static __forceinline__ __device__ unsigned int optixUndefinedValue()
     return u0;
 }
 
+__device__ __forceinline__ unsigned int optixGetRemainingTraceDepth()
+{
+    unsigned int result;
+    asm (
+         "call (%0), _optix_get_remaining_trace_depth,"
+         "();"
+         : "=r"( result )
+         :
+         : );
+    return result;
+}
+
 static __forceinline__ __device__ float3 optixGetWorldRayOrigin()
 {
     float f0, f1, f2;
@@ -1331,21 +1281,39 @@ static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversa
          : );
 }
 
-static __forceinline__ __device__ void optixGetMicroTriangleVertexData( float3 data[3] )
+
+static __forceinline__ __device__ void optixGetTriangleVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                             unsigned int           primIdx,
+                                                                             unsigned int           sbtGASIndex,
+                                                                             float                  time,
+                                                                             float3                 data[3] )
 {
-    asm( "call (%0, %1, %2, %3, %4, %5, %6, %7, %8), _optix_get_microtriangle_vertex_data, "
+    asm( "call (%0, %1, %2, %3, %4, %5, %6, %7, %8), _optix_get_triangle_vertex_data_from_handle, "
+         "(%9, %10, %11, %12);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetTriangleVertexData( float3 data[3] )
+{
+    asm( "call (%0, %1, %2, %3, %4, %5, %6, %7, %8), _optix_get_triangle_vertex_data_current_hit, "
          "();"
          : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[1].x ), "=f"( data[1].y ),
            "=f"( data[1].z ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z )
          : );
 }
-static __forceinline__ __device__ void optixGetMicroTriangleBarycentricsData( float2 data[3] )
+
+static __forceinline__ __device__ void optixHitObjectGetTriangleVertexData( float3 data[3] )
 {
-  asm( "call (%0, %1, %2, %3, %4, %5), _optix_get_microtriangle_barycentrics_data, "
-       "();"
-       : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[2].x ), "=f"( data[2].y )
-       : );
+    asm( "call (%0, %1, %2, %3, %4, %5, %6, %7, %8), _optix_hitobject_get_triangle_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z )
+         : );
 }
+
 
 static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTraversableHandle gas,
                                                                       unsigned int           primIdx,
@@ -1361,6 +1329,39 @@ static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTrave
          : );
 }
 
+static __forceinline__ __device__ void optixGetLinearCurveVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                unsigned int           primIdx,
+                                                                                unsigned int           sbtGASIndex,
+                                                                                float                  time,
+                                                                                float4                 data[2] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7), _optix_get_linear_curve_vertex_data_from_handle, "
+         "(%8, %9, %10, %11);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetLinearCurveVertexData( float4 data[2] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7), _optix_get_linear_curve_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetLinearCurveVertexData( float4 data[2] )
+
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7), _optix_hitobject_get_linear_curve_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w )
+         : );
+}
+
 static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( OptixTraversableHandle gas,
                                                                            unsigned int         primIdx,
                                                                            unsigned int         sbtGASIndex,
@@ -1373,6 +1374,73 @@ static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( Optix
            "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
            "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
          : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                 unsigned int           primIdx,
+                                                                                 unsigned int           sbtGASIndex,
+                                                                                 float                  time,
+                                                                                 float4                 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_quadratic_bspline_vertex_data_from_handle, "
+         "(%12, %13, %14, %15);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_quadratic_bspline_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetQuadraticBSplineVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_hitobject_get_quadratic_bspline_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetQuadraticBSplineRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                           unsigned int primIdx,
+                                                                                           unsigned int sbtGASIndex,
+                                                                                           float        time,
+                                                                                           float4       data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_quadratic_bspline_rocaps_vertex_data_from_handle, "
+         "(%12, %13, %14, %15);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetQuadraticBSplineRocapsVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_quadratic_bspline_rocaps_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetQuadraticBSplineRocapsVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_hitobject_get_quadratic_bspline_rocaps_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
          : );
 }
 
@@ -1393,6 +1461,85 @@ static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTrav
          : );
 }
 
+static __forceinline__ __device__ void optixGetCubicBSplineVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                             unsigned int           primIdx,
+                                                                             unsigned int           sbtGASIndex,
+                                                                             float                  time,
+                                                                             float4                 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bspline_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w ),
+           "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBSplineVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bspline_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w ),
+           "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCubicBSplineVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_cubic_bspline_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w ),
+           "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBSplineRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                       unsigned int           primIdx,
+                                                                                       unsigned int sbtGASIndex,
+                                                                                       float        time,
+                                                                                       float4       data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bspline_rocaps_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBSplineRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bspline_rocaps_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCubicBSplineRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_cubic_bspline_rocaps_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
 static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraversableHandle gas,
                                                                      unsigned int           primIdx,
                                                                      unsigned int           sbtGASIndex,
@@ -1406,6 +1553,82 @@ static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraver
            "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
            "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
          : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCatmullRomVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                           unsigned int           primIdx,
+                                                                           unsigned int           sbtGASIndex,
+                                                                           float                  time,
+                                                                           float4                 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_catmullrom_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCatmullRomVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_catmullrom_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCatmullRomVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_catmullrom_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCatmullRomRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                     unsigned int           primIdx,
+                                                                                     unsigned int           sbtGASIndex,
+                                                                                     float                  time,
+                                                                                     float4                 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_catmullrom_rocaps_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCatmullRomRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_catmullrom_rocaps_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCatmullRomRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_catmullrom_rocaps_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
          : );
 }
 
@@ -1425,6 +1648,82 @@ static __forceinline__ __device__ void optixGetCubicBezierVertexData( OptixTrave
          : );
 }
 
+static __forceinline__ __device__ void optixGetCubicBezierVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                            unsigned int           primIdx,
+                                                                            unsigned int           sbtGASIndex,
+                                                                            float                  time,
+                                                                            float4                 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bezier_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBezierVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bezier_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCubicBezierVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_cubic_bezier_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBezierRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                      unsigned int           primIdx,
+                                                                                      unsigned int sbtGASIndex,
+                                                                                      float        time,
+                                                                                      float4       data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bezier_rocaps_vertex_data_from_handle, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBezierRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bezier_rocaps_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetCubicBezierRocapsVertexData( float4 data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_hitobject_get_cubic_bezier_rocaps_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ),
+           "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ),
+           "=f"( data[2].z ), "=f"( data[2].w ), "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
+         : );
+}
+
 static __forceinline__ __device__ void optixGetRibbonVertexData( OptixTraversableHandle gas,
                                                                  unsigned int           primIdx,
                                                                  unsigned int           sbtGASIndex,
@@ -1436,6 +1735,38 @@ static __forceinline__ __device__ void optixGetRibbonVertexData( OptixTraversabl
          : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
            "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
          : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetRibbonVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                           unsigned int           primIdx,
+                                                                           unsigned int           sbtGASIndex,
+                                                                           float                  time,
+                                                                           float4                 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_ribbon_vertex_data_from_handle, "
+         "(%12, %13, %14, %15);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetRibbonVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_ribbon_vertex_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetRibbonVertexData( float4 data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_hitobject_get_ribbon_vertex_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), "=f"( data[1].x ), "=f"( data[1].y ),
+           "=f"( data[1].z ), "=f"( data[1].w ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
          : );
 }
 
@@ -1455,6 +1786,44 @@ static __forceinline__ __device__ float3 optixGetRibbonNormal( OptixTraversableH
     return normal;
 }
 
+static __forceinline__ __device__ float3 optixGetRibbonNormalFromHandle( OptixTraversableHandle gas,
+                                                                         unsigned int           primIdx,
+                                                                         unsigned int           sbtGASIndex,
+                                                                         float                  time,
+                                                                         float2                 ribbonParameters )
+{
+    float3 normal;
+    asm( "call (%0, %1, %2), _optix_get_ribbon_normal_from_handle, "
+         "(%3, %4, %5, %6, %7, %8);"
+         : "=f"( normal.x ), "=f"( normal.y ), "=f"( normal.z )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time ),
+           "f"( ribbonParameters.x ), "f"( ribbonParameters.y )
+         : );
+    return normal;
+}
+
+static __forceinline__ __device__ float3 optixGetRibbonNormal( float2 ribbonParameters )
+{
+    float3 normal;
+    asm( "call (%0, %1, %2), _optix_get_ribbon_normal_current_hit, "
+         "(%3, %4);"
+         : "=f"( normal.x ), "=f"( normal.y ), "=f"( normal.z )
+         : "f"( ribbonParameters.x ), "f"( ribbonParameters.y )
+         : );
+    return normal;
+}
+
+static __forceinline__ __device__ float3 optixHitObjectGetRibbonNormal( float2 ribbonParameters )
+{
+    float3 normal;
+    asm( "call (%0, %1, %2), _optix_hitobject_get_ribbon_normal, "
+         "(%3, %4);"
+         : "=f"( normal.x ), "=f"( normal.y ), "=f"( normal.z )
+         : "f"( ribbonParameters.x ), "f"( ribbonParameters.y )
+         : );
+    return normal;
+}
+
 static __forceinline__ __device__ void optixGetSphereData( OptixTraversableHandle gas,
                                                            unsigned int           primIdx,
                                                            unsigned int           sbtGASIndex,
@@ -1466,6 +1835,38 @@ static __forceinline__ __device__ void optixGetSphereData( OptixTraversableHandl
          "(%4, %5, %6, %7);"
          : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w )
          : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetSphereDataFromHandle( OptixTraversableHandle gas,
+                                                                     unsigned int           primIdx,
+                                                                     unsigned int           sbtGASIndex,
+                                                                     float                  time,
+                                                                     float4                 data[1] )
+{
+    asm( "call (%0, %1, %2, %3), "
+         "_optix_get_sphere_data_from_handle, "
+         "(%4, %5, %6, %7);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetSphereData( float4 data[1] )
+{
+    asm( "call (%0, %1, %2, %3), "
+         "_optix_get_sphere_data_current_hit, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w )
+         : );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetSphereData( float4 data[1] )
+{
+    asm( "call (%0, %1, %2, %3), "
+         "_optix_hitobject_get_sphere_data, "
+         "();"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w )
          : );
 }
 
@@ -1497,9 +1898,10 @@ static __forceinline__ __device__ unsigned int optixGetGASMotionStepCount( Optix
     return u0;
 }
 
-static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( float m[12] )
+template<typename HitState>
+static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( const HitState& hs, float m[12] )
 {
-    if( optixGetTransformListSize() == 0 )
+    if( hs.getTransformListSize() == 0 )
     {
         m[0]  = 1.0f;
         m[1]  = 0.0f;
@@ -1517,7 +1919,53 @@ static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( flo
     }
 
     float4 m0, m1, m2;
-    optix_impl::optixGetWorldToObjectTransformMatrix( m0, m1, m2 );
+    optix_impl::optixGetWorldToObjectTransformMatrix( hs, m0, m1, m2 );
+    m[0]  = m0.x;
+    m[1]  = m0.y;
+    m[2]  = m0.z;
+    m[3]  = m0.w;
+    m[4]  = m1.x;
+    m[5]  = m1.y;
+    m[6]  = m1.z;
+    m[7]  = m1.w;
+    m[8]  = m2.x;
+    m[9]  = m2.y;
+    m[10] = m2.z;
+    m[11] = m2.w;
+}
+
+static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( float m[12] )
+{
+    optixGetWorldToObjectTransformMatrix( OptixIncomingHitObject{}, m );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetWorldToObjectTransformMatrix( float m[12] )
+{
+    optixGetWorldToObjectTransformMatrix( OptixOutgoingHitObject{}, m );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ void optixGetObjectToWorldTransformMatrix( const HitState& hs, float m[12] )
+{
+    if( hs.getTransformListSize() == 0 )
+    {
+        m[0]  = 1.0f;
+        m[1]  = 0.0f;
+        m[2]  = 0.0f;
+        m[3]  = 0.0f;
+        m[4]  = 0.0f;
+        m[5]  = 1.0f;
+        m[6]  = 0.0f;
+        m[7]  = 0.0f;
+        m[8]  = 0.0f;
+        m[9]  = 0.0f;
+        m[10] = 1.0f;
+        m[11] = 0.0f;
+        return;
+    }
+
+    float4 m0, m1, m2;
+    optix_impl::optixGetObjectToWorldTransformMatrix( hs, m0, m1, m2 );
     m[0]  = m0.x;
     m[1]  = m0.y;
     m[2]  = m0.z;
@@ -1534,97 +1982,138 @@ static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( flo
 
 static __forceinline__ __device__ void optixGetObjectToWorldTransformMatrix( float m[12] )
 {
-    if( optixGetTransformListSize() == 0 )
-    {
-        m[0]  = 1.0f;
-        m[1]  = 0.0f;
-        m[2]  = 0.0f;
-        m[3]  = 0.0f;
-        m[4]  = 0.0f;
-        m[5]  = 1.0f;
-        m[6]  = 0.0f;
-        m[7]  = 0.0f;
-        m[8]  = 0.0f;
-        m[9]  = 0.0f;
-        m[10] = 1.0f;
-        m[11] = 0.0f;
-        return;
-    }
+    optixGetObjectToWorldTransformMatrix( OptixIncomingHitObject{}, m );
+}
+
+static __forceinline__ __device__ void optixHitObjectGetObjectToWorldTransformMatrix( float m[12] )
+{
+    optixGetObjectToWorldTransformMatrix( OptixOutgoingHitObject{}, m );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformPointFromWorldToObjectSpace( const HitState& hs, float3 point )
+{
+    if( hs.getTransformListSize() == 0 )
+        return point;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetObjectToWorldTransformMatrix( m0, m1, m2 );
-    m[0]  = m0.x;
-    m[1]  = m0.y;
-    m[2]  = m0.z;
-    m[3]  = m0.w;
-    m[4]  = m1.x;
-    m[5]  = m1.y;
-    m[6]  = m1.z;
-    m[7]  = m1.w;
-    m[8]  = m2.x;
-    m[9]  = m2.y;
-    m[10] = m2.z;
-    m[11] = m2.w;
+    optix_impl::optixGetWorldToObjectTransformMatrix( hs, m0, m1, m2 );
+    return optix_impl::optixTransformPoint( m0, m1, m2, point );
 }
 
 static __forceinline__ __device__ float3 optixTransformPointFromWorldToObjectSpace( float3 point )
 {
-    if( optixGetTransformListSize() == 0 )
-        return point;
+    return optixTransformPointFromWorldToObjectSpace( OptixIncomingHitObject{}, point );
+}
+
+static __forceinline__ __device__ float3 optixHitObjectTransformPointFromWorldToObjectSpace( float3 point )
+{
+    return optixTransformPointFromWorldToObjectSpace( OptixOutgoingHitObject{}, point );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformVectorFromWorldToObjectSpace( const HitState& hs, float3 vec )
+{
+    if( hs.getTransformListSize() == 0 )
+        return vec;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetWorldToObjectTransformMatrix( m0, m1, m2 );
-    return optix_impl::optixTransformPoint( m0, m1, m2, point );
+    optix_impl::optixGetWorldToObjectTransformMatrix( hs, m0, m1, m2 );
+    return optix_impl::optixTransformVector( m0, m1, m2, vec );
 }
 
 static __forceinline__ __device__ float3 optixTransformVectorFromWorldToObjectSpace( float3 vec )
 {
-    if( optixGetTransformListSize() == 0 )
-        return vec;
+    return optixTransformVectorFromWorldToObjectSpace( OptixIncomingHitObject{}, vec );
+}
+
+static __forceinline__ __device__ float3 optixHitObjectTransformVectorFromWorldToObjectSpace( float3 vec )
+{
+    return optixTransformVectorFromWorldToObjectSpace( OptixOutgoingHitObject{}, vec );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformNormalFromWorldToObjectSpace( const HitState& hs, float3 normal )
+{
+    if( hs.getTransformListSize() == 0 )
+        return normal;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetWorldToObjectTransformMatrix( m0, m1, m2 );
-    return optix_impl::optixTransformVector( m0, m1, m2, vec );
+    optix_impl::optixGetObjectToWorldTransformMatrix( hs, m0, m1, m2 );  // inverse of optixGetWorldToObjectTransformMatrix()
+    return optix_impl::optixTransformNormal( m0, m1, m2, normal );
 }
 
 static __forceinline__ __device__ float3 optixTransformNormalFromWorldToObjectSpace( float3 normal )
 {
-    if( optixGetTransformListSize() == 0 )
-        return normal;
+    return optixTransformNormalFromWorldToObjectSpace( OptixIncomingHitObject{}, normal );
+}
+
+static __forceinline__ __device__ float3 optixHitObjectTransformNormalFromWorldToObjectSpace( float3 normal )
+{
+    return optixTransformNormalFromWorldToObjectSpace( OptixOutgoingHitObject{}, normal );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformPointFromObjectToWorldSpace( const HitState& hs, float3 point )
+{
+    if( hs.getTransformListSize() == 0 )
+        return point;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetObjectToWorldTransformMatrix( m0, m1, m2 );  // inverse of optixGetWorldToObjectTransformMatrix()
-    return optix_impl::optixTransformNormal( m0, m1, m2, normal );
+    optix_impl::optixGetObjectToWorldTransformMatrix( hs, m0, m1, m2 );
+    return optix_impl::optixTransformPoint( m0, m1, m2, point );
 }
 
 static __forceinline__ __device__ float3 optixTransformPointFromObjectToWorldSpace( float3 point )
 {
-    if( optixGetTransformListSize() == 0 )
-        return point;
+    return optixTransformPointFromObjectToWorldSpace( OptixIncomingHitObject{}, point );
+}
+
+static __forceinline__ __device__ float3 optixHitObjectTransformPointFromObjectToWorldSpace( float3 point )
+{
+    return optixTransformPointFromObjectToWorldSpace( OptixOutgoingHitObject{}, point );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformVectorFromObjectToWorldSpace( const HitState& hs, float3 vec )
+{
+    if( hs.getTransformListSize() == 0 )
+        return vec;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetObjectToWorldTransformMatrix( m0, m1, m2 );
-    return optix_impl::optixTransformPoint( m0, m1, m2, point );
+    optix_impl::optixGetObjectToWorldTransformMatrix( hs, m0, m1, m2 );
+    return optix_impl::optixTransformVector( m0, m1, m2, vec );
 }
 
 static __forceinline__ __device__ float3 optixTransformVectorFromObjectToWorldSpace( float3 vec )
 {
-    if( optixGetTransformListSize() == 0 )
-        return vec;
+    return optixTransformVectorFromObjectToWorldSpace( OptixIncomingHitObject{}, vec );
+}
+
+static __forceinline__ __device__ float3 optixHitObjectTransformVectorFromObjectToWorldSpace( float3 vec )
+{
+    return optixTransformVectorFromObjectToWorldSpace( OptixOutgoingHitObject{}, vec );
+}
+
+template<typename HitState>
+static __forceinline__ __device__ float3 optixTransformNormalFromObjectToWorldSpace( const HitState& hs, float3 normal )
+{
+    if( hs.getTransformListSize() == 0 )
+        return normal;
 
     float4 m0, m1, m2;
-    optix_impl::optixGetObjectToWorldTransformMatrix( m0, m1, m2 );
-    return optix_impl::optixTransformVector( m0, m1, m2, vec );
+    optix_impl::optixGetWorldToObjectTransformMatrix( hs, m0, m1, m2 );  // inverse of optixGetObjectToWorldTransformMatrix()
+    return optix_impl::optixTransformNormal( m0, m1, m2, normal );
 }
 
 static __forceinline__ __device__ float3 optixTransformNormalFromObjectToWorldSpace( float3 normal )
 {
-    if( optixGetTransformListSize() == 0 )
-        return normal;
+    return optixTransformNormalFromObjectToWorldSpace( OptixIncomingHitObject{}, normal );
+}
 
-    float4 m0, m1, m2;
-    optix_impl::optixGetWorldToObjectTransformMatrix( m0, m1, m2 );  // inverse of optixGetObjectToWorldTransformMatrix()
-    return optix_impl::optixTransformNormal( m0, m1, m2, normal );
+static __forceinline__ __device__ float3 optixHitObjectTransformNormalFromObjectToWorldSpace( float3 normal )
+{
+    return optixTransformNormalFromObjectToWorldSpace( OptixOutgoingHitObject{}, normal );
 }
 
 static __forceinline__ __device__ unsigned int optixGetTransformListSize()
@@ -1910,6 +2399,20 @@ static __forceinline__ __device__ unsigned int optixGetPrimitiveIndex()
     return u0;
 }
 
+static __forceinline__ __device__ unsigned int optixGetClusterId()
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_get_cluster_id, ();" : "=r"( u0 ) : );
+    return u0;
+}
+
+static __forceinline__ __device__ unsigned int optixHitObjectGetClusterId()
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_hitobject_get_cluster_id, ();" : "=r"( u0 ) : );
+    return u0;
+}
+
 static __forceinline__ __device__ unsigned int optixGetSbtGASIndex()
 {
     unsigned int u0;
@@ -1988,25 +2491,18 @@ static __forceinline__ __device__ bool optixIsTriangleBackFaceHit()
     return optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE;
 }
 
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleHit()
-{
-    return optixGetPrimitiveType( optixGetHitKind() ) == OPTIX_PRIMITIVE_TYPE_DISPLACED_MICROMESH_TRIANGLE;
-}
-
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleFrontFaceHit()
-{
-    return optixIsDisplacedMicromeshTriangleHit() && optixIsFrontFaceHit();
-}
-
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleBackFaceHit()
-{
-    return optixIsDisplacedMicromeshTriangleHit() && optixIsBackFaceHit();
-}
 
 static __forceinline__ __device__ float optixGetCurveParameter()
 {
     float f0;
-    asm( "call (%0), _optix_get_curve_parameter, ();" : "=f"(f0) : );
+    asm( "call (%0), _optix_get_curve_parameter, ();" : "=f"( f0 ) : );
+    return f0;
+}
+
+static __forceinline__ __device__ float optixHitObjectGetCurveParameter()
+{
+    float f0;
+    asm( "call (%0), _optix_hitobject_get_curve_parameter, ();" : "=f"( f0 ) : );
     return f0;
 }
 
@@ -2017,10 +2513,24 @@ static __forceinline__ __device__ float2 optixGetRibbonParameters()
     return make_float2( f0, f1 );
 }
 
+static __forceinline__ __device__ float2 optixHitObjectGetRibbonParameters()
+{
+    float f0, f1;
+    asm( "call (%0, %1), _optix_hitobject_get_ribbon_parameters, ();" : "=f"( f0 ), "=f"( f1 ) : );
+    return make_float2( f0, f1 );
+}
+
 static __forceinline__ __device__ float2 optixGetTriangleBarycentrics()
 {
     float f0, f1;
     asm( "call (%0, %1), _optix_get_triangle_barycentrics, ();" : "=f"( f0 ), "=f"( f1 ) : );
+    return make_float2( f0, f1 );
+}
+
+static __forceinline__ __device__ float2 optixHitObjectGetTriangleBarycentrics()
+{
+    float f0, f1;
+    asm( "call (%0, %1), _optix_hitobject_get_triangle_barycentrics, ();" : "=f"( f0 ), "=f"( f1 ) : );
     return make_float2( f0, f1 );
 }
 

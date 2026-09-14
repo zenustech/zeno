@@ -181,7 +181,7 @@ static __forceinline__ __device__ void optixReorder();
 
 /// Invokes closesthit, miss or nop based on the current outgoing hit object. After execution the
 /// current outgoing hit object will be set to nop. An implied nop hit object is always assumed to
-/// exist even if there are no calls to optixTraverse, optixMakeHitObject, optixMakeMissHitObject,
+/// exist even if there are no calls to optixTraverse, optixMakeMissHitObject, optixMakeHitObject
 /// or optixMakeNopHitObject.
 ///
 /// \param[in,out] payload       up to 32 unsigned int values that hold the payload
@@ -192,7 +192,7 @@ static __forceinline__ __device__ void optixInvoke( Payload&... payload );
 
 /// Invokes closesthit, miss or nop based on the current outgoing hit object. After execution the
 /// current outgoing hit object will be set to nop. An implied nop hit object is always assumed to
-/// exist even if there are no calls to optixTraverse, optixMakeHitObject, optixMakeMissHitObject,
+/// exist even if there are no calls to optixTraverse, optixMakeMissHitObject, optixMakeHitObject
 /// or optixMakeNopHitObject.
 ///
 /// \param[in] type
@@ -202,113 +202,30 @@ static __forceinline__ __device__ void optixInvoke( Payload&... payload );
 template <typename... Payload>
 static __forceinline__ __device__ void optixInvoke( OptixPayloadTypeID type, Payload&... payload );
 
-/// Constructs an outgoing hit object from the hit information provided. This hit object will now
-/// become the current outgoing hit object and will overwrite the current outgoing hit object.
+/// Constructs an outgoing hit object from the hit object data provided. The traverseData needs to be collected from a previous hit
+/// object using #optixHitObjectGetTraverseData.
+/// This hit object will now become the current outgoing hit object and will overwrite the current outgoing hit object.
 ///
 /// \param[in] handle
 /// \param[in] rayOrigin
 /// \param[in] rayDirection
 /// \param[in] tmin
-/// \param[in] tmax
 /// \param[in] rayTime
-/// \param[in] SBToffset      really only 4 bits
-/// \param[in] SBTstride      really only 4 bits
-/// \param[in] instIdx
-/// \param[in] sbtGASIdx
-/// \param[in] primIdx
-/// \param[in] hitKind
-/// \param[in] regAttributes  up to 8 attribute registers
-///
-/// Available in RG, CH, MS, CC
-template <typename... RegAttributes>
-static __forceinline__ __device__ void optixMakeHitObject( OptixTraversableHandle handle,
-                                                           float3                 rayOrigin,
-                                                           float3                 rayDirection,
-                                                           float                  tmin,
-                                                           float                  tmax,
-                                                           float                  rayTime,
-                                                           unsigned int           SBToffset,
-                                                           unsigned int           SBTstride,
-                                                           unsigned int           instIdx,
-                                                           unsigned int           sbtGASIdx,
-                                                           unsigned int           primIdx,
-                                                           unsigned int           hitKind,
-                                                           RegAttributes... regAttributes );
-
-/// Constructs an outgoing hit object from the hit information provided. This hit object will now
-/// become the current outgoing hit object and will overwrite the current outgoing hit object. This
-/// method includes the ability to specify arbitrary numbers of OptixTraversableHandle pointers for
-/// scenes with 0 to OPTIX_DEVICE_PROPERTY_LIMIT_MAX_TRAVERSABLE_GRAPH_DEPTH levels of transforms.
-///
-/// \param[in] handle
-/// \param[in] rayOrigin
-/// \param[in] rayDirection
-/// \param[in] tmin
-/// \param[in] tmax
-/// \param[in] rayTime
-/// \param[in] SBToffset      really only 4 bits
-/// \param[in] SBTstride      really only 4 bits
-/// \param[in] instIdx
+/// \param[in] rayFlags       really only 16 bits, combination of OptixRayFlags
+/// \param[in] traverseData
 /// \param[in] transforms
 /// \param[in] numTransforms
-/// \param[in] sbtGASIdx
-/// \param[in] primIdx
-/// \param[in] hitKind
-/// \param[in] regAttributes  up to 8 attribute registers
 ///
 /// Available in RG, CH, MS, CC
-template <typename... RegAttributes>
 static __forceinline__ __device__ void optixMakeHitObject( OptixTraversableHandle        handle,
                                                            float3                        rayOrigin,
                                                            float3                        rayDirection,
                                                            float                         tmin,
-                                                           float                         tmax,
                                                            float                         rayTime,
-                                                           unsigned int                  SBToffset,
-                                                           unsigned int                  SBTstride,
-                                                           unsigned int                  instIdx,
+                                                           unsigned int                  rayFlags,
+                                                           OptixTraverseData             traverseData,
                                                            const OptixTraversableHandle* transforms,
-                                                           unsigned int                  numTransforms,
-                                                           unsigned int                  sbtGASIdx,
-                                                           unsigned int                  primIdx,
-                                                           unsigned int                  hitKind,
-                                                           RegAttributes... regAttributes );
-
-/// Constructs an outgoing hit object from the hit information provided. The SBT record index is
-/// explicitly specified. This hit object will now become the current outgoing hit object and will
-/// overwrite the current outgoing hit object.
-///
-/// \param[in] handle
-/// \param[in] rayOrigin
-/// \param[in] rayDirection
-/// \param[in] tmin
-/// \param[in] tmax
-/// \param[in] rayTime
-/// \param[in] sbtRecordIndex 32 bits
-/// \param[in] instIdx
-/// \param[in] transforms
-/// \param[in] numTransforms
-/// \param[in] sbtGASIdx
-/// \param[in] primIdx
-/// \param[in] hitKind
-/// \param[in] regAttributes  up to 8 attribute registers
-///
-/// Available in RG, CH, MS, CC
-template <typename... RegAttributes>
-static __forceinline__ __device__ void optixMakeHitObjectWithRecord( OptixTraversableHandle        handle,
-                                                                     float3                        rayOrigin,
-                                                                     float3                        rayDirection,
-                                                                     float                         tmin,
-                                                                     float                         tmax,
-                                                                     float                         rayTime,
-                                                                     unsigned int                  sbtRecordIndex,
-                                                                     unsigned int                  instIdx,
-                                                                     const OptixTraversableHandle* transforms,
-                                                                     unsigned int                  numTransforms,
-                                                                     unsigned int                  sbtGASIdx,
-                                                                     unsigned int                  primIdx,
-                                                                     unsigned int                  hitKind,
-                                                                     RegAttributes... regAttributes );
+                                                           unsigned int                  numTransforms );
 
 /// Constructs an outgoing hit object from the miss information provided. The SBT record index is
 /// explicitly specified as an argument. This hit object will now become the current outgoing hit
@@ -320,6 +237,7 @@ static __forceinline__ __device__ void optixMakeHitObjectWithRecord( OptixTraver
 /// \param[in] tmin
 /// \param[in] tmax
 /// \param[in] rayTime
+/// \param[in] rayFlags       really only 16 bits, combination of OptixRayFlags
 ///
 /// Available in RG, CH, MS, CC
 static __forceinline__ __device__ void optixMakeMissHitObject( unsigned int missSBTIndex,
@@ -327,16 +245,25 @@ static __forceinline__ __device__ void optixMakeMissHitObject( unsigned int miss
                                                                float3       rayDirection,
                                                                float        tmin,
                                                                float        tmax,
-                                                               float        rayTime );
+                                                               float        rayTime,
+                                                               unsigned int rayFlags );
 
 /// Constructs an outgoing hit object that when invoked does nothing (neither the miss nor the
 /// closest hit shader will be invoked). This hit object will now become the current outgoing hit
 /// object and will overwrite the current outgoing hit object. Accessors such as
-/// optixHitObjectGetInstanceId will return 0 or 0 filled structs. Only optixHitObjectGetIsNop()
+/// #optixHitObjectGetInstanceId will return 0 or 0 filled structs. Only #optixHitObjectIsNop
 /// will return a non-zero result.
 ///
 /// Available in RG, CH, MS, CC
 static __forceinline__ __device__ void optixMakeNopHitObject();
+
+/// Serializes the current outgoing hit object which allows to recreate it at a later
+/// point using #optixMakeHitObject.
+///
+/// \param[out] data
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetTraverseData( OptixTraverseData* data );
 
 /// Returns true if the current outgoing hit object contains a hit.
 ///
@@ -362,6 +289,18 @@ static __forceinline__ __device__ bool optixHitObjectIsNop();
 ///
 /// Available in RG, CH, MS, CC, DC
 static __forceinline__ __device__ unsigned int optixHitObjectGetSbtRecordIndex();
+
+/// Sets the SBT record index in the current outgoing hit object.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectSetSbtRecordIndex( unsigned int sbtRecordIndex );
+
+/// Returns the traversable handle for the Geometry Acceleration Structure (GAS) associated
+/// with the current outgoing hit object.
+/// Returns 0 if the hit object is not a hit.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ OptixTraversableHandle optixHitObjectGetGASTraversableHandle();
 
 /// Writes the 32-bit payload at the given slot index. There are up to 32 attributes available. The
 /// number of attributes is configured with OptixPipelineCompileOptions::numPayloadValues or with
@@ -454,6 +393,16 @@ static __forceinline__ __device__ void optixSetPayloadTypes( unsigned int typeMa
 /// Available anywhere
 static __forceinline__ __device__ unsigned int optixUndefinedValue();
 
+/// If non-zero it is legal to call optixTrace or optixTraverse without triggering an
+/// OPTIX_EXCEPTION_CODE_TRACE_DEPTH_EXCEEDED exception. In the case of optixTrace it
+/// represents the number of recursive calls that are remaining and counts down.
+///
+/// Value is in the range of [0..OptixPipelineLinkOptions::maxTraceDepth], and
+/// maxTraceDepth has a maximum value of 31.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ unsigned int optixGetRemainingTraceDepth();
+
 /// Returns the rayOrigin passed into optixTrace.
 ///
 /// May be more expensive to call in IS and AH than their object space counterparts, so effort
@@ -462,8 +411,7 @@ static __forceinline__ __device__ unsigned int optixUndefinedValue();
 /// Available in IS, AH, CH, MS
 static __forceinline__ __device__ float3 optixGetWorldRayOrigin();
 
-/// Returns the rayOrigin passed into optixTraverse, optixMakeHitObject,
-/// optixMakeHitObjectWithRecord, or optixMakeMissHitObject.
+/// Returns the rayOrigin passed into optixTraverse, optixMakeHitObject or optixMakeMissHitObject.
 ///
 /// Returns [0, 0, 0] for nop hit objects.
 ///
@@ -478,8 +426,7 @@ static __forceinline__ __device__ float3 optixHitObjectGetWorldRayOrigin();
 /// Available in IS, AH, CH, MS
 static __forceinline__ __device__ float3 optixGetWorldRayDirection();
 
-/// Returns the rayDirection passed into optixTraverse, optixMakeHitObject,
-/// optixMakeHitObjectWithRecord, or optixMakeMissHitObject.
+/// Returns the rayDirection passed into optixTraverse, optixMakeHitObject or optixMakeMissHitObject.
 ///
 /// Returns [0, 0, 0] for nop hit objects.
 ///
@@ -501,8 +448,7 @@ static __forceinline__ __device__ float3 optixGetObjectRayDirection();
 /// Available in IS, AH, CH, MS
 static __forceinline__ __device__ float optixGetRayTmin();
 
-/// Returns the tmin passed into optixTraverse, optixMakeHitObject,
-/// optixMakeHitObjectWithRecord, or optixMakeMissHitObject.
+/// Returns the tmin passed into optixTraverse, optixMakeHitObject or optixMakeMissHitObject.
 ///
 /// Returns 0.0f for nop hit objects.
 ///
@@ -521,7 +467,7 @@ static __forceinline__ __device__ float optixGetRayTmax();
 
 /// If the hit object is a hit, returns the smallest reported hitT
 ///
-/// If the hit object is a miss, returns the tmax passed into optixTraverse or
+/// If the hit object is a miss, returns the tmax passed into optixTraverse, optixMakeHitObject or
 /// optixMakeMissHitObject.
 ///
 /// Returns 0 for nop hit objects.
@@ -536,8 +482,7 @@ static __forceinline__ __device__ float optixHitObjectGetRayTmax();
 /// Available in IS, AH, CH, MS
 static __forceinline__ __device__ float optixGetRayTime();
 
-/// Returns the rayTime passed into optixTraverse, optixMakeHitObject,
-/// optixMakeHitObjectWithRecord, or optixMakeMissHitObject.
+/// Returns the rayTime passed into optixTraverse, optixMakeHitObject or optixMakeMissHitObject.
 ///
 /// Returns 0 for nop hit objects or when motion is disabled.
 ///
@@ -548,6 +493,11 @@ static __forceinline__ __device__ float optixHitObjectGetRayTime();
 ///
 /// Available in IS, AH, CH, MS
 static __forceinline__ __device__ unsigned int optixGetRayFlags();
+
+/// Returns the rayFlags passed into optixTrace associated with the current outgoing hit object.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ unsigned int optixHitObjectGetRayFlags();
 
 /// Returns the visibilityMask passed into optixTrace
 ///
@@ -562,8 +512,10 @@ static __forceinline__ __device__ unsigned int optixGetRayVisibilityMask();
 /// Available in all OptiX program types
 static __forceinline__ __device__ OptixTraversableHandle optixGetInstanceTraversableFromIAS( OptixTraversableHandle ias, unsigned int instIdx );
 
-/// Return the object space triangle vertex positions of a given triangle in a Geometry Acceleration
+/// [DEPRECATED] Returns the object space triangle vertex positions of a given triangle in a Geometry Acceleration
 /// Structure (GAS) at a given motion time.
+/// This function is deprecated, use optixGetTriangleVertexDataFromHandle for random access triangle vertex data fetch or
+/// the overload optixGetTriangleVertexData( float3 data[3] ) for a current triangle hit vertex data fetch.
 ///
 /// To access vertex data, the GAS must be built using the flag
 /// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
@@ -572,21 +524,54 @@ static __forceinline__ __device__ OptixTraversableHandle optixGetInstanceTravers
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float3 data[3]);
+static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversableHandle gas,
+                                                                   unsigned int           primIdx,
+                                                                   unsigned int           sbtGASIndex,
+                                                                   float                  time,
+                                                                   float3                 data[3] );
 
-/// Return the object space micro triangle vertex positions of the current hit.  The current hit
-/// must be a displacement micromap triangle hit.
+/// Performs a random access data fetch object space vertex position of a given triangle in a Geometry Acceleration
+/// Structure (GAS) at a given motion time.
+///
+/// To access vertex data of any triangle, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+/// If only the vertex data of a currently intersected triangle is required, it is recommended to
+/// use function optixGetTriangleVertexData. A data fetch of the currently hit primitive does NOT
+/// require building the corresponding GAS with flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetMicroTriangleVertexData( float3 data[3] );
+static __forceinline__ __device__ void optixGetTriangleVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                             unsigned int           primIdx,
+                                                                             unsigned int           sbtGASIndex,
+                                                                             float                  time,
+                                                                             float3                 data[3] );
 
-/// Returns the barycentrics of the vertices of the currently intersected micro triangle with
-/// respect to the base triangle.
+/// Returns the object space triangle vertex positions of the currently intersected triangle at the current ray time.
 ///
-/// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetMicroTriangleBarycentricsData( float2 data[3] );
+/// Similar to the random access variant optixGetTriangleVertexDataFromHandle, but does not require setting flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS when building the corresponding GAS.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_TRIANGLE.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetTriangleVertexData( float3 data[3] );
 
-/// Return the object space curve control vertex data of a linear curve in a Geometry Acceleration
+/// Returns the object space triangle vertex positions of the intersected triangle for a valid outgoing hit object.
+/// It is the hit object's pendant of optixGetTriangleVertexData( float3 data[3] ).
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_TRIANGLE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetTriangleVertexData( float3 data[3] );
+
+
+/// Deprecated. Call either optixGetLinearCurveVertexData( float4 data[2] ) for a current-hit data fetch,
+///  or optixGetLinearCurveVertexDataFromHandle( ... ) for a random-access data fetch.
+///
+/// Returns the object space curve control vertex data of a linear curve in a Geometry Acceleration
 /// Structure (GAS) at a given motion time.
 ///
 /// To access vertex data, the GAS must be built using the flag
@@ -598,9 +583,52 @@ static __forceinline__ __device__ void optixGetMicroTriangleBarycentricsData( fl
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[2] );
+static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTraversableHandle gas,
+                                                                      unsigned int           primIdx,
+                                                                      unsigned int           sbtGASIndex,
+                                                                      float                  time,
+                                                                      float4                 data[2] );
 
-/// Return the object space curve control vertex data of a quadratic BSpline curve in a Geometry
+/// Performs a random access fetch of the object space curve control vertex data of a linear curve in a Geometry Acceleration
+/// Structure (GAS) at a given motion time.
+///
+/// To access vertex data of any curve, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+/// If only the vertex data of a currently intersected linear curve is required, it is recommended to
+/// use function optixGetLinearCurveVertexData. A data fetch of the currently hit primitive does NOT
+/// require building the corresponding GAS with flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetLinearCurveVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                unsigned int           primIdx,
+                                                                                unsigned int           sbtGASIndex,
+                                                                                float                  time,
+                                                                                float4                 data[2] );
+
+/// Returns the object space control vertex data of the currently intersected linear curve at the current ray time.
+///
+/// Similar to the random access variant optixGetLinearCurveVertexDataFromHandle, but does not require setting flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS when building the corresponding GAS.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetLinearCurveVertexData( float4 data[2] );
+
+/// Returns the object space control vertex data of the currently intersected linear curve for a valid outgoing hit object.
+/// It is the hit object's pendant of optixGetLinearCurveVertexData( float4 data[2] ).
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetLinearCurveVertexData( float4 data[2] );
+
+/// Returns the object space curve control vertex data of a quadratic BSpline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
 ///
 /// To access vertex data, the GAS must be built using the flag
@@ -612,8 +640,58 @@ static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTrave
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[3] );
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( OptixTraversableHandle gas,
+                                                                           unsigned int           primIdx,
+                                                                           unsigned int           sbtGASIndex,
+                                                                           float                  time,
+                                                                           float4                 data[3] );
 
+/// Returns the object space curve control vertex data of a quadratic BSpline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// To access vertex data, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                     unsigned int           primIdx,
+                                                                                     unsigned int           sbtGASIndex,
+                                                                                     float                  time,
+                                                                                     float4                 data[3] );
+static __forceinline__ __device__ void optixGetQuadraticBSplineRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                           unsigned int primIdx,
+                                                                                           unsigned int sbtGASIndex,
+                                                                                           float        time,
+                                                                                           float4       data[3] );
+
+/// Returns the object space curve control vertex data of a quadratic BSpline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( float4 data[3] );
+static __forceinline__ __device__ void optixGetQuadraticBSplineRocapsVertexData( float4 data[3] );
+
+/// Returns the object space curve control vertex data of a quadratic BSpline curve for a valid outgoing hit object.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetQuadraticBSplineVertexData( float4 data[3] );
+static __forceinline__ __device__ void optixHitObjectGetQuadraticBSplineRocapsVertexData( float4 data[3] );
+
+/// Deprecated. Call either optixGetCubicBSplineVertexData( float4 data[4] ) for current hit
+/// sphere data, or optixGetCubicBSplineVertexDataFromHandle() for random access sphere data.
+///
 /// Return the object space curve control vertex data of a cubic BSpline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
 ///
@@ -626,9 +704,13 @@ static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( Optix
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
+static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTraversableHandle gas,
+                                                                       unsigned int           primIdx,
+                                                                       unsigned int           sbtGASIndex,
+                                                                       float                  time,
+                                                                       float4                 data[4] );
 
-/// Return the object space curve control vertex data of a CatmullRom spline curve in a Geometry
+/// Returns the object space curve control vertex data of a cubic BSpline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
 ///
 /// To access vertex data, the GAS must be built using the flag
@@ -640,9 +722,48 @@ static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTrav
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
+static __forceinline__ __device__ void optixGetCubicBSplineVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                 unsigned int           primIdx,
+                                                                                 unsigned int           sbtGASIndex,
+                                                                                 float                  time,
+                                                                                 float4                 data[4] );
+static __forceinline__ __device__ void optixGetCubicBSplineRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                       unsigned int           primIdx,
+                                                                                       unsigned int sbtGASIndex,
+                                                                                       float        time,
+                                                                                       float4       data[4] );
 
-/// Return the object space curve control vertex data of a cubic Bezier curve in a Geometry
+/// Returns the object space curve control vertex data of a cubic BSpline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetCubicBSplineVertexData( float4 data[4] );
+static __forceinline__ __device__ void optixGetCubicBSplineRocapsVertexData( float4 data[4] );
+
+/// Returns the object space curve control vertex data of a cubic BSpline curve for a valid
+/// outgoing hit object.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetCubicBSplineVertexData( float4 data[4] );
+/// See #optixHitObjectGetCubicBSplineVertexData for further documentation
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE_ROCAPS.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetCubicBSplineRocapsVertexData( float4 data[4] );
+
+/// Deprecated. Call either optixGetCatmullRomVertexData( float4 data[4] ) for current hit
+/// data, or optixGetCatmullRomVertexDataFromHandle() for random access sphere data.
+///
+/// Returns the object space curve control vertex data of a CatmullRom spline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
 ///
 /// To access vertex data, the GAS must be built using the flag
@@ -654,9 +775,125 @@ static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraver
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetCubicBezierVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
+static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraversableHandle gas,
+                                                                     unsigned int           primIdx,
+                                                                     unsigned int           sbtGASIndex,
+                                                                     float                  time,
+                                                                     float4                 data[4] );
 
-/// Return the object space curve control vertex data of a ribbon (flat quadratic BSpline) in a
+/// Returns the object space curve control vertex data of a CatmullRom spline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// To access vertex data, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetCatmullRomVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                               unsigned int           primIdx,
+                                                                               unsigned int           sbtGASIndex,
+                                                                               float                  time,
+                                                                               float4                 data[4] );
+static __forceinline__ __device__ void optixGetCatmullRomRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                     unsigned int           primIdx,
+                                                                                     unsigned int           sbtGASIndex,
+                                                                                     float                  time,
+                                                                                     float4                 data[4] );
+
+/// Returns the object space curve control vertex data of a CatmullRom spline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetCatmullRomVertexData( float4 data[4] );
+static __forceinline__ __device__ void optixGetCatmullRomRocapsVertexData( float4 data[4] );
+
+/// Returns the object space curve control vertex data of a CatmullRom spline curve for a valid
+/// outgoing hit object.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_ROUND_CATMULLROM.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetCatmullRomVertexData( float4 data[4] );
+static __forceinline__ __device__ void optixHitObjectGetCatmullRomRocapsVertexData( float4 data[4] );
+
+/// Deprecated. Call either optixGetCubicBezierVertexData( float4 data[4] ) for current hit
+/// data, or optixGetCubicBezierVertexDataFromHandle() for random access sphere data.
+///
+/// Returns the object space curve control vertex data of a cubic Bezier curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// To access vertex data, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetCubicBezierVertexData( OptixTraversableHandle gas,
+                                                                      unsigned int           primIdx,
+                                                                      unsigned int           sbtGASIndex,
+                                                                      float                  time,
+                                                                      float4                 data[4] );
+
+/// Returns the object space curve control vertex data of a cubic Bezier curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// To access vertex data, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetCubicBezierVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                unsigned int           primIdx,
+                                                                                unsigned int           sbtGASIndex,
+                                                                                float                  time,
+                                                                                float4                 data[4] );
+static __forceinline__ __device__ void optixGetCubicBezierRocapsVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                                      unsigned int           primIdx,
+                                                                                      unsigned int sbtGASIndex,
+                                                                                      float        time,
+                                                                                      float4       data[4] );
+
+/// Returns the object space curve control vertex data of a cubic Bezier curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetCubicBezierVertexData( float4 data[4] );
+static __forceinline__ __device__ void optixGetCubicBezierRocapsVertexData( float4 data[4] );
+
+/// Returns the object space curve control vertex data of a cubic Bezier curve for a valid
+/// outgoing hit object.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BEZIER.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetCubicBezierVertexData( float4 data[4] );
+static __forceinline__ __device__ void optixHitObjectGetCubicBezierRocapsVertexData( float4 data[4] );
+
+/// Deprecated. Call either optixGetRibbonVertexData( float4 data[3] ) for current hit
+/// data, or optixGetRibbonVertexDataFromHandle() for random access.
+///
+/// Returns the object space curve control vertex data of a ribbon (flat quadratic BSpline) in a
 /// Geometry Acceleration Structure (GAS) at a given motion time.
 ///
 /// To access vertex data, the GAS must be built using the flag
@@ -668,14 +905,84 @@ static __forceinline__ __device__ void optixGetCubicBezierVertexData( OptixTrave
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetRibbonVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[3] );
+static __forceinline__ __device__ void optixGetRibbonVertexData( OptixTraversableHandle gas,
+                                                                 unsigned int           primIdx,
+                                                                 unsigned int           sbtGASIndex,
+                                                                 float                  time,
+                                                                 float4                 data[3] );
+
+/// Returns the object space curve control vertex data of a ribbon (flat quadratic BSpline) in a
+/// Geometry Acceleration Structure (GAS) at a given motion time.
+///
+/// To access vertex data, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetRibbonVertexDataFromHandle( OptixTraversableHandle gas,
+                                                                           unsigned int           primIdx,
+                                                                           unsigned int           sbtGASIndex,
+                                                                           float                  time,
+                                                                           float4                 data[3] );
+
+/// Returns the object space curve control vertex data of a ribbon (flat quadratic BSpline) in a
+/// Geometry Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetRibbonVertexData( float4 data[3] );
+
+/// Returns the object space curve control vertex data of a ribbon (flat quadratic BSpline) for a valid
+/// outgoing hit object.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() )
+/// equals OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetRibbonVertexData( float4 data[3] );
+
+/// Deprecated. Call either optixGetRibbonNormal( float2 ribbonParameters ) for current hit
+/// data, or optixGetRibbonNormalFromHandle() for random access.
+///
+/// Returns ribbon normal at intersection reported by optixReportIntersection.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ float3 optixGetRibbonNormal( OptixTraversableHandle gas,
+                                                               unsigned int           primIdx,
+                                                               unsigned int           sbtGASIndex,
+                                                               float                  time,
+                                                               float2                 ribbonParameters );
+
+/// Returns ribbon normal at intersection reported by optixReportIntersection.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ float3 optixGetRibbonNormalFromHandle( OptixTraversableHandle gas,
+                                                                         unsigned int           primIdx,
+                                                                         unsigned int           sbtGASIndex,
+                                                                         float                  time,
+                                                                         float2                 ribbonParameters );
 
 /// Return ribbon normal at intersection reported by optixReportIntersection.
 ///
-/// Available in all OptiX program types
-static __forceinline__ __device__ float3 optixGetRibbonNormal( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float2 ribbonParameters );
+/// Available in AH, CH
+static __forceinline__ __device__ float3 optixGetRibbonNormal( float2 ribbonParameters );
 
-/// Return the object space sphere data, center point and radius, in a Geometry Acceleration
+/// Return ribbon normal at intersection reported by optixReportIntersection.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectGetRibbonNormal( float2 ribbonParameters );
+
+/// Deprecated. Call either optixGetSphereData( float4 data[1] ) for current hit
+/// sphere data, or optixGetSphereDataFromHandle() for random access sphere data.
+///
+/// Returns the object space sphere data, center point and radius, in a Geometry Acceleration
 /// Structure (GAS) at a given motion time.
 ///
 /// To access sphere data, the GAS must be built using the flag
@@ -687,7 +994,50 @@ static __forceinline__ __device__ float3 optixGetRibbonNormal( OptixTraversableH
 /// contain motion, the time parameter is ignored.
 ///
 /// Available in all OptiX program types
-static __forceinline__ __device__ void optixGetSphereData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[1] );
+static __forceinline__ __device__ void optixGetSphereData( OptixTraversableHandle gas,
+                                                           unsigned int           primIdx,
+                                                           unsigned int           sbtGASIndex,
+                                                           float                  time,
+                                                           float4                 data[1] );
+
+/// Performs a random access fetch of the object space sphere data, center point and radius, in a Geometry Acceleration
+/// Structure (GAS) at a given motion time.
+///
+/// To access vertex data of any curve, the GAS must be built using the flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+/// If only the vertex data of a currently intersected sphere is required, it is recommended to
+/// use function optixGetSphereData. A data fetch of the currently hit primitive does NOT
+/// require building the corresponding GAS with flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[0] = {x,y,z,w} with {x,y,z} the position of the sphere center and w the radius.
+///
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not
+/// contain motion, the time parameter is ignored.
+///
+/// Available in all OptiX program types
+static __forceinline__ __device__ void optixGetSphereDataFromHandle( OptixTraversableHandle gas,
+                                                                     unsigned int           primIdx,
+                                                                     unsigned int           sbtGASIndex,
+                                                                     float                  time,
+                                                                     float4                 data[1] );
+
+/// Returns the object space sphere data of the currently intersected sphere at the current ray time.
+///
+/// Similar to the random access variant optixGetSphereDataFromHandle, but does not require setting flag
+/// OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS when building the corresponding GAS.
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_SPHERE.
+///
+/// Available in AH, CH
+static __forceinline__ __device__ void optixGetSphereData( float4 data[1] );
+
+/// Returns the object space sphere data of the currently intersected sphere for a valid outgoing hit object.
+/// It is the hit object's pendant of optixGetSphereData( float4 data[1] ).
+///
+/// It is only valid to call this function if the return value of optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_SPHERE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetSphereData( float4 data[1] );
 
 /// Returns the traversable handle for the Geometry Acceleration Structure (GAS) containing the
 /// current hit.
@@ -774,6 +1124,150 @@ static __forceinline__ __device__ float3 optixTransformVectorFromObjectToWorldSp
 /// Available in IS, AH, CH
 static __forceinline__ __device__ float3 optixTransformNormalFromObjectToWorldSpace( float3 normal );
 
+/// Returns the world-to-object transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetWorldToObjectTransformMatrix( float m[12] );
+
+/// Returns the object-to-world transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ void optixHitObjectGetObjectToWorldTransformMatrix( float m[12] );
+
+/// Transforms the point using world-to-object transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformPointFromWorldToObjectSpace( float3 point );
+
+/// Transforms the vector using world-to-object transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformVectorFromWorldToObjectSpace( float3 vec );
+
+/// Transforms the normal using world-to-object transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformNormalFromWorldToObjectSpace( float3 normal );
+
+/// Transforms the point using object-to-world transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformPointFromObjectToWorldSpace( float3 point );
+
+/// Transforms the vector using object-to-world transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformVectorFromObjectToWorldSpace( float3 vec );
+
+/// Transforms the normal using object-to-world transformation matrix resulting from the
+/// transformation list of the current outgoing hit object.
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float3 optixHitObjectTransformNormalFromObjectToWorldSpace( float3 normal );
+
+/// Returns the world-to-object transformation matrix resulting from the transformation list of the
+/// templated hit object. Users may implement getRayTime, getTransformListSize, and getTransformListHandle
+/// in their own structs, or inherit them from Optix[Incoming|Outgoing]HitObject. Here is an example:
+///
+/// struct FixedTimeHitState : OptixIncomingHitObject {
+///   float time;
+///   __forceinline__ __device__ float getRayTime() { return time; }
+/// };
+/// ...
+/// optixGetWorldToObjectTransformMatrix( FixedTimeHitState{ 0.4f }, m );
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( const HitState& hs, float m[12] );
+
+/// Returns the object-to-world transformation matrix resulting from the transformation list
+/// of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ void optixGetObjectToWorldTransformMatrix( const HitState& hs, float m[12] );
+
+/// Transforms the point using world-to-object transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformPointFromWorldToObjectSpace( const HitState& hs, float3 point );
+
+/// Transforms the vector using world-to-object transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformVectorFromWorldToObjectSpace( const HitState& hs, float3 vec );
+
+/// Transforms the normal using world-to-object transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformNormalFromWorldToObjectSpace( const HitState& hs, float3 normal );
+
+/// Transforms the point using object-to-world transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformPointFromObjectToWorldSpace( const HitState& hs, float3 point );
+
+/// Transforms the vector using object-to-world transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformVectorFromObjectToWorldSpace( const HitState& hs, float3 vec );
+
+/// Transforms the normal using object-to-world transformation matrix resulting from the transformation
+/// list of the templated hit object (see optixGetWorldToObjectTransformMatrix for example usage).
+///
+/// The cost of this function may be proportional to the size of the transformation list.
+///
+/// Available in IS, AH, CH
+template <typename HitState>
+static __forceinline__ __device__ float3 optixTransformNormalFromObjectToWorldSpace( const HitState& hs, float3 normal );
+
 /// Returns the number of transforms on the current transform list.
 ///
 /// Available in IS, AH, CH
@@ -803,6 +1297,29 @@ static __forceinline__ __device__ OptixTraversableHandle optixGetTransformListHa
 ///
 /// Available in RG, CH, MS, CC, DC
 static __forceinline__ __device__ OptixTraversableHandle optixHitObjectGetTransformListHandle( unsigned int index );
+
+struct OptixIncomingHitObject
+{
+    __forceinline__ __device__ float        getRayTime() const { return optixGetRayTime(); }
+    __forceinline__ __device__ unsigned int getTransformListSize() const { return optixGetTransformListSize(); }
+    __forceinline__ __device__ OptixTraversableHandle getTransformListHandle( unsigned int index ) const
+    {
+        return optixGetTransformListHandle( index );
+    }
+};
+
+struct OptixOutgoingHitObject
+{
+    __forceinline__ __device__ float        getRayTime() const { return optixHitObjectGetRayTime(); }
+    __forceinline__ __device__ unsigned int getTransformListSize() const
+    {
+        return optixHitObjectGetTransformListSize();
+    }
+    __forceinline__ __device__ OptixTraversableHandle getTransformListHandle( unsigned int index ) const
+    {
+        return optixHitObjectGetTransformListHandle( index );
+    }
+};
 
 /// Returns the transform type of a traversable handle from a transform list.
 ///
@@ -1039,6 +1556,28 @@ static __forceinline__ __device__ void optixIgnoreIntersection();
 /// Available in IS, AH, CH
 static __forceinline__ __device__ unsigned int optixGetPrimitiveIndex();
 
+
+/// Returns the user-provided cluster ID of the intersected CLAS of a hit.
+///
+/// Returns OPTIX_CLUSTER_ID_INVALID if the closest (or current) intersection 
+/// is not a cluster.
+///
+/// see also OptixPipelineCompileOptions::allowClusteredGeometry
+///
+/// Available in AH, CH
+static __forceinline__ __device__ unsigned int optixGetClusterId();
+
+/// Returns the user-provided cluster ID associated with the current outgoing hit object.
+///
+/// Returns OPTIX_CLUSTER_ID_INVALID if the closest intersection is not a cluster,
+/// or if the hit object is a miss.
+///
+/// see also OptixPipelineCompileOptions::allowClusteredGeometry
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ unsigned int optixHitObjectGetClusterId();
+
+
 /// Return the primitive index associated with the current outgoing hit object.
 ///
 /// Results are undefined if the hit object is a miss.
@@ -1176,28 +1715,23 @@ static __forceinline__ __device__ bool optixIsTriangleFrontFaceHit();
 /// Available in AH, CH
 static __forceinline__ __device__ bool optixIsTriangleBackFaceHit();
 
-/// Convenience function interpreting the result of #optixGetHitKind().
-///
-/// Available in AH, CH
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleHit();
-
-/// Convenience function interpreting the result of #optixGetHitKind().
-///
-/// Available in AH, CH
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleFrontFaceHit();
-
-/// Convenience function interpreting the result of #optixGetHitKind().
-///
-/// Available in AH, CH
-static __forceinline__ __device__ bool optixIsDisplacedMicromeshTriangleBackFaceHit();
 
 /// Convenience function that returns the first two attributes as floats.
 ///
-/// When using OptixBuildInputTriangleArray objects, during intersection the barycentric coordinates
+/// When using OptixBuildInputTriangleArray objects, during intersection with a triangle, the barycentric coordinates of the hit
 /// are stored into the first two attribute registers.
 ///
 /// Available in AH, CH
 static __forceinline__ __device__ float2 optixGetTriangleBarycentrics();
+
+/// Returns the barycentric coordinates of the hit point on an intersected triangle.
+///
+/// This function is the hit object's equivalent to optixGetTriangleBarycentrics().
+/// It is only valid to call this function if the return value of
+/// optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_TRIANGLE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float2 optixHitObjectGetTriangleBarycentrics();
 
 /// Returns the curve parameter associated with the current intersection when using
 /// OptixBuildInputCurveArray objects.
@@ -1205,12 +1739,32 @@ static __forceinline__ __device__ float2 optixGetTriangleBarycentrics();
 /// Available in AH, CH
 static __forceinline__ __device__ float optixGetCurveParameter();
 
+/// Returns the curve parameter associated with the intersection of a curve.
+///
+/// This function is the hit object's equivalent to optixGetCurveParameter().
+/// It is only valid to call this function if the return value of
+/// optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals a primitive type that can
+/// be used to build an AS with OptixBuildInputCurveArray objects.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float optixHitObjectGetCurveParameter();
+
 /// Returns the ribbon parameters along directrix (length) and generator (width) of the current
 /// intersection when using OptixBuildInputCurveArray objects with curveType
 /// OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE.
 ///
 /// Available in AH, CH
 static __forceinline__ __device__ float2 optixGetRibbonParameters();
+
+/// Returns the ribbon parameters along directrix (length) and generator (width) of the current
+/// curve intersection with primitive type OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE.
+///
+/// This function is the hit object's equivalent to optixGetRibbonParameters().
+/// It is only valid to call this function if the return value of
+/// optixGetPrimitiveType( optixHitObjectGetHitKind() ) equals OPTIX_PRIMITIVE_TYPE_FLAT_QUADRATIC_BSPLINE.
+///
+/// Available in RG, CH, MS, CC, DC
+static __forceinline__ __device__ float2 optixHitObjectGetRibbonParameters();
 
 /// Available in any program, it returns the current launch index within the launch dimensions
 /// specified by optixLaunch on the host.
@@ -1589,5 +2143,298 @@ static __forceinline__ __device__ uint4 optixTexFootprint2DGrad( unsigned long l
 #define __OPTIX_INCLUDE_INTERNAL_HEADERS__
 
 #include "internal/optix_device_impl.h"
+
+
+// If you manually define OPTIX_INCLUDE_COOPERATIVE_VECTOR to override the default behavior, you must
+// set it to 0 or 1 and not simply define it with no value (which will default it have a value of 0).
+#ifndef OPTIX_INCLUDE_COOPERATIVE_VECTOR
+#  define OPTIX_INCLUDE_COOPERATIVE_VECTOR_UNSET
+#  define OPTIX_INCLUDE_COOPERATIVE_VECTOR 1
+#endif
+
+#if OPTIX_INCLUDE_COOPERATIVE_VECTOR
+/// \addtogroup optix_device_api
+/// \defgroup optix_device_api_coop_vec Cooperative Vector
+/// \ingroup optix_device_api
+///@{
+///
+
+/// Load the vector from global memory. The memory address must be 16 byte aligned
+/// regardless of the type and number of elements in the vector.
+///
+/// Available anywhere
+template <typename VecTOut>
+static __forceinline__ __device__ VecTOut optixCoopVecLoad( CUdeviceptr ptr );
+/// Load the vector from global memory. The memory address must be 16 byte aligned
+/// regardless of the type and number of elements in the vector.
+///
+/// Available anywhere
+template <typename VecTOut, typename T>
+static __forceinline__ __device__ VecTOut optixCoopVecLoad( T* ptr );
+
+
+/// Following functions are designed to facilitate activation function evaluation between
+/// calls to optixCoopVecMatMul. Utilizing only these functions on the activation vectors
+/// will typically improve performance.
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecExp2( const VecT& vec );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecLog2( const VecT& vec );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecTanh( const VecT& vec );
+/// Convert from VecTIn to VecTOut. Not all conversions are supported, only integral to 16
+/// or 32-bit floating point.
+///
+/// Available anywhere
+template <typename VecTOut, typename VecTIn>
+static __forceinline__ __device__ VecTOut optixCoopVecCvt( const VecTIn& vec );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecMin( const VecT& vecA, const VecT& vecB );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecMin( const VecT& vecA, typename VecT::value_type B );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecMax( const VecT& vecA, const VecT& vecB );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecMax( const VecT& vecA, typename VecT::value_type B );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecMul( const VecT& vecA, const VecT& vecB );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecAdd( const VecT& vecA, const VecT& vecB );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecSub( const VecT& vecA, const VecT& vecB );
+/// Returns result[i] = ( vecA[i] < vecB[i] ) ? 0 : 1;
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecStep( const VecT& vecA, const VecT& vecB );
+///
+/// Available anywhere
+template <typename VecT>
+static __forceinline__ __device__ VecT optixCoopVecFFMA( const VecT& vecA, const VecT& vecB, const VecT& vecC );
+
+/// Computes a vector matrix multiplication with an addition of a bias.
+///
+/// \code
+///           A * B           + C     = D
+/// Does matrix * inputVector + bias  = output
+///       [NxK]   [Kx1]         [Nx1] = [Nx1]
+/// \endcode
+///
+/// Not all combinations of inputType and matrixElementType are supported. See the
+/// following table for supported configurations.
+///
+/// inputType  | inputInterpretation | matrixElementType | biasElementType | outputType
+/// -----------|---------------------|-------------------|-----------------|-----------
+/// FLOAT16    | FLOAT16             | FLOAT16           | FLOAT16         | FLOAT16
+/// FLOAT16    | FLOAT8_E4M3         | FLOAT8_E4M3       | FLOAT16         | FLOAT16
+/// FLOAT16    | FLOAT8_E5M4         | FLOAT8_E5M4       | FLOAT16         | FLOAT16
+/// FLOAT16    | UINT8/INT8          | UINT8/INT8        | UINT32/INT32    | UINT32/INT32
+/// FLOAT32    | UINT8/INT8          | UINT8/INT8        | UINT32/INT32    | UINT32/INT32
+/// UINT8/INT8 | UINT8/INT8          | UINT8/INT8        | UINT32/INT32    | UINT32/INT32
+///
+/// If either the input or matrix is signed, then the bias and output must also be signed.
+///
+/// When matrixElementType is OPTIX_COOP_VEC_ELEM_TYPE_FLOAT8_E4M3 or
+/// OPTIX_COOP_VEC_ELEM_TYPE_FLOAT8_E5M2 the matrixLayout must be either
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL or
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_TRAINING_OPTIMAL.
+///
+/// When the inputVector's element type does not match the inputInterpretation
+/// arithmetically casting is performed on the input values to match the
+/// inputInterpretation.
+///
+/// If transpose is true, the matrix is treated as being stored transposed in memory
+/// (stored as KxN instead of NxK). Set other parameters as if the matrix was not
+/// transposed in memory. Not all matrix element types or matrix layouts support
+/// transpose. Only OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16 is supported. Only
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL and
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_TRAINING_OPTIMAL are supported.
+///
+/// The bias pointer is assumed to not be null and may be dereferenced. If you wish to do
+/// the matrix multiply without a bias then use the overloaded version of this function
+/// that does not take the bias.
+///
+/// For row and column ordered matrix layouts, the stride will assume tight packing when
+/// rowColumnStrideInBytes is a constant immediate 0 (computed values or loaded from
+/// memory will not work). Ignored for other matrix layouts. Value must be 16 byte
+/// aligned.
+///
+/// \tparam VecTOut             Type must match biasElementType and size must match N
+/// \tparam VecTIn              Type must be i32, f16 or f32 type and size must match K
+/// \tparam inputInterpretation Must match matrixLayout
+/// \tparam matrixLayout        The layout of the matrix in memory
+/// \tparam transpose           Whether the data in memory for matrix is transposed from the specified layout
+/// \tparam N                   Must match VecTOut::size
+/// \tparam K                   Must match VecTIn::size
+/// \tparam matrixElementType   Type of elements stored in memory
+/// \tparam biasElementType     Type of elements stored in memory, must also match VecTOut::elementType
+///
+/// \param[in] inputVector
+/// \param[in] matrix                 pointer to global memory. Array of NxK elements. 64 byte aligned. Must not be modified during use.
+/// \param[in] matrixOffsetInBytes    offset to start of matrix data. Using the same value for matrix with different offsets for all layers yields more effecient execution. 64 byte aligned.
+/// \param[in] bias                   pointer to global memory. Array of N elements. 16 byte aligned. Must not be modified during use.
+/// \param[in] biasOffsetInBytes      offset to start of bias data. Using the same value for bias with different offsets for all layers yields more effecient execution. 16 byte aligned.
+/// \param[in] rowColumnStrideInBytes for row or column major matrix layouts, this identifies the stride between columns or rows.
+///
+/// Available in all OptiX program types
+template <
+    typename VecTOut,
+    typename VecTIn,
+    OptixCoopVecElemType inputInterpretation,
+    OptixCoopVecMatrixLayout matrixLayout,
+    bool transpose,
+    unsigned int N,
+    unsigned int K,
+    OptixCoopVecElemType matrixElementType,
+    OptixCoopVecElemType biasElementType>
+static __forceinline__ __device__ VecTOut optixCoopVecMatMul( const VecTIn& inputVector,
+                                                              CUdeviceptr matrix,  // 64 byte aligned, Array of KxN elements
+                                                              unsigned    matrixOffsetInBytes,  // 64 byte aligned
+                                                              CUdeviceptr bias,  // 16 byte aligned, Array of N elements
+                                                              unsigned    biasOffsetInBytes,  // 16 byte aligned
+                                                              unsigned    rowColumnStrideInBytes = 0 );
+
+/// Same as #optixCoopVecMatMul, but without the bias parameters.
+template <typename VecTOut, typename VecTIn, OptixCoopVecElemType inputInterpretation, OptixCoopVecMatrixLayout matrixLayout, bool transpose, unsigned int N, unsigned int K, OptixCoopVecElemType matrixElementType>
+static __forceinline__ __device__ VecTOut optixCoopVecMatMul( const VecTIn& inputVector,
+                                                              CUdeviceptr matrix,  // 64 byte aligned, Array of KxN elements
+                                                              unsigned matrixOffsetInBytes,  // 64 byte aligned
+                                                              unsigned rowColumnStrideInBytes = 0 );
+
+/// Performs a component-wise atomic add reduction of the vector into global memory
+/// starting at \a offsetInBytes bytes after \a outputVector.
+///
+/// VecTIn::elementType must be of type OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16 or
+/// OPTIX_COOP_VEC_ELEM_TYPE_FLOAT32 The memory backed by \a outputVector + \a offsetInBytes
+/// must be large enough to accomodate VecTIn::size elements.  The type of data in
+/// \a outputVector must match VecTIn::elementType. No type conversion is performed.
+/// \a outputVector + \a offsetInBytes must be 4 byte aligned.
+///
+/// \tparam VecTIn Type of inputVector
+///
+/// \param[in] inputVector
+/// \param[in] outputVector  pointer to global memory on the device, sum with \a offsetInBytes must be a multiple of 4
+/// \param[in] offsetInBytes offset in bytes from \a outputVector, sum with \a outputVector must be a multiple of 4
+///
+/// Available in all OptiX program types
+template <typename VecTIn>
+static __forceinline__ __device__ void optixCoopVecReduceSumAccumulate( const VecTIn& inputVector,
+                                                                        CUdeviceptr   outputVector,
+                                                                        unsigned      offsetInBytes );
+
+/// Produces a matrix outer product of the input vecA and vecB ( vecA * transpose(vecB) )
+/// and does a component-wise atomic add reduction of the result into global memory
+/// starting \a offsetInBytes bytes after \a outputMatrix. The dimentions of the matrix are
+/// [VecTA::size, VecTB::size]. VecTA::elementType, VecTB::elementType and the element
+/// type of the matrix must be the same, no type conversion is performed. The element type
+/// must be OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16.
+///
+/// outputMatrix + offsetInBytes must be 4B aligned, but performance may be better with
+/// 128 byte alignments.
+///
+/// The output matrix will be in matrixLayout layout, though currently only
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_TRAINING_OPTIMAL layout is supported.
+///
+/// \tparam VecTA        Type of vecA
+/// \tparam VecTB        Type of vecB
+/// \tparam matrixLayout Layout of matrix stored in outputMatrix
+///
+/// \param [in] vecA
+/// \param [in] vecB
+/// \param [in] outputMatrix           pointer to global memory on the device, sum with \a offsetInBytes must be a multiple of 4
+/// \param [in] offsetInBytes          offset in bytes from \a outputMatrix, sum with \a outputMatrix must be a multiple of 4
+/// \param [in] rowColumnStrideInBytes stride between rows or columns, zero takes natural stride, ignored for optimal layouts
+///
+/// Available in all OptiX program types
+template <typename VecTA, typename VecTB, OptixCoopVecMatrixLayout matrixLayout = OPTIX_COOP_VEC_MATRIX_LAYOUT_TRAINING_OPTIMAL>
+static __forceinline__ __device__ void optixCoopVecOuterProductAccumulate( const VecTA& vecA,
+                                                                           const VecTB& vecB,
+                                                                           CUdeviceptr  outputMatrix,
+                                                                           unsigned     offsetInBytes,
+                                                                           unsigned     rowColumnStrideInBytes = 0 );
+
+/// This function is intended strictly for matrix layouts that must be computed through
+/// the host API, #optixCoopVecMatrixComputeSize, but is needed on the device. For optimal
+/// performance the offsets to each layer in a network should be constant, so this
+/// function can be used to facilitate calculating the offset for subsequent layers in
+/// shader code. It can also be used for calculating the size of row and column major
+/// matrices, but the rowColumnStrideInBytes template parameter must be specified, so that
+/// it can be calculated during compilation.
+///
+/// For row and column ordered matrix layouts, when rowColumnStrideInBytes is 0, the
+/// stride will assume tight packing.
+///
+/// Results will be rounded to the next multiple of 64 to make it easy to pack the
+/// matrices in memory and have the correct alignment.
+///
+/// Results are in number of bytes, and should match the output of the host function
+/// #optixCoopVecMatrixComputeSize.
+///
+/// \tparam N, K        dimensions of the matrix
+/// \tparam elementType Type of the matrix elements
+/// \tparam layout      Layout of the matrix
+///
+/// Available anywhere
+template <unsigned int N, unsigned int K, OptixCoopVecElemType elementType, OptixCoopVecMatrixLayout layout = OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL, unsigned int rowColumnStrideInBytes = 0>
+static __forceinline__ __device__ unsigned int optixCoopVecGetMatrixSize();
+
+/// The API does not require the use of this class specifically, but it must define a
+/// certain interface as spelled out by the public members of the class. Note that not all
+/// types of T are supported. Only 8 and 32 bit signed and unsigned integral types along
+/// with 16 and 32 bit floating point values.
+template <typename T, unsigned int N>
+class OptixCoopVec
+{
+  public:
+    static const unsigned int size = N;
+    using value_type               = T;
+
+    __forceinline__ __device__ OptixCoopVec() {}
+    __forceinline__ __device__ OptixCoopVec( const value_type& val )
+    {
+        for( unsigned int i = 0; i < size; ++i )
+            m_data[i]       = val;
+    }
+    __forceinline__ __device__ const value_type& operator[]( unsigned int index ) const { return m_data[index]; }
+    __forceinline__ __device__ value_type& operator[]( unsigned int index ) { return m_data[index]; }
+
+    __forceinline__ __device__ const value_type* data() const { return m_data; }
+    __forceinline__ __device__ value_type* data() { return m_data; }
+
+  protected:
+    value_type m_data[size];
+};
+
+/**@}*/  // end group optix_device_api
+
+#include "internal/optix_device_impl_coop_vec.h"
+
+#endif //  OPTIX_INCLUDE_COOPERATIVE_VECTOR
+
+#ifdef OPTIX_INCLUDE_COOPERATIVE_VECTOR_UNSET
+#  undef OPTIX_INCLUDE_COOPERATIVE_VECTOR
+#  undef OPTIX_INCLUDE_COOPERATIVE_VECTOR_UNSET
+#endif
+
 
 #endif  // OPTIX_OPTIX_DEVICE_H
