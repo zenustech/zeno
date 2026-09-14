@@ -98,7 +98,11 @@ extern "C" __global__ void __closesthit__radiance()
     LightSampleRecord lsr;
 
     if (light.type != zeno::LightType::Diffuse) {
-        if (prd->depth > 0) { return; }
+        if (prd->depth > 0) {
+            prd->alphaHit = true;
+            prd->_tmin_ = optixGetRayTmax();
+            return;
+        }
         lsr.PDF = 1.0f;
         lsr.isDelta = true;
     }
