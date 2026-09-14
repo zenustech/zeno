@@ -1,13 +1,13 @@
-/* 
-* SPDX-FileCopyrightText: Copyright (c) 2019 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
-* SPDX-License-Identifier: LicenseRef-NvidiaProprietary 
-* 
-* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual 
-* property and proprietary rights in and to this material, related 
-* documentation and any modifications thereto. Any use, reproduction, 
-* disclosure or distribution of this material and related documentation 
-* without an express license agreement from NVIDIA CORPORATION or 
-* its affiliates is strictly prohibited. 
+/*
+* SPDX-FileCopyrightText: Copyright (c) 2019 - 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+*
+* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+* property and proprietary rights in and to this material, related
+* documentation and any modifications thereto. Any use, reproduction,
+* disclosure or distribution of this material and related documentation
+* without an express license agreement from NVIDIA CORPORATION or
+* its affiliates is strictly prohibited.
 */
 /// @file
 /// @author NVIDIA Corporation
@@ -17,7 +17,7 @@
 #define OPTIX_OPTIX_FUNCTION_TABLE_H
 
 /// The OptiX ABI version.
-#define OPTIX_ABI_VERSION 93
+#define OPTIX_ABI_VERSION 118
 
 #ifndef OPTIX_DEFINE_ABI_VERSION_ONLY
 
@@ -119,6 +119,14 @@ typedef struct OptixFunctionTable
     /// See ::optixModuleGetCompilationState().
     OptixResult ( *optixModuleGetCompilationState )( OptixModule module, OptixModuleCompileState* state );
 
+    /// See ::optixModuleCancelCreation().
+    OptixResult ( *optixModuleCancelCreation )( OptixModule module, OptixCreationFlags flags );
+
+	  OptixResult ( *optixStub )( void );
+
+    /// See ::optixDeviceContextCancelCreations().
+    OptixResult ( *optixDeviceContextCancelCreations )( OptixDeviceContext context, OptixCreationFlags flags );
+
     /// See ::optixModuleDestroy().
     OptixResult ( *optixModuleDestroy )( OptixModule module );
 
@@ -138,6 +146,21 @@ typedef struct OptixFunctionTable
                                        OptixTask*    additionalTasks,
                                        unsigned int  maxNumAdditionalTasks,
                                        unsigned int* numAdditionalTasksCreated );
+
+    /// See ::optixTaskGetSerializationKey().
+    OptixResult ( *optixTaskGetSerializationKey )( OptixTask task, void* key, size_t* size );
+
+    /// See ::optixTaskSerializeOutput().
+    OptixResult ( *optixTaskSerializeOutput )( OptixTask task, void* data, size_t* size );
+
+    /// See ::optixTaskDeserializeOutput().
+    OptixResult ( *optixTaskDeserializeOutput )( OptixTask     task,
+                                                 const void*   data,
+                                                 size_t        size,
+                                                 OptixTask*    additionalTasks,
+                                                 unsigned int  maxNumAdditionalTasks,
+                                                 unsigned int* numAdditionalTasksCreated );
+
     //@ }
     /// \name Program groups
     //@ {
@@ -174,12 +197,28 @@ typedef struct OptixFunctionTable
     /// See ::optixPipelineDestroy().
     OptixResult ( *optixPipelineDestroy )( OptixPipeline pipeline );
 
+    /// See ::optixPipelineSetStackSizeFromCallDepths().
+    OptixResult ( *optixPipelineSetStackSizeFromCallDepths )( OptixPipeline pipeline,
+                                                              unsigned int  maxTraceDepth,
+                                                              unsigned int  maxContinuationCallableDepth,
+                                                              unsigned int  maxDirectCallableDepthFromState,
+                                                              unsigned int  maxDirectCallableDepthFromTraversal,
+                                                              unsigned int  maxTraversableGraphDepth);
+
     /// See ::optixPipelineSetStackSize().
     OptixResult ( *optixPipelineSetStackSize )( OptixPipeline pipeline,
                                                 unsigned int  directCallableStackSizeFromTraversal,
                                                 unsigned int  directCallableStackSizeFromState,
                                                 unsigned int  continuationStackSize,
                                                 unsigned int  maxTraversableGraphDepth );
+
+    OptixResult ( *optixPipelineSymbolMemcpyAsync )( OptixPipeline                 pipeline,
+                                                     const char*                   name,
+                                                     void*                         mem,
+                                                     size_t                        sizeInBytes,
+                                                     size_t                        offsetInBytes,
+                                                     OptixPipelineSymbolMemcpyKind kind,
+                                                     CUstream                      stream );
 
     //@ }
     /// \name Acceleration structures
@@ -268,16 +307,23 @@ typedef struct OptixFunctionTable
                                                         CUdeviceptr                targetOpacityMicromapArray,
                                                         size_t                     targetOpacityMicromapArraySizeInBytes );
 
-    /// See ::optixDisplacementMicromapArrayComputeMemoryUsage().
-    OptixResult ( *optixDisplacementMicromapArrayComputeMemoryUsage )( OptixDeviceContext context,
-                                                                       const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                                       OptixMicromapBufferSizes* bufferSizes );
+    OptixResult ( *stub1 )( void );
+    OptixResult ( *stub2 )( void );
 
-    /// See ::optixDisplacementMicromapArrayBuild().
-    OptixResult ( *optixDisplacementMicromapArrayBuild )( OptixDeviceContext                              context,
-                                                          CUstream                                        stream,
-                                                          const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                          const OptixMicromapBuffers*                     buffers );
+    /// See ::optixClusterAccelComputeMemoryUsage().
+    OptixResult ( *optixClusterAccelComputeMemoryUsage )( OptixDeviceContext                 context,
+                                                          OptixClusterAccelBuildMode         buildMode,
+                                                          const OptixClusterAccelBuildInput* buildInput,
+                                                          OptixAccelBufferSizes*             bufferSizes );
+
+    /// See ::optixClusterAccelBuild().
+    OptixResult ( *optixClusterAccelBuild )( OptixDeviceContext                    context,
+                                             CUstream                              stream,
+                                             const OptixClusterAccelBuildModeDesc* buildModeDesc,
+                                             const OptixClusterAccelBuildInput*    buildInput,
+                                             CUdeviceptr                           argsArray,
+                                             CUdeviceptr                           argsCount,
+                                             unsigned int                          argsStrideInBytes );
 
     //@ }
     /// \name Launch
@@ -296,8 +342,29 @@ typedef struct OptixFunctionTable
                                   unsigned int                   height,
                                   unsigned int                   depth );
 
-    OptixResult ( *optixPlaceholder001 )( OptixDeviceContext context );
-    OptixResult ( *optixPlaceholder002 )( OptixDeviceContext context );
+    //@ }
+    /// \name Cooperative Vector
+    //@ {
+
+    /// See ::optixCoopVecMatrixConvert().
+    OptixResult ( *optixCoopVecMatrixConvert )( OptixDeviceContext             context,
+                                                CUstream                       stream,
+                                                unsigned int                   numNetworks,
+                                                const OptixNetworkDescription* inputNetworkDescription,
+                                                CUdeviceptr                    inputNetworks,
+                                                size_t                         inputNetworkStrideInBytes,
+                                                const OptixNetworkDescription* outputNetworkDescription,
+                                                CUdeviceptr                    outputNetworks,
+                                                size_t                         outputNetworkStrideInBytes );
+
+    /// See ::optixCoopVecMatrixComputeSize().
+    OptixResult ( *optixCoopVecMatrixComputeSize )( OptixDeviceContext       context,
+                                                    unsigned int             N,
+                                                    unsigned int             K,
+                                                    OptixCoopVecElemType     elementType,
+                                                    OptixCoopVecMatrixLayout layout,
+                                                    size_t                   rowColumnStrideInBytes,
+                                                    size_t*                  sizeInBytes );
 
     //@ }
     /// \name Denoiser

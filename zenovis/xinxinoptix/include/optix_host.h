@@ -1,13 +1,13 @@
-/* 
-* SPDX-FileCopyrightText: Copyright (c) 2010 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved. 
-* SPDX-License-Identifier: LicenseRef-NvidiaProprietary 
-* 
-* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual 
-* property and proprietary rights in and to this material, related 
-* documentation and any modifications thereto. Any use, reproduction, 
-* disclosure or distribution of this material and related documentation 
-* without an express license agreement from NVIDIA CORPORATION or 
-* its affiliates is strictly prohibited. 
+/*
+* SPDX-FileCopyrightText: Copyright (c) 2010 - 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+*
+* NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+* property and proprietary rights in and to this material, related
+* documentation and any modifications thereto. Any use, reproduction,
+* disclosure or distribution of this material and related documentation
+* without an express license agreement from NVIDIA CORPORATION or
+* its affiliates is strictly prohibited.
 */
 /// @file
 /// @author NVIDIA Corporation
@@ -47,7 +47,7 @@
 
 /// \defgroup optix_host_api_error_handling Error handling
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Returns a string containing the name of an error code in the enum.
 ///
@@ -73,10 +73,10 @@ OPTIXAPI const char* optixGetErrorName( OptixResult result );
 /// \see #optixGetErrorName
 OPTIXAPI const char* optixGetErrorString( OptixResult result );
 
-//@}
+///@}
 /// \defgroup optix_host_api_device_context Device context
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Create a device context associated with the CUDA context specified with 'fromContext'.
 ///
@@ -227,10 +227,10 @@ OPTIXAPI OptixResult optixDeviceContextGetCacheLocation( OptixDeviceContext cont
 /// \param[out] highWaterMark the high water mark
 OPTIXAPI OptixResult optixDeviceContextGetCacheDatabaseSizes( OptixDeviceContext context, size_t* lowWaterMark, size_t* highWaterMark );
 
-//@}
+///@}
 /// \defgroup optix_host_api_pipelines Pipelines
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// logString is an optional buffer that contains compiler feedback and errors.  This
 /// information is also passed to the context logger (if enabled), however it may be
@@ -267,6 +267,26 @@ OPTIXAPI OptixResult optixPipelineCreate( OptixDeviceContext                 con
 /// Thread safety: A pipeline must not be destroyed while it is still in use by concurrent API calls in other threads.
 OPTIXAPI OptixResult optixPipelineDestroy( OptixPipeline pipeline );
 
+/// Sets the stack size for a pipeline based on the given depth parameters.
+///
+/// When the pipeline is created the stack sizes for a pipeline are configured based on the depth values
+/// that were given in the OptixPipelineLinkOptions. This method allows to reconfigure the pipeline
+/// to new values for the maximum trace depth and the maximum callable depths which includes a recalculation
+/// of the stack sizes.
+///
+/// \param[in]  pipeline                             The pipeline to set the stack size for.
+/// \param[in]  maxTraceDepth                        The maximum trace recursion depth. See #OptixPipelineLinkOptions::maxTraceDepth.
+/// \param[in]  maxContinuationCallableDepth         The maximum depth of continuation callable call graphs. See #OptixPipelineLinkOptions::maxContinuationCallableDepth.
+/// \param[in]  maxDirectCallableDepthFromState      The maximum depth of direct callable call graphs called from RG, CH, MS or CC. See #OptixPipelineLinkOptions::maxDirectCallableDepthFromState.
+/// \param[in]  maxDirectCallableDepthFromTraversal  The maximum depth of direct callable call graphs called from IS or AH. See #OptixPipelineLinkOptions::maxDirectCallableDepthFromTraversal.
+/// \param[in]  maxTraversableGraphDepth             The maximum depth of a traversable graph passed to trace.
+OPTIXAPI OptixResult optixPipelineSetStackSizeFromCallDepths( OptixPipeline pipeline,
+                                                              unsigned int  maxTraceDepth,
+                                                              unsigned int  maxContinuationCallableDepth,
+                                                              unsigned int  maxDirectCallableDepthFromState,
+                                                              unsigned int  maxDirectCallableDepthFromTraversal,
+                                                              unsigned int  maxTraversableGraphDepth );
+
 /// Sets the stack sizes for a pipeline.
 ///
 /// Users are encouraged to see the programming guide and the implementations of the helper functions
@@ -295,10 +315,31 @@ OPTIXAPI OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
                                                 unsigned int  continuationStackSize,
                                                 unsigned int  maxTraversableGraphDepth );
 
-//@}
+/// Copies data from or to a global symbol in the pipeline.
+/// Depending on the given kind of the copy operation, the mem parameter acts as the source or the
+/// target of the operation.
+/// The sizeInBytes parameter determines how many bytes are copied.
+/// The offsetInBytes parameter determines the offset in bytes in the target memory.
+/// 
+/// \param[in]  pipeline                       The pipeline to get the symbol address from/to.
+/// \param[in]  name                           The name of the symbol to copy data from/to.
+/// \param[in]  mem                            The memory where to copy data from/to. Depending on the kind of the copy operation this is either a host or a device pointer.
+/// \param[in]  sizeInBytes                    The amount of bytes to copy.
+/// \param[in]  offsetInBytes                  The offset in the symbol's memory to copy the data from/to.
+/// \param[in]  kind                           A flag that determines the direction of the copy operation.
+/// \param[in]  stream                         The CUstream to execute the asynchronous operation in.
+OPTIXAPI OptixResult optixPipelineSymbolMemcpyAsync( OptixPipeline                 pipeline,
+                                                     const char*                   name,
+                                                     void*                         mem,
+                                                     size_t                        sizeInBytes,
+                                                     size_t                        offsetInBytes,
+                                                     OptixPipelineSymbolMemcpyKind kind,
+                                                     CUstream                      stream );
+
+///@}
 /// \defgroup optix_host_api_modules Modules
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Compiling programs into a module. These programs can be passed in as either PTX or OptiX-IR.
 ///
@@ -373,7 +414,7 @@ OPTIXAPI OptixResult optixModuleCreate( OptixDeviceContext                 conte
 ///
 /// All OptixTask objects associated with a given OptixModule will be cleaned up when
 /// #optixModuleDestroy() is called regardless of whether the compilation was successful
-/// or not. If the compilation state is OPTIX_MODULE_COMPILE_STATE_IMPENDIND_FAILURE, any
+/// or not. If the compilation state is OPTIX_MODULE_COMPILE_STATE_IMPENDING_FAILURE, any
 /// unstarted OptixTask objects do not need to be executed though there is no harm doing
 /// so.
 ///
@@ -396,6 +437,26 @@ OPTIXAPI OptixResult optixModuleCreateWithTasks( OptixDeviceContext             
 /// \see #optixModuleCreateWithTasks
 OPTIXAPI OptixResult optixModuleGetCompilationState( OptixModule module, OptixModuleCompileState* state );
 
+/// Used to cancel task-based module creation. A canceled module will transition to
+/// OPTIX_MODULE_COMPILE_STATE_IMPENDING_FAILURE if there are unfinished tasks that
+/// have been returned to the user, or OPTIX_MODULE_COMPILE_STATE_FAILED if all
+/// returned tasks have finished executing, at which point it should be treated as
+/// any other module that has failed compilation. The user may continue executing
+/// tasks of a canceled module, they will simply return OPTIX_ERROR_CREATION_CANCELED
+/// without performing any compilation and without creating new tasks.
+/// 
+/// Conditionally blocks (see #OptixCreationFlags)
+///
+/// Thread safety: Safe to call from any thread
+OPTIXAPI OptixResult optixModuleCancelCreation( OptixModule module, OptixCreationFlags flags );
+
+
+/// Used to cancel creation of all modules asssociated with an OptixDeviceContext.
+/// Conditionally blocks (see #OptixCreationFlags)
+///
+/// Thread safety: Safe to call from any thread
+OPTIXAPI OptixResult optixDeviceContextCancelCreations( OptixDeviceContext context, OptixCreationFlags flags );
+
 /// Call for OptixModule objects created with optixModuleCreate and optixModuleDeserialize.
 ///
 /// Modules must not be destroyed while they are still used by any program group.
@@ -412,10 +473,10 @@ OPTIXAPI OptixResult optixBuiltinISModuleGet( OptixDeviceContext                
                                               const OptixBuiltinISOptions*       builtinISOptions,
                                               OptixModule*                       builtinModule );
 
-//@}
+///@}
 /// \defgroup optix_host_api_tasks Tasks
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Each OptixTask should be executed with #optixTaskExecute(). If additional parallel
 /// work is found, new OptixTask objects will be returned in additionalTasks along with
@@ -439,10 +500,46 @@ OPTIXAPI OptixResult optixTaskExecute( OptixTask     task,
                                        unsigned int  maxNumAdditionalTasks,
                                        unsigned int* numAdditionalTasksCreated );
 
-//@}
+/// Retrieve the task's serialization key and its size.
+/// It is expected to call this function twice. Once to get the size and once to retrieve the key after space for it has been allocated.
+/// If the size of the key will be zero, the task will not be serializable and the task should be executed through #optixTaskExecute().
+///
+/// \param[in] task the OptixTask which key to retrieve
+/// \param[out] key characters representing the key without string-terminating '\0'. If nullptr, no output will be written
+/// \param[out] size size of the key. Will be 0 for non-serializable tasks.
+/// \return success
+OPTIXAPI OptixResult optixTaskGetSerializationKey( OptixTask task, void* key, size_t* size );
+
+/// Retrieve the serialized data of the task's output.
+/// It is expected to call this function twice. Once to get the size and once to retrieve the data after space for it has been allocated.
+/// Calling #optixTaskSerializeOutput() before calling #optixTaskExecute() will return an error. Calling #optixTaskSerializeOutput()
+/// after calling #optixTaskDeserializeOutput() will return an error.
+///
+/// \param[in] task the OptixTask which output data to retrieve
+/// \param[out] data allocated space big enough to hold the output. If nullptr, no output will be written
+/// \param[out] size size of the data. Will be 0 for non-serializable tasks.
+OPTIXAPI OptixResult optixTaskSerializeOutput( OptixTask task, void* data, size_t* size );
+
+/// Given the serialized task output, deserialize it and return potential new dependent tasks similar to #optixTaskExecute().
+/// Calling #optixTaskDeserializeOutput() on a completed (either executed or deserialized) task will return an error.
+///
+/// \param[in] task the OptixTask which to be deserialized
+/// \param[in] data the deserialized task's output
+/// \param[in] size the size of the deserialized task's output
+/// \param[in] additionalTasks pointer to array of OptixTask objects to be filled in
+/// \param[in] maxNumAdditionalTasks maximum number of additional OptixTask objects
+/// \param[out] numAdditionalTasksCreated number of OptixTask objects created by OptiX and written into additionalTasks
+OPTIXAPI OptixResult optixTaskDeserializeOutput( OptixTask     task,
+                                                 const void*   data,
+                                                 size_t        size,
+                                                 OptixTask*    additionalTasks,
+                                                 unsigned int  maxNumAdditionalTasks,
+                                                 unsigned int* numAdditionalTasksCreated );
+
+///@}
 /// \defgroup optix_host_api_program_groups Program groups
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Returns the stack sizes for the given program group. When programs in this \p programGroup are relying on external functions,
 /// the corresponding stack sizes can only be correctly retrieved when all functions are known after linking, i.e. when a pipeline
@@ -490,10 +587,14 @@ OPTIXAPI OptixResult optixProgramGroupCreate( OptixDeviceContext              co
 /// Thread safety: A program group must not be destroyed while it is still in use by concurrent API calls in other threads.
 OPTIXAPI OptixResult optixProgramGroupDestroy( OptixProgramGroup programGroup );
 
-//@}
+/// \param[in]  programGroup               the program group containing the program(s)
+/// \param[out] sbtRecordHeaderHostPointer  the result sbt record header
+OPTIXAPI OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtRecordHeaderHostPointer );
+
+///@}
 /// \defgroup optix_host_api_launches Launches
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Where the magic happens.
 ///
@@ -530,14 +631,10 @@ OPTIXAPI OptixResult optixLaunch( OptixPipeline                  pipeline,
                                   unsigned int                   height,
                                   unsigned int                   depth );
 
-/// \param[in]  programGroup               the program group containing the program(s)
-/// \param[out] sbtRecordHeaderHostPointer  the result sbt record header
-OPTIXAPI OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtRecordHeaderHostPointer );
-
-//@}
+///@}
 /// \defgroup optix_host_api_acceleration_structures Acceleration structures
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// \param[in] context
 /// \param[in] accelOptions   options for the accel build
@@ -785,39 +882,127 @@ OPTIXAPI OptixResult optixOpacityMicromapArrayRelocate( OptixDeviceContext      
                                                         CUstream                   stream,
                                                         const OptixRelocationInfo* info,
                                                         CUdeviceptr                targetOpacityMicromapArray,
-                                                        size_t targetOpacityMicromapArraySizeInBytes );
+                                                        size_t                     targetOpacityMicromapArraySizeInBytes );
 
-/// Determine the amount of memory necessary for a Displacement Micromap Array build.
+
+/// Host side conservative memory computation for a subsequent optixClusterAccelBuild call with the same build mode and input.
+/// For implicit builds, the output buffer size contains the required size for holding all build outputs as specified in buildInput->maxArgsCount.
+/// For explicit builds, the output buffer size contains the required size for holding a single build output.
+/// The temp buffer of any optixClusterAccelBuild call must be at least as big as reported by optixClusterAccelComputeMemoryUsage.
+/// optixClusterAccelComputeMemoryUsage always returns 0 for OptixAccelBufferSizes::tempUpdateSizeInBytes.
 ///
 /// \param[in] context
-/// \param[in] buildInput
+/// \param[in] buildMode          Select the kind of output target (implicit: single buffer, explicit: per-build buffers, getSize: compact size computation for future explicit builds)
+/// \param[in] buildInput         A single input, describes the type of object to build and limits over all objects' arguments
 /// \param[out] bufferSizes
-OPTIXAPI OptixResult optixDisplacementMicromapArrayComputeMemoryUsage( OptixDeviceContext context,
-                                                                       const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                                       OptixMicromapBufferSizes* bufferSizes );
+OPTIXAPI OptixResult optixClusterAccelComputeMemoryUsage( OptixDeviceContext                 context,
+                                                          OptixClusterAccelBuildMode         buildMode,
+                                                          const OptixClusterAccelBuildInput* buildInput,
+                                                          OptixAccelBufferSizes*             bufferSizes );
 
-/// Construct an array of Displacement Micromaps (DMMs).
-///
-/// Each triangle within a DMM GAS geometry references one DMM that specifies how to subdivide it into micro-triangles.
-/// A DMM gives a subdivision resolution into 4^N micro-triangles, and displacement values for each of the vertices
-/// in the subdivided mesh. The values are combined with e.g. normal vectors, scale and bias given as AS build inputs,
-/// to get the final geometry. A DMM is encoded in one or more compressed blocks, each block having displacement values
-/// for a subtriangle of 64..1024 micro-triangles.
+/// Entry point to building one type of cluster objects: a CLAS, a Cluster template, or a GAS-over-CLAS.
+/// This is an indirect build function: all build arguments are read from device memory, with only the output location, type of build and limits passed on the host.
+/// This is a multi build function: more than one object can be built at once, but only of one type. The supplied limits must bound the inputs (Args) of all builds.
+/// Output buffer size constraints for implicit and explicit builds:
+///   implicit: The output and temp buffer must be at least as big as reported by a corresponding optixClusterAccelComputeMemoryUsage call.
+///   explicit: The output buffers must be at least as big as reported by a corresponding optixClusterAccelBuild call with the getSize mode and all device data supplied.
+///             The temp buffer must be at least as big as reported by a corresponding optixClusterAccelComputeMemoryUsage call.
+///    getSize: No output buffer is used. The temp buffer must be at least as big as reported by a corresponding optixClusterAccelComputeMemoryUsage call.
+/// Consequently, calling optixClusterAccelBuild with the getSize mode and subsequently building with the explicit mode is more memory efficient, but slower compared to
+/// building with the implicit mode.
 ///
 /// \param[in] context
 /// \param[in] stream
-/// \param[in] buildInput    a single build input object referencing many DMMs
-/// \param[in] buffers       the buffers used for build
-OPTIXAPI OptixResult optixDisplacementMicromapArrayBuild( OptixDeviceContext                              context,
-                                                          CUstream                                        stream,
-                                                          const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                          const OptixMicromapBuffers*                     buffers );
+/// \param[in] buildModeDesc      A single input, describes where to write data for the selected build mode
+/// \param[in] buildInput         A single input, describes the type of object to build and limits over all objects' arguments
+/// \param[in] argsArray          Pointer to arguments array in device memory, describes each object to build:
+///  OptixClusterAccelBuildInputTrianglesArgs when using OPTIX_CLUSTER_ACCEL_BUILD_TYPE_CLUSTERS_FROM_TRIANGLES
+///  OptixClusterAccelBuildInputTrianglesArgs when using OPTIX_CLUSTER_ACCEL_BUILD_TYPE_TEMPLATES_FROM_TRIANGLES
+///  OptixClusterAccelBuildInputGridsArgs     when using OPTIX_CLUSTER_ACCEL_BUILD_TYPE_TEMPLATES_FROM_GRIDS
+///  OptixClusterAccelBuildInputTemplatesArgs when using OPTIX_CLUSTER_ACCEL_BUILD_TYPE_CLUSTERS_FROM_TEMPLATES
+///  OptixClusterAccelBuildInputClustersArgs  when using OPTIX_CLUSTER_ACCEL_BUILD_TYPE_GASES_FROM_CLUSTERS
+/// \param[in] argsCount          Optional pointer to device memory, storing the number of objects to build, if null is provided, uses maxArgCount from buildInput
+/// \param[in] argsStrideInBytes  Optional stride of args objects, if null is provided, uses natural stride of Args type
+OPTIXAPI OptixResult optixClusterAccelBuild( OptixDeviceContext                    context,
+                                             CUstream                              stream,
+                                             const OptixClusterAccelBuildModeDesc* buildModeDesc,
+                                             const OptixClusterAccelBuildInput*    buildInput,
+                                             CUdeviceptr                           argsArray,
+                                             CUdeviceptr                           argsCount,
+                                             unsigned int                          argsStrideInBytes );
 
 
-//@}
+///@}
+/// \defgroup optix_host_api_coop_vec Cooperative Vector
+/// \ingroup optix_host_api
+///@{
+
+/// Convert matrices from one layout and or element type to another.
+///
+/// One use case is to convert a matrix in OPTIX_COOP_VEC_MATRIX_LAYOUT_ROW_MAJOR or
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_COLUMN_MAJOR into OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL.
+///
+/// The alignment base address + offset of each matrix needs to be a minimum of 64
+/// bytes. This is similar to the requirements of #optixCoopVecMatMul.
+///
+/// Type conversion is possible, but is limited. If the input elementType and output
+/// elementType are not equal, then one must be OPTIX_COOP_VEC_ELEM_TYPE_FLOAT32 or
+/// OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16 and the other must be a lower-precision
+/// floating-point type. If the output elementType is OPTIX_COOP_VEC_ELEM_TYPE_FLOAT8_E4M3
+/// or OPTIX_COOP_VEC_ELEM_TYPE_FLOAT8_E5M2, then the output layout must be
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL or
+/// OPTIX_COOP_VEC_MATRIX_LAYOUT_TRAINING_OPTIMAL.
+///
+
+
+
+/// \param[in] context
+/// \param[in] stream
+/// \param[in] numNetworks                number of networks to convert
+/// \param[in] inputNetworkDescription    description of the input network matrix topology (one per invocation)
+/// \param[in] inputNetworks              base pointer to array of matrices that match the input topology specified in network
+/// \param[in] inputNetworkStrideInBytes  number of bytes between input networks, ignored if numNetworks is one
+/// \param[in] outputNetworkDescription   description of the output network matrix topology (one per invocation)
+/// \param[in] outputNetworks             base pointer to array of matrices that match the output topology specified in network
+/// \param[in] outputNetworkStrideInBytes number of bytes between output networks, ignored if numNetworks is one
+OPTIXAPI OptixResult optixCoopVecMatrixConvert( OptixDeviceContext             context,
+                                                CUstream                       stream,
+                                                unsigned int                   numNetworks,
+                                                const OptixNetworkDescription* inputNetworkDescription,
+                                                CUdeviceptr                    inputNetworks,
+                                                size_t                         inputNetworkStrideInBytes,
+                                                const OptixNetworkDescription* outputNetworkDescription,
+                                                CUdeviceptr                    outputNetworks,
+                                                size_t                         outputNetworkStrideInBytes );
+
+
+
+/// For row and column ordered matrix layouts, when \a rowColumnStrideInBytes is 0, the
+/// stride will assume tight packing.
+///
+/// Results will be rounded to the next multiple of 64 to make it easy to pack the
+/// matrices in memory and have the correct alignment.
+///
+/// \param[in]  context
+/// \param[in]  elementType
+/// \param[in]  N
+/// \param[in]  K
+/// \param[in]  layout
+/// \param[in]  rowColumnStrideInBytes Ignored for optimal layouts
+/// \param[out] sizeInBytes            Output size of the matrix in bytes
+OPTIXAPI OptixResult optixCoopVecMatrixComputeSize( OptixDeviceContext       context,
+                                                    unsigned int             N,
+                                                    unsigned int             K,
+                                                    OptixCoopVecElemType     elementType,
+                                                    OptixCoopVecMatrixLayout layout,
+                                                    size_t                   rowColumnStrideInBytes,
+                                                    size_t*                  sizeInBytes );
+
+
+///@}
 /// \defgroup optix_host_api_denoiser Denoiser
 /// \ingroup optix_host_api
-//@{
+///@{
 
 /// Creates a denoiser object with the given options, using built-in inference models
 ///
@@ -1033,7 +1218,7 @@ OPTIXAPI OptixResult optixDenoiserComputeAverageColor( OptixDenoiser       denoi
                                                        CUdeviceptr         scratch,
                                                        size_t              scratchSizeInBytes );
 
-//@}
+///@}
 
 #include "optix_function_table.h"
 

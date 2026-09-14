@@ -231,6 +231,7 @@ set(FILE_LIST
     ${OPTIX_PATH}/include/@optix_host.h
     ${OPTIX_PATH}/include/@optix_device.h
     ${OPTIX_PATH}/include/@internal/optix_device_impl.h
+    ${OPTIX_PATH}/include/@internal/optix_device_impl_coop_vec.h
     ${OPTIX_PATH}/include/@internal/optix_device_impl_exception.h
     ${OPTIX_PATH}/include/@internal/optix_device_impl_transformations.h
 

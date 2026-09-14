@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 - 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019 - 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
@@ -436,6 +436,17 @@ OPTIXAPI inline OptixResult optixModuleGetCompilationState( OptixModule module, 
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixModuleGetCompilationState( module, state );
 }
 
+OPTIXAPI inline OptixResult optixModuleCancelCreation( OptixModule module, OptixCreationFlags flags )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixModuleCancelCreation( module, flags );
+}
+
+
+OPTIXAPI inline OptixResult optixDeviceContextCancelCreations( OptixDeviceContext context, OptixCreationFlags flags )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixDeviceContextCancelCreations( context, flags );
+}
+
 OPTIXAPI inline OptixResult optixModuleDestroy( OptixModule module )
 {
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixModuleDestroy( module );
@@ -457,6 +468,27 @@ OPTIXAPI inline OptixResult optixTaskExecute( OptixTask     task,
                                               unsigned int* numAdditionalTasksCreated )
 {
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixTaskExecute( task, additionalTasks, maxNumAdditionalTasks, numAdditionalTasksCreated );
+}
+
+OPTIXAPI inline OptixResult optixTaskGetSerializationKey( OptixTask task, void* key, size_t* size )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixTaskGetSerializationKey( task, key, size );
+}
+
+OPTIXAPI inline OptixResult optixTaskSerializeOutput( OptixTask task, void* data, size_t* size )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixTaskSerializeOutput( task, data, size );
+}
+
+OPTIXAPI inline OptixResult optixTaskDeserializeOutput( OptixTask     task,
+                                                        const void*   data,
+                                                        size_t        size,
+                                                        OptixTask*    additionalTasks,
+                                                        unsigned int  maxNumAdditionalTasks,
+                                                        unsigned int* numAdditionalTasksCreated )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixTaskDeserializeOutput( task, data, size, additionalTasks,
+                                                                   maxNumAdditionalTasks, numAdditionalTasksCreated );
 }
 
 OPTIXAPI inline OptixResult optixProgramGroupCreate( OptixDeviceContext              context,
@@ -499,6 +531,18 @@ OPTIXAPI inline OptixResult optixPipelineDestroy( OptixPipeline pipeline )
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixPipelineDestroy( pipeline );
 }
 
+OPTIXAPI inline OptixResult optixPipelineSetStackSizeFromCallDepths( OptixPipeline pipeline,
+                                                                     unsigned int  maxTraceDepth,
+                                                                     unsigned int  maxContinuationCallableDepth,
+                                                                     unsigned int  maxDirectCallableDepthFromState,
+                                                                     unsigned int  maxDirectCallableDepthFromTraversal,
+                                                                     unsigned int  maxTraversableGraphDepth )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixPipelineSetStackSizeFromCallDepths( pipeline, maxTraceDepth, maxContinuationCallableDepth,
+                                                                                maxDirectCallableDepthFromState,
+                                                                                maxDirectCallableDepthFromTraversal, maxTraversableGraphDepth );
+}
+
 OPTIXAPI inline OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
                                                        unsigned int  directCallableStackSizeFromTraversal,
                                                        unsigned int  directCallableStackSizeFromState,
@@ -508,6 +552,17 @@ OPTIXAPI inline OptixResult optixPipelineSetStackSize( OptixPipeline pipeline,
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixPipelineSetStackSize( pipeline, directCallableStackSizeFromTraversal,
                                                                   directCallableStackSizeFromState,
                                                                   continuationStackSize, maxTraversableGraphDepth );
+}
+
+OPTIXAPI inline OptixResult optixPipelineSymbolMemcpyAsync( OptixPipeline                 pipeline,
+                                                            const char*                   name,
+                                                            void*                         mem,
+                                                            size_t                        sizeInBytes,
+                                                            size_t                        offsetInBytes,
+                                                            OptixPipelineSymbolMemcpyKind kind,
+                                                            CUstream                      stream )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixPipelineSymbolMemcpyAsync( pipeline, name, mem, sizeInBytes, offsetInBytes, kind, stream );
 }
 
 OPTIXAPI inline OptixResult optixAccelComputeMemoryUsage( OptixDeviceContext            context,
@@ -621,19 +676,25 @@ OPTIXAPI inline OptixResult optixOpacityMicromapArrayRelocate( OptixDeviceContex
                                                                           targetOpacityMicromapArraySizeInBytes );
 }
 
-OPTIXAPI inline OptixResult optixDisplacementMicromapArrayComputeMemoryUsage( OptixDeviceContext context,
-                                                                              const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                                              OptixMicromapBufferSizes* bufferSizes )
+
+OPTIXAPI inline OptixResult optixClusterAccelComputeMemoryUsage( OptixDeviceContext                 context,
+                                                                 OptixClusterAccelBuildMode         buildMode,
+                                                                 const OptixClusterAccelBuildInput* buildInput,
+                                                                 OptixAccelBufferSizes*             bufferSizes )
 {
-    return OPTIX_FUNCTION_TABLE_SYMBOL.optixDisplacementMicromapArrayComputeMemoryUsage( context, buildInput, bufferSizes );
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixClusterAccelComputeMemoryUsage( context, buildMode, buildInput, bufferSizes );
 }
 
-OPTIXAPI inline OptixResult optixDisplacementMicromapArrayBuild( OptixDeviceContext context,
-                                                                 CUstream           stream,
-                                                                 const OptixDisplacementMicromapArrayBuildInput* buildInput,
-                                                                 const OptixMicromapBuffers* buffers )
+OPTIXAPI inline OptixResult optixClusterAccelBuild( OptixDeviceContext                    context,
+                                                    CUstream                              stream,
+                                                    const OptixClusterAccelBuildModeDesc* buildModeDesc,
+                                                    const OptixClusterAccelBuildInput*    buildInput,
+                                                    CUdeviceptr                           argsArray,
+                                                    CUdeviceptr                           argsCount,
+                                                    unsigned int                          argsStrideInBytes )
 {
-    return OPTIX_FUNCTION_TABLE_SYMBOL.optixDisplacementMicromapArrayBuild( context, stream, buildInput, buffers );
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixClusterAccelBuild( context, stream, buildModeDesc, buildInput, argsArray,
+                                                               argsCount, argsStrideInBytes );
 }
 
 OPTIXAPI inline OptixResult optixSbtRecordPackHeader( OptixProgramGroup programGroup, void* sbtRecordHeaderHostPointer )
@@ -653,6 +714,33 @@ OPTIXAPI inline OptixResult optixLaunch( OptixPipeline                  pipeline
     return OPTIX_FUNCTION_TABLE_SYMBOL.optixLaunch( pipeline, stream, pipelineParams, pipelineParamsSize, sbt, width, height, depth );
 }
 
+OPTIXAPI inline OptixResult optixCoopVecMatrixConvert( OptixDeviceContext             context,
+                                                       CUstream                       stream,
+                                                       unsigned int                   numNetworks,
+                                                       const OptixNetworkDescription* inputNetworkDescription,
+                                                       CUdeviceptr                    inputNetworks,
+                                                       size_t                         inputNetworkStrideInBytes,
+                                                       const OptixNetworkDescription* outputNetworkDescription,
+                                                       CUdeviceptr                    outputNetworks,
+                                                       size_t                         outputNetworkStrideInBytes )
+{
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixCoopVecMatrixConvert( context, stream, numNetworks, inputNetworkDescription,
+                                                                  inputNetworks, inputNetworkStrideInBytes, outputNetworkDescription,
+                                                                  outputNetworks, outputNetworkStrideInBytes );
+}
+
+OPTIXAPI inline OptixResult optixCoopVecMatrixComputeSize( OptixDeviceContext       context,
+                                                           unsigned int             N,
+                                                           unsigned int             K,
+                                                           OptixCoopVecElemType     elementType,
+                                                           OptixCoopVecMatrixLayout layout,
+                                                           size_t                   rowColumnStrideInBytes,
+                                                           size_t*                  sizeInBytes )
+{
+
+    return OPTIX_FUNCTION_TABLE_SYMBOL.optixCoopVecMatrixComputeSize( context, N, K, elementType, layout,
+                                                                      rowColumnStrideInBytes, sizeInBytes );
+}
 OPTIXAPI inline OptixResult optixDenoiserCreate( OptixDeviceContext          context,
                                                  OptixDenoiserModelKind      modelKind,
                                                  const OptixDenoiserOptions* options,
