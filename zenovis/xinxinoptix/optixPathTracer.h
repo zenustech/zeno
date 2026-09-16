@@ -290,6 +290,8 @@ struct HitGroupData
 
     bool binaryShadowTestDirectRay;
     bool binaryShadowTestIndirectRay;
+    bool causticReceiver = false;
+    bool causticCaster = false;
     
     cudaTextureObject_t textures[32];
     unsigned long long vdb_grids[8];

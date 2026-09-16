@@ -161,6 +161,9 @@ struct ShaderFinalize : INode {
         } else {
             j["opacity"] = 2.0f;
         }
+        const auto caustic = get_input2<std::string>("caustic:");
+        j["causticReceiver"] = caustic == "receiver";
+        j["causticCaster"] = caustic == "caster";
         mtl->parameters = j.dump();
 
         if (has_input("extensionsCode"))
@@ -258,6 +261,7 @@ ZENDEFNODE(ShaderFinalize, {
     },
     {
         {"enum CUDA", "backend", "CUDA"},
+        {"enum none caster receiver", "caustic", "none"},
     },
     {"shader"},
 });

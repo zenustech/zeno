@@ -250,10 +250,10 @@ namespace detail {
     };
 }
 
-template<bool _MIS_, bool CHEAP_BXDF=false, typename TypeEvalBxDF, typename TypeAux = void>
+template<bool _MIS_, bool CHEAP_BXDF=false, typename TypeEvalBxDF, typename TypeAux = void, typename TypeMnee = void>
 static __forceinline__ __device__
 void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir, 
-                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
+                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, TypeMnee* taskMnee=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
     const float _SKY_PROB_ = params.num_lights>0?0.5:1.0f;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
@@ -578,6 +578,22 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
 
             shadowPRD.lightIdx = lighIdx;
             shadowPRD.maxDistance = lsr.dist;
+
+            if constexpr (!detail::is_void<TypeMnee>::value) {
+                if (taskMnee != nullptr) {
+                    float3 mneeRadiance = {};
+                    float3 mneeIllumination = {};
+                    const bool fixedDirection = light.type == zeno::LightType::Direction;
+                    const bool doubleSided = (light.config & zeno::LightConfigDoubleside) != 0;
+                    if ((*taskMnee)(lsr, emission, fixedDirection, doubleSided, mneeRadiance, mneeIllumination)) {
+                        prd->radiance += mneeRadiance;
+                        if constexpr (!detail::is_void<TypeAux>::value) {
+                            (*taskAux)(mneeIllumination);
+                        }
+                        return;
+                    }
+                }
+            }
             
             traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD, ~LightMatMask & EverythingMask);
             
@@ -700,14 +716,20 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             if (bxdf_value.x<=0 && bxdf_value.y<=0 && bxdf_value.z<=0) return;
         }
         
-        float3 illum = lcolor * lsr.intensity / ( _SKY_PROB_ * branch_prob);
-        float tmp = 1.0f / lsr.PDF;
-        if constexpr (_MIS_) {
-            float misWeight = BRDFBasics::BalanceHeuristic(lsr.PDF, scatterPDF);
-            misWeight = misWeight>0.0f?misWeight:1.0f;
-            misWeight = scatterPDF>1e-5f?misWeight:0.0f;
-            misWeight = lsr.PDF>1e-5f?misWeight:0.0f;
-            tmp *= misWeight;
+        float3 illum = lcolor * lsr.intensity;
+
+        if constexpr (!detail::is_void<TypeMnee>::value) {
+            if (taskMnee != nullptr) {
+                float3 mneeRadiance = {};
+                float3 mneeIllumination = {};
+                if ((*taskMnee)(lsr, illum, true, true, mneeRadiance, mneeIllumination)) {
+                    prd->radiance += mneeRadiance;
+                    if constexpr (!detail::is_void<TypeAux>::value) {
+                        (*taskAux)(mneeIllumination);
+                    }
+                    return;
+                }
+            }
         }
         
         shadowPRD.attanuation = vec3(1.0);
@@ -722,6 +744,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
             if (bxdf_value.x<=0 && bxdf_value.y<=0 && bxdf_value.z<=0) return;
         }
+        float tmp = 1.0f / lsr.PDF;
         float3 radianceNoShadow = illum * tmp * bxdf_value;
 
         if constexpr (!detail::is_void<TypeAux>::value) {
