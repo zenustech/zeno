@@ -13,6 +13,7 @@
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
+#include "Mnee.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -180,50 +181,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                return;
              }
           }
-
-            if(length(prd->attanuation) < 0.01f){
-                prd->attanuation = vec3(0.0f);
-                optixTerminateRay();
-                return;
-            }
-
-            if(specTrans==0.0f){
-                prd->attanuation = vec3(0.0f);
-                optixTerminateRay();
-                return;
-            }
-            
-            if(specTrans > 0.0f){
-
-                if(thin == 0.0f && ior>=1.0f)
-                {
-                    prd->nonThinTransHit++;
-                }
-                if(rnd(prd->seed)<(1-specTrans)||prd->nonThinTransHit>1)
-                {
-                    prd->attanuation = vec3(0,0,0);
-                    optixTerminateRay();
-                    return;
-                }
-
-                float nDi = fabs(dot(shadingNorm, normalize(ray_dir)));
-                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1) - mats.transColor,nDi);
-                prd->attanuation = prd->attanuation * fakeTrans;
-
-                #if (_P_TYPE_==1)
-                    if (sphere_external_ray) {
-                        prd->attanuation *= vec3(1, 0, 0);
-                        if (nDi < (1.0f-_FLT_EPL_)) {
-                            prd->attanuation = {};
-                            optixTerminateRay(); return;
-                        } else {
-                            prd->attanuation *= fakeTrans;
-                        }
-                    }
-                #endif
-                optixIgnoreIntersection();
-                return;
-            }
         }
 
         prd->attanuation = vec3(0);
@@ -908,7 +865,38 @@ extern "C" __global__ void __closesthit__radiance()
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
         mats.specular = coming_out_from_sss?0:mats.specular;
         auto vdir = dot(prd->sssDirBegin,prd->geometryNormal)>0?prd->sssDirBegin:prd->direction;
-        DirectLighting<true>(shadowPRD, shadingP, coming_out_from_sss?-vdir:ray_dir, evalBxDF, &taskAux);
+        const float3 directRayDir = coming_out_from_sss ? -vdir : ray_dir;
+        if (rt_data->causticReceiver) {
+            auto taskMnee = [&](const LightSampleRecord& lightSample,
+                                const float3& lightEmission,
+                                bool lightFixedDirection,
+                                bool lightDoubleSided,
+                                float3& mneeRadiance,
+                                float3& mneeIllumination) {
+                float3 receiverDirection = {};
+                const bool handled = Mnee::kernel_path_mnee_sample(shadingP - params.cam.eye,
+                                                  lightSample,
+                                                  lightEmission,
+                                                  lightFixedDirection,
+                                                  lightDoubleSided,
+                                                  shadowPRD.seed,
+                                                  shadowPRD,
+                                                  receiverDirection,
+                                                  mneeIllumination);
+                if (!handled) {
+                    return false;
+                }
+
+                float receiverPdf = 0.0f;
+                const float3 receiverBsdf = evalBxDF(receiverDirection, normalize(-directRayDir), receiverPdf);
+                mneeRadiance = mneeIllumination * receiverBsdf;
+                return true;
+            };
+            DirectLighting<true>(shadowPRD, shadingP, directRayDir, evalBxDF, &taskAux, &taskMnee);
+        }
+        else {
+            DirectLighting<true>(shadowPRD, shadingP, directRayDir, evalBxDF, &taskAux);
+        }
 
         if(mats.shadowReceiver>0.0f && 0==prd->depth)
         {   

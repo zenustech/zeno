@@ -448,6 +448,8 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 } else {
                     rec.data.opacity = FLT_MAX;
                 }
+                rec.data.causticReceiver = json.value("causticReceiver", false);
+                rec.data.causticCaster = json.value("causticCaster", false);
 
                 auto hasomm = json.contains("omm");
                 auto& jomm = hasomm? json["omm"] : nlohmann::json();
