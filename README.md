@@ -39,9 +39,11 @@ Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-o
 
 ## New
 
-Multi Importance Sampling
-
-<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202307/multi_importace_sampling.jpg" width="640" position="left">
+| Manifold NEE | Decomposition Tracking |
+|:------------:|:----------------------:|
+|<img alt="MNEE" src="https://github.com/user-attachments/assets/5e7823bb-bdc4-425b-a6de-0ce47848833f" />|<img alt="DCT" src="https://github.com/user-attachments/assets/ca1d42fd-b42e-4e23-9797-18c7434709b8" />|
+|  Mesh Light  |  Equiangular Sampling  |
+|<img alt="meshlight" src="https://github.com/user-attachments/assets/c90b1aa7-5b1a-4af6-a428-a0213619a8fa" /> | <img alt="equiangular" src="https://github.com/user-attachments/assets/80b5c8d5-dc68-458f-b5d1-01dae179a30b" />|
 
 ## Gallery
 
