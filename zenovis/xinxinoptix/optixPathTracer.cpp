@@ -160,8 +160,11 @@ struct PathTracerState
     
     raii<CUdeviceptr> sky_cdf_p;
     raii<CUdeviceptr> sky_start;
+    // Host-only invalidation; Params keeps the last finalized GPU distribution.
+    bool lightSelectionDirty = true;
+
     Params                         params;
-    raii<CUdeviceptr>                        d_params;
+    raii<CUdeviceptr>            d_params;
 
     OptixShaderBindingTable sbt {};
 };
@@ -307,12 +310,37 @@ static void updateState(sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& 
 }
 
 
+static void finalizeLightSelectionWeights(PathTracerState& state)
+{
+    if (!state.lightSelectionDirty) return;
+
+    // Run after resource updates, once before the sample loop. Multiple setters
+    // can invalidate this during scene loading; never publish a partial mixture.
+    state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
+    const auto& dlights = state.dlights;
+    const auto& plights = state.plights;
+    const bool distant = state.params.dlights_ptr != nullptr && !dlights.list.empty() &&
+        dlights.cdf.size() == dlights.list.size() && LightSelection::positiveFinite(dlights.cdf.back());
+    const bool portal = state.params.plights_ptr != nullptr && !plights.list.empty() &&
+        plights.cdf.size() == plights.list.size() && LightSelection::positiveFinite(plights.cdf.back());
+
+    state.params.lightSelection = LightSelection::fromScene(state.params, distant, portal);
+    state.lightSelectionDirty = false;
+
+    if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
+        zeno::log_info("Light selection finalized: local={}, distant={}, portal={}, hdr={}",
+            state.params.lightSelection.pmf(LightSelection::Group::Local),
+            state.params.lightSelection.pmf(LightSelection::Group::Distant),
+            state.params.lightSelection.pmf(LightSelection::Group::Portal),
+            state.params.lightSelection.pmf(LightSelection::Group::Environment));
+    }
+}
+
 static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
-    // Launch
-    //uchar4* result_buffer_data = output_buffer.map();
+    // All samples in this render reuse the finalized light selection.
+    assert(!state.lightSelectionDirty);
     state.params.frame_buffer  = result_buffer_data;
-    state.params.num_lights = defaultScene.lightsWrapper.g_lights.size();
     state.params.denoise = denoise;
     if(denoise == true) state.params.outside_random_number = 0;
     
@@ -687,6 +715,8 @@ const std::map<std::string, LightDat> &get_lightdats() {
 
 void unload_light(){
 
+    state.lightSelectionDirty = true;
+
     lightdats.clear();
     triangleLightCoords.clear();
     triangleLightNormals.clear();
@@ -738,6 +768,7 @@ void load_light(std::string const &key, LightDat& ld, float const*v0, float cons
 }
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 
+    state.lightSelectionDirty |= state.params.sky_strength != sky_strength;
     state.params.sky_strength = sky_strength;
 
     glm::mat4 rotation(1.0f);
@@ -756,6 +787,7 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 }
 void update_hdr_sky(zeno::vec3f sky_rot3d, float sky_strength) {
 
+    state.lightSelectionDirty |= state.params.sky_strength != sky_strength;
     state.params.sky_strength = sky_strength;
     auto glm_sky_rot3d = zeno::bit_cast<glm::vec3>(sky_rot3d);
     glm_sky_rot3d = glm::radians(glm_sky_rot3d);
@@ -795,6 +827,7 @@ glm::vec3 realtime_rotate_sky(glm::vec3 rot_value) {
 }
 
 void using_hdr_sky(bool enable) {
+    state.lightSelectionDirty |= state.params.usingHdrSky != int(enable);
     state.params.usingHdrSky = enable;
 }
 
@@ -806,6 +839,8 @@ void show_background(bool enable) {
 }
 
 void updatePortalLights(const std::vector<Portal>& portals) {
+
+    state.lightSelectionDirty = true;
 
     auto find = OptixUtil::tex_lut.find({OptixUtil::sky_tex.value(), false});
     auto &tex = find->second;
@@ -834,6 +869,7 @@ void updatePortalLights(const std::vector<Portal>& portals) {
 
 void updateDistantLights(std::vector<zeno::DistantLightData>& dldl) 
 {
+    state.lightSelectionDirty = true;
     if (dldl.empty()) {
         state.dlights = {};
         state.params.dlights_ptr = 0u;
@@ -1060,6 +1096,7 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
 }
 
 void buildLightTree() {
+    state.lightSelectionDirty = true;
     camera_changed = true;
     state.finite_lights_ptr.reset();
 
@@ -1558,6 +1595,7 @@ OptixUtil::_compile_group.wait();
         auto& tex = OptixUtil::sky_tex_ptr;
         if (tex->texture == state.params.sky_texture) return;
 
+        state.lightSelectionDirty = true;
         state.params.sky_texture = tex->texture;
         state.params.skynx = tex->width;
         state.params.skyny = tex->height;
@@ -1582,6 +1620,7 @@ OptixUtil::_compile_group.wait();
         state.params.sky_start = reinterpret_cast<int*>((CUdeviceptr)state.sky_start);
 
     } else {
+        state.lightSelectionDirty |= state.params.skynx != 0 || state.params.skyny != 0;
         state.params.skynx = 0;
         state.params.skyny = 0;
     }
@@ -1986,6 +2025,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
     updateState( *output_buffer_o, state.params, enable_output_aov );
+    finalizeLightSelectionWeights(state);
 
     if (denoise) {
         auto w = state.params.width;
@@ -2042,7 +2082,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.denoiser = {};
         state.params.denoised_buffer = 0;
     }
-
     timer.tick();
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
@@ -2056,6 +2095,10 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     output_buffer_o->unmap();
     timer.tock();
     state.params.frame_time = timer.elapsed();
+    if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
+        zeno::log_info("OptiX render: {} samples, {}x{}, {} ms",
+                       samples, state.params.width, state.params.height, timer.elapsed());
+    }
 
     if (state.params.click_dirty)
     {
@@ -2185,6 +2228,7 @@ void *optixgetimg(int &w, int &h) {
 void optixCleanup() {
 
     CUDA_SYNC_CHECK();
+    state.lightSelectionDirty = true;
     OptixUtil::pipeline.reset();
     OptixUtil::pipelineMark = {};
 

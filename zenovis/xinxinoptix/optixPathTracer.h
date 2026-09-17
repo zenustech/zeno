@@ -4,6 +4,7 @@
 #include <Shape.h>
 
 #include "LightBounds.h"
+#include "LightSelection.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -206,17 +207,8 @@ struct Params
 
     void*    dlights_ptr;
     void*    plights_ptr;
-
-    float skyLightProbablity() {
-
-        if (sky_strength <= 0.0f)
-            return -0.0f;
-
-        if (sky_texture == 0llu || skycdf == nullptr) 
-            return -0.0f;
-
-        return this->num_lights>0? fminf(0.5f, sky_strength) : 1.0f;
-    }
+    // Finalized on the CPU when light/sky inputs change; shared by NEE/MIS shaders.
+    LightSelection::Distribution lightSelection;
 
     OptixTraversableHandle handle;
 

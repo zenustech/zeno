@@ -294,10 +294,13 @@ static __inline__ __device__ vec3 proceduralSky(
 
 static __forceinline__ __device__ vec3 sampleSkyTexture(vec2 uv, float upperBound, float isclamp, float &pdf)
 {
+    pdf = 0.0f;
+    if (params.sky_texture == 0 || params.skynx == 0 || params.skyny == 0) return vec3(0.0f);
     vec3 col = texture2D<float4, vec3>(params.sky_texture, uv);
     //vec3 col_safe = clamp(col, vec3(0.0f), vec3(upperBound));
     float sintheta = fabsf(sinf(uv.y * M_PIf));
-    pdf = luminance(col) / params.envavg;
+    // A black/uninitialized map has no importance-sampling density.
+    if (params.envavg > 0.0f && isfinite(params.envavg)) pdf = luminance(col) / params.envavg;
     return col * params.sky_strength;
 }
 
