@@ -283,6 +283,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@proceduralSky.h
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/@LightSelection.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Octree.h

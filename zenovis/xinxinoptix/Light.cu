@@ -238,16 +238,15 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    const float _SKY_PROB_ = params.skyLightProbablity();
     if (lsr.NoL > _FLT_EPL_) {
 
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
-        if (lightTree == nullptr) { return; }
-
-        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(shadingP),
-                                         reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
-
-        auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
+        const float groupPMF = params.lightSelection.pmf(LightSelection::Group::Local);
+        // If NEE cannot sample this group, a BSDF hit still contributes fully.
+        const float PMF = groupPMF > 0.0f && lightTree != nullptr ?
+        lightTree->PMF(reinterpret_cast<const Vector3f&>(shadingP),
+                       reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index) : 0.0f;
+        auto lightPickPDF = groupPMF * PMF;
 
         if (lightPickPDF < 0.0f || !isfinite(lightPickPDF)) {
             lightPickPDF = 0.0f;

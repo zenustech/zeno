@@ -385,6 +385,7 @@ extern "C" __global__ void __raygen__rg()
         vdcrnd(prd.offset, prd.vdcseed);
         vdcrnd(prd.offset, prd.vdcseed);
 
+        auto _attenuation = prd.attenuation;
         // Primary Ray
         do {
             _tmin_ = prd._tmin_; 
@@ -394,8 +395,6 @@ extern "C" __global__ void __raygen__rg()
             prd.alphaHit = false;
             traceRadianceSER(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
-
-        auto _attenuation = prd.attenuation;
 
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
         {
@@ -632,10 +631,8 @@ extern "C" __global__ void __miss__radiance()
 
         );
 
-        bool hasenv = params.skynx | params.skyny;
-        hasenv = params.usingHdrSky && hasenv;
-        envPdf = hasenv ? envPdf : (0.25f / M_PIf);
-        envPdf *= DirectSkySelectionWeight();
+        const float skyPMF = params.lightSelection.pmf(LightSelection::Group::Environment);
+        envPdf = skyPMF > 0.0f ? envPdf * skyPMF : 0.0f;
 
         float misWeight = BRDFBasics::BalanceHeuristic(prd->samplePdf, envPdf);
 

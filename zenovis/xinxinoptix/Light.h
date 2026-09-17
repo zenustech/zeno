@@ -8,6 +8,7 @@
 #include "proceduralSky.h"
 
 #include "Portal.h"
+#include "LightSelection.h"
 
 static __inline__ __device__
 vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf, float2& uv, float r0, float r1)
@@ -227,20 +228,6 @@ static void sampleEquiAngular( vec3 ray_ori, vec3 ray_dir, float tmin, float tma
     pdf = D/(dTheta * (D*D + t*t));
 };
 
-static __forceinline__ __device__ float DirectSkySelectionWeight() {
-    const float skyProb = params.num_lights > 0 ? 0.5f : 1.0f;
-
-    auto dlights = reinterpret_cast<const DistantLightList*>(params.dlights_ptr);
-    auto plights = reinterpret_cast<const PortalLightList*>(params.plights_ptr);
-
-    const float dlightWt = nullptr != dlights && dlights->COUNT() > 0 ? 1.0f : 0.0f;
-    const float plightWt = nullptr != plights && plights->COUNT() > 0 ? 1.0f : 0.0f;
-    const float elightWt = params.sky_strength > 0.0f ? 1.0f : 0.0f;
-    const float totalWt = dlightWt + plightWt + elightWt;
-
-    return totalWt > 0.0f ? skyProb * elightWt / totalWt : 0.0f;
-}
-
 namespace detail {
     template <typename T> struct is_void {
         static constexpr bool value = false;
@@ -256,22 +243,22 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
                     TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, TypeMnee* taskMnee=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
-    const float _SKY_PROB_ = params.num_lights>0?0.5:1.0f;//no need to do importance...just half chance for the distant lights and half chance for the dynamic lights
 
     float scatterPDF = 1.f;
 
     auto prd = &shadowPRD;
-    float UF = prd->rndf();
+    const auto selection = params.lightSelection.sample(prd->rndf());
+    if (selection.group == LightSelection::Group::None) return;
+    float UF = selection.u;
 
-    if(UF >= _SKY_PROB_) {
+    if (selection.group == LightSelection::Group::Local) {
 
         if (params.num_lights == 0u || params.lightTreeSampler == 0u) return;
 
         auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
         if (lightTree == nullptr) return;
 
-        float lightPickProb = 1.0f - _SKY_PROB_;
-        UF = (UF - _SKY_PROB_) / lightPickProb;
+        float lightPickProb = selection.pmf;
 
         const Vector3f& SP = reinterpret_cast<const Vector3f&>(shadingP);
         const Vector3f& SN = reinterpret_cast<const Vector3f&>(shadowPRD.ShadowNormal);
@@ -624,83 +611,47 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
     else{
         auto dlights = reinterpret_cast<const DistantLightList*>(params.dlights_ptr);
         auto plights = reinterpret_cast<const PortalLightList*>(params.plights_ptr);
-        float dlight_wt = nullptr != dlights && dlights->COUNT()>0?1.0f:0.0f;
-        float plight_wt = plights != nullptr && plights->COUNT()>0?1.0f:0.0f;
-        float elight_wt = params.sky_strength>0?1.0f:0.0f;
-        float total_wt = dlight_wt + plight_wt + elight_wt;
-        if(total_wt==0) return;
-        float dlight_pr = dlight_wt/total_wt;
-        float plight_pr = plight_wt/total_wt;
-        float elight_pr = elight_wt/total_wt;
-        float selectp = prd->rndf();
 
         if (shadowPRD.fog_tmax > 0) {
             shadingP         += ray_dir * shadowPRD.fog_dt; // wolrd space
             shadowPRD.origin += ray_dir * shadowPRD.fog_dt; // camera space
         }
 
-        UF = UF / _SKY_PROB_;
-        UF = clamp(UF, 0.0f, 1.0f);
-
-        auto binsearch = [](const float* cdf, uint min, uint max, float UF) {
-            //auto idx = min;
-            while(min < max) {
-                auto _idx_ = (min + max) / 2;
-                auto _cdf_ = cdf[_idx_];
-
-                if (_cdf_ > UF) {
-                    max = _idx_; continue; //include
-                }
-                if (_cdf_ < UF) {
-                    min = _idx_+1; continue;
-                }
-                min = _idx_; break;
-            }
-            return min;
-        };
-
         LightSampleRecord lsr;
         lsr.dist = FLT_MAX;
         lsr.PDF = 0.0f;
         float3 lcolor;
 
-        float branch_prob; 
-
-        if (selectp<dlight_pr) {
-            branch_prob = dlight_pr;
-
-            auto idx = binsearch(dlights->cdf, 0, dlights->COUNT(), UF);
-            auto& dlight = dlights->list[idx];
+        if (selection.group == LightSelection::Group::Distant) {
+            const auto pick = LightSelection::sampleCDF(dlights->cdf, int(dlights->COUNT()), UF);
+            if (pick.index < 0) return;
+            auto& dlight = dlights->list[pick.index];
             auto dlight_dir = reinterpret_cast<vec3&>(dlight.direction);
             if (dlight.intensity <= 0) return;
 
             lsr.dir = BRDFBasics::halfPlaneSample(prd->seed, dlight_dir, dlight.angle/180.0f);
-            lsr.PDF = 1.0f / dlights->COUNT();
+            lsr.PDF = pick.pmf;
             lsr.intensity = dlight.intensity;
             lcolor = dlight.color;
         }
-        else if (selectp<(dlight_pr + plight_pr)) {
-            branch_prob = plight_pr;
-
-            uint idx = binsearch(plights->cdf, 0, plights->COUNT(), UF);
-            const auto plight = &plights->list[idx];
+        else if (selection.group == LightSelection::Group::Portal) {
+            const auto pick = LightSelection::sampleCDF(plights->cdf, int(plights->COUNT()), UF);
+            if (pick.index < 0) return;
+            const auto plight = &plights->list[pick.index];
 
             float2 uu = { prd->rndf(), prd->rndf() };
             
             plight->sample(lsr, reinterpret_cast<const Vector3f&>(shadingP), uu, lcolor);
+            // Portal images contain unscaled HDR texels; match live sky energy.
+            lsr.intensity = params.sky_strength;
             
-            lsr.PDF *= plights->pdf[idx];
+            lsr.PDF *= pick.pmf;
             if (lsr.PDF <= 0) return;
                 //auto suv = sphereUV(lsr.dir, true);
                 //color = (vec3)texture2D(params.sky_texture, vec2(suv.x, suv.y));
         } 
         else { // SKY
-            branch_prob = elight_pr;
-
-            bool hasenv = params.skynx | params.skyny;
-            hasenv = params.usingHdrSky && hasenv;
             float2 skyuv = {};
-            if ( !hasenv ) { return; }
             float envpdf = 1.0f;
             lsr.dir = ImportanceSampleEnv(params.skycdf, params.sky_start, params.skynx, params.skyny,
                                             rnd(prd->seed), envpdf, skyuv, prd->rndf(), prd->rndf());
@@ -710,6 +661,10 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             lsr.intensity = 1.0f;
         }
 
+        // Store the complete sampling density, just like the local-light path.
+        // MNEE and direct-light MIS must see group PMF * conditional density.
+        lsr.PDF *= selection.pmf;
+        if (!LightSelection::positiveFinite(lsr.PDF)) return;
         float3 bxdf_value {};
         if constexpr (CHEAP_BXDF) {
             bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
@@ -731,7 +686,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
                 }
             }
         }
-        
+
         shadowPRD.attanuation = vec3(1.0);
         shadowPRD.maxDistance = FLT_MAX;
         traceOcclusion(params.handle, shadowPRD.origin, lsr.dir,
@@ -745,6 +700,14 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             if (bxdf_value.x<=0 && bxdf_value.y<=0 && bxdf_value.z<=0) return;
         }
         float tmp = 1.0f / lsr.PDF;
+        if constexpr (_MIS_) {
+            // Only HDR emission has a matching BSDF-hit estimator in the miss
+            // shader. Distant and baked portal lights are currently NEE-only;
+            // assigning them a competing BSDF PDF would discard energy.
+            if (selection.group == LightSelection::Group::Environment) {
+                tmp *= BRDFBasics::BalanceHeuristic(lsr.PDF, scatterPDF);
+            }
+        }
         float3 radianceNoShadow = illum * tmp * bxdf_value;
 
         if constexpr (!detail::is_void<TypeAux>::value) {
