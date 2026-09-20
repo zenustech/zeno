@@ -43,3 +43,6 @@
 [submodule "projects/optix-toolkit"]
 	path = projects/optix-toolkit
 	url = https://github.com/NVIDIA/optix-toolkit.git
+[submodule "projects/SHARC"]
+	path = projects/SHARC
+	url = https://github.com/NVIDIA-RTX/SHARC.git
