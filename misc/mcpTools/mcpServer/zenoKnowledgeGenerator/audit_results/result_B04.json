@@ -1,0 +1,112 @@
+{
+  "batch": "B04",
+  "audited_node_count": 97,
+  "issues": [
+    {
+      "node": "ShaderBlendMode",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "normal",
+      "kb_says": "inputs 中列有一项 \"normal\": \"法线混合模式（mode 枚举类型）\"",
+      "source_says": "ZENDEFNODE 输入仅有 base / blend / opacity / mode 四项（mode 的 enum 枚举含 add...vividLight 共 25 个值，其中包含 normal），不存在名为 normal 的输入 socket",
+      "evidence": "zeno/src/nodes/mtl/ShaderBlendMode.cpp # 255 行 ZENDEFNODE(ShaderBlendMode, { ... })（输入列表 L256-263）",
+      "detail": "知识库把 mode 枚举串里的取值 normal 误当成一个独立输入 socket，实际源码并无 normal 输入，应删除该条或并入 mode 说明。",
+      "confidence": "high"
+    },
+    {
+      "node": "MakeTextureVDB",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "enum ",
+      "kb_says": "inputs 中列有一项 \"enum \": \"（源码骨架字段错位的未命名枚举输入；含义无法确定，建议查源码）\"",
+      "source_says": "ZENDEFNODE 输入仅有 path(readpath) / channel / type 三项，第三个就是名为 type 的枚举（ElementType: Float/Vector/Byte...），不存在未命名的 enum 输入",
+      "evidence": "zeno/src/nodes/mtl/MakeTexture.cpp # 153-168 行 ZENDEFNODE(MakeTextureVDB)",
+      "detail": "知识库把一个本应属于 type 输入的 enum 简写误解析成了独立的未命名输入项，属幻影输入，应删除该条，type 已正确列出。",
+      "confidence": "high"
+    },
+    {
+      "node": "NumericOperator",
+      "issue_type": "incorrect",
+      "field": "params",
+      "socket_or_param": "",
+      "kb_says": "params 中列有两项幻影参数 \"\" 与 \" \"，均标注为『源码骨架字段错位；实际参数名为 op_type』",
+      "source_says": "ZENO_DEFNODE(NumericOperator) 只有一个参数 op_type（enum add...copyr，默认 add）；源码与运行时（get_param<std::string>(\"op_type\")）均无第二、第三个参数",
+      "evidence": "zeno/src/nodes/num/NumericOperator.cpp # 220-288 行 ZENO_DEFNODE(NumericOperator)",
+      "detail": "知识库把 op_type 的三段式 enum 简写误拆出两个空名幻影参数，实际只有一个 op_type 参数，应删除空名两项。",
+      "confidence": "high"
+    },
+    {
+      "node": "ShaderFinalize",
+      "issue_type": "missing",
+      "field": "params",
+      "socket_or_param": "caustic",
+      "kb_says": "params 仅列出 backend（enum CUDA，默认 CUDA），未提及 caustic",
+      "source_says": "params 还有一项 {\"enum none caster receiver\", \"caustic\", \"none\"}，apply() 中读 get_input2<std::string>(\"caustic:\") 并据此写 parameters 的 causticReceiver/causticCaster 布尔",
+      "evidence": "zeno/src/nodes/mtl/ShaderFinalize.cpp # 264 行参数表及 # 164-166 行 apply()",
+      "detail": "知识库 params 漏掉了 caustic（none/caster/receiver，默认 none）参数及其在 parameters JSON 写入 causticReceiver/causticCaster 的行为，应补充。",
+      "confidence": "high"
+    },
+    {
+      "node": "ShaderFinalize",
+      "issue_type": "incorrect",
+      "field": "description",
+      "socket_or_param": "transTintDepth",
+      "kb_says": "transTintDepth 标注为『宏默认 10000、实现回退 1』",
+      "source_says": "实现回退值也是 10000.0f：get_input<IObject>(\"transTintDepth\", std::make_shared<NumericObject>(float(10000.0f)))，宏默认 10000.0，两者一致，并无『回退 1』",
+      "evidence": "zeno/src/nodes/mtl/ShaderFinalize.cpp # 108 行 get_input(\"transTintDepth\", float(10000.0f))",
+      "detail": "『实现回退 1』为误述，transTintDepth 的宏默认与实现回退均为 10000.0，应删除该不实说明（对比 transDistance 宏 10 / 实现 1 才是真正的差异）。",
+      "confidence": "medium"
+    },
+    {
+      "node": "FormSceneTree",
+      "issue_type": "incomplete",
+      "field": "description",
+      "socket_or_param": "prim_list/abcpath",
+      "kb_says": "『图元须带 abcpath userData』，用 abcpath 命名 ObjectName",
+      "source_says": "实际读取的 userData 键为 \"abcpath_0\"（未写 ObjectName 场景时命名；若某 prim 缺该键则 get2 抛异常），随后写入 ObjectName",
+      "evidence": "zeno/src/nodes/SceneAssembler.cpp # 235 行 p->userData().get2<std::string>(\"abcpath_0\")",
+      "detail": "知识库描述的 userData 键名应为 abcpath_0 而非 abcpath，建议按源码更正，避免使用者写错键名。",
+      "confidence": "low"
+    },
+    {
+      "node": "BindLight",
+      "issue_type": "incomplete",
+      "field": "description",
+      "socket_or_param": "clr/输出类型",
+      "kb_says": "『若缺 clr 则新增并把它设为极高亮白(30000,30000,30000)』，输出 socket 描述为 PrimitiveObject",
+      "source_says": "新增 clr 后仅给第 0 个顶点赋 30000 恒值（clr[0]=vec3f(30000...)，其余顶点未显式赋值）；输出 socket 声明为未定型的 {\"object\"}（输入用 get_input<IObject> 再 dynamic_cast），并非明确 PrimitiveObject 类型",
+      "evidence": "zeno/src/nodes/mtl/MakeMaterial.cpp # 212-215 行（clr[0]=30000），# 232-247 行 ZENDEFNODE(BindLight)",
+      "detail": "知识库未指出亮白只写入首个顶点（其余顶点保持默认），且输出 socket 为泛型 IObject 而非 PrimitiveObject；建议补充说明以免低估该实现的局限。",
+      "confidence": "low"
+    }
+  ],
+  "source_files_consulted": [
+    "zeno/src/nodes/num/NumericMath.cpp",
+    "zeno/src/nodes/num/MakeNumeric.cpp",
+    "zeno/src/nodes/num/NumericUtils.cpp",
+    "zeno/src/nodes/num/NumericInterpolation.cpp",
+    "zeno/src/nodes/num/NumericOperator.cpp",
+    "zeno/src/nodes/num/PrintNumeric.cpp",
+    "zeno/src/nodes/color/MakeColor.cpp",
+    "zeno/src/nodes/mtl/PrimitiveInstancing.cpp",
+    "zeno/src/nodes/mtl/MakeMaterial.cpp",
+    "zeno/src/nodes/mtl/MakeTexture.cpp",
+    "zeno/src/nodes/mtl/ConfigOpacityMicroMap.cpp",
+    "zeno/src/nodes/mtl/ShaderUtils.cpp",
+    "zeno/src/nodes/mtl/ShaderAttrs.cpp",
+    "zeno/src/nodes/mtl/ShaderMath.cpp",
+    "zeno/src/nodes/mtl/ShaderBlendMode.cpp",
+    "zeno/src/nodes/mtl/ShaderBuffer.cpp",
+    "zeno/src/nodes/mtl/ShaderMakeVec.cpp",
+    "zeno/src/nodes/mtl/ShaderExtractVec.cpp",
+    "zeno/src/nodes/mtl/ShaderTypeCast.cpp",
+    "zeno/src/nodes/mtl/ShaderTexture.cpp",
+    "zeno/src/nodes/mtl/ShaderVolume.cpp",
+    "zeno/src/nodes/mtl/ShaderBevel.cpp",
+    "zeno/src/nodes/mtl/ShaderCustomFunc.cpp",
+    "zeno/src/nodes/mtl/ShaderFinalize.cpp",
+    "zeno/src/nodes/mtl/ShaderCihouUnrealEngine.cpp",
+    "zeno/src/nodes/SceneAssembler.cpp",
+    "zeno/src/nodes/RobotNode.cpp"
+  ]
+}

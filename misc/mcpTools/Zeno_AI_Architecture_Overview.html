@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zeno AI Platform — 架构全景图</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #F7F7F8;
+  --surface-muted: #EFEFF2;
+  --text: #171717;
+  --text-muted: #52525B;
+  --border: rgba(23, 23, 23, 0.12);
+  --brand: #4B3FE3;
+  --brand-soft: #F2F7FF;
+  --brand-soft-strong: #E5EAFF;
+  --brand-text: #1A1759;
+  --radius: 8px;
+  --radius-card: 12px;
+  --radius-full: 999px;
+  --font-sans: "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+}
+:root[data-widget-theme="dark"] {
+  color-scheme: dark;
+  --surface: #171717;
+  --surface-muted: #262626;
+  --text: #E5E5E5;
+  --text-muted: #A1A1AA;
+  --border: rgba(229, 229, 229, 0.12);
+  --brand: #6054F1;
+  --brand-soft: #1A1759;
+  --brand-soft-strong: #3C2ECA;
+  --brand-text: #CFD8FF;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #171717;
+    --surface-muted: #262626;
+    --text: #E5E5E5;
+    --text-muted: #A1A1AA;
+    --border: rgba(229, 229, 229, 0.12);
+    --brand: #6054F1;
+    --brand-soft: #1A1759;
+    --brand-soft-strong: #3C2ECA;
+    --brand-text: #CFD8FF;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 20px 48px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: var(--weight-regular) 14px/20px var(--font-sans);
+}
+
+.page { max-width: 1520px; margin: 0 auto; }
+
+.pageHead { display: grid; gap: 4px; margin: 0 0 20px; }
+.pageHead h1 { margin: 0; font: var(--weight-medium) 20px/28px var(--font-sans); }
+.pageHead p { margin: 0; color: var(--text-muted); font: var(--weight-regular) 12px/18px var(--font-sans); }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 20px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 20px 0 0;
+  padding: 12px 20px;
+  color: var(--text-muted);
+  font: var(--weight-regular) 12px/18px var(--font-sans);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { display: inline-block; width: 28px; height: 12px; border-radius: 4px; flex: none; }
+.legend .k-solid { background: var(--surface); border: 1px solid var(--text-muted); }
+.legend .k-dash { background: var(--surface); border: 1px dashed var(--text-muted); }
+.legend .k-brand { background: var(--brand-soft); border: 1px solid var(--brand); }
+.legend .k-line { height: 0; border-radius: 0; border-top: 1.5px solid var(--text-muted); }
+.legend .k-line.fb { border-top-style: dashed; }
+
+.tableWrap {
+  margin: 20px 0 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.tableWrap h2 {
+  margin: 0;
+  padding: 16px 20px 12px;
+  font: var(--weight-medium) 16px/24px var(--font-sans);
+}
+table { width: 100%; border-collapse: collapse; font: var(--weight-regular) 12px/18px var(--font-sans); }
+th, td { text-align: left; padding: 8px 20px; border-top: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-muted); font-weight: 500; }
+td.mono { font: var(--weight-medium) 12px/18px var(--font-mono); white-space: nowrap; }
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font: var(--weight-medium) 12px/18px var(--font-sans);
+  white-space: nowrap;
+}
+.tag.done { border-color: var(--brand); color: var(--brand-text); background: var(--brand-soft); }
+
+svg { display: block; width: 100%; height: auto; }
+.card { fill: var(--surface); stroke: var(--border); }
+.box { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+.boxSoft { fill: var(--surface-muted); stroke: var(--border); stroke-width: 1; }
+.boxBrand { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 1; }
+.boxDashed { fill: var(--surface); stroke: var(--border); stroke-width: 1; stroke-dasharray: 6 5; }
+.h1 { fill: var(--text); font: var(--weight-medium) 16px/24px var(--font-sans); }
+.h2 { fill: var(--text); font: var(--weight-medium) 14px/20px var(--font-sans); }
+.brandTitle { fill: var(--brand-text); font: var(--weight-medium) 14px/20px var(--font-sans); }
+.ts { fill: var(--text-muted); font: var(--weight-regular) 12px/18px var(--font-sans); }
+.tc { fill: var(--text-muted); font: var(--weight-medium) 12px/18px var(--font-mono); }
+.cap { fill: var(--text); font: var(--weight-medium) 13px/20px var(--font-sans); }
+.arr { stroke: var(--text-muted); stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.arr.fb { stroke-dasharray: 6 5; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="pageHead">
+    <h1>Zeno AI Platform — 从「一句话需求」到「节点图」的架构全景</h1>
+    <p>依据《Zeno_AI_MCP_Agent_施工手册》§33.2 目录结构、§33.24 架构图、§48 最终架构定稿整理；实心框 = 已落地模块，虚线框 = 阶段分组与 Native 边界（非「规划中」）；各模块进度以手册 §31 为准。</p>
+  </div>
+
+  <div class="panel">
+  <svg viewBox="0 0 1450 1620" role="img" aria-label="Zeno AI Platform 完整架构与交互图">
+
+    <defs>
+      <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0 0 L8 4 L0 8 Z" fill="var(--text-muted)"/>
+      </marker>
+    </defs>
+
+    <!-- ================= 入口 ================= -->
+    <rect class="boxBrand" x="580" y="48" width="120" height="44" rx="22"/>
+    <text class="brandTitle" x="640" y="75" text-anchor="middle">HUMAN</text>
+
+    <rect class="box" x="330" y="124" width="290" height="72" rx="8"/>
+    <text class="h2" x="350" y="156">EXTERNAL AI</text>
+    <text class="ts" x="350" y="176">MCP Client（外部大模型）</text>
+
+    <rect class="box" x="660" y="124" width="290" height="72" rx="8"/>
+    <text class="h2" x="680" y="156">ZENO AGENT</text>
+    <text class="ts" x="680" y="176">Conversation + LLM（内置）</text>
+
+    <path class="arr" d="M 600 92 L 500 120" marker-end="url(#ah)"/>
+    <path class="arr" d="M 680 92 L 780 120" marker-end="url(#ah)"/>
+
+    <!-- ================= 表示层 ================= -->
+    <rect class="box" x="330" y="232" width="620" height="64" rx="8"/>
+    <text class="h2" x="350" y="258">mcp_server/*.py — MCP 表示层</text>
+    <text class="ts" x="350" y="278">tool schema · 响应序列化 · 工具注册</text>
+
+    <path class="arr" d="M 475 196 V 228" marker-end="url(#ah)"/>
+    <path class="arr" d="M 805 196 V 228" marker-end="url(#ah)"/>
+
+    <!-- ================= 统一入口 ================= -->
+    <rect class="boxBrand" x="330" y="336" width="620" height="72" rx="8"/>
+    <text class="brandTitle" x="350" y="368">public_api.py — 唯一入口</text>
+    <text class="ts" x="350" y="390">execute_primitive() · execute() · inspect_state()</text>
+
+    <path class="arr" d="M 640 296 V 332" marker-end="url(#ah)"/>
+    <path class="arr" d="M 640 408 V 492" marker-end="url(#ah)"/>
+
+    <!-- ================= ① 理解与规划 ================= -->
+    <text class="cap" x="330" y="452">① 理解与规划    Task → Plan</text>
+    <rect class="boxDashed" x="330" y="464" width="620" height="284" rx="12"/>
+
+    <rect class="box" x="350" y="496" width="270" height="60" rx="8"/>
+    <text class="h2" x="366" y="522">Intent Parsing（外部）</text>
+    <text class="ts" x="366" y="542">自然语言 → Task DSL；由外部 AI / Agent 承担</text>
+
+    <rect class="box" x="660" y="496" width="270" height="60" rx="8"/>
+    <text class="h2" x="676" y="522">Task Service</text>
+    <text class="ts" x="676" y="542">Task 生命周期 · 持久化</text>
+
+    <path class="arr" d="M 620 526 H 656" marker-end="url(#ah)"/>
+
+    <rect class="box" x="350" y="580" width="270" height="60" rx="8"/>
+    <text class="h2" x="366" y="606">Planner</text>
+    <text class="ts" x="366" y="626">Task DSL + State + Skill/Cap</text>
+
+    <rect class="box" x="660" y="580" width="270" height="60" rx="8"/>
+    <text class="h2" x="676" y="606">Plan（执行 DAG）</text>
+    <text class="ts" x="676" y="626">步骤 + 依赖 + 资源估计</text>
+
+    <path class="arr" d="M 676 556 V 566 H 490 V 576" marker-end="url(#ah)"/>
+    <path class="arr" d="M 620 610 H 656" marker-end="url(#ah)"/>
+
+    <rect class="box" x="350" y="664" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="690">Preflight（Planner 前置条件 · Scene Build 预校验）</text>
+    <text class="ts" x="366" y="710">参数齐备性 / NodeClass 存在性 / 依赖可满足性</text>
+
+    <path class="arr" d="M 795 640 V 660" marker-end="url(#ah)"/>
+
+    <path class="arr" d="M 640 748 V 824" marker-end="url(#ah)"/>
+
+    <!-- ================= ② 翻译与编译 ================= -->
+    <text class="cap" x="330" y="792">② 翻译与编译    Scene → Graph</text>
+    <rect class="boxDashed" x="330" y="804" width="620" height="200" rx="12"/>
+
+    <rect class="box" x="350" y="828" width="270" height="60" rx="8"/>
+    <text class="h2" x="366" y="854">Scene DSL / Scene Patch</text>
+    <text class="ts" x="366" y="874">声明式场景与最小改动补丁</text>
+
+    <rect class="box" x="660" y="828" width="270" height="60" rx="8"/>
+    <text class="h2" x="676" y="854">Graph Compiler / Mutator</text>
+    <text class="ts" x="676" y="874">生成或修改 Zeno Graph</text>
+
+    <path class="arr" d="M 620 858 H 656" marker-end="url(#ah)"/>
+
+    <rect class="box" x="350" y="920" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="946">Transaction（原子提交）</text>
+    <text class="ts" x="366" y="966">整批成功或整批回滚，产出 Graph Revision</text>
+
+    <path class="arr" d="M 795 888 V 916" marker-end="url(#ah)"/>
+
+    <path class="arr" d="M 640 1004 V 1064" marker-end="url(#ah)"/>
+
+    <!-- ================= ③ 执行 ================= -->
+    <text class="cap" x="330" y="1032">③ 执行    Primitive → Runtime → Zeno</text>
+    <rect class="boxDashed" x="330" y="1044" width="620" height="360" rx="12"/>
+
+    <rect class="box" x="350" y="1068" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="1094">Execution Executor / Scheduler</text>
+    <text class="ts" x="366" y="1114">按 DAG 顺序调度 Capability，记录 step 状态</text>
+
+    <rect class="box" x="350" y="1152" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="1178">Capability Executor</text>
+    <text class="ts" x="366" y="1198">组合多个 Primitive 完成一个业务动作</text>
+
+    <rect class="box" x="350" y="1236" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="1262">Primitive Executor</text>
+    <text class="ts" x="366" y="1282">按契约校验参数并转译成 Runtime 实参</text>
+
+    <rect class="box" x="350" y="1320" width="580" height="60" rx="8"/>
+    <text class="h2" x="366" y="1346">Runtime：Dispatcher / Session / Transport</text>
+    <text class="ts" x="366" y="1366">严格串行队列 · IPC · 超时 / desync / 长任务旁路</text>
+
+    <path class="arr" d="M 640 1128 V 1148" marker-end="url(#ah)"/>
+    <path class="arr" d="M 640 1212 V 1232" marker-end="url(#ah)"/>
+    <path class="arr" d="M 640 1296 V 1316" marker-end="url(#ah)"/>
+
+    <!-- ================= Native ================= -->
+    <rect class="boxDashed" x="330" y="1476" width="620" height="64" rx="8"/>
+    <text class="h2" x="350" y="1502">Zeno C++ Native Core</text>
+    <text class="ts" x="350" y="1522">Node Graph 执行 · runGraph / killGraph · OptiX 光追渲染</text>
+
+    <path class="arr" d="M 640 1404 V 1472" marker-end="url(#ah)"/>
+
+    <!-- ================= 左栏：静态资产 ================= -->
+    <rect class="boxSoft" x="40" y="580" width="250" height="60" rx="8"/>
+    <text class="h2" x="56" y="606">Skill Registry</text>
+    <text class="ts" x="56" y="626">经验与规则层 · 非固定工作流</text>
+
+    <rect class="boxSoft" x="40" y="828" width="250" height="60" rx="8"/>
+    <text class="h2" x="56" y="854">Knowledge</text>
+    <text class="ts" x="56" y="874">NodeClass Registry + 节点文档</text>
+
+    <rect class="boxSoft" x="40" y="1152" width="250" height="60" rx="8"/>
+    <text class="h2" x="56" y="1178">Capability Registry</text>
+    <text class="ts" x="56" y="1198">可复用积木清单与摘要</text>
+
+    <rect class="boxSoft" x="40" y="1236" width="250" height="60" rx="8"/>
+    <text class="h2" x="56" y="1262">Primitive Registry</text>
+    <text class="ts" x="56" y="1282">命令契约 · 参数校验 · 序列化</text>
+
+    <path class="arr" d="M 290 610 H 346" marker-end="url(#ah)"/>
+    <path class="arr" d="M 290 858 H 346" marker-end="url(#ah)"/>
+    <path class="arr" d="M 290 1182 H 346" marker-end="url(#ah)"/>
+    <path class="arr" d="M 290 1266 H 346" marker-end="url(#ah)"/>
+
+    <!-- ================= 右栏：状态与质量闭环 ================= -->
+    <rect class="box" x="980" y="580" width="260" height="120" rx="8"/>
+    <text class="h2" x="996" y="608">World State</text>
+    <text class="ts" x="996" y="632">Store / Projector / Inspector</text>
+    <text class="ts" x="996" y="652">Revision · Snapshot</text>
+    <text class="ts" x="996" y="676">Agent Memory 不得替代它</text>
+
+    <rect class="box" x="980" y="1068" width="260" height="60" rx="8"/>
+    <text class="h2" x="996" y="1094">Validator</text>
+    <text class="ts" x="996" y="1114">schema / structural / semantic</text>
+
+    <rect class="box" x="980" y="1152" width="260" height="60" rx="8"/>
+    <text class="h2" x="996" y="1178">Repair Engine</text>
+    <text class="ts" x="996" y="1198">对 Graph/State 生成最小 Patch</text>
+
+    <rect class="box" x="980" y="1476" width="260" height="64" rx="8"/>
+    <text class="h2" x="996" y="1502">Artifact Manager</text>
+    <text class="ts" x="996" y="1522">截图 / 导出 · 绑定 task_id</text>
+
+    <path class="arr" d="M 980 610 H 954" marker-end="url(#ah)"/>
+    <path class="arr" d="M 950 1098 H 976" marker-end="url(#ah)"/>
+    <path class="arr" d="M 1110 1128 V 1148" marker-end="url(#ah)"/>
+    <path class="arr" d="M 950 1508 H 976" marker-end="url(#ah)"/>
+
+    <path class="arr fb" d="M 1240 1182 H 1335 V 838 H 954" marker-end="url(#ah)"/>
+    <text class="ts" x="1000" y="830">最小 Patch 回灌 → 重新编译</text>
+
+    <path class="arr fb" d="M 950 1350 H 1390 V 620 H 1244" marker-end="url(#ah)"/>
+    <text class="ts" x="1000" y="1342">graphInfo / listNodes → Projector → 归一化 State</text>
+
+    <text class="ts" x="980" y="1580">→ 产物返回调用方（含 task_id / revision 可追溯）</text>
+
+  </svg>
+  </div>
+
+  <div class="legend">
+    <span><i class="k-line"></i>实线箭头 = 主链路调用</span>
+    <span><i class="k-line fb"></i>虚线箭头 = 状态投影与 Patch 回灌（闭环）</span>
+    <span><i class="k-dash"></i>虚线框 = 阶段分组 / Native 边界</span>
+    <span><i class="k-brand"></i>品牌色 = 对外统一入口</span>
+    <span><i class="k-solid"></i>灰色框 = 静态资产（左） / 状态与质量（右）</span>
+  </div>
+
+  <div class="tableWrap">
+    <h2>模块 ↔ 职责 ↔ 进度 对照（据施工手册 §31 Phase 1–15）</h2>
+    <table>
+      <thead>
+        <tr><th>分区</th><th>模块</th><th>回答的问题</th><th>施工阶段 / 状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>入口</td><td class="mono">EXTERNAL AI / ZENO AGENT</td><td>谁在下达任务</td><td><span class="tag">两条路线共用内核；Agent 见 Phase 14，未落地</span></td></tr>
+        <tr><td>表示层</td><td class="mono">mcp_server/*.py</td><td>只做 MCP 协议适配</td><td><span class="tag done">Phase 13 · 已落地</span></td></tr>
+        <tr><td>统一入口</td><td class="mono">public_api.py</td><td>唯一的执行 / 读状态入口</td><td><span class="tag done">已落地</span></td></tr>
+        <tr><td>① 理解与规划</td><td class="mono">Task Service / Planner / Preflight</td><td>要做成什么、分几步</td><td><span class="tag done">Phase 6 / 9 · 已落地</span></td></tr>
+        <tr><td>② 翻译与编译</td><td class="mono">Scene DSL / Scene Builder / Transaction</td><td>翻译成哪些节点与连线</td><td><span class="tag done">Phase 7 · 已落地（Native BuildScene 扩展点未落地）</span></td></tr>
+        <tr><td>③ 执行</td><td class="mono">Executor / Capability / Primitive / Runtime</td><td>可靠送出并取回结果</td><td><span class="tag done">Phase 2 / 4 / 10 · 已落地</span></td></tr>
+        <tr><td>左：静态资产</td><td class="mono">Knowledge</td><td>Zeno 有什么 Node / 什么意思</td><td><span class="tag done">已落地（P0 冻结知识库）</span></td></tr>
+        <tr><td>左：静态资产</td><td class="mono">Skill Registry</td><td>这类任务通常该如何规划 / 遵循什么规则</td><td><span class="tag done">Phase 8 · 已落地（Templates 未落地）</span></td></tr>
+        <tr><td>左：静态资产</td><td class="mono">Capability Registry</td><td>有哪些可复用积木</td><td><span class="tag done">Phase 4 · 已落地</span></td></tr>
+        <tr><td>左：静态资产</td><td class="mono">Primitive Registry</td><td>怎么调、参数是什么</td><td><span class="tag done">Phase 3 · 已落地</span></td></tr>
+        <tr><td>右：状态</td><td class="mono">World State</td><td>当前世界是什么状态</td><td><span class="tag done">Phase 5 · 已落地</span></td></tr>
+        <tr><td>右：质量</td><td class="mono">Validator / Repair</td><td>做对了吗、错了怎么修</td><td><span class="tag done">Phase 11 / 12 · 已落地</span></td></tr>
+        <tr><td>右：产出</td><td class="mono">Artifact Manager</td><td>产物是什么、能追溯吗</td><td><span class="tag done">已落地</span></td></tr>
+        <tr><td colspan="4" style="color:var(--text-muted)">注：意图解析（Task Interpreter）不在公共内核内，由外部 AI / Agent 承担；固定工作流（Workflow / Templates）见 Phase 8，当前未落地。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

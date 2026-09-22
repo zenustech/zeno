@@ -841,7 +841,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered(runType runtype)
+void ZenoMainWindow::onRunTriggered(runType runtype, bool fromCmd, bool cmdRmHistoryCacheBeforeRun)
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -873,6 +873,10 @@ void ZenoMainWindow::onRunTriggered(runType runtype)
         auto main = zenoApp->getMainWindow();
         ZASSERT_EXIT(main);
         launchParam.projectFps = main->timelineInfo().timelinefps;
+        //fromCmd runs (e.g. cmdtool ApiMgr) decide history-cache clearing via the
+        //cmdRmHistoryCacheBeforeRun flag instead of the modal dialog in ZTcpServer::startProc.
+        launchParam.fromCmd = fromCmd;
+        launchParam.cmdRmHistoryCacheBeforeRun = cmdRmHistoryCacheBeforeRun;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }

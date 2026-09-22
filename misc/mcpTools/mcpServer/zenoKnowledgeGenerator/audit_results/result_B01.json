@@ -1,0 +1,94 @@
+{
+  "batch": "B01",
+  "audited_node_count": 201,
+  "issues": [
+    {
+      "node": "StringEditNumber",
+      "issue_type": "incorrect",
+      "field": "description",
+      "socket_or_param": "Method",
+      "kb_says": "枚举 Method ... 默认 Remove_all_numbers；... Return_last_number_Sequence 提取最末一个连续数字序列（从尾部向前累积直到遇非数字）",
+      "source_says": "宏声明枚举标签为 \"Return_last_number_Sequence\"（ZENDEFNODE L1087），但 apply() 实现比较的是 method == \"Return_last_number\"（L1066），二者不一致",
+      "evidence": "zeno/src/nodes/StringNodes.cpp #1066, #1087",
+      "detail": "源码枚举标签(Return_last_number_Sequence)与实现分支判断字符串(Return_last_number)错位，导致选择该枚举项时分支永不命中、输出保持原字符串不变，KB 所述\"提取最末一个连续数字序列\"的功能在实际运行中无法触发；建议修正源码标签或实现，并同步 KB。",
+      "confidence": "high"
+    },
+    {
+      "node": "LightNode",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "enum ",
+      "kb_says": "\"enum \"（源码骨架字段错位的未命名枚举输入；含义无法确定，建议查源码）",
+      "source_says": "ZENO_DEFNODE(LightNode) 输入仅有 position/scale/rotate/quaternion/color/exposure/intensity/fluxFixed/spread/maxDistance/falloffExponent/mask/visible/invertdir/doubleside/profile/texturePath/textureGamma/visibleIntensity 及两个运行时枚举(shape/type)和 prim，不存在名为 \"enum \" 的输入",
+      "evidence": "zeno/src/nodes/LightNodes.cpp #423-460 (#448-449)",
+      "detail": "源码宏中不存在名为 \"enum \" 的幽灵输入，KB 中该行为凭空多出的误导项；LightNode 的两个枚举输入实为 type(lightTypeKey) 与 shape(lightShapeKey)，建议删除该行并保留两者说明。",
+      "confidence": "high"
+    },
+    {
+      "node": "SequentialPythonNode",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "args",
+      "kb_says": "\"args\": 传给代码的参数字典",
+      "source_says": "ZENDEFNODE(SequentialPythonNode) 输入仅为 script/code/zeArgs/prev_context",
+      "evidence": "zeno/src/nodes/PythonNode.cpp #499-511",
+      "detail": "KB inputs 中列出的 \"args\" 输入在源码宏中并不存在，脚本参数统一由 zeArgs 传入；该行属多余/错误项，建议删除以免误导接线。",
+      "confidence": "high"
+    },
+    {
+      "node": "SequentialPythonNode",
+      "issue_type": "incorrect",
+      "field": "params",
+      "socket_or_param": "once",
+      "kb_says": "\"once\": bool 默认 false；true 时按前置globals+code+zeArgs指纹缓存结果，输入未变则复用上次输出",
+      "source_says": "ZENDEFNODE(SequentialPythonNode) 的 params 为 {}；整个 PythonNode.cpp 中无 \"once\" 出现",
+      "evidence": "zeno/src/nodes/PythonNode.cpp #499-511；rg \"once\" 无命中",
+      "detail": "源码既未声明 once 参数，也未实现任何以指纹做缓存的机制；KB 描述的 once 缓存功能在当前实现源码中不存在，属子虚乌有的参数，建议核实后纠正。",
+      "confidence": "high"
+    },
+    {
+      "node": "ParamFileParser",
+      "issue_type": "incorrect",
+      "field": "description",
+      "socket_or_param": "configFilePath",
+      "kb_says": "若 configFilePath 为空时改用同名运行配置变量(同名环境配置)",
+      "source_says": "path = get_input(\"configFilePath\"); auto configFilePath = getConfigVariable(\"configFilePath\"); if (!configFilePath.empty()) path = configFilePath; —— 运行配置变量非空时无条件覆盖 socket 传入的 path",
+      "evidence": "zeno/src/nodes/InputParams.cpp #111-115",
+      "detail": "KB 描述为\"configFilePath 为空时才回退到运行配置变量\"，但源码是只要运行配置变量 configFilePath 非空就用它直接覆盖 socket 传入的 path（无论 socket 是否为空），即运行配置变量始终优先于输入；建议修正描述。",
+      "confidence": "medium"
+    },
+    {
+      "node": "SetPhysicalCamera",
+      "issue_type": "incomplete",
+      "field": "inputs",
+      "socket_or_param": "exposure",
+      "kb_says": "\"exposure\": bool 启用曝光控制，默认关（仅列出一个）",
+      "source_says": "宏中输入列表出现两个完全相同的 {\"bool\", \"exposure\", \"0\"}（L129 与 L130），会令该输入暴露两次",
+      "evidence": "zeno/src/nodes/CameraNodes.cpp #129-130",
+      "detail": "源码宏重复声明了两个相同的 exposure 输入（#129 与 #130），属于源码缺陷；KB 只记录了一个 exposure，未指出该重复声明。confidence 较低，因主要问题在被审对象源码侧。",
+      "confidence": "low"
+    }
+  ],
+  "source_files_consulted": [
+    "zeno/src/nodes/StringNodes.cpp",
+    "zeno/src/nodes/PythonNode.cpp",
+    "zeno/src/nodes/LightNodes.cpp",
+    "zeno/src/nodes/JsonProcess.cpp",
+    "zeno/src/nodes/DictNodes.cpp",
+    "zeno/src/nodes/ControlNodes.cpp",
+    "zeno/src/nodes/CurveNodes.cpp",
+    "zeno/src/nodes/CameraNodes.cpp",
+    "zeno/src/nodes/DebugNodes.cpp",
+    "zeno/src/nodes/RunNodes.cpp",
+    "zeno/src/nodes/PortalNodes.cpp",
+    "zeno/src/nodes/FuncNodes.cpp",
+    "zeno/src/nodes/ToNodes.cpp",
+    "zeno/src/nodes/FileDirtCache.cpp",
+    "zeno/src/nodes/ProcedrualSkyNode.cpp",
+    "zeno/src/nodes/AxisNodes.cpp",
+    "zeno/src/nodes/InputParams.cpp",
+    "zeno/src/nodes/ListNodes.cpp",
+    "zeno/src/nodes/CacheNodes.cpp",
+    "zeno/src/nodes/Subgraph.cpp"
+  ]
+}

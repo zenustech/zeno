@@ -20,6 +20,10 @@ public:
     void startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param);
     void killProc();
 
+    // Whether a runner process is currently active; startProc silently refuses
+    // to launch while one is running.
+    bool isProcRunning() const { return m_proc && m_proc->isOpen(); }
+
     void onFrameStarted(const QString& action, const QString& keyObj);
     void onFrameFinished(const QString& action, const QString& keyObj);
     void onInitFrameRange(const QString& action, int frameStart, int frameEnd);
@@ -28,6 +32,9 @@ public:
 signals:
     void runFinished();
     void runnerError();
+    // Emitted when startProc abandons the launch for a fromCmd run (instead of
+    // showing a modal dialog), e.g. invalid cache dir or process failed to start.
+    void startProcFailed(const QString& reason);
 
 private slots:
     void onNewConnection();

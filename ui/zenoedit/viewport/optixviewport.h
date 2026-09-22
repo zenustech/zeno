@@ -27,6 +27,7 @@ struct ClickPosInfo {
     QPoint eventPos;
 };
 Q_DECLARE_METATYPE(ClickPosInfo)
+Q_DECLARE_METATYPE(QJsonObject)
 
 class OptixWorker : public QObject
 {
@@ -89,6 +90,10 @@ public slots:
     void onSendOptixMessage(QString);
     void on_send_clickinfo_to_optix(ClickPosInfo posinfo);
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
+    //mcpTools
+    QImage captureScreen(int numSamples);
+    QJsonObject getCameraJson();
+    QJsonObject setCameraJson(const QJsonObject &params);
 
 private:
     Zenovis *m_zenoVis;
@@ -139,6 +144,14 @@ public:
     void updateCamera();
     void stopRender();
     void resumeRender();
+    //mcpTools
+    QImage captureScreen(int numSamples);
+    QJsonObject getCameraJson();
+    QJsonObject setCameraJson(const QJsonObject &params);
+    // True while the optix worker thread's event loop is running. When the
+    // render thread has been stopped/killed, captureScreen must not block on
+    // it, so callers check this before requesting a screenshot.
+    bool isOptixViewRunning() const;
     void recordVideo(VideoRecInfo recInfo);
     void screenshoot(QString path, QString type, int resx, int resy);
     void cancelRecording(VideoRecInfo recInfo);

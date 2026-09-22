@@ -46,7 +46,7 @@ int main_cmdtool(const ZenoApplication& a, int argc)
 
         QString cachapath;
         if (cmdParser.isSet("cachePath")) {
-            QString cachapath = cmdParser.value("cachePath");
+            cachapath = cmdParser.value("cachePath");
             cachapath.replace('\\', '/');
         }
 
