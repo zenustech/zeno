@@ -79,6 +79,27 @@ struct ShadowPRD : CommonPRD {
     float3 ShadowNormal;
 };
 
+enum class RadianceCacheEvent : uint8_t {
+    None = 0u,
+    Surface = 1u,
+    Terminal = 2u,
+};
+
+// Closest-hit owns runtime SHARC queries. Update raygen consumes the published
+// surface/terminal event after optixTrace returns.
+struct RadianceCacheProxy {
+    float3 positionWorld;
+    float3 geometryNormalWorld;
+    float3 throughput;
+    float3 materialDemodulation;
+    float3 radianceDirectionWorld;
+    float pathRoughness;
+    float segmentLength;
+    float radianceDirectionWeight;
+    uint8_t event;
+    uint8_t queryEligible;
+};
+
 struct RadiancePRD : CommonPRD {
     //zxx seed
     unsigned int offset = 0;
@@ -128,6 +149,7 @@ struct RadiancePRD : CommonPRD {
     bool alphaHit     : 1;
     bool fromDiff     : 1; 
     bool denoise      : 1;
+    bool sharcQuery   : 1;
     uint8_t hit_type  : 4;
 
     uint8_t _mask_ = EverythingMask;
@@ -147,6 +169,7 @@ struct RadiancePRD : CommonPRD {
     vec3 channelPDF;
     
     float3 geometryNormal;
+    RadianceCacheProxy radianceCache;
 
     __device__ __forceinline__ vec3 sigma_s() {
         return sigma_t * ss_alpha;

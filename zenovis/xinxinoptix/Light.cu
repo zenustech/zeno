@@ -231,7 +231,7 @@ extern "C" __global__ void __closesthit__radiance()
                 
         prd->radiance = emission;
         prd->_tmax_ = optixGetRayTmax();
-
+        prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::Terminal);
         prd->done = true;
         prd->depth = 1;
         prd->attenuation = vec3(1.0f); 
@@ -266,6 +266,7 @@ extern "C" __global__ void __closesthit__radiance()
         // }
         auto tmp = float3{1, 1, 1};
         prd->updateAttenuation(tmp);
+        prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::Terminal);
 
         if (!prd->alphaHit) { // non block for secondary
             prd->_tmin_ = optixGetRayTmax();

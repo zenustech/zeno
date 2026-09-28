@@ -19,6 +19,14 @@
 #define DENOISE 1
 #endif
 
+#ifndef SHARC_UPDATE_PASS
+#define SHARC_UPDATE_PASS 0
+#endif
+
+#if SHARC_UPDATE_PASS
+#include "SharcDevice.h"
+#endif
+
 extern "C" {
 __constant__ Params params;
 
@@ -92,6 +100,39 @@ __inline__ __device__ bool isBadVector(const float3 & vector) {
     bool bad = !isfinite(vector.x) || !isfinite(vector.y) || !isfinite(vector.z);
     return bad? true : lengthSquared(vector) == 0.0f;
 }
+
+#if SHARC_UPDATE_PASS
+static __forceinline__ __device__ void zenoApplySharcUpdateAfterTrace(
+    RadiancePRD& prd, SharcState& sharcState, const SharcParameters& sharcParameters)
+{
+    const RadianceCacheEvent event = static_cast<RadianceCacheEvent>(prd.radianceCache.event);
+
+    if (event == RadianceCacheEvent::Surface) {
+        if (prd.radianceCache.queryEligible == 0u) {
+            SharcUpdateMiss(sharcParameters, sharcState, zenoSharcSanitizeSignal(prd.radiance));
+            prd.done = true;
+            return;
+        }
+        const SharcHitData hit = zenoSharcHitData(
+            prd.radianceCache.positionWorld,
+            prd.radianceCache.geometryNormalWorld,
+            prd.radianceCache.materialDemodulation,
+            prd.radianceCache.radianceDirectionWorld,
+            prd.radianceCache.radianceDirectionWeight);
+        const bool continueTracing = SharcUpdateHit(sharcParameters, sharcState, hit, zenoSharcSanitizeSignal(prd.radiance), rnd(prd.seed));
+
+        if (!continueTracing) {
+            prd.done = true;
+        } else if (!prd.done) {
+            SharcSetRadianceDirectionWeight(sharcState, prd.radianceCache.radianceDirectionWeight);
+            SharcSetThroughput(sharcState, zenoSharcSanitizeSignal(prd.radianceCache.throughput));
+        }
+    } else if (event == RadianceCacheEvent::Terminal) {
+        SharcUpdateMiss(sharcParameters, sharcState, zenoSharcSanitizeSignal(prd.radiance));
+        prd.done = true;
+    }
+}
+#endif
 
 void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, float3 ray_dir, float3& result, float3& attenuation) {
     
@@ -180,8 +221,38 @@ extern "C" __global__ void __raygen__rg()
     const auto h = params.height;
 
     uint3 idx = optixGetLaunchIndex();
-    if(idx.x>w || idx.y>h)
+
+#if SHARC_UPDATE_PASS
+    if (!zenoSharcIsPass(params.sharc, SharcPass::Update)) {
         return;
+    }
+
+    // The update launch contains one thread per updateSpacing x updateSpacing
+    // image block. Map that compact launch index back to one full-resolution
+    // pixel. A per-block permutation offset keeps neighboring blocks from
+    // selecting the same subpixel while still visiting every pixel over time.
+    const uint updateSpacing = max(params.sharc.updateSpacing, 1u);
+    const uint blockOriginX = idx.x * updateSpacing;
+    const uint blockOriginY = idx.y * updateSpacing;
+    if (blockOriginX >= w || blockOriginY >= h) {
+        return;
+    }
+
+    const uint blockWidth = min(updateSpacing, w - blockOriginX);
+    const uint blockHeight = min(updateSpacing, h - blockOriginY);
+    const uint blockPixelCount = blockWidth * blockHeight;
+    const uint3 launchDimensions = optixGetLaunchDimensions();
+    const uint blockIndex = idx.y * launchDimensions.x + idx.x;
+    const uint permutationOffset = pcg_hash(blockIndex ^ 0x9e3779b9u);
+    const uint blockPixelIndex =
+        (params.sharc.frameIndex + permutationOffset) % blockPixelCount;
+    idx.x = blockOriginX + blockPixelIndex % blockWidth;
+    idx.y = blockOriginY + blockPixelIndex / blockWidth;
+#else
+    if (idx.x >= w || idx.y >= h) {
+        return;
+    }
+#endif
 
     const unsigned int image_index  = idx.y * w + idx.x;
     const int    subframe_index = params.subframe_index;
@@ -336,7 +407,12 @@ extern "C" __global__ void __raygen__rg()
             ray_direction = camera_transform * make_float3(x, y, z);
         }
 
-        RadiancePRD prd;
+        RadiancePRD prd {};
+#if SHARC_UPDATE_PASS
+        SharcState sharcState = {};
+        const SharcParameters sharcParameters = zenoSharcBuildParameters(params.sharc, params.cam.eye);
+        SharcInit(sharcState);
+#endif
         prd.print_info = params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y;
         prd.vdcseed = vdcseed;
         prd.offset = seed1;
@@ -348,6 +424,11 @@ extern "C" __global__ void __raygen__rg()
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
         prd.done         = false;
+#if SHARC_UPDATE_PASS
+        prd.sharcQuery   = false;
+#else
+        prd.sharcQuery   = params.sharc.pass == static_cast<uint32_t>(SharcPass::Query);
+#endif
         prd.seed         = seed;
         prd.eventseed    = eventseed;
         prd.maxDistance  = 1e16f;
@@ -370,7 +451,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.hit_type = 0;
-        prd.max_depth = 4;
+        prd.max_depth = static_cast<uint8_t>(min(params.max_bounce, 255u));
         prd.sssDepth = 0;
         auto _tmin_ = prd._tmin_;
         auto _mask_ = prd._mask_;
@@ -393,9 +474,15 @@ extern "C" __global__ void __raygen__rg()
             prd._tmin_ = 0.f;
             prd._mask_ = 255;
             prd.alphaHit = false;
+            prd.radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::None);
             traceRadianceSER(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         } while (prd.alphaHit); // skip alpha
 
+#if SHARC_UPDATE_PASS
+        zenoApplySharcUpdateAfterTrace(prd, sharcState, sharcParameters);
+#endif
+
+#if !SHARC_UPDATE_PASS
         if ( params.click_dirty && params.click_coord.x==idx.x && params.click_coord.y==idx.y )
         {
             float3 click_pos {0,0,0};
@@ -407,6 +494,7 @@ extern "C" __global__ void __raygen__rg()
             }
             *params.pick_buffer = PickInfo { click_pos, record };
         }
+#endif
         if(params.pause) return;
         
         //fuck, SSS or other scattering scheme may return a small maxDistance
@@ -498,15 +586,22 @@ extern "C" __global__ void __raygen__rg()
                 prd._tmin_ = 0.f;
                 prd._mask_ = 255;
                 prd.alphaHit = false;
-
+                prd.radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::None);
                 traceRadianceSER(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_ & mark);
             } while(prd.alphaHit);
+
+#if SHARC_UPDATE_PASS
+            zenoApplySharcUpdateAfterTrace(prd, sharcState, sharcParameters);
+#endif
         }
         seed = prd.seed;
 //        seed1 = prd.offset;
 //        eventseed = prd.eventseed;
     }
     while( --i );
+#if SHARC_UPDATE_PASS
+    return;
+#endif
     aperture      = aperture < 0.0001 ? params.physical_camera_aperture: aperture;
     float shutter_speed = params.physical_camera_shutter_speed;
     float iso           = params.physical_camera_iso;
@@ -628,7 +723,6 @@ extern "C" __global__ void __miss__radiance()
             envPdf,
             upperBound,
             0.0
-
         );
 
         const float skyPMF = params.lightSelection.pmf(LightSelection::Group::Environment);
@@ -646,6 +740,7 @@ extern "C" __global__ void __miss__radiance()
         if (params.show_background == false) {
             prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
         }
+        prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::Terminal);
         prd->done      = true;
         prd->hit_type  = 0;
         return;
