@@ -374,8 +374,18 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     list(GET SEXY_LIST 0 FILE_PATH)
     list(GET SEXY_LIST 1 FILE_NAME)
     set(FILE_PATH "${FILE_PATH}${FILE_NAME}")
+    # Shader contents are embedded at configure time; edits must rerun CMake.
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${FILE_PATH}")
     set(DUMMY_SOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/${ENCODED_FILE}_bundle.cpp)
-    if (NOT EXISTS ${DUMMY_SOURCE_FILE} OR ${FILE_PATH} IS_NEWER_THAN ${DUMMY_SOURCE_FILE})
+    # SDK replacements can preserve older timestamps. Compare contents instead.
+    file(SHA256 "${FILE_PATH}" NVRTC_SOURCE_HASH)
+    set(NVRTC_HASH_FILE "${DUMMY_SOURCE_FILE}.sha256")
+    set(NVRTC_PREVIOUS_HASH "")
+    if (EXISTS "${NVRTC_HASH_FILE}")
+        file(READ "${NVRTC_HASH_FILE}" NVRTC_PREVIOUS_HASH)
+    endif()
+    if (NOT EXISTS "${DUMMY_SOURCE_FILE}" OR
+        NOT "${NVRTC_SOURCE_HASH}" STREQUAL "${NVRTC_PREVIOUS_HASH}")
 
         message(STATUS "Encoding NVRTC header: ${FILE_PATH}")
         file(READ ${FILE_PATH} HEX_CONTENTS HEX)
@@ -385,6 +395,7 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
 
         file(WRITE ${DUMMY_SOURCE_FILE} "/* generated from: ${FILE_PATH} */\n#include <vector>\n#include <sutil/sutil.h>\n\nnamespace sutil {\nstatic const unsigned char mydata[] = {\n${FORMATTED_HEX},\n0};\nstatic int helper = (getIncPathTab().push_back(\"${FILE_NAME}\"), getIncFileTab().push_back((const char *)mydata), 0);\n}")
 
+        file(WRITE "${NVRTC_HASH_FILE}" "${NVRTC_SOURCE_HASH}")
     endif()
     list(APPEND NVRTC_BUNDLE_SOURCES ${DUMMY_SOURCE_FILE})
     if(ZENO_WITH_SHARC AND FILE_INFO IN_LIST SHARC_NVRTC_TEST_FILES)
