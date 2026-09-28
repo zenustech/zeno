@@ -83,6 +83,9 @@
 #include "LightTree.h"
 #include "Portal.h"
 #include "Scene.h"
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+#include "SharcResources.h"
+#endif
 
 #include <curve/Hair.h>
 #include <curve/optixCurve.h>
@@ -167,6 +170,19 @@ struct PathTracerState
     raii<CUdeviceptr>            d_params;
 
     OptixShaderBindingTable sbt {};
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    OptixShaderBindingTable sharc_update_sbt {};
+    std::unique_ptr<SharcResources> sharc;
+    bool sharc_reset_pending = true;
+    bool sharc_failed = false;
+    bool sharc_has_previous_camera = false;
+    float3 sharc_previous_camera {};
+    uint32_t sharc_frame_index = 0u;
+    bool sharc_has_configuration = false;
+    float sharc_scene_scale = 0.0f;
+    bool sharc_material_demodulation = false;
+    bool sharc_sh_encoding = false;
+#endif
 };
 
 
@@ -336,6 +352,179 @@ static void finalizeLightSelectionWeights(PathTracerState& state)
     }
 }
 
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+static uint32_t normalizeSharcEntryCount(int requested)
+{
+    uint32_t result = 16u;
+    const uint32_t target = static_cast<uint32_t>(std::max(requested, 16));
+    while (result < target && result <= (1u << 30u)) {
+        result <<= 1u;
+    }
+    return result;
+}
+
+static bool prepareSharc(PathTracerState& state)
+{
+    auto& user_data = zeno::getSession().userData();
+    const bool reset_requested = user_data.get2<bool>("optix-sharc-reset", false);
+    if (reset_requested) {
+        user_data.set2("optix-sharc-reset", false);
+        state.sharc_reset_pending = true;
+        state.sharc_failed = false;
+    }
+
+    if (!user_data.get2<bool>("optix-sharc", true)) {
+        if (state.params.sharc.pass != static_cast<uint32_t>(SharcPass::Disabled)) {
+            // A later runtime re-enable must not reuse cache data that could
+            // have gone stale while SHARC was disabled.
+            state.sharc_reset_pending = true;
+        }
+        state.params.sharc = {};
+        return false;
+    }
+    if (state.sharc_failed) {
+        state.params.sharc = {};
+        return false;
+    }
+
+    const float scene_scale = std::max(user_data.get2<float>("optix-sharc-scene-scale", 50.0f), 1.0e-4f);
+    const bool material_demodulation = user_data.get2<bool>("optix-sharc-material-demodulation", false);
+    const bool sh_encoding = user_data.get2<bool>("optix-sharc-sh-encoding", false);
+    if (state.sharc_has_configuration &&
+        (state.sharc_scene_scale != scene_scale ||
+         state.sharc_material_demodulation != material_demodulation ||
+         state.sharc_sh_encoding != sh_encoding)) {
+        state.sharc_reset_pending = true;
+    }
+
+    const uint32_t entry_count = normalizeSharcEntryCount(user_data.get2<int>("optix-sharc-entries", 1 << 20));
+    if (!state.sharc) {
+        state.sharc = std::make_unique<SharcResources>();
+    }
+
+    const bool was_ready = state.sharc->ready();
+    const uint32_t previous_entry_count = state.sharc->entryCount();
+    std::string error;
+    if (!state.sharc->initialize(entry_count, &error)) {
+        zeno::log_error("SHARC disabled after initialization failure: {}", error);
+        state.sharc_failed = true;
+        state.params.sharc = {};
+        return false;
+    }
+
+    if (state.sharc_reset_pending &&
+        !state.sharc->clear(nullptr, &error)) {
+        zeno::log_error("SHARC disabled after cache clear failure: {}", error);
+        state.sharc_failed = true;
+        state.params.sharc = {};
+        return false;
+    }
+    if (state.sharc_reset_pending || previous_entry_count != entry_count) {
+        state.sharc_frame_index = 0u;
+        state.sharc_has_previous_camera = false;
+    }
+    state.sharc_reset_pending = false;
+    state.sharc_has_configuration = true;
+    state.sharc_scene_scale = scene_scale;
+    state.sharc_material_demodulation = material_demodulation;
+    state.sharc_sh_encoding = sh_encoding;
+
+    SharcLaunchParameters launch = {};
+    launch.hashEntries = static_cast<uint64_t>(state.sharc->hashEntries());
+    launch.accumulation = static_cast<uint64_t>(state.sharc->accumulation());
+    launch.resolved = static_cast<uint64_t>(state.sharc->resolved());
+    launch.capacity = state.sharc->entryCount();
+    launch.frameIndex = state.sharc_frame_index;
+    launch.pass = static_cast<uint32_t>(SharcPass::Query);
+    launch.updateSpacing = static_cast<uint32_t>(std::max(
+        user_data.get2<int>("optix-sharc-update-spacing", 5), 1));
+    launch.sceneScale = scene_scale;
+    launch.radianceScale = std::max(user_data.get2<float>("optix-sharc-radiance-scale", 1000.0f), 1.0e-4f);
+    launch.roughnessMin = std::clamp(user_data.get2<float>("optix-sharc-roughness-min", 0.4f), 0.0f, 1.0f);
+    launch.debugMode = user_data.get2<bool>("optix-sharc-debug", false) ? 1u : 0u;
+    launch.materialDemodulation = material_demodulation ? 1u : 0u;
+    launch.shEncoding = sh_encoding ? 1u : 0u;
+    state.params.sharc = launch;
+
+    if (!was_ready || previous_entry_count != entry_count) {
+        zeno::log_info(
+            "SHARC initialized: {} entries, {:.1f} MiB",
+            entry_count,
+            double(entry_count) *
+                double(SharcResources::hashEntryStride() +
+                       SharcResources::accumulationStride() +
+                       SharcResources::resolvedStride()) /
+                double(1u << 20u));
+    }
+    return true;
+}
+
+static bool launchSharcUpdate(PathTracerState& state)
+{
+    if (!state.sharc || !state.sharc->ready()) {
+        return false;
+    }
+
+    const uint32_t saved_samples_per_launch = state.params.samples_per_launch;
+    const bool saved_denoise = state.params.denoise;
+    state.params.samples_per_launch = 1u;
+    state.params.denoise = false;
+    state.params.sharc.pass = static_cast<uint32_t>(SharcPass::Update);
+    state.params.sharc.frameIndex = state.sharc_frame_index;
+
+    const uint32_t update_spacing = std::max(state.params.sharc.updateSpacing, 1u);
+    const uint32_t update_width = (state.params.width + update_spacing - 1u) / update_spacing;
+    const uint32_t update_height = (state.params.height + update_spacing - 1u) / update_spacing;
+
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, 0));
+    OPTIX_CHECK(optixLaunch(
+        OptixUtil::pipeline,
+        0,
+        static_cast<CUdeviceptr>(state.d_params.handle),
+        sizeof(Params),
+        &state.sharc_update_sbt,
+        update_width,
+        update_height,
+        1));
+
+    SharcResolveSettings settings = {};
+    settings.camera_position[0] = state.params.cam.eye.x;
+    settings.camera_position[1] = state.params.cam.eye.y;
+    settings.camera_position[2] = state.params.cam.eye.z;
+    const float3 previous_camera = state.sharc_has_previous_camera ?
+        state.sharc_previous_camera : state.params.cam.eye;
+    settings.camera_position_prev[0] = previous_camera.x;
+    settings.camera_position_prev[1] = previous_camera.y;
+    settings.camera_position_prev[2] = previous_camera.z;
+    settings.scene_scale = state.params.sharc.sceneScale;
+    settings.radiance_scale = state.params.sharc.radianceScale;
+    auto& user_data = zeno::getSession().userData();
+    settings.accumulation_frame_num = static_cast<uint32_t>(std::clamp(
+        user_data.get2<int>("optix-sharc-accumulation-frames", 20), 1, 1024));
+    settings.stale_frame_num_max = static_cast<uint32_t>(std::clamp(
+        user_data.get2<int>("optix-sharc-stale-frames", 60), 1, 1024));
+    settings.frame_index = state.sharc_frame_index;
+
+    std::string error;
+    const bool resolved = state.sharc->resolve(settings, nullptr, &error);
+    state.params.samples_per_launch = saved_samples_per_launch;
+    state.params.denoise = saved_denoise;
+    state.params.sharc.pass = static_cast<uint32_t>(SharcPass::Query);
+    if (!resolved) {
+        zeno::log_error("SHARC disabled after resolve failure: {}", error);
+        state.sharc_failed = true;
+        state.params.sharc = {};
+        return false;
+    }
+
+    state.sharc_previous_camera = state.params.cam.eye;
+    state.sharc_has_previous_camera = true;
+    ++state.sharc_frame_index;
+    state.params.sharc.frameIndex = state.sharc_frame_index;
+    return true;
+}
+#endif
+
 static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
     // All samples in this render reuse the finalized light selection.
@@ -422,6 +611,15 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 cudaMemcpyHostToDevice
                 ) );
 
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    raii<CUdeviceptr>& d_sharc_update_raygen_record = OptixUtil::d_sharc_update_raygen_record;
+    d_sharc_update_raygen_record.resize(raygen_record_size);
+    RayGenRecord sharc_update_rg_sbt = {};
+    OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sharc_update_raygen_prog_group, &sharc_update_rg_sbt));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(static_cast<CUdeviceptr>(d_sharc_update_raygen_record)),
+        &sharc_update_rg_sbt, raygen_record_size, cudaMemcpyHostToDevice));
+#endif
+
     raii<CUdeviceptr>  &d_miss_records = OptixUtil::d_miss_records;
     const size_t miss_record_size = sizeof( MissRecord );
     d_miss_records.resize(miss_record_size * RAY_TYPE_COUNT);
@@ -444,7 +642,13 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
     state.sbt.missRecordCount             = RAY_TYPE_COUNT;
     //state.sbt.exceptionRecord;
-    if (raygen) return;
+    if (raygen) {
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_update_sbt = state.sbt;
+        state.sharc_update_sbt.raygenRecord = d_sharc_update_raygen_record;
+#endif
+        return;
+    }
 
     const auto shader_count = OptixUtil::rtMaterialShaders.size();
 
@@ -574,6 +778,11 @@ static void createSBT( PathTracerState& state, bool raygen=false)
         state.sbt.callablesRecordCount         = shader_count;
         state.sbt.callablesRecordStrideInBytes = static_cast<unsigned int>( sizeof_callable_record );
     }
+
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    state.sharc_update_sbt = state.sbt;
+    state.sharc_update_sbt.raygenRecord = d_sharc_update_raygen_record;
+#endif
 }
 
 
@@ -1386,14 +1595,40 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
 
         OptixUtil::_compile_group.run([&] () {
 
+            const std::vector<std::string> raygen_macros {
+                "--define-macro=__AOV__=0",
+                "--define-macro=DENOISE=0",
+                "--define-macro=SHARC_UPDATE_PASS=0",
+            };
             if (!OptixUtil::createModule(
                 OptixUtil::raygen_module.reset(),
                 OptixUtil::context,
                 sutil::lookupIncFile("PTKernel.cu"),
-                "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
+                "PTKernel.cu",
+                raygen_macros)) throw std::runtime_error("base ray module failed to compile");
 
             OptixUtil::raygen_config = std::tuple {false, false};
             OptixUtil::createRenderGroups(OptixUtil::context, OptixUtil::raygen_module);
+
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+            const std::vector<std::string> sharc_update_macros {
+                "--define-macro=__AOV__=0",
+                "--define-macro=DENOISE=0",
+                "--define-macro=SHARC_UPDATE_PASS=1",
+            };
+            if (!OptixUtil::createModule(
+                    OptixUtil::sharc_update_raygen_module.reset(),
+                    OptixUtil::context,
+                    sutil::lookupIncFile("PTKernel.cu"),
+                    "PTKernel.cu",
+                    sharc_update_macros)) {
+                throw std::runtime_error(
+                    "SHARC update ray module failed to compile");
+            }
+            OptixUtil::createSharcUpdateRaygenGroup(
+                OptixUtil::context,
+                OptixUtil::sharc_update_raygen_module);
+#endif
         });
 
         if (requireTriangObj) {
@@ -1648,6 +1883,11 @@ zeno::log_info("make_scene {}ms", timer.tock());
 
 void configPipeline(bool shaderDirty, bool pipelineDirty) {
     camera_changed = true;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    if (shaderDirty || pipelineDirty) {
+        state.sharc_reset_pending = true;
+    }
+#endif
 
     auto buffers = globalShaderBufferGroup.upload();
     state.params.global_buffers = (void**)buffers;
@@ -1999,7 +2239,8 @@ static void updateRayGen(bool aov, bool denoise) {
     auto source = sutil::lookupIncFile("PTKernel.cu");
     std::vector<std::string> macros {
         "--define-macro=__AOV__="+std::to_string(aov),
-        "--define-macro=DENOISE="+std::to_string(denoise)
+        "--define-macro=DENOISE="+std::to_string(denoise),
+        "--define-macro=SHARC_UPDATE_PASS=0",
     };
 
     createModule(raygen_module.reset(), context, source, "PTKernel.cu", macros);
@@ -2026,6 +2267,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     updateRayGen(enable_output_aov, denoise);
     updateState( *output_buffer_o, state.params, enable_output_aov );
     finalizeLightSelectionWeights(state);
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    bool sharc_enabled = prepareSharc(state);
+#endif
 
     if (denoise) {
         auto w = state.params.width;
@@ -2041,6 +2285,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.normal_buffer = (float3*)state.normal_buffer_p.handle;
 
     auto &ud = zeno::getSession().userData();
+    state.params.max_bounce = static_cast<unsigned int>(std::clamp(
+        ud.get2<int>("optix-max-bounce", 4), 1, 255));
     auto pause = ud.get2<bool>("viewport-optix-pause", false);
 
     const int max_samples_once = 1;
@@ -2086,6 +2332,14 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        if (sharc_enabled) {
+            sharc_enabled = launchSharcUpdate(state);
+            if (!sharc_enabled) {
+                state.params.sharc = {};
+            }
+        }
+#endif
         launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
@@ -2283,6 +2537,11 @@ void optixDestroy() {
     }
 
     try {
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        // SHARC owns CUDA allocations and a CUDA module in the primary
+        // context; release them before OptixUtil destroys that context.
+        state.sharc.reset();
+#endif
         optixCleanup();
 
         // Program groups must be released before the modules they reference.
@@ -2301,8 +2560,14 @@ void optixDestroy() {
     context                  .handle=0;
     pipeline                 .handle=0;
     raygen_module            .handle=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    sharc_update_raygen_module.handle=0;
+#endif
     sphere_ism               .handle=0;
     raygen_prog_group        .handle=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    sharc_update_raygen_prog_group.handle=0;
+#endif
     radiance_miss_group      .handle=0;
     occlusion_miss_group     .handle=0;
 

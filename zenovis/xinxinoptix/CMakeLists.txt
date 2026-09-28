@@ -47,6 +47,7 @@ target_sources(zenovis PRIVATE
   
   ShaderBuffer.h
   GeometryAux.h
+  SharcLaunchParameters.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
@@ -61,6 +62,50 @@ target_sources(zenovis PRIVATE
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
 
   )
+
+set(ZENO_SHARC_ROOT "${CMAKE_SOURCE_DIR}/projects/SHARC" CACHE PATH
+    "Path to the NVIDIA SHARC SDK checkout")
+
+get_filename_component(ZENO_SHARC_ROOT "${ZENO_SHARC_ROOT}" ABSOLUTE)
+set(_sharc_include_dir "${ZENO_SHARC_ROOT}/include")
+if(NOT EXISTS "${_sharc_include_dir}/SharcCommon.h")
+    message(FATAL_ERROR
+        "The SHARC submodule is required. Initialize projects/SHARC or set "
+        "ZENO_SHARC_ROOT to a SHARC SDK checkout.")
+endif()
+set(_sharc_generated_dir "${CMAKE_CURRENT_BINARY_DIR}/sharc_cuda")
+include(cmake/SharcCudaTransform.cmake)
+zeno_prepare_sharc_cuda_headers(
+    "${_sharc_include_dir}"
+    "${_sharc_generated_dir}"
+    _sharc_generated_headers)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/SharcCudaCompat.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SharcDevice.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SharcLaunchParameters.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SharcResolve.cu"
+    "${_sharc_include_dir}/HashGridCommon.h"
+    "${_sharc_include_dir}/HashGridTypes.h"
+    "${_sharc_include_dir}/SharcCommon.h"
+    "${_sharc_include_dir}/SharcTypes.h")
+
+target_sources(zenovis PRIVATE
+    SharcCudaCompat.h
+    SharcDevice.h
+    SharcLaunchParameters.h
+    SharcResources.cpp
+    SharcResources.h)
+# Host support is always compiled; render-time enablement comes from Params/PRD.
+target_compile_definitions(zenovis PRIVATE ZENO_WITH_SHARC=1)
+
+set(SHARC_NVRTC_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SharcCudaCompat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SharcDevice.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SharcResolve.cu
+    ${_sharc_generated_dir}/@HashGridCommon.h
+    ${_sharc_generated_dir}/@HashGridTypes.h
+    ${_sharc_generated_dir}/@SharcCommon.h
+    ${_sharc_generated_dir}/@SharcTypes.h)
 
 file(GLOB curve_src "curve/*.h" "curve/*.cpp")
 target_sources(zenovis PRIVATE ${curve_src})
@@ -266,6 +311,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SharcLaunchParameters.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@CallableDefault.cu
@@ -307,7 +353,20 @@ set(FILE_LIST
     ${NVDB_PATH}/@nanovdb/util/SampleFromVoxels.h
     )
 
+list(APPEND FILE_LIST ${SHARC_NVRTC_FILES})
+
+set(SHARC_NVRTC_TEST_FILES ${SHARC_NVRTC_FILES})
+list(APPEND SHARC_NVRTC_TEST_FILES
+    ${CUDA_PATH}/include/@cuda_fp16.h
+    ${CUDA_PATH}/include/@cuda_fp16.hpp
+    ${CUDA_PATH}/include/@vector_types.h
+    ${CUDA_PATH}/include/@vector_functions.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/cstdint.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h)
+
 set(NVRTC_BUNDLE_SOURCES)
+set(SHARC_NVRTC_BUNDLE_SOURCES)
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
     string(MD5 ENCODED_FILE "${FILE_INFO}")
@@ -328,6 +387,9 @@ foreach (FILE_INFO IN ITEMS ${FILE_LIST})
 
     endif()
     list(APPEND NVRTC_BUNDLE_SOURCES ${DUMMY_SOURCE_FILE})
+    if(ZENO_WITH_SHARC AND FILE_INFO IN_LIST SHARC_NVRTC_TEST_FILES)
+        list(APPEND SHARC_NVRTC_BUNDLE_SOURCES ${DUMMY_SOURCE_FILE})
+    endif()
     target_sources(zenovis PRIVATE ${DUMMY_SOURCE_FILE})
 endforeach()
 
@@ -345,3 +407,27 @@ target_include_directories(zeno_nvrtc_helper PRIVATE
 )
 target_link_libraries(zeno_nvrtc_helper PRIVATE CUDA::nvrtc)
 add_dependencies(zenovis zeno_nvrtc_helper)
+
+set(_zeno_saved_vcpkg_applocal_deps "${VCPKG_APPLOCAL_DEPS}")
+set(VCPKG_APPLOCAL_DEPS OFF)
+add_executable(zeno_sharc_spike_test EXCLUDE_FROM_ALL
+    SharcSpikeTest.cpp
+    SharcResources.cpp
+    NvrtcWorker.cpp
+    ${SHARC_NVRTC_BUNDLE_SOURCES})
+set(VCPKG_APPLOCAL_DEPS "${_zeno_saved_vcpkg_applocal_deps}")
+unset(_zeno_saved_vcpkg_applocal_deps)
+target_include_directories(zeno_sharc_spike_test PRIVATE
+    SDK
+    SDK/cuda
+    SDK/sutil
+    .
+    ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(zeno_sharc_spike_test PRIVATE ZENO_WITH_SHARC=1)
+if(MSVC)
+    target_compile_options(zeno_sharc_spike_test PRIVATE /EHsc)
+endif()
+target_link_libraries(zeno_sharc_spike_test PRIVATE
+    CUDA::cudart_static
+    CUDA::nvrtc
+    CUDA::cuda_driver)

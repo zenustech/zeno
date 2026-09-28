@@ -14,6 +14,7 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 #include "Mnee.h"
+#include "SharcDevice.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -33,6 +34,25 @@ __inline__ __device__ bool isBadVector(const vec3& vector) {
 
 __inline__ __device__ bool isBadVector(const float3& vector) {
     return isBadVector(reinterpret_cast<const vec3&>(vector));
+}
+
+__inline__ __device__ float3 zenoSharcMaterialDemodulation(const MatOutput& material, const SharcLaunchParameters& launch)
+{
+    if (launch.materialDemodulation == 0u) {
+        return make_float3(1.0f);
+    }
+
+    const float metallic = fminf(fmaxf(material.metallic, 0.0f), 1.0f);
+    const float transmission = fminf(fmaxf(material.specTrans, 0.0f), 1.0f);
+    const float specular = fminf(fmaxf(material.specular, 0.0f), 1.0f);
+    const vec3 baseColor = clamp(material.basecolor, vec3(0.0f), vec3(1.0f));
+    const vec3 diffuseAlbedo = baseColor * ((1.0f - metallic) * (1.0f - transmission));
+    const vec3 specularF0 = mix(vec3(0.04f * specular), baseColor, metallic);
+    const vec3 specularFAvg = specularF0 + (vec3(1.0f) - specularF0) * (1.0f / 21.0f);
+    const float specularLuminance = 0.2126f * specularFAvg.x + 0.7152f * specularFAvg.y + 0.0722f * specularFAvg.z;
+    const vec3 demodulation = max(diffuseAlbedo, vec3(0.05f)) +
+        max(specularF0, vec3(0.02f)) * specularLuminance;
+    return make_float3(demodulation.x, demodulation.y, demodulation.z);
 }
 
 extern "C" __global__ void __anyhit__shadow_cutout()
@@ -421,6 +441,8 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
     prd->_tmax_ = optixGetRayTmax();
+    const float cacheSegmentLength = fmaxf(optixGetRayTmax() - prd->_tmin_, 0.0f);
+    const bool cacheIncomingVacuum = prd->medium == DisneyBSDF::PhaseFunctions::vacuum;
 
     if (prd->depth==0) {
         *reinterpret_cast<uint64_t*>(&prd->record.x) = gas;
@@ -509,6 +531,12 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
+    if (zenoSharcIsPass(params.sharc, SharcPass::Update)) {
+        mats.roughness = fmaxf(mats.roughness, params.sharc.roughnessMin);
+    }
+
+    const float3 sharcMaterialDemodulation = zenoSharcMaterialDemodulation(mats, params.sharc);
+
     if(prd->depth==0&&mats.flatness>0.5)
     {
         prd->radiance = make_float3(0.0f);
@@ -531,8 +559,59 @@ extern "C" __global__ void __closesthit__radiance()
           }
         }
         prd->radiance += CUR_TOTAL_TRANS * mats.emission;
+        prd->radianceCache.positionWorld = wldPos + params.cam.eye;
+        prd->radianceCache.geometryNormalWorld = attrs.wldNorm;
+        prd->radianceCache.throughput = make_float3(0.0f);
+        prd->radianceCache.materialDemodulation = make_float3(1.0f);
+        prd->radianceCache.radianceDirectionWorld = -normalize(ray_dir);
+        prd->radianceCache.pathRoughness = 0.0f;
+        prd->radianceCache.segmentLength = cacheSegmentLength;
+        prd->radianceCache.radianceDirectionWeight = 0.0f;
+        prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::Surface);
+        prd->radianceCache.queryEligible = 0u;
         prd->done = true;
         return;
+    }
+
+    const bool sharcDebugMode = prd->sharcQuery && params.sharc.debugMode != 0u;
+    const bool sharcQueryEligible =
+        prd->sharcQuery && !prd->done &&
+        (prd->depth > 0u || sharcDebugMode) && cacheIncomingVacuum &&
+        mats.flatness <= 0.5f && mats.isHair <= 0.5f && mats.subsurface <= 0.0f;
+    if (sharcQueryEligible && zenoSharcIsPass(params.sharc, SharcPass::Query)) {
+        const SharcParameters sharcParameters = zenoSharcBuildParameters(params.sharc, params.cam.eye);
+        const SharcHitData hit = zenoSharcHitData(wldPos + params.cam.eye, attrs.wldNorm, sharcMaterialDemodulation, -normalize(ray_dir), 0.0f);
+        const uint gridLevel = HashGridGetLevel(hit.positionWorld, sharcParameters.hashGridParameters);
+        const float voxelSize = HashGridGetVoxelSize(gridLevel, sharcParameters.hashGridParameters);
+        const float clampedRoughness = fminf(fmaxf(prd->radianceCache.pathRoughness, 0.0f), 0.99f);
+        const float alpha = clampedRoughness * clampedRoughness;
+        const float alpha2 = alpha * alpha;
+        const float footprint = cacheSegmentLength * sqrtf(0.5f * alpha2 / fmaxf(1.0f - alpha2, 1.0e-6f));
+
+        float3 cachedRadiance = {};
+        const bool cacheHit = SharcGetCachedRadiance(sharcParameters, hit, cachedRadiance, false);
+        if (cacheHit) {
+            cachedRadiance = zenoSharcSanitizeSignal(cachedRadiance);
+        }
+        if (sharcDebugMode) {
+            prd->radiance = cacheHit ? cachedRadiance : make_float3(0.0f);
+            prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::None);
+            prd->hit_type = DIFFUSE_HIT;
+            prd->done = true;
+            prd->depth++;
+            prd->volume_depth = 0;
+            return;
+        }
+        if (cacheSegmentLength > voxelSize * 1.7320508075688772f &&
+            footprint > voxelSize && cacheHit) {
+            prd->radiance = cachedRadiance;
+            prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::None);
+            prd->hit_type = DIFFUSE_HIT;
+            prd->done = true;
+            prd->depth++;
+            prd->volume_depth = 0;
+            return;
+        }
     }
 
     float is_refl;
@@ -628,9 +707,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
     coming_out_from_sss =  ((mats.thin<0.5f) && mats.subsurface>0 && isSS==false && istransmission);
     prd->sssDepth+=coming_out_from_sss?1:0;
-
-    prd->max_depth = ((prd->sssDepth==0 && isSS) || (prd->depth==0 && mats.isHair>0.5) || (prd->depth>0 && (mats.specTrans>0||mats.isHair>0)) )?32:prd->max_depth;
-
 
     if(mats.thin>0.5f || mats.doubleSide>0.5f)
     {
@@ -860,6 +936,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->_tmin_ = 0.0f;
 
     shadowPRD.ShadowNormal = dot(wi, vec3(prd->geometryNormal)) > 0 ? prd->geometryNormal:-prd->geometryNormal;
+
     {
         //shadowPRD.radiance += (coming_out_from_sss==true && mats.thin<0.5)? float3(mats.basecolor * mats.subsurface) * 0.05f:make_float3(0,0,0);
         mats.subsurface = coming_out_from_sss?0:mats.subsurface;
@@ -926,6 +1003,19 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     prd->radiance += CUR_TOTAL_TRANS  * mats.emission;
+    prd->radianceCache.positionWorld = wldPos + params.cam.eye;
+    prd->radianceCache.geometryNormalWorld = attrs.wldNorm;
+    prd->radianceCache.throughput = reflectance;
+    prd->radianceCache.materialDemodulation = sharcMaterialDemodulation;
+    prd->radianceCache.radianceDirectionWorld = -normalize(ray_dir);
+    prd->radianceCache.pathRoughness += isDiff ? 1.0f : mats.roughness;
+    prd->radianceCache.segmentLength = cacheSegmentLength;
+    prd->radianceCache.radianceDirectionWeight = (params.sharc.shEncoding != 0u && !isDiff)
+            ? 1.0f - fminf(fmaxf(mats.roughness, 0.0f), 1.0f) : 0.0f;
+    prd->radianceCache.event = static_cast<uint8_t>(RadianceCacheEvent::Surface);
+    prd->radianceCache.queryEligible =
+        cacheIncomingVacuum && mats.emissionOnly <= 0.5f &&
+        mats.flatness <= 0.5f && mats.isHair <= 0.5f && mats.subsurface <= 0.0f;
     prd->depth++;
     
     prd->volume_depth = 0;

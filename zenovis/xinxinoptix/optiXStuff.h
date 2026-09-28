@@ -92,10 +92,17 @@ inline raii<OptixPipeline>                  pipeline                 ;
 inline std::tuple<bool, bool>  raygen_config;
 inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+inline raii<OptixModule>                    sharc_update_raygen_module;
+inline raii<OptixProgramGroup>              sharc_update_raygen_prog_group;
+#endif
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
 
 inline raii<CUdeviceptr> d_raygen_record;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+inline raii<CUdeviceptr> d_sharc_update_raygen_record;
+#endif
 inline raii<CUdeviceptr> d_miss_records;
 inline raii<CUdeviceptr> d_hitgroup_records;
 inline raii<CUdeviceptr> d_callable_records;    
@@ -119,10 +126,16 @@ inline void resetPipelineProgramGroupsDirty(bool dirty = false);
 inline void resetAll() {
 
     raygen_prog_group.reset();
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    sharc_update_raygen_prog_group.reset();
+#endif
     radiance_miss_group.reset();
     occlusion_miss_group.reset();
 
     raygen_module.reset();
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    sharc_update_raygen_module.reset();
+#endif
 
     for (auto& task : garbageTasks) {
         task();
@@ -131,6 +144,9 @@ inline void resetAll() {
 
     d_miss_records.reset();
     d_raygen_record.reset();
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    d_sharc_update_raygen_record.reset();
+#endif
     d_hitgroup_records.reset();
     d_callable_records.reset();  
 
@@ -646,7 +662,7 @@ inline bool createModule(
         // printf("NVRTC Version %d.%d \n", major, minor);
     }
 
-    std::string flat_macros = ""; 
+    std::string flat_macros = "";
 
     for (auto &ele : macros) {
         compilerOptions.push_back(ele.c_str());
@@ -805,6 +821,30 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     ) );
     }
 }
+
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+inline void createSharcUpdateRaygenGroup(
+    OptixDeviceContext& context,
+    OptixModule& module)
+{
+    OptixProgramGroupOptions options = {};
+    OptixProgramGroupDesc desc = {};
+    desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+    desc.raygen.module = module;
+    desc.raygen.entryFunctionName = "__raygen__rg";
+
+    char log[2048] = {};
+    size_t log_size = sizeof(log);
+    OPTIX_CHECK_LOG(optixProgramGroupCreate(
+        context,
+        &desc,
+        1,
+        &options,
+        log,
+        &log_size,
+        &sharc_update_raygen_prog_group.reset()));
+}
+#endif
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
                 std::string kind, std::string entry, std::string nameIS, OptixModule* moduleIS,
@@ -1950,18 +1990,26 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     pipeline_link_options.maxTraceDepth            = 2;
 
     size_t num_progs = 3 + rtMaterialShaders.size() * 2;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    ++num_progs;
+#endif
     num_progs += rtMaterialShaders.size(); // callables;
 
     std::vector<OptixProgramGroup> program_groups(num_progs, {});
-    program_groups[0] = raygen_prog_group;
-    program_groups[1] = radiance_miss_group;
-    program_groups[2] = occlusion_miss_group;
+    size_t program_index = 0;
+    program_groups[program_index++] = raygen_prog_group;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    program_groups[program_index++] = sharc_update_raygen_prog_group;
+#endif
+    program_groups[program_index++] = radiance_miss_group;
+    program_groups[program_index++] = occlusion_miss_group;
+    const size_t hitgroup_begin = program_index;
     for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
-        program_groups[3 + i*2] = rtMaterialShaders[i].core->m_radiance_hit_group;
-        program_groups[3 + i*2 + 1] = rtMaterialShaders[i].core->m_occlusion_hit_group;
+        program_groups[hitgroup_begin + i*2] = rtMaterialShaders[i].core->m_radiance_hit_group;
+        program_groups[hitgroup_begin + i*2 + 1] = rtMaterialShaders[i].core->m_occlusion_hit_group;
 
-        program_groups[3 + 2 * rtMaterialShaders.size() + i] = rtMaterialShaders[i].callable_prg->prog_group;
+        program_groups[hitgroup_begin + 2 * rtMaterialShaders.size() + i] = rtMaterialShaders[i].callable_prg->prog_group;
     }
     char   log[2048];
     size_t sizeof_log = sizeof( log );
@@ -1985,6 +2033,9 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
 
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    OPTIX_CHECK( optixUtilAccumulateStackSizes( sharc_update_raygen_prog_group, &stack_sizes, pipeline ) );
+#endif
     OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes, pipeline ) );
     OPTIX_CHECK( optixUtilAccumulateStackSizes( occlusion_miss_group, &stack_sizes, pipeline ) );
     for(int i=0;i<rtMaterialShaders.size();i++)

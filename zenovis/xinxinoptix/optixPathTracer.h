@@ -5,6 +5,7 @@
 
 #include "LightBounds.h"
 #include "LightSelection.h"
+#include "SharcLaunchParameters.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -190,6 +191,7 @@ struct Params
     unsigned int width;
     unsigned int height;
     unsigned int samples_per_launch;
+    unsigned int max_bounce;
 
     CameraInfo cam;
 
@@ -254,6 +256,8 @@ struct Params
     bool  physical_camera_panorama_camera;
     bool  physical_camera_panorama_vr180;
     float physical_camera_pupillary_distance;
+
+    SharcLaunchParameters sharc;
 };
 
 
