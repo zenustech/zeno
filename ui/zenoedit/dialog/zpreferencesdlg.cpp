@@ -77,16 +77,12 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     QVariant varCacheRoot = inst.getValue(zsCacheDir);
     QVariant varCacheNum = inst.getValue(zsCacheNum);
     QVariant varAutoCleanCache = inst.getValue(zsCacheAutoClean);
-    QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
-    QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
 
     bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
     bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
     QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
     int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
-    double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
     bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;
-    bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
 
     CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
@@ -101,9 +97,6 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     m_pAutoCleanCache->setCheckState(bAutoCleanCache ? Qt::Checked : Qt::Unchecked);
     m_pAutoCleanCache->setEnabled(bEnableCache && !bTempCacheDir);
 
-    m_pEnableShiftChangeFOV = new QCheckBox;
-    m_pEnableShiftChangeFOV->setCheckState(bEnableShiftChangeFOV ? Qt::Checked : Qt::Unchecked);
-
     connect(m_pTempCacheDir, &QCheckBox::stateChanged, [=](bool state) {
         m_pPathEdit->setText("");
         m_pPathEdit->setEnabled(!state);
@@ -115,9 +108,6 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     m_pCacheNumSpinBox->setRange(1, 10000);
     m_pCacheNumSpinBox->setValue(cacheNum);
     m_pCacheNumSpinBox->setEnabled(bEnableCache);
-
-    m_pViewportPointSizeScaleSpinBox = new QDoubleSpinBox;
-    m_pViewportPointSizeScaleSpinBox->setValue(viewportPointSizeScale);
 
     m_pEnableCheckbox = new QCheckBox;
     m_pEnableCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
@@ -135,23 +125,6 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
         m_pAutoCleanCache->setEnabled(state && !m_pTempCacheDir->isChecked());
     });
 
-    m_pViewportSampleNumber = new QSpinBox;
-    m_pViewportSampleNumber->setRange(1, 10000);
-    m_pViewportSampleNumber->setValue(1);
-    {
-        auto main = zenoApp->getMainWindow();
-        ZASSERT_EXIT(main);
-        for (auto displaywid : main->viewports()) {
-            if (displaywid && !displaywid->isGLViewport()) {
-                if (auto vis = displaywid->getZenoVis()) {
-                    if (auto scene = vis->getSession()->get_scene()) {
-                        m_pViewportSampleNumber->setValue(scene->drawOptions->num_samples);
-                    }
-                }
-            }
-        }
-    }
-
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable cache")), 0, 0);
     pLayout->addWidget(m_pEnableCheckbox, 0, 1);
@@ -163,12 +136,6 @@ ZenoCachePane::ZenoCachePane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pPathEdit, 3, 1);
     pLayout->addWidget(new QLabel(tr("Cache auto clean up")), 4, 0);
     pLayout->addWidget(m_pAutoCleanCache, 4, 1);
-    pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 5, 0);
-    pLayout->addWidget(m_pEnableShiftChangeFOV, 5, 1);
-    pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 6, 0);
-    pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 6, 1);
-    pLayout->addWidget(new QLabel(tr("Viewport Sample Number")), 7, 0);
-    pLayout->addWidget(m_pViewportSampleNumber, 7, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 5);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -182,13 +149,189 @@ void ZenoCachePane::saveValue()
     inst.setValue(zsCacheDir, m_pPathEdit->text());
     inst.setValue(zsCacheNum, m_pCacheNumSpinBox->value());
     inst.setValue(zsCacheAutoClean, m_pAutoCleanCache->checkState() == Qt::Checked);
+}
+
+//Ray Tracing Pane
+ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
+{
+    auto& inst = ZenoSettingsManager::GetInstance();
+    QVariant varEnableShiftChangeFOV = inst.getValue(zsEnableShiftChangeFOV);
+    QVariant varViewportPointSizeScale = inst.getValue(zsViewportPointSizeScale);
+
+    bool bEnableShiftChangeFOV = varEnableShiftChangeFOV.isValid() ? varEnableShiftChangeFOV.toBool() : true;
+    double viewportPointSizeScale = varViewportPointSizeScale.isValid() ? varViewportPointSizeScale.toDouble() : 1;
+
+    m_pEnableShiftChangeFOV = new QCheckBox;
+    m_pEnableShiftChangeFOV->setCheckState(bEnableShiftChangeFOV ? Qt::Checked : Qt::Unchecked);
+
+    m_pViewportPointSizeScaleSpinBox = new QDoubleSpinBox;
+    m_pViewportPointSizeScaleSpinBox->setValue(viewportPointSizeScale);
+
+    m_pViewportSampleNumber = new QSpinBox;
+    m_pViewportSampleNumber->setRange(1, 10000);
+    m_pViewportSampleNumber->setValue(1);
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+    for (auto displaywid : main->viewports()) {
+        if (displaywid && !displaywid->isGLViewport()) {
+            if (auto vis = displaywid->getZenoVis()) {
+                if (auto scene = vis->getSession()->get_scene()) {
+                    m_pViewportSampleNumber->setValue(scene->drawOptions->num_samples);
+                }
+            }
+        }
+    }
+
+    auto settingOr = [&inst](const char* name, const QVariant& fallback) {
+        const QVariant value = inst.getValue(name);
+        return value.isValid() ? value : fallback;
+    };
+
+    m_pDenoise = new QCheckBox;
+    m_pDenoise->setChecked(settingOr(zsRayTracingDenoise, false).toBool());
+
+    m_pMaxBounce = new QSpinBox;
+    m_pMaxBounce->setRange(1, 64);
+    m_pMaxBounce->setValue(settingOr(zsRayTracingMaxBounce, 4).toInt());
+
+    m_pEnableSharc = new QCheckBox;
+    m_pEnableSharc->setChecked(settingOr(zsEnableSharc, true).toBool());
+
+    m_pSharcResetCache = new QPushButton(tr("Reset"), this);
+    m_pSharcResetCache->setAutoDefault(false);
+    m_pSharcResetCache->setToolTip(tr("Reset the active SHARC cache immediately"));
+    connect(m_pSharcResetCache, &QPushButton::clicked, this, []() {
+        auto main = zenoApp->getMainWindow();
+        if (!main) {
+            return;
+        }
+        for (auto displaywid : main->viewports()) {
+            if (displaywid) {
+                displaywid->resetSharcCache();
+            }
+        }
+    });
+
+    m_pSharcDownscaleFactor = new QSpinBox;
+    m_pSharcDownscaleFactor->setRange(1, 10);
+    m_pSharcDownscaleFactor->setValue(settingOr(zsSharcDownscaleFactor, 5).toInt());
+
+    m_pSharcSceneScale = new QDoubleSpinBox;
+    m_pSharcSceneScale->setDecimals(4);
+    m_pSharcSceneScale->setRange(0.0001, 1000000.0);
+    m_pSharcSceneScale->setValue(settingOr(zsSharcSceneScale, 50.0).toDouble());
+
+    m_pSharcAccumulationFrameNum = new QSpinBox;
+    m_pSharcAccumulationFrameNum->setRange(1, 1024);
+    m_pSharcAccumulationFrameNum->setValue(
+        settingOr(zsSharcAccumulationFrameNum, 20).toInt());
+
+    m_pSharcStaleFrameNum = new QSpinBox;
+    m_pSharcStaleFrameNum->setRange(1, 1024);
+    m_pSharcStaleFrameNum->setValue(settingOr(zsSharcStaleFrameNum, 60).toInt());
+
+    m_pSharcRoughnessMin = new QDoubleSpinBox;
+    m_pSharcRoughnessMin->setDecimals(3);
+    m_pSharcRoughnessMin->setSingleStep(0.05);
+    m_pSharcRoughnessMin->setRange(0.0, 1.0);
+    m_pSharcRoughnessMin->setValue(settingOr(zsSharcRoughnessMin, 0.4).toDouble());
+
+    m_pSharcDebugMode = new QCheckBox;
+    m_pSharcDebugMode->setChecked(settingOr(zsSharcDebugMode, false).toBool());
+
+    m_pSharcMaterialDemodulation = new QCheckBox;
+    m_pSharcMaterialDemodulation->setChecked(
+        settingOr(zsSharcMaterialDemodulation, false).toBool());
+    m_pSharcMaterialDemodulation->setToolTip(
+        tr("Experimental: requires a material response that exactly matches the active BSDF"));
+
+    m_pSharcSHEncoding = new QCheckBox;
+    m_pSharcSHEncoding->setChecked(settingOr(zsSharcSHEncoding, false).toBool());
+    m_pSharcSHEncoding->setToolTip(
+        tr("Preserve directional glossy/specular radiance in SHARC; increases cache memory and update cost"));
+
+    QGridLayout* pLayout = new QGridLayout(this);
+    pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
+    pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
+    pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 1, 0);
+    pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 1, 1);
+    pLayout->addWidget(new QLabel(tr("Viewport Sample Number")), 2, 0);
+    pLayout->addWidget(m_pViewportSampleNumber, 2, 1);
+    pLayout->addWidget(new QLabel(tr("Denoise")), 3, 0);
+    pLayout->addWidget(m_pDenoise, 3, 1);
+    pLayout->addWidget(new QLabel(tr("Max Bounce")), 4, 0);
+    pLayout->addWidget(m_pMaxBounce, 4, 1);
+    pLayout->addWidget(new QLabel(tr("Enable SHARC")), 5, 0);
+    pLayout->addWidget(m_pEnableSharc, 5, 1);
+    pLayout->addWidget(new QLabel(tr("Reset SHARC Cache")), 6, 0);
+    pLayout->addWidget(m_pSharcResetCache, 6, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Downscale Factor")), 7, 0);
+    pLayout->addWidget(m_pSharcDownscaleFactor, 7, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Scene Scale")), 8, 0);
+    pLayout->addWidget(m_pSharcSceneScale, 8, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Accumulation Frame Number")), 9, 0);
+    pLayout->addWidget(m_pSharcAccumulationFrameNum, 9, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Stale Frame Number")), 10, 0);
+    pLayout->addWidget(m_pSharcStaleFrameNum, 10, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Minimum Roughness")), 11, 0);
+    pLayout->addWidget(m_pSharcRoughnessMin, 11, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Debug Mode")), 12, 0);
+    pLayout->addWidget(m_pSharcDebugMode, 12, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Material Demodulation")), 13, 0);
+    pLayout->addWidget(m_pSharcMaterialDemodulation, 13, 1);
+    pLayout->addWidget(new QLabel(tr("SHARC Directional SH Encoding")), 14, 0);
+    pLayout->addWidget(m_pSharcSHEncoding, 14, 1);
+    QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
+    pLayout->addItem(pSpacerItem, 0, 2, 15);
+    pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+}
+
+void ZRayTracingPane::saveValue()
+{
+    auto& inst = ZenoSettingsManager::GetInstance();
+    const QVariant oldSceneScale = inst.getValue(zsSharcSceneScale);
+    const QVariant oldMaterialDemodulation = inst.getValue(zsSharcMaterialDemodulation);
+    const QVariant oldSHEncoding = inst.getValue(zsSharcSHEncoding);
+    const bool resetSharc =
+        (oldSceneScale.isValid() &&
+         oldSceneScale.toDouble() != m_pSharcSceneScale->value()) ||
+        (oldMaterialDemodulation.isValid() &&
+         oldMaterialDemodulation.toBool() != m_pSharcMaterialDemodulation->isChecked()) ||
+        (oldSHEncoding.isValid() ? oldSHEncoding.toBool() : false) !=
+            m_pSharcSHEncoding->isChecked();
+
     inst.setValue(zsEnableShiftChangeFOV, m_pEnableShiftChangeFOV->checkState() == Qt::Checked);
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
+    inst.setValue(zsRayTracingDenoise, m_pDenoise->isChecked());
+    inst.setValue(zsRayTracingMaxBounce, m_pMaxBounce->value());
+    inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
+    inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
+    inst.setValue(zsSharcSceneScale, m_pSharcSceneScale->value());
+    inst.setValue(zsSharcAccumulationFrameNum, m_pSharcAccumulationFrameNum->value());
+    inst.setValue(zsSharcStaleFrameNum, m_pSharcStaleFrameNum->value());
+    inst.setValue(zsSharcRoughnessMin, m_pSharcRoughnessMin->value());
+    inst.setValue(zsSharcDebugMode, m_pSharcDebugMode->isChecked());
+    inst.setValue(zsSharcMaterialDemodulation, m_pSharcMaterialDemodulation->isChecked());
+    inst.setValue(zsSharcSHEncoding, m_pSharcSHEncoding->isChecked());
+
     auto main = zenoApp->getMainWindow();
     ZASSERT_EXIT(main);
     for (auto displaywid : main->viewports()) {
         if (displaywid) {
             displaywid->setSampleNumber(m_pViewportSampleNumber->value());
+            displaywid->setRayTracingSettings(
+                m_pDenoise->isChecked(),
+                m_pMaxBounce->value(),
+                m_pEnableSharc->isChecked(),
+                resetSharc,
+                m_pSharcDownscaleFactor->value(),
+                static_cast<float>(m_pSharcSceneScale->value()),
+                m_pSharcAccumulationFrameNum->value(),
+                m_pSharcStaleFrameNum->value(),
+                static_cast<float>(m_pSharcRoughnessMin->value()),
+                m_pSharcDebugMode->isChecked(),
+                m_pSharcMaterialDemodulation->isChecked(),
+                m_pSharcSHEncoding->isChecked());
         }
     }
 }
@@ -355,6 +498,9 @@ void ZPreferencesTabWidget::initUI()
     //ZenoCache pane
     m_pZenoCachePane = new ZenoCachePane(this);
     addTab(m_pZenoCachePane, tr("Zeno Cache"));
+    //ray tracing pane
+    m_pRayTracingPane = new ZRayTracingPane(this);
+    addTab(m_pRayTracingPane, tr("Ray Tracing"));
     //shortcut panel
     m_pShortcutsPane = new ShortcutsPane(this);
     addTab(m_pShortcutsPane, tr("Shortcuts"));
@@ -371,6 +517,8 @@ void ZPreferencesTabWidget::saveSettings()
     m_pNASLOCPane->saveValue();
     //zeno cache
     m_pZenoCachePane->saveValue();
+    //ray tracing
+    m_pRayTracingPane->saveValue();
     //shortcuts
     m_pShortcutsPane->saveValue();
     //layout

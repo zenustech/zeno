@@ -785,6 +785,44 @@ void DisplayWidget::setSampleNumber(int sample_number)
     }
 }
 
+void DisplayWidget::resetSharcCache()
+{
+    if (!m_bGLView) {
+        m_optixView->resetSharcCache();
+    }
+}
+
+void DisplayWidget::setRayTracingSettings(
+    bool denoise,
+    int maxBounce,
+    bool enableSharc,
+    bool sharcResetCache,
+    int sharcDownscaleFactor,
+    float sharcSceneScale,
+    int sharcAccumulationFrameNum,
+    int sharcStaleFrameNum,
+    float sharcRoughnessMin,
+    bool sharcDebugMode,
+    bool sharcMaterialDemodulation,
+    bool sharcSHEncoding)
+{
+    if (!m_bGLView) {
+        m_optixView->setRayTracingSettings(
+            denoise,
+            maxBounce,
+            enableSharc,
+            sharcResetCache,
+            sharcDownscaleFactor,
+            sharcSceneScale,
+            sharcAccumulationFrameNum,
+            sharcStaleFrameNum,
+            sharcRoughnessMin,
+            sharcDebugMode,
+            sharcMaterialDemodulation,
+            sharcSHEncoding);
+    }
+}
+
 zenovis::ZOptixCameraSettingInfo DisplayWidget::getCamera() const
 {
     if (!m_bGLView) {

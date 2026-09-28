@@ -32,10 +32,31 @@ private:
     QCheckBox* m_pAutoCleanCache;
     QCheckBox* m_pEnableCheckbox;
     QSpinBox* m_pCacheNumSpinBox;
-    QDoubleSpinBox* m_pViewportPointSizeScaleSpinBox;
+};
 
+//Ray Tracing Pane
+class ZRayTracingPane : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit ZRayTracingPane(QWidget* parent = nullptr);
+    void saveValue();
+private:
     QCheckBox* m_pEnableShiftChangeFOV;
+    QDoubleSpinBox* m_pViewportPointSizeScaleSpinBox;
     QSpinBox* m_pViewportSampleNumber;
+    QCheckBox* m_pDenoise;
+    QSpinBox* m_pMaxBounce;
+    QCheckBox* m_pEnableSharc;
+    QPushButton* m_pSharcResetCache;
+    QSpinBox* m_pSharcDownscaleFactor;
+    QDoubleSpinBox* m_pSharcSceneScale;
+    QSpinBox* m_pSharcAccumulationFrameNum;
+    QSpinBox* m_pSharcStaleFrameNum;
+    QDoubleSpinBox* m_pSharcRoughnessMin;
+    QCheckBox* m_pSharcDebugMode;
+    QCheckBox* m_pSharcMaterialDemodulation;
+    QCheckBox* m_pSharcSHEncoding;
 };
 
 //NASLOCPane
@@ -84,6 +105,7 @@ private:
     ZLanguagePane* m_pLanguagePane;
     ZNASLOCPane* m_pNASLOCPane;
     ZenoCachePane* m_pZenoCachePane;
+    ZRayTracingPane* m_pRayTracingPane;
     ShortcutsPane* m_pShortcutsPane;
     ZLayoutPane* m_pLayoutPane;
 };

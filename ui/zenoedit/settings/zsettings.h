@@ -20,6 +20,17 @@ const char* const zsCacheAutoClean = "zencache-autoclean";
 const char* const zsEnableShiftChangeFOV = "viewport-EnableShiftChangeFOV";
 const char* const zsViewportPointSizeScale = "viewport-PointSizeScale";
 const char* const zsViewportUpdateMat = "viewport-UpdateMat";
+const char* const zsRayTracingDenoise = "rayTracingDenoise";
+const char* const zsRayTracingMaxBounce = "rayTracingMaxBounce";
+const char* const zsEnableSharc = "enableSharc";
+const char* const zsSharcDownscaleFactor = "sharcDownscaleFactor";
+const char* const zsSharcSceneScale = "sharcSceneScale";
+const char* const zsSharcAccumulationFrameNum = "sharcAccumulationFrameNum";
+const char* const zsSharcStaleFrameNum = "sharcStaleFrameNum";
+const char* const zsSharcRoughnessMin = "sharcRoughnessMin";
+const char* const zsSharcDebugMode = "sharcDebugMode";
+const char* const zsSharcMaterialDemodulation = "sharcMaterialDemodulation";
+const char* const zsSharcSHEncoding = "sharcSHEncoding";
 const char* const zsSubgraphType = "SubgraphType";
 
 //short cut

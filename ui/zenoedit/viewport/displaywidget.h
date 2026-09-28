@@ -82,6 +82,20 @@ public slots:
     void onSetCamera(zenovis::ZOptixCameraSettingInfo value);
     void onSetBackground(bool bShowBackground);
     void setSampleNumber(int sample_number);
+    void resetSharcCache();
+    void setRayTracingSettings(
+        bool denoise,
+        int maxBounce,
+        bool enableSharc,
+        bool sharcResetCache,
+        int sharcDownscaleFactor,
+        float sharcSceneScale,
+        int sharcAccumulationFrameNum,
+        int sharcStaleFrameNum,
+        float sharcRoughnessMin,
+        bool sharcDebugMode,
+        bool sharcMaterialDemodulation,
+        bool sharcSHEncoding);
     zenovis::ZOptixCameraSettingInfo getCamera() const;
 
 signals:

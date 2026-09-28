@@ -119,6 +119,40 @@ void ZOptixProcViewport::setNumSamples(int samples)
     }
 }
 
+void ZOptixProcViewport::resetSharcCache()
+{
+    m_worker->onResetSharcCache();
+}
+
+void ZOptixProcViewport::setRayTracingSettings(
+    bool denoise,
+    int maxBounce,
+    bool enableSharc,
+    bool sharcResetCache,
+    int sharcDownscaleFactor,
+    float sharcSceneScale,
+    int sharcAccumulationFrameNum,
+    int sharcStaleFrameNum,
+    float sharcRoughnessMin,
+    bool sharcDebugMode,
+    bool sharcMaterialDemodulation,
+    bool sharcSHEncoding)
+{
+    m_worker->onSetRayTracingSettings(
+        denoise,
+        maxBounce,
+        enableSharc,
+        sharcResetCache,
+        sharcDownscaleFactor,
+        sharcSceneScale,
+        sharcAccumulationFrameNum,
+        sharcStaleFrameNum,
+        sharcRoughnessMin,
+        sharcDebugMode,
+        sharcMaterialDemodulation,
+        sharcSHEncoding);
+}
+
 Zenovis* ZOptixProcViewport::getZenoVis() const
 {
     return m_zenovis;
