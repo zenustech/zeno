@@ -72,6 +72,20 @@ public slots:
     void onCleanUpView();
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
+    void onResetSharcCache();
+    void onSetRayTracingSettings(
+        bool denoise,
+        int maxBounce,
+        bool enableSharc,
+        bool sharcResetCache,
+        int sharcDownscaleFactor,
+        float sharcSceneScale,
+        int sharcAccumulationFrameNum,
+        int sharcStaleFrameNum,
+        float sharcRoughnessMin,
+        bool sharcDebugMode,
+        bool sharcMaterialDemodulation,
+        bool sharcSHEncoding);
     void onSendOptixMessage(QString);
     void on_send_clickinfo_to_optix(ClickPosInfo posinfo);
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
@@ -106,6 +120,20 @@ public:
     void setNumSamples(int samples);
     void showBackground(bool bShow);
     void setSampleNumber(int sample_number);
+    void resetSharcCache();
+    void setRayTracingSettings(
+        bool denoise,
+        int maxBounce,
+        bool enableSharc,
+        bool sharcResetCache,
+        int sharcDownscaleFactor,
+        float sharcSceneScale,
+        int sharcAccumulationFrameNum,
+        int sharcStaleFrameNum,
+        float sharcRoughnessMin,
+        bool sharcDebugMode,
+        bool sharcMaterialDemodulation,
+        bool sharcSHEncoding);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
@@ -147,6 +175,20 @@ signals:
     void sig_cleanUpView();
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
+    void sig_resetSharcCache();
+    void sig_setRayTracingSettings(
+        bool denoise,
+        int maxBounce,
+        bool enableSharc,
+        bool sharcResetCache,
+        int sharcDownscaleFactor,
+        float sharcSceneScale,
+        int sharcAccumulationFrameNum,
+        int sharcStaleFrameNum,
+        float sharcRoughnessMin,
+        bool sharcDebugMode,
+        bool sharcMaterialDemodulation,
+        bool sharcSHEncoding);
     void sig_setdata_on_optix_thread(float, float, float, int, bool, bool, bool, bool, float);
 
     void sig_viewportSendToOutline(QString);

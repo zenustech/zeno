@@ -100,6 +100,25 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     ZASSERT_EXIT(session);
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
+
+    auto& settings = ZenoSettingsManager::GetInstance();
+    auto settingOr = [&settings](const char* name, const QVariant& fallback) {
+        const QVariant value = settings.getValue(name);
+        return value.isValid() ? value : fallback;
+    };
+    scene->drawOptions->denoise = settingOr(zsRayTracingDenoise, false).toBool();
+    auto& userData = zeno::getSession().userData();
+    userData.set2("optix-max-bounce", settingOr(zsRayTracingMaxBounce, 4).toInt());
+    userData.set2("optix-sharc", settingOr(zsEnableSharc, true).toBool());
+    userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
+    userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
+    userData.set2("optix-sharc-accumulation-frames", settingOr(zsSharcAccumulationFrameNum, 20).toInt());
+    userData.set2("optix-sharc-stale-frames", settingOr(zsSharcStaleFrameNum, 60).toInt());
+    userData.set2("optix-sharc-roughness-min", settingOr(zsSharcRoughnessMin, 0.4).toFloat());
+    userData.set2("optix-sharc-debug", settingOr(zsSharcDebugMode, false).toBool());
+    userData.set2("optix-sharc-material-demodulation", settingOr(zsSharcMaterialDemodulation, false).toBool());
+    userData.set2("optix-sharc-sh-encoding", settingOr(zsSharcSHEncoding, false).toBool());
+
     auto engin = scene->renderMan->getEngine("optx");
     engin->fun = [this](std::string content) {
         Json json = Json::parse(content);
@@ -501,6 +520,59 @@ void OptixWorker::onSetSampleNumber(int sample_number) {
     updateFrame();
 }
 
+void OptixWorker::onResetSharcCache()
+{
+    zeno::getSession().userData().set2("optix-sharc-reset", true);
+    if (m_zenoVis) {
+        if (auto session = m_zenoVis->getSession()) {
+            if (auto scene = session->get_scene()) {
+                scene->drawOptions->needRefresh = true;
+            }
+        }
+    }
+    updateFrame();
+}
+
+void OptixWorker::onSetRayTracingSettings(
+    bool denoise,
+    int maxBounce,
+    bool enableSharc,
+    bool sharcResetCache,
+    int sharcDownscaleFactor,
+    float sharcSceneScale,
+    int sharcAccumulationFrameNum,
+    int sharcStaleFrameNum,
+    float sharcRoughnessMin,
+    bool sharcDebugMode,
+    bool sharcMaterialDemodulation,
+    bool sharcSHEncoding)
+{
+    ZASSERT_EXIT(m_zenoVis);
+    auto session = m_zenoVis->getSession();
+    ZASSERT_EXIT(session);
+    auto scene = session->get_scene();
+    ZASSERT_EXIT(scene);
+
+    scene->drawOptions->denoise = denoise;
+    scene->drawOptions->needRefresh = true;
+
+    auto& userData = zeno::getSession().userData();
+    userData.set2("optix-max-bounce", maxBounce);
+    userData.set2("optix-sharc", enableSharc);
+    if (sharcResetCache) {
+        userData.set2("optix-sharc-reset", true);
+    }
+    userData.set2("optix-sharc-update-spacing", sharcDownscaleFactor);
+    userData.set2("optix-sharc-scene-scale", sharcSceneScale);
+    userData.set2("optix-sharc-accumulation-frames", sharcAccumulationFrameNum);
+    userData.set2("optix-sharc-stale-frames", sharcStaleFrameNum);
+    userData.set2("optix-sharc-roughness-min", sharcRoughnessMin);
+    userData.set2("optix-sharc-debug", sharcDebugMode);
+    userData.set2("optix-sharc-material-demodulation", sharcMaterialDemodulation);
+    userData.set2("optix-sharc-sh-encoding", sharcSHEncoding);
+    updateFrame();
+}
+
 void OptixWorker::onSendOptixMessage(QString msg_str) {
     ZASSERT_EXIT(m_zenoVis);
     auto session = m_zenoVis->getSession();
@@ -737,6 +809,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_cleanUpView, m_worker, &OptixWorker::onCleanUpView);
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
+    connect(this, &ZOptixViewport::sig_resetSharcCache, m_worker, &OptixWorker::onResetSharcCache);
+    connect(this, &ZOptixViewport::sig_setRayTracingSettings, m_worker, &OptixWorker::onSetRayTracingSettings);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
     connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
@@ -933,6 +1007,40 @@ void ZOptixViewport::showBackground(bool bShow)
 void ZOptixViewport::setSampleNumber(int sample_number)
 {
     emit sig_setSampleNumber(sample_number);
+}
+
+void ZOptixViewport::resetSharcCache()
+{
+    emit sig_resetSharcCache();
+}
+
+void ZOptixViewport::setRayTracingSettings(
+    bool denoise,
+    int maxBounce,
+    bool enableSharc,
+    bool sharcResetCache,
+    int sharcDownscaleFactor,
+    float sharcSceneScale,
+    int sharcAccumulationFrameNum,
+    int sharcStaleFrameNum,
+    float sharcRoughnessMin,
+    bool sharcDebugMode,
+    bool sharcMaterialDemodulation,
+    bool sharcSHEncoding)
+{
+    emit sig_setRayTracingSettings(
+        denoise,
+        maxBounce,
+        enableSharc,
+        sharcResetCache,
+        sharcDownscaleFactor,
+        sharcSceneScale,
+        sharcAccumulationFrameNum,
+        sharcStaleFrameNum,
+        sharcRoughnessMin,
+        sharcDebugMode,
+        sharcMaterialDemodulation,
+        sharcSHEncoding);
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)

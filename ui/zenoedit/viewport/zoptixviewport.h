@@ -24,6 +24,20 @@ public:
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
+    void resetSharcCache();
+    void setRayTracingSettings(
+        bool denoise,
+        int maxBounce,
+        bool enableSharc,
+        bool sharcResetCache,
+        int sharcDownscaleFactor,
+        float sharcSceneScale,
+        int sharcAccumulationFrameNum,
+        int sharcStaleFrameNum,
+        float sharcRoughnessMin,
+        bool sharcDebugMode,
+        bool sharcMaterialDemodulation,
+        bool sharcSHEncoding);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
