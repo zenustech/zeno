@@ -103,6 +103,7 @@ private:
 
     uint16_t mesh_sbt_max = 0;
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
+    bool lightIasDirty = false;
     
 public:
     uint32_t frameid;
@@ -117,6 +118,15 @@ public:
                 return current != shader_indice_table.end() && current->second == item.second;
             });
         if (unchanged) return;
+
+        const auto lightIndex = [](const auto& indices, ShaderMark mark) {
+            const auto it = indices.find(std::tuple{std::string("Light"), mark});
+            return it == indices.end() ? UINT16_MAX : it->second;
+        };
+        // The light GAS can stay identical while a new material changes the
+        // light instance's SBT offset. That still requires a light IAS update.
+        lightIasDirty |= lightIndex(shader_indice_table, ShaderMark::Mesh) != lightIndex(table, ShaderMark::Mesh)
+            || lightIndex(shader_indice_table, ShaderMark::Sphere) != lightIndex(table, ShaderMark::Sphere);
 
         shader_indice_table = table;
         candidateBindingsDirty = true;
@@ -282,8 +292,14 @@ public:
 
     LightsWrapper lightsWrapper;
 
+    void markLightIASDirty() { lightIasDirty = true; }
+    bool hasDirtyLightIAS() const { return lightIasDirty; }
+
     void prepare_light_ias(OptixDeviceContext& context) {
 
+        // Light/Mesh and Light/Sphere already have separate SBT records.
+        // Switching shape replaces the relevant GAS instance and selects its
+        // existing record via sbtOffset; no SBT upload is needed.
         std::vector<OptixInstance> optix_instances;
         optix_instances.reserve(3);
 
@@ -292,7 +308,8 @@ public:
             OptixInstance opinstance {};
 
             auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
-            auto shader_index = shader_indice_table[combinedID];
+            // A missing light hit group must fail here, not silently bind SBT 0.
+            auto shader_index = shader_indice_table.at(combinedID);
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = 0;
@@ -309,7 +326,7 @@ public:
             OptixInstance opinstance {};
 
             auto combinedID = std::tuple(std::string("Light"), ShaderMark::Mesh);
-            auto shader_index = shader_indice_table[combinedID];
+            auto shader_index = shader_indice_table.at(combinedID);
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = 1;
@@ -326,7 +343,7 @@ public:
             OptixInstance opinstance {};
 
             auto combinedID = std::tuple(std::string("Light"), ShaderMark::Sphere);
-            auto shader_index = shader_indice_table[combinedID];
+            auto shader_index = shader_indice_table.at(combinedID);
 
             opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
             opinstance.instanceId = 2;
@@ -598,6 +615,10 @@ public:
     inline void make_scene(OptixDeviceContext& context, float3 cam, bool camera_only) {
 
         this->cameraPos = cam;
+        if (lightIasDirty) {
+            prepare_light_ias(context);
+            lightIasDirty = false;
+        }
         auto gather = [&]() {
             
             auto CameraSapceMatrix = IdentityMatrix;

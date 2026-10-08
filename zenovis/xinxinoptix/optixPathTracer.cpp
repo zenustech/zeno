@@ -1304,6 +1304,13 @@ static void buildLightTrianglesGAS( PathTracerState& state, std::vector<float3>&
     buildXAS(OptixUtil::context, accel_options, triangle_input, bufferGas, handleGas);
 }
 
+template <class T>
+static bool sameLightGeometry(const std::vector<T>& lhs, const std::vector<T>& rhs)
+{
+    return lhs.size() == rhs.size()
+        && (lhs.empty() || std::memcmp(lhs.data(), rhs.data(), lhs.size() * sizeof(T)) == 0);
+}
+
 void buildLightTree() {
     state.lightSelectionDirty = true;
     camera_changed = true;
@@ -1320,8 +1327,13 @@ void buildLightTree() {
     state.params.lights = 0llu;
     state.params.num_lights = 0u;
 
+    // Keep the old GAS/IAS buffers until we know which geometry changed. In
+    // particular, an intensity-only edit must not invalidate a traversable.
+    LightsWrapper previousLights = std::move(defaultScene.lightsWrapper);
     auto& lightsWrapper = defaultScene.lightsWrapper;
     lightsWrapper.reset();
+    lightsWrapper.lightIasBuffer = std::move(previousLights.lightIasBuffer);
+    lightsWrapper.lightIasHandle = previousLights.lightIasHandle;
 
     std::vector<LightDat*> sortedLights; 
     sortedLights.reserve(lightdats.size());
@@ -1498,15 +1510,39 @@ void buildLightTree() {
         }
     }
 
+    // A light IAS depends on geometry and SBT offsets, not on radiance. Reuse
+    // unchanged GAS handles and rebuild only the changed shape groups.
+    const bool planesChanged = !sameLightGeometry(lightsWrapper._planeLightGeo, previousLights._planeLightGeo);
+    const bool spheresChanged = !sameLightGeometry(lightsWrapper._sphereLightGeo, previousLights._sphereLightGeo);
+    const bool trianglesChanged = !sameLightGeometry(lightsWrapper._triangleLightGeo, previousLights._triangleLightGeo);
+
+    if (planesChanged) {
+        buildLightPlanesGAS(state, lightsWrapper._planeLightGeo, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
+    } else {
+        lightsWrapper.lightPlanesGasBuffer = std::move(previousLights.lightPlanesGasBuffer);
+        lightsWrapper.lightPlanesGas = previousLights.lightPlanesGas;
+    }
+    if (spheresChanged) {
+        buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
+    } else {
+        lightsWrapper.lightSpheresGasBuffer = std::move(previousLights.lightSpheresGasBuffer);
+        lightsWrapper.lightSpheresGas = previousLights.lightSpheresGas;
+    }
+    if (trianglesChanged) {
+        buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
+    } else {
+        lightsWrapper.lightTrianglesGasBuffer = std::move(previousLights.lightTrianglesGasBuffer);
+        lightsWrapper.lightTrianglesGas = previousLights.lightTrianglesGas;
+    }
+    if (planesChanged || spheresChanged || trianglesChanged) {
+        defaultScene.markLightIASDirty();
+    }
+
     if (lightsWrapper.g_lights.empty()) { return; }
 
     state.params.firstRectLightIdx = firstRectLightIdx;
     state.params.firstSphereLightIdx = firstSphereLightIdx;
     state.params.firstTriangleLightIdx = firstTriangleLightIdx;
-
-    buildLightPlanesGAS(state, lightsWrapper._planeLightGeo, lightsWrapper.lightPlanesGasBuffer, lightsWrapper.lightPlanesGas);
-    buildLightSpheresGAS(state, lightsWrapper._sphereLightGeo, lightsWrapper.lightSpheresGasBuffer, lightsWrapper.lightSpheresGas);
-    buildLightTrianglesGAS(state, lightsWrapper._triangleLightGeo, lightsWrapper.lightTrianglesGasBuffer, lightsWrapper.lightTrianglesGas);
 
     CUDA_CHECK( cudaMallocAsync(
         reinterpret_cast<void**>( &state.finite_lights_ptr.reset() ),
@@ -1544,7 +1580,6 @@ void buildLightTree() {
         state.params.lightTreeSampler = lightTreeDummyPtr.handle;
     }
 
-    defaultScene.prepare_light_ias(OptixUtil::context);
 }
 
 using ShaderCoreKey = std::tuple<std::string, ShaderMark>;
@@ -1700,22 +1735,24 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
         
     } // refresh
 
-    OptixUtil::_compile_group.run([&] () {
-        auto shader_string = sutil::lookupIncFile("Light.cu");
-
-        if (requireTriangLight) {
+    if (requireTriangLight && (refresh || !findShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Mesh}))) {
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("Light.cu");
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->loadProgram(2);
             storeShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Mesh}, shaderCore);
-        }
+        });
+    }
 
-        if (requireSphereLight) {
+    if (requireSphereLight && (refresh || !findShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Sphere}))) {
+        OptixUtil::_compile_group.run([&] () {
+            auto shader_string = sutil::lookupIncFile("Light.cu");
             auto shaderCore = std::make_shared<OptixUtil::OptixShaderCore>(shader_string, "__closesthit__radiance", "__anyhit__shadow_cutout");
             shaderCore->moduleIS = &OptixUtil::sphere_ism;
             shaderCore->loadProgram(3);
             storeShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Sphere}, shaderCore);
-        }
-    });
+        });
+    }
 
     OptixUtil::_compile_group.wait();
 
@@ -1915,6 +1952,13 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
     if (defaultScene.consumeVolumeSceneBindingsDirty()) {
         rebuildSceneAndBenchmark();
         state.params.handle = defaultScene.rootNode.handle;
+    }
+
+    // A new geometric light adds root IAS -> light IAS -> GAS traversal.
+    // Gather it before createPipeline reads maxNodeDepth, not at the first
+    // launch after the pipeline has already been sized for a point light.
+    if (defaultScene.hasDirtyLightIAS()) {
+        updateRootIAS();
     }
 
     if (shaderDirty) {

@@ -2317,9 +2317,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             };
             
             if ( matNeedUpdate ) {
-                if (lightNeedUpdate) {
-                    ShaderDirty = true;
-                }
                 required_shader_names = defaultScene.prepareShaderSet();
 
                 dirtyShaderNames.clear();
@@ -2397,6 +2394,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         requireSphereLight = true;
                     else if (shape_enum != zeno::LightShape::Point)
                         requireTriangLight = true;
+                }
+
+                // A point light has no GAS, but it can become a rect or sphere
+                // during RunLightCamera. Reserve both hit groups, their SBT
+                // slots, and the sphere builtin IS as soon as any finite light
+                // exists, so later shape changes do not relink the pipeline.
+                if (!xinxinoptix::get_lightdats().empty()) {
+                    requireTriangLight = true;
+                    requireSphereLight = true;
                 }
                 
                 tbb::task_group texture_group;

@@ -1979,12 +1979,31 @@ struct OptixShaderWrapper
 
 inline std::vector<OptixShaderWrapper> rtMaterialShaders;//just have an arry of shaders
 
+struct PipelineStackRequirements {
+    uint32_t fromTraversal = 0;
+    uint32_t fromState = 0;
+    uint32_t continuation = 0;
+};
+inline PipelineStackRequirements pipelineStackRequirements;
+
 inline void createPipeline(uint tree_depth, bool shaderDirty)
 {
     auto shader_count = rtMaterialShaders.size();
     auto newMark = PipelineMark {tree_depth, shader_count};
-    if (!shaderDirty && newMark == pipelineMark)
+    if (!shaderDirty && pipeline.handle && newMark == pipelineMark)
         return;
+
+    // Only the traversable depth changed; the linked program groups and their
+    // stack requirements are unchanged.
+    if (!shaderDirty && pipeline.handle && std::get<1>(newMark) == std::get<1>(pipelineMark)) {
+        OPTIX_CHECK( optixPipelineSetStackSize(pipeline,
+                    pipelineStackRequirements.fromTraversal,
+                    pipelineStackRequirements.fromState,
+                    pipelineStackRequirements.continuation,
+                    tree_depth) );
+        pipelineMark = newMark;
+        return;
+    }
 
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
@@ -2014,11 +2033,7 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     char   log[2048];
     size_t sizeof_log = sizeof( log );
 
-    if (std::get<0>(pipelineMark)!=0)
-    {
-        OPTIX_CHECK_LOG(optixPipelineDestroy(pipeline));
-        pipelineMark = newMark;
-    }
+    pipeline.reset();
     OPTIX_CHECK_LOG( optixPipelineCreate(
                 context,
                 &pipeline_compile_options,
@@ -2029,7 +2044,6 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
                 &sizeof_log,
                 &pipeline
                 ) );
-    pipelineMark = newMark;
 
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
@@ -2039,7 +2053,7 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     OPTIX_CHECK( optixUtilAccumulateStackSizes( radiance_miss_group,  &stack_sizes, pipeline ) );
     OPTIX_CHECK( optixUtilAccumulateStackSizes( occlusion_miss_group, &stack_sizes, pipeline ) );
     for(int i=0;i<rtMaterialShaders.size();i++)
-    {        
+    {
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_radiance_hit_group, &stack_sizes, pipeline ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_occlusion_hit_group, &stack_sizes, pipeline ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].callable_prg->prog_group, &stack_sizes, pipeline ) );
@@ -2047,27 +2061,25 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;
     uint32_t max_dc_depth = 1;
-    uint32_t direct_callable_stack_size_from_traversal;
-    uint32_t direct_callable_stack_size_from_state;
-    uint32_t continuation_stack_size;
     OPTIX_CHECK( optixUtilComputeStackSizes(
                 &stack_sizes,
                 max_trace_depth,
                 max_cc_depth,
                 max_dc_depth,
-                &direct_callable_stack_size_from_traversal,
-                &direct_callable_stack_size_from_state,
-                &continuation_stack_size
+                &pipelineStackRequirements.fromTraversal,
+                &pipelineStackRequirements.fromState,
+                &pipelineStackRequirements.continuation
                 ) );
 
     const uint32_t max_traversal_depth = tree_depth;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
-                direct_callable_stack_size_from_traversal,
-                direct_callable_stack_size_from_state,
-                continuation_stack_size,
+                pipelineStackRequirements.fromTraversal,
+                pipelineStackRequirements.fromState,
+                pipelineStackRequirements.continuation,
                 max_traversal_depth
                 ) );
+    pipelineMark = newMark;
 }
 
 
