@@ -161,19 +161,19 @@ extern "C" __global__ void __closesthit__radiance()
 
 		if (prd->depth > 0) {
 
-			auto rect = light.rect;
-			float2 uvScale, uvOffset;
-			bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, rect.normal, 
-											shadingP, light.spreadMajor, uvScale, uvOffset);
-			// if (!valid) { return; }
-
-			SphericalRect squad;
-			SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
-			lsr.PDF = 1.0f / squad.S;
-			if (!isfinite(lsr.PDF)) {
-				return;
-			}
-			lsr.uv = uvOffset + lsr.uv * uvScale;
+            if (lightShape == zeno::LightShape::Ellipse) {
+                lsr.PDF = light.rect.ellipse().SpreadPdfAsLight(shadingP, lsr.uv, lightDistance, light.spreadMajor);
+            } else {
+                auto rect = light.rect;
+                float2 uvScale, uvOffset;
+                SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY,
+                                rect.normal, shadingP, light.spreadMajor, uvScale, uvOffset);
+                SphericalRect squad;
+                SphericalRectInit(squad, shadingP, rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY);
+                lsr.PDF = 1.0f / squad.S;
+                if (!isfinite(lsr.PDF)) return;
+                lsr.uv = uvOffset + lsr.uv * uvScale;
+            }
 		}
 
 		lsr.n = light.N;

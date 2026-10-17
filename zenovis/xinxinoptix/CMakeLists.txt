@@ -28,6 +28,9 @@ target_sources(zenovis PRIVATE
   optixCommon.h
   Portal.h
   Shape.h
+  EllipseShape.h
+  SphericalEllipse.h
+  SphericalEllipseLut.h
   XAS.h
   BCX.h
 
@@ -341,6 +344,9 @@ set(FILE_LIST
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
     ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@EllipseShape.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SphericalEllipse.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SphericalEllipseLut.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Light.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@Light.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu

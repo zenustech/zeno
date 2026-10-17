@@ -503,20 +503,8 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
                     break;
                 }
                 case zeno::LightShape::Ellipse: { 
-
-                    auto rect = light.rect;
-                    float2 uvScale, uvOffset;
-                    bool valid = SpreadClampRect(rect.v, rect.axisX, rect.lenX, rect.axisY, rect.lenY, 
-                                                rect.normal, shadingP, 
-                                                light.spreadMajor, uvScale, uvOffset, light.rect.isEllipse);
-                    if (!valid) return;
-
-                    rect.isEllipse = false; // disable ellipse test for sub rect
-                    rect.SampleAsLight(&lsr, uu, shadingP);
-                    lsr.uv = uvOffset + lsr.uv * uvScale;
-                    if (length(lsr.uv-0.5f) > 0.5f) { 
-                        return; // not inside ellipse
-                    }
+                    light.rect.ellipse().SampleWithSpread(&lsr, uu, shadingP, light.spreadMajor);
+                    if (!(lsr.PDF > 0.0f)) return;
                     break;
                 }   
                 case zeno::LightShape::Sphere: {
