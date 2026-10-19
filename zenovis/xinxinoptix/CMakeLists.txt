@@ -5,6 +5,8 @@ if (MSVC)
 endif()
 
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(${CMAKE_SOURCE_DIR}/projects/rtxmg rtxmg)
+target_link_libraries(zenovis PRIVATE zeno_cluster_runtime)
 target_sources(zenovis PRIVATE
   ChiefDesignerEXR.cpp
   ChiefDesignerEXR.h
@@ -271,6 +273,7 @@ else()
 endif()
 
 set(FILE_LIST
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterDevice.h
     ${OPTIX_PATH}/include/@optix.h
     ${OPTIX_PATH}/include/@optix_types.h
     ${OPTIX_PATH}/include/@optix_host.h

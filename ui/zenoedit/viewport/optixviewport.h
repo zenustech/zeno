@@ -73,6 +73,8 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onResetSharcCache();
+    void onSetClasDebugView(int view);
+    void onSetClasHistorySettings(bool keep, int samples);
     void onSetRayTracingSettings(
         bool denoise,
         int maxBounce,
@@ -121,6 +123,8 @@ public:
     void showBackground(bool bShow);
     void setSampleNumber(int sample_number);
     void resetSharcCache();
+    void setClasDebugView(int view);
+    void setClasHistorySettings(bool keep, int samples);
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,
@@ -176,6 +180,8 @@ signals:
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
     void sig_resetSharcCache();
+    void sig_setClasDebugView(int view);
+    void sig_setClasHistorySettings(bool keep, int samples);
     void sig_setRayTracingSettings(
         bool denoise,
         int maxBounce,

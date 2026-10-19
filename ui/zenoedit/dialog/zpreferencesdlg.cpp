@@ -9,6 +9,7 @@
 #include <zenoui/comctrl/zlabel.h>
 #include "viewport/displaywidget.h"
 #include <zenovis/DrawOptions.h>
+#include <algorithm>
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)
@@ -250,6 +251,39 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSharcSHEncoding->setToolTip(
         tr("Preserve directional glossy/specular radiance in SHARC; increases cache memory and update cost"));
 
+    m_pClasDebugView = new QComboBox;
+    m_pClasDebugView->addItems({tr("Shaded"), tr("LOD depth"), tr("Cluster IDs"), tr("Coverage"),
+        tr("Geometric normals"), tr("Shading normals (raw)"), tr("Front / back facing"), tr("Normal agreement")});
+    m_pClasDebugView->setToolTip(tr("Normal diagnostics show raw baked normals before the gray material's orientation and coarse-LOD normal fallback."));
+    m_pClasDebugView->setCurrentIndex(std::clamp(settingOr(zsClasDebugView, 0).toInt(), 0, 7));
+    auto applyClas = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasDebugView, m_pClasDebugView->currentIndex());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasDebugView(m_pClasDebugView->currentIndex());
+    };
+    connect(m_pClasDebugView, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [applyClas](int) { applyClas(); });
+    m_pClasKeepHistory = new QCheckBox;
+    m_pClasKeepHistory->setChecked(settingOr(zsClasKeepHistory, false).toBool());
+    m_pClasKeepHistory->setToolTip(tr("Only affects accumulated samples. CLAS LOD selection and streaming always run. Experimental viewport mode: fade older LOD samples and adapt SHARC while refinement settles. Offline rendering remains strict."));
+    m_pClasHistoryLimit = new QSpinBox;
+    m_pClasHistoryLimit->setRange(4, 256);
+    m_pClasHistoryLimit->setValue(std::clamp(settingOr(zsClasHistoryLimit, 16).toInt(), 4, 256));
+    m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+    m_pClasHistoryLimit->setToolTip(tr("Maximum effective sample history during refinement; normal progressive averaging resumes after this many settled samples."));
+    auto applyHistory = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasKeepHistory, m_pClasKeepHistory->isChecked());
+        settings.setValue(zsClasHistoryLimit, m_pClasHistoryLimit->value());
+        m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasHistorySettings(m_pClasKeepHistory->isChecked(), m_pClasHistoryLimit->value());
+    };
+    connect(m_pClasKeepHistory, &QCheckBox::toggled, this, [applyHistory](bool) { applyHistory(); });
+    connect(m_pClasHistoryLimit, QOverload<int>::of(&QSpinBox::valueChanged), this, [applyHistory](int) { applyHistory(); });
+
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
     pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
@@ -281,8 +315,14 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pSharcMaterialDemodulation, 13, 1);
     pLayout->addWidget(new QLabel(tr("SHARC Directional SH Encoding")), 14, 0);
     pLayout->addWidget(m_pSharcSHEncoding, 14, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS debug view")), 15, 0);
+    pLayout->addWidget(m_pClasDebugView, 15, 1);
+    pLayout->addWidget(new QLabel(tr("Keep accumulation during CLAS LOD updates")), 16, 0);
+    pLayout->addWidget(m_pClasKeepHistory, 16, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS refinement history samples")), 17, 0);
+    pLayout->addWidget(m_pClasHistoryLimit, 17, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
-    pLayout->addItem(pSpacerItem, 0, 2, 15);
+    pLayout->addItem(pSpacerItem, 0, 2, 18);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 

@@ -202,7 +202,9 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = optixLogCallbackLevel();
-    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
+    const char* validate = std::getenv("ZENO_OPTIX_VALIDATE");
+    options.validationMode            = validate && std::strcmp(validate,"1")==0
+        ? OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL : OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
@@ -228,11 +230,13 @@ inline void configureAsyncMemoryPool()
         static_cast<double>(free_bytes) / (1024.0 * 1024.0 * 1024.0));
 }
 
-inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
+inline bool CachedClusteredGeometry = false;
+inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags, bool clusteredGeometry=false) {
 
     auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
-    if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
+    if (CachedPrimitiveTypeFlags != UINT_MAX && enough && CachedClusteredGeometry==clusteredGeometry) { return false; }
     CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+    CachedClusteredGeometry=clusteredGeometry;
 
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -245,6 +249,7 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
     //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
     pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
     pipeline_compile_options.allowOpacityMicromaps = true;
+    pipeline_compile_options.allowClusteredGeometry = clusteredGeometry;
 
     OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
@@ -633,6 +638,8 @@ inline bool createModule(
         "-lineinfo" //"-G"//"--dopt=on",
     #endif
     };
+    if (const char* lineinfo = std::getenv("ZENO_OPTIX_SHADER_LINEINFO"); lineinfo && lineinfo[0] == '1')
+        compilerOptions.push_back("--generate-line-info");
     if (compiled_ptx == nullptr) {
         compilerOptions.push_back("--optix-ir");
     }

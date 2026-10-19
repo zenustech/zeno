@@ -48,6 +48,7 @@
 #include "curve/optixCurve.h"
 
 #include "LightsWrapper.h"
+#include "ClusterRuntime.h"
 
 #include <parallel_hashmap/phmap.h>
 
@@ -106,6 +107,43 @@ private:
     bool lightIasDirty = false;
     
 public:
+    std::shared_ptr<zeno::cluster::Runtime> clusterAsset;
+    std::string clusterAssetKey, clusterAssetManifest, clusterAssetRevision;
+    zeno::cluster::RuntimeSettings clusterSettings;
+    bool clusterRootDirty = false;
+    bool clusterUnloadPending = false;
+    void preloadClusterAsset(const std::string& key,const std::string& path,const std::string& revision,
+                             zeno::cluster::RuntimeSettings settings) {
+        if(clusterAsset && clusterAssetManifest==path && clusterAssetRevision==revision &&
+           clusterSettings.geometryBytes==settings.geometryBytes && clusterSettings.clasBytes==settings.clasBytes &&
+           clusterSettings.pixelError==settings.pixelError && clusterSettings.loadsPerFrame==settings.loadsPerFrame) {
+            clusterAssetKey=key;clusterUnloadPending=false;return;
+        }
+        clusterAsset=std::make_shared<zeno::cluster::Runtime>(std::filesystem::u8path(path),settings);
+        clusterAssetKey=key;clusterAssetManifest=path;clusterAssetRevision=revision;clusterSettings=settings;
+        clusterUnloadPending=false;
+        clusterRootDirty=true;
+        maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
+    }
+    void finalizeClusterAssetRegistration() {
+        // GraphicsManager replaces frame descriptors in two insert passes.
+        // Delay deletion until both passes finish so a refreshed reference can
+        // retain its renderer-owned residency instead of reloading every frame.
+        if(!clusterUnloadPending)return;
+        clusterAsset.reset();clusterAssetKey.clear();clusterAssetManifest.clear();clusterAssetRevision.clear();
+        clusterRootDirty=true;clusterUnloadPending=false;
+    }
+    bool updateClusters(const Params& params,bool interactive) {
+        if(!clusterAsset)return false;
+        const auto index=shader_indice_table.at(std::make_tuple(std::string(""),ShaderMark::Mesh));
+        const float projection=float(params.height)*params.cam.focal_length/std::max(params.cam.height,0.001f);
+        if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1')
+            zeno::log_info("CLAS view: eye={},{},{}, projection={}",
+                params.cam.eye.x, params.cam.eye.y, params.cam.eye.z, projection);
+        const bool changed=clusterAsset->update(OptixUtil::context,index,
+                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive);
+        clusterRootDirty|=changed;return changed;
+    }
     uint32_t frameid;
     phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
@@ -655,13 +693,20 @@ public:
                 instanced.push_back(opi);
             }
 
+            if(clusterAsset && clusterAsset->handle()!=0) {
+                opi.instanceId=3;opi.visibilityMask=EverythingMask;opi.traversableHandle=clusterAsset->handle();
+                memcpy(opi.transform,CameraSapceMatrix.data(),sizeof(float)*12);
+                instanced.push_back(opi);maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
+            }
+
             const bool same_children = rootLightChild == lightsWrapper.lightIasHandle
                                 && rootStaticChild == staticRenderGroup
-                                && rootDynamicChild == dynamicRenderGroup;
+                                && rootDynamicChild == dynamicRenderGroup && !clusterRootDirty;
             xinxinoptix::buildIAS(context, instanced, this->rootNode, same_children, true);
             rootLightChild = lightsWrapper.lightIasHandle;
             rootStaticChild = staticRenderGroup;
             rootDynamicChild = dynamicRenderGroup;
+            clusterRootDirty=false;
         };
 
         if (camera_only || !sceneJson.contains(brikey)) {
@@ -948,6 +993,9 @@ public:
         std::map<std::string, std::pair<float const *, size_t>> const &vtab, const GeoChange change=GeoChange::FullChange);
 
     void unload_object(std::string const &key) {
+        if(clusterAssetKey==key) {
+            clusterUnloadPending=true;
+        }
         if (cleanTasks.count(key)==0) return;
         cleanTasks[key](key);
         cleanTasks.erase(key);

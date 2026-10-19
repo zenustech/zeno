@@ -792,6 +792,16 @@ void DisplayWidget::resetSharcCache()
     }
 }
 
+void DisplayWidget::setClasDebugView(int view)
+{
+    if (!m_bGLView) m_optixView->setClasDebugView(view);
+}
+
+void DisplayWidget::setClasHistorySettings(bool keep, int samples)
+{
+    if (!m_bGLView) m_optixView->setClasHistorySettings(keep, samples);
+}
+
 void DisplayWidget::setRayTracingSettings(
     bool denoise,
     int maxBounce,

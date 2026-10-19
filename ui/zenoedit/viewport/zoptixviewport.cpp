@@ -124,6 +124,16 @@ void ZOptixProcViewport::resetSharcCache()
     m_worker->onResetSharcCache();
 }
 
+void ZOptixProcViewport::setClasDebugView(int view)
+{
+    m_worker->onSetClasDebugView(view);
+}
+
+void ZOptixProcViewport::setClasHistorySettings(bool keep, int samples)
+{
+    m_worker->onSetClasHistorySettings(keep, samples);
+}
+
 void ZOptixProcViewport::setRayTracingSettings(
     bool denoise,
     int maxBounce,

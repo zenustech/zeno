@@ -9,6 +9,8 @@
 #include <cuda/random.h>
 #include <cuda/climits.h>
 
+extern "C" { extern __constant__ Params params; }
+
 #define _FLT_MAX_ __FLT_MAX__
 #define _FLT_MIN_ __FLT_MIN__
 #define _FLT_EPL_ __FLT_EPSILON__

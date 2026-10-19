@@ -25,6 +25,8 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     void resetSharcCache();
+    void setClasDebugView(int view);
+    void setClasHistorySettings(bool keep, int samples);
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,
