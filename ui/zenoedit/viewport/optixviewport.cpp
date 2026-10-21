@@ -1,4 +1,6 @@
 #include "optixviewport.h"
+#include <QJsonArray>
+#include <QJsonObject>
 #include "zenovis.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
@@ -9,6 +11,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
+#include <glm/gtc/quaternion.hpp>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "viewport/displaywidget.h"
 #include <zenovis/RenderEngine.h>
@@ -679,6 +682,145 @@ void OptixWorker::onSetData(
     scene->drawOptions->needRefresh = true;
 }
 
+QImage OptixWorker::captureScreen(int numSamples) {
+    auto scene = m_zenoVis->getSession()->get_scene();
+    ZASSERT_EXIT(scene, QImage());
+
+    // Save the current sample settings of both sample sources and override
+    // them with the requested count, restoring afterwards so the live view is
+    // untouched. The offline render reads num_samples from the camera on the
+    // non-GL path and from drawOptions on the GL path, so both must be set.
+    int old_draw_samples = scene->drawOptions->num_samples;
+    int old_cam_samples = scene->camera->zOptixCameraSettingInfo.num_samples;
+    zeno::scope_exit sp([=]() {
+        scene->drawOptions->num_samples = old_draw_samples;
+        scene->camera->zOptixCameraSettingInfo.num_samples = old_cam_samples;
+    });
+    if (numSamples > 0) {
+        scene->drawOptions->num_samples = numSamples;
+        scene->camera->zOptixCameraSettingInfo.num_samples = numSamples;
+    }
+
+    // The optix engine only writes the requested output file when output_exr
+    // is off (it emits an .exr otherwise), so keep it off for the png temp
+    // target and restore the user's previous value on scope exit. Re-fetch
+    // userData() inside the lambda (like screenShoot does) because capturing it
+    // by value makes the copy const and set2() would fail to compile.
+    bool old_exr = zeno::getSession().userData().has("output_exr") ? zeno::getSession().userData().get2<bool>("output_exr") : false;
+    zeno::scope_exit sp2([=]() { zeno::getSession().userData().set2("output_exr", old_exr); });
+    zeno::getSession().userData().set2("output_exr", false);
+
+    const QString tmpPath = QDir::temp().filePath(
+        "zeno_capture_" + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".png");
+    // do_screenshot returns void; infer success from the temp file existing.
+    m_zenoVis->getSession()->do_screenshot(tmpPath.toStdString(), "png", true);
+    if (!QFile::exists(tmpPath))
+        return QImage();
+
+    QImage img;
+    img.load(tmpPath);
+    QFile::remove(tmpPath);
+    return img;
+}
+
+// Builds a JSON snapshot of the full camera state. Kept on the worker thread
+// because scene->camera is owned by the render loop and is only safe to touch
+// from the optix worker thread.
+static QJsonObject optixCameraToJson(zenovis::Camera *cam)
+{
+    const glm::quat q = glm::normalize(cam->m_rotation);
+    const glm::vec3 euler = glm::eulerAngles(q) * (180.0f / 3.14159265358979f);
+    const auto &camData = cam->zOptixCameraSettingInfo;
+
+    QJsonObject obj;
+    obj["pos"] = QJsonArray{cam->getPos().x, cam->getPos().y, cam->getPos().z};
+    obj["pivot"] = QJsonArray{cam->getPivot().x, cam->getPivot().y, cam->getPivot().z};
+    obj["rotation"] = QJsonArray{q.w, q.x, q.y, q.z};
+    obj["rotation_euler_degrees"] = QJsonArray{euler.x, euler.y, euler.z};
+    obj["fov"] = cam->m_fov;
+    obj["ortho"] = cam->m_ortho_mode;
+    obj["aperture"] = cam->m_aperture;
+    obj["focalDistance"] = cam->focalPlaneDistance;
+    obj["near"] = cam->m_near;
+    obj["far"] = cam->m_far;
+    obj["resolution"] = QJsonArray{cam->m_nx, cam->m_ny};
+    obj["optixCameraInfo"] = QJsonObject{
+        {"aperture", camData.aperture},
+        {"shutter_speed", camData.shutter_speed},
+        {"iso", camData.iso},
+        {"renderRatio", camData.renderRatio},
+        {"aces", camData.aces},
+        {"exposure", camData.exposure},
+        {"panorama_camera", camData.panorama_camera},
+        {"panorama_vr180", camData.panorama_vr180},
+        {"pupillary_distance", camData.pupillary_distance},
+        {"num_samples", camData.num_samples},
+        {"ray_bounce", camData.ray_bounce},
+        {"up2x", camData.up2x},
+    };
+    return obj;
+}
+
+QJsonObject OptixWorker::getCameraJson()
+{
+    auto scene = m_zenoVis->getSession()->get_scene();
+    if (!scene || !scene->camera)
+        return QJsonObject();
+    return optixCameraToJson(scene->camera.get());
+}
+
+QJsonObject OptixWorker::setCameraJson(const QJsonObject &params)
+{
+    auto scene = m_zenoVis->getSession()->get_scene();
+    if (!scene || !scene->camera)
+        return QJsonObject();
+    auto *cam = scene->camera.get();
+
+    auto applyVec3 = [&](const QString &key, glm::vec3 &target) {
+        if (!params.contains(key) || !params[key].isArray())
+            return;
+        const auto arr = params[key].toArray();
+        if (arr.size() >= 3)
+            target = glm::vec3((float)arr[0].toDouble(), (float)arr[1].toDouble(), (float)arr[2].toDouble());
+    };
+
+    glm::vec3 pos = cam->getPos();
+    glm::vec3 pivot = cam->getPivot();
+    applyVec3("pos", pos);
+    applyVec3("pivot", pivot);
+    cam->setPos(pos);
+    cam->setPivot(pivot);
+
+    if (params.contains("rotation")) {
+        const auto arr = params["rotation"].toArray();
+        if (arr.size() >= 4)
+            cam->m_rotation = glm::normalize(glm::quat((float)arr[0].toDouble(), (float)arr[1].toDouble(),
+                                                       (float)arr[2].toDouble(), (float)arr[3].toDouble()));
+    }
+    else if (params.contains("rotation_euler_degrees")) {
+        const auto arr = params["rotation_euler_degrees"].toArray();
+        if (arr.size() >= 3) {
+            const glm::vec3 euler = glm::vec3((float)arr[0].toDouble(), (float)arr[1].toDouble(), (float)arr[2].toDouble())
+                                    * (3.14159265358979f / 180.0f);
+            cam->m_rotation = glm::normalize(glm::quat(euler));
+        }
+    }
+    if (params.contains("fov"))
+        cam->m_fov = (float)params["fov"].toDouble();
+    if (params.contains("ortho"))
+        cam->m_ortho_mode = params["ortho"].toBool();
+    if (params.contains("aperture"))
+        cam->m_aperture = (float)params["aperture"].toDouble();
+    if (params.contains("focalDistance"))
+        cam->focalPlaneDistance = (float)params["focalDistance"].toDouble();
+
+    cam->updateMatrix();
+    // Force an immediate re-render so the newly applied camera becomes visible
+    // right away, matching the live mouse-navigation refresh path.
+    needUpdateCamera();
+    return optixCameraToJson(cam);
+}
+
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
     , m_zenovis(nullptr)
@@ -934,6 +1076,48 @@ void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
         //meet some unsupported type by QImage.
         emit sigscreenshoot(path, type, resx, resy);
     // }
+}
+
+QImage ZOptixViewport::captureScreen(int numSamples)
+{
+    // BlockingQueuedConnection to a finished thread would block forever, so
+    // bail out immediately when the render thread is no longer running.
+    if (!m_thdOptix.isRunning())
+        return QImage();
+    // The render happens in the optix worker thread; block until it finishes
+    // so the caller gets a complete, freshly-rendered image back.
+    QImage img;
+    QMetaObject::invokeMethod(m_worker, "captureScreen", Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(QImage, img), Q_ARG(int, numSamples));
+    return img;
+}
+
+// Camera get/set run on the optix worker thread to avoid racing the render
+// loop, which continuously reads scene->camera. Returns an empty object when
+// the render thread is down (the caller should then treat it as a failure).
+QJsonObject ZOptixViewport::getCameraJson()
+{
+    QJsonObject out;
+    if (!m_thdOptix.isRunning())
+        return out;
+    QMetaObject::invokeMethod(m_worker, "getCameraJson", Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(QJsonObject, out));
+    return out;
+}
+
+QJsonObject ZOptixViewport::setCameraJson(const QJsonObject &params)
+{
+    QJsonObject out;
+    if (!m_thdOptix.isRunning())
+        return out;
+    QMetaObject::invokeMethod(m_worker, "setCameraJson", Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(QJsonObject, out), Q_ARG(QJsonObject, params));
+    return out;
+}
+
+bool ZOptixViewport::isOptixViewRunning() const
+{
+    return m_thdOptix.isRunning();
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)

@@ -1,0 +1,21 @@
+[project]
+name = "zenomcp-server"
+version = "0.2.0"
+description = "zenoMcp - 控制 zeno 节点三维软件的 MCP Server（严格串行执行）"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+mcp-server = "main:mcp"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+# tests/ 下沿用 util/config 顶层导入（P0 基线写法），故把工程根加入 sys.path；
+# P1 拆 runtime/、knowledge/ 后，测试的 import 目标随重构同步迁移。
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,4 +1,4 @@
-﻿#include "zenosubgraphscene.h"
+#include "zenosubgraphscene.h"
 #include "zenonode.h"
 #include "subnetnode.h"
 #include "heatmapnode.h"
@@ -6,6 +6,7 @@
 #include "pythonnode.h"
 #include "commandnode.h"
 #include "readfbxprim.h"
+#include "robotdynamicnode.h"
 #include "livenode.h"
 #include "zenolink.h"
 #include <zenomodel/include/modelrole.h>
@@ -252,6 +253,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     else if(descName == "ReadFBXPrim")
     {
         return new ReadFBXPrim(params);
+    }
+    else if(descName == "RobotDynamicNode")
+    {
+        return new RobotDynamicNodeUI(params);
     }
     else if(descName == "LiveMeshNode")
     {

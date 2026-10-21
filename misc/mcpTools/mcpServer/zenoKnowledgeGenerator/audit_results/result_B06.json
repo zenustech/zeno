@@ -1,0 +1,44 @@
+{
+  "batch": "B06",
+  "audited_node_count": 77,
+  "issues": [
+    {
+      "node": "TestVk",
+      "issue_type": "missing",
+      "field": "outputs",
+      "socket_or_param": "(匿名空名输出)",
+      "kb_says": "\"outputs\": {}（无输出 socket）",
+      "source_says": "ZENDEFNODE(TestVk, {{}, {\"\"}, {}, {\"vk\"}}) —— outputs 实为一个含元素 \"\" 的匿名空名输出 socket",
+      "evidence": "projects/CUDA/vktest.cpp #64",
+      "detail": "源码宏的 outputs 声明含一个匿名(空名字符串)输出 socket，而 KB outputs 列为空 {}。该空输出为占位(实现中从未 set_output)，影响极小，但按 socket 完整性应补记；confidence 较低，因该输出无实际意义。",
+      "confidence": "low"
+    },
+    {
+      "node": "RepelPoints",
+      "issue_type": "incorrect",
+      "field": "description",
+      "socket_or_param": "sep_dist",
+      "kb_says": "直到离开窄带(以 sep_dist 限制，cap 为 background)…（描述把 sep_dist 上限截断到 background 的机制归于本节点）",
+      "source_says": "循环条件为 sdf<sep_dist && mi-- >0，位移 sdf<0 时 += ddd*-sdf 否则 += ddd*(sep_dist-sdf)；源码未对 sep_dist 做 min(sep_dist, background) 截断",
+      "evidence": "projects/CUDA/utils/Groom.cpp #733-753（RepelPoints::apply）",
+      "detail": "KB 描述该节点把 sep_dist cap 到 background；但 min(sep_dist, grid->background()) 的截断只存在于 SpawnGuidelines（Groom.cpp #71），RepelPoints 实现直接使用 sep_dist 无此截断。建议将“cap 为 background”的说明从 RepelPoints 描述中移除或注明仅 SpawnGuidelines 适用。",
+      "confidence": "low"
+    }
+  ],
+  "source_files_consulted": [
+    "projects/CUDA/remesh/remesh.cpp",
+    "projects/CUDA/remesh/simplification.cpp",
+    "projects/CUDA/remesh/TriSubdiv.cpp",
+    "projects/CUDA/utils/Primitives.cpp",
+    "projects/CUDA/utils/Groom.cpp",
+    "projects/CUDA/utils/Conversion.cpp",
+    "projects/CUDA/graph/BasicTask.cpp",
+    "projects/CUDA/graph/Task.cpp",
+    "projects/CUDA/Try_OpenVDB/nosys.cpp",
+    "projects/CUDA/test.cpp",
+    "projects/CUDA/cluster/cluster.cpp",
+    "projects/CUDA/pyzfx/pyzfx.cpp",
+    "projects/CUDA/iw_query/Query.cpp",
+    "projects/CUDA/vktest.cpp"
+  ]
+}

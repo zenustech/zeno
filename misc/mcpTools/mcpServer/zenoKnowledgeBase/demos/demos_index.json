@@ -1,0 +1,16 @@
+{
+  "demos": [
+    {
+      "name": "zenoSceneDemo1",
+      "file": "zenoSceneDemo1.txt",
+      "zsg": "zenoSceneDemo1.zsg",
+      "intro": "Alembic 资产导入 + 环境天空 + 关键帧相机：ReadAlembic 读 .abc 资产，faceset 材质注册（ShaderFinalize 子图），DistantLight/SkyComposer/HDRSky 环境光照，双相机关键帧动画（GetFrameNum+CameraEval）。适合学习'加载外部模型渲染'。"
+    },
+    {
+      "name": "zenoSceneDemo2",
+      "file": "zenoSceneDemo2.txt",
+      "zsg": "zenoSceneDemo2.zsg",
+      "intro": "程序化几何 + 贴图材质 + 灯光相机：CreateCube/CreatePlane 几何，BindMaterial+ShaderFinalize 材质绑定（mtlid 配对），PrimMerge+MakeSceneNode_v2 场景组装，SmartTexture2D 贴图，面光源+HDR 天空，双相机关键帧。zeno 光追场景的标准入门模板，建议先读。"
+    }
+  ]
+}

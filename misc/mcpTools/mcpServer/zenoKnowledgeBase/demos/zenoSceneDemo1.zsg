@@ -1,0 +1,1936 @@
+{
+    "graph": {
+        "main": {
+            "type": 0,
+            "forkLock": false,
+            "nodes": {
+                "57aca140-AlembicSceneInfo": {
+                    "name": "AlembicSceneInfo",
+                    "inputs": {
+                        "abctree": {
+                            "link": "main:bcc51f10-ReadAlembic:[node]/outputs/abctree",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "json": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4473.224609375,
+                        -441.5959777832031
+                    ],
+                    "options": [
+                        "ONCE"
+                    ]
+                },
+                "5e06756d-AlembicPrimList": {
+                    "name": "AlembicPrimList",
+                    "inputs": {
+                        "flipFrontBack": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "abctree": {
+                            "link": "main:bcc51f10-ReadAlembic:[node]/outputs/abctree",
+                            "type": "ABCTree",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "use_xform": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "triangulate": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "splitByFaceset": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "killDeadVerts": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "pathInclude": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "pathExclude": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "facesetInclude": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "facesetExclude": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "prims": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4473.02490234375,
+                        23.174659729003908
+                    ],
+                    "options": [
+                        "ONCE"
+                    ]
+                },
+                "bcc51f10-ReadAlembic": {
+                    "name": "ReadAlembic",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/code/Assets/test.abc",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "read_face_set": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "outOfRangeAsEmpty": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "skipInvisibleObject": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "CopyFacesetToMatid": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "use_instance": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "frameid": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "abctree": {
+                            "type": "ABCTree"
+                        },
+                        "namelist": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -5165.8154296875,
+                        -317.6135559082031
+                    ],
+                    "options": [
+                        "ONCE"
+                    ]
+                },
+                "c2e8c16a-FormSceneTree": {
+                    "name": "FormSceneTree",
+                    "inputs": {
+                        "scene_info": {
+                            "link": "main:57aca140-AlembicSceneInfo:[node]/outputs/json",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "prim_list": {
+                            "link": "main:5e06756d-AlembicPrimList:[node]/outputs/prims",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "stampMode": {
+                            "link": null,
+                            "type": "enum UnChanged DataChange ShapeChange TotalChange",
+                            "default-value": "UnChanged",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "UnChanged",
+                                    "DataChange",
+                                    "ShapeChange",
+                                    "TotalChange"
+                                ]
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum static dynamic",
+                            "default-value": "dynamic",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "static",
+                                    "dynamic"
+                                ]
+                            }
+                        },
+                        "matrixMode": {
+                            "link": null,
+                            "type": "enum UnChanged TotalChange",
+                            "default-value": "TotalChange",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "UnChanged",
+                                    "TotalChange"
+                                ]
+                            }
+                        },
+                        "flattened": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "centralize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "scene": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3608.361572265625,
+                        -90.4408187866211
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "d85bce1b-LightNode": {
+                    "name": "LightNode",
+                    "inputs": {
+                        "position": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                5.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "scale": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "rotate": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "quaternion": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                1.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "color": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "exposure": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "intensity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "fluxFixed": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": -1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "spread": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                1.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "maxDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": -1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "falloffExponent": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 2.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "mask": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 255,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "visible": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "invertdir": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "doubleside": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "profile": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": null,
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "texturePath": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": null,
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "textureGamma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "visibleIntensity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": -1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "shape": {
+                            "link": null,
+                            "type": "enum  Plane Ellipse Sphere Point TriangleMesh",
+                            "default-value": "Plane",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "Plane",
+                                    "Ellipse",
+                                    "Sphere",
+                                    "Point",
+                                    "TriangleMesh"
+                                ]
+                            }
+                        },
+                        "type": {
+                            "link": null,
+                            "type": "enum  Diffuse Direction IES Spot Projector",
+                            "default-value": "Diffuse",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "Diffuse",
+                                    "Direction",
+                                    "IES",
+                                    "Spot",
+                                    "Projector"
+                                ]
+                            }
+                        },
+                        "prim": {
+                            "link": null,
+                            "type": "PrimitiveObject",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "EulerAngleMeasure": {
+                            "value": "Radians",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "Degree",
+                                    "Radians"
+                                ]
+                            },
+                            "type": "enum  Degree Radians"
+                        },
+                        "EulerRotationOrder": {
+                            "value": "YXZ",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "XYZ",
+                                    "XZY",
+                                    "YXZ",
+                                    "YZX",
+                                    "ZXY",
+                                    "ZYX"
+                                ]
+                            },
+                            "type": "enum  XYZ XZY YXZ YZX ZXY ZYX"
+                        }
+                    },
+                    "outputs": {
+                        "prim": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4966.538401562395,
+                        994.8529453690553
+                    ],
+                    "options": []
+                },
+                "c136cba0-SubgraphName": {
+                    "name": "SubgraphName",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        },
+                        "output1": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -2919.087646484375,
+                        -16.370941162109376
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "7d2b4fd4-DistantLight": {
+                    "name": "DistantLight",
+                    "inputs": {
+                        "Lat-Lon": {
+                            "link": null,
+                            "type": "vec2f",
+                            "default-value": [
+                                13.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 2"
+                            }
+                        },
+                        "dir": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "angleExtent": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.5,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "color": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    0.501960813999176,
+                                    1.0,
+                                    0.0
+                                ],
+                                "transform": [
+                                    0.501960813999176,
+                                    1.0,
+                                    0.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "intensity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "dir": {
+                            "type": "vec3f"
+                        },
+                        "out": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4333.44489570302,
+                        1290.3325596268679
+                    ],
+                    "options": []
+                },
+                "87ffaef-SkyComposer": {
+                    "name": "SkyComposer",
+                    "inputs": {
+                        "dlights": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {
+                                    "obj0": {
+                                        "link": "main:7d2b4fd4-DistantLight:[node]/outputs/out"
+                                    },
+                                    "obj1": {
+                                        "link": null
+                                    }
+                                }
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "portals": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "proxy": {
+                            "value": "SphereUnbounded",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "SphereUnbounded"
+                                ]
+                            },
+                            "type": "enum SphereUnbounded"
+                        }
+                    },
+                    "outputs": {
+                        "out": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3794.949168163957,
+                        1283.0937900956179
+                    ],
+                    "options": []
+                },
+                "ec030a02-Route": {
+                    "name": "Route",
+                    "inputs": {
+                        "input": {
+                            "link": "main:87ffaef-SkyComposer:[node]/outputs/out",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "RunType": {
+                            "value": "lightCamera",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "normal",
+                                    "lightCamera",
+                                    "material",
+                                    "matrix"
+                                ]
+                            },
+                            "type": "enum normal lightCamera material matrix"
+                        }
+                    },
+                    "outputs": {
+                        "output": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3269.664500195207,
+                        1335.8931065018679
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "1c91c5f4-HDRSky": {
+                    "name": "HDRSky",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:\\code\\zeno\\RelDbInfo\\bin\\hdr\\Panorama.hdr",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "rotation3d": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "strength": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "HDRSky": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -2049.93505859375,
+                        -26.622533798217775
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "29cacd69-CameraNode": {
+                    "name": "CameraNode",
+                    "inputs": {
+                        "pos": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.05132841318845749,
+                                0.3812931776046753,
+                                4.985177516937256
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "up": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                -0.0001316599955316633,
+                                0.997087836265564,
+                                -0.07626128941774368
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "view": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                -0.010265680029988289,
+                                -0.07625862210988999,
+                                -0.9970352053642273
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "fov": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 45.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "aperture": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "focalPlaneDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 2.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "other": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "0,0,0,0,0,5,",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 0,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "camera": {
+                            "type": "CameraObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -5028.906240282729,
+                        2610.8387997372085
+                    ],
+                    "options": []
+                },
+                "e9492668-GetFrameNum": {
+                    "name": "GetFrameNum",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "FrameNum": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4282.099202929214,
+                        2765.2321102840835
+                    ],
+                    "options": []
+                },
+                "160d44ec-CameraEval": {
+                    "name": "CameraEval",
+                    "inputs": {
+                        "frameid": {
+                            "link": "main:e9492668-GetFrameNum:[node]/outputs/FrameNum",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "nodelist": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": "main:b1b7eb80-MultiMakeList:[node]/outputs/list",
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "camera": {
+                            "type": "CameraObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3492.872915087417,
+                        3240.88662078213
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "2c3398a-CameraNode": {
+                    "name": "CameraNode",
+                    "inputs": {
+                        "pos": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                3.511906385421753,
+                                6.011061191558838,
+                                6.117223262786865
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "up": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                -0.11454226076602936,
+                                0.7822178602218628,
+                                -0.6123849153518677
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "view": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                -0.30077508091926577,
+                                -0.6148158311843872,
+                                -0.7290650606155396
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "fov": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 45.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "aperture": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "focalPlaneDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 2.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "other": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "1.24475,-0.210586,-0.00116942,0,0,9.01574,",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 48,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "camera": {
+                            "type": "CameraObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -5016.29213505812,
+                        3618.19001128506
+                    ],
+                    "options": []
+                },
+                "b1b7eb80-MultiMakeList": {
+                    "name": "MultiMakeList",
+                    "inputs": {
+                        "list": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {
+                                    "obj0": {
+                                        "link": "main:29cacd69-CameraNode:[node]/outputs/camera"
+                                    },
+                                    "obj1": {
+                                        "link": "main:2c3398a-CameraNode:[node]/outputs/camera"
+                                    }
+                                }
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "list": {
+                            "type": "list"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4208.595876513198,
+                        3434.588189385646
+                    ],
+                    "options": []
+                }
+            },
+            "view_rect": {}
+        },
+        "SubgraphName": {
+            "type": 1,
+            "forkLock": false,
+            "nodes": {
+                "2cc6f517-SubOutput": {
+                    "name": "SubOutput",
+                    "inputs": {
+                        "port": {
+                            "link": "SubgraphName:81baa46a-ShaderFinalize:[node]/outputs/mtl",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "defl": {
+                            "value": "",
+                            "control": {
+                                "name": ""
+                            },
+                            "type": ""
+                        },
+                        "name": {
+                            "value": "output1",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        },
+                        "type": {
+                            "value": "",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "",
+                                    "int",
+                                    "bool",
+                                    "float",
+                                    "string",
+                                    "vec2f",
+                                    "vec2i",
+                                    "vec3f",
+                                    "vec3i",
+                                    "vec4f",
+                                    "vec4i",
+                                    "color",
+                                    "curve",
+                                    "list",
+                                    "dict"
+                                ]
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        806.8561401367188,
+                        497.3005676269531
+                    ],
+                    "options": [
+                        "VIEW"
+                    ]
+                },
+                "81baa46a-ShaderFinalize": {
+                    "name": "ShaderFinalize",
+                    "inputs": {
+                        "base": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "basecolor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    0.5000076293945313,
+                                    0.0
+                                ],
+                                "transform": [
+                                    0.6854504942893982,
+                                    0.2723430097103119,
+                                    0.05067521333694458
+                                ],
+                                "type": "aces"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "roughness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.4000000059604645,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "metallic": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "metalColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "specular": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "specularTint": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "anisotropic": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "anisoRotation": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "subsurface": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sssType": {
+                            "link": null,
+                            "type": "enum Fixed Adaptive",
+                            "default-value": "Fixed",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "Fixed",
+                                    "Adaptive"
+                                ]
+                            }
+                        },
+                        "sssRadius": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "transform": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "type": ""
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "sssScale": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sssColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "scatterDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scatterStep": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sheen": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sheenTint": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoat": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoatColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "clearcoatRoughness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "clearcoatIOR": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.5,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "specTrans": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "specF0": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.03999999910593033,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "transTint": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "transTintDepth": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "transScatterColor": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "transform": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "ior": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2999999523162842,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "diffraction": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "diffractColor": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "flatness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "shadowReceiver": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "shadowTerminatorOffset": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "thin": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "doubleSide": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "normal": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "displacement": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "smoothness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "emissionIntensity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "emission": {
+                            "link": null,
+                            "type": "colorvec3f",
+                            "default-value": {
+                                "origin": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "transform": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "type": "raw"
+                            },
+                            "control": {
+                                "name": "Color Vec3f"
+                            }
+                        },
+                        "emission_only": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "reflectance": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "opacity": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "thickness": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "isHair": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "HairRough2": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "FurCoat": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "commonCode": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "extensionsCode": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "mtlid": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "PigFace",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "tex2dList": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "mask_value": {
+                            "link": null,
+                            "type": "vec3i",
+                            "default-value": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "control": {
+                                "name": "Integer Vector 3"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "backend": {
+                            "value": "CUDA",
+                            "control": {
+                                "name": "Enum",
+                                "items": [
+                                    "CUDA"
+                                ]
+                            },
+                            "type": "enum CUDA"
+                        }
+                    },
+                    "outputs": {
+                        "mtl": {
+                            "type": "MaterialObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -25.97880744934082,
+                        220.8198699951172
+                    ],
+                    "options": []
+                }
+            },
+            "view_rect": {}
+        }
+    },
+    "views": {
+        "timeline": {
+            "start-frame": 0,
+            "end-frame": 50,
+            "curr-frame": 0,
+            "always": false,
+            "timeline-fps": 24
+        }
+    }
+    "version": "v2.5"
+}

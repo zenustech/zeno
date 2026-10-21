@@ -1,0 +1,5 @@
+# 通用 Python 依赖 (安装: pip install -r requirements.txt)
+mujoco>=2.3.7        # MuJoCo Python 绑定 (exporterStatic/DynamicMujoco + 可视化)
+numpy>=1.22          # 数值计算 (mujoco 依赖)
+pybullet>=3.2.5      # Bullet Python 绑定 (exporterDynamicBullet + visualizationBullet 实时仿真)
+scipy>=1.10          # Bullet 静态导出 mesh 碰撞凸包 (可选, 缺失时 hull 保持 null)
