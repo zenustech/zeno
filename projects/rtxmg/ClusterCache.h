@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <tinygltf/json.hpp>
+#include "ClusterDevice.h"
 
 namespace zeno::cluster {
 constexpr uint32_t CacheVersion = 1;
@@ -28,6 +29,8 @@ struct Page {
     std::vector<Cluster> clusters;
     std::vector<Vertex> vertices;
     std::vector<uint8_t> indices;
+    std::vector<zeno_cluster_device::ShadingVertex> attributes;
+    std::vector<uint16_t> materials;
 };
 struct Group {
     uint64_t offset{}, bytes{};
@@ -38,6 +41,7 @@ struct Group {
 struct Geometry {
     std::filesystem::path pages;
     bool rtxmgShard = false;
+    bool hasAttributes = false;
     std::vector<Group> groups;
     std::vector<uint32_t> roots;
 };

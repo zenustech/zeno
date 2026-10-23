@@ -643,12 +643,11 @@ inline bool createModule(
     if (compiled_ptx == nullptr) {
         compilerOptions.push_back("--optix-ir");
     }
-    std::string architecture_option;
-    if (compiled_ptx != nullptr) {
-        architecture_option = currentComputeArchitectureOption();
-        if (!architecture_option.empty()) {
-            compilerOptions.push_back(architecture_option.c_str());
-        }
+    // OptiX IR also needs the device target: NVRTC otherwise defaults to sm_52,
+    // silently compiling out device features such as demand-loaded sparse textures.
+    std::string architecture_option = currentComputeArchitectureOption();
+    if (!architecture_option.empty()) {
+        compilerOptions.push_back(architecture_option.c_str());
     }
     std::string split_compile_option;
     std::string worker_compile_option;
@@ -1871,9 +1870,7 @@ struct OptixShaderWrapper
 
         const bool compile_shared_volume_artifacts = isVol();
         std::string cache_key = callableProgramCacheKey(callable_src, _macros_);
-        if (compile_shared_volume_artifacts) {
-            cache_key += ':' + currentComputeArchitectureOption();
-        }
+        cache_key += ':' + currentComputeArchitectureOption();
         {
             std::unique_lock<std::mutex> lock(callable_program_cache_mutex);
             while (true) {

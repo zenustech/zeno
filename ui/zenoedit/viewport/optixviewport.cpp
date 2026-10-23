@@ -117,6 +117,7 @@ static void initializeOptixRenderSettings(Zenovis* vis)
     userData.set2("optix-clas-debug-view", std::clamp(clasSetting("ZENO_OPTIX_CLAS_DEBUG_VIEW", zsClasDebugView, 0), 0, 7));
     userData.set2("optix-clas-keep-history", clasBoolSetting("ZENO_OPTIX_CLAS_KEEP_HISTORY", zsClasKeepHistory, false));
     userData.set2("optix-clas-history-limit", std::clamp(clasSetting("ZENO_OPTIX_CLAS_HISTORY_LIMIT", zsClasHistoryLimit, 16), 4, 256));
+    userData.set2("optix-clas-two-sided-opaque", clasBoolSetting("ZENO_OPTIX_CLAS_TWO_SIDED_OPAQUE", zsClasTwoSidedOpaque, true));
     userData.set2("optix-sharc", qEnvironmentVariableIsSet("ZENO_OPTIX_SHARC") ? qEnvironmentVariableIntValue("ZENO_OPTIX_SHARC") != 0 : settingOr(zsEnableSharc, true).toBool());
     userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
     userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
@@ -128,9 +129,9 @@ static void initializeOptixRenderSettings(Zenovis* vis)
     userData.set2("optix-sharc-sh-encoding", settingOr(zsSharcSHEncoding, false).toBool());
     if (qEnvironmentVariableIntValue("ZENO_OPTIX_RENDER_TIMING") == 1) {
         const QVariant storedKeep = settingOr(zsClasKeepHistory, false);
-        zeno::log_info("CLAS startup settings: view={}, keepHistory={}, historyLimit={}",
+        zeno::log_info("CLAS startup settings: view={}, keepHistory={}, historyLimit={}, twoSidedOpaque={}",
             userData.get2<int>("optix-clas-debug-view"), userData.get2<bool>("optix-clas-keep-history"),
-            userData.get2<int>("optix-clas-history-limit"));
+            userData.get2<int>("optix-clas-history-limit"), userData.get2<bool>("optix-clas-two-sided-opaque"));
         zeno::log_info("CLAS stored history: type={}, bool={}, int={}, envOverride={}",
             storedKeep.typeName(), storedKeep.toBool(), storedKeep.toInt(),
             qEnvironmentVariableIsSet("ZENO_OPTIX_CLAS_KEEP_HISTORY"));
@@ -235,21 +236,12 @@ void OptixWorker::updateFrame()
         scale = scale;
     else
         scale = scale2;
-    //m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
-    std::vector<int32_t> img;
-    img.resize(w*h*scale*scale);
-    for(int j=0;j<h*scale;j++)
-        for(int i=0;i<w*scale;i++)
-        {
-            int jj = j/scale;
-            int ii = i/scale;
-            if(ii<w && jj<h)
-            {
-                img[j*w*scale + i]  = ((int32_t *)data)[jj*w + ii];
-            }
-        }
-    m_renderImg = QImage((uchar *)img.data(), w*scale, h*scale, QImage::Format_RGBA8888);
-    m_renderImg = m_renderImg.mirrored(false, true);
+    // mirrored() owns the pixels before the renderer reuses its host buffer.
+    // Qt's scanline copy/nearest-neighbor scaler avoids two integer divisions
+    // per displayed pixel and the extra full-frame temporary allocation.
+    const QImage source(static_cast<const uchar*>(data),w,h,QImage::Format_RGBA8888);
+    m_renderImg=source.mirrored(false,true);
+    if(scale>1)m_renderImg=m_renderImg.scaled(w*scale,h*scale,Qt::IgnoreAspectRatio,Qt::FastTransformation);
 
     emit renderIterate(m_renderImg);
     if(profile) {
@@ -513,6 +505,10 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         const int oldLimit = options.get2<int>("optix-clas-history-limit", 16);
         onSetClasHistorySettings(!oldKeep, oldLimit == 8 ? 16 : 8);
         onSetClasHistorySettings(oldKeep, oldLimit);
+        zeno::log_info("[viewport regression] runtime opaque sidedness");
+        const bool oldTwoSided = options.get2<bool>("optix-clas-two-sided-opaque", true);
+        onSetClasTwoSidedOpaque(!oldTwoSided);
+        onSetClasTwoSidedOpaque(oldTwoSided);
         zeno::log_info("[viewport regression] quality simple ratio=2");
         scene->camera->zOptixCameraSettingInfo.renderRatio = 2;
         scene->drawOptions->simpleRender = true; updateFrame(); updateFrame();
@@ -763,6 +759,12 @@ void OptixWorker::onSetClasHistorySettings(bool keep, int samples)
     auto& ud = zeno::getSession().userData();
     ud.set2("optix-clas-keep-history", keep);
     ud.set2("optix-clas-history-limit", std::clamp(samples, 4, 256));
+    updateFrame();
+}
+
+void OptixWorker::onSetClasTwoSidedOpaque(bool enabled)
+{
+    zeno::getSession().userData().set2("optix-clas-two-sided-opaque", enabled);
     updateFrame();
 }
 
@@ -1044,6 +1046,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_resetSharcCache, m_worker, &OptixWorker::onResetSharcCache);
     connect(this, &ZOptixViewport::sig_setClasDebugView, m_worker, &OptixWorker::onSetClasDebugView);
     connect(this, &ZOptixViewport::sig_setClasHistorySettings, m_worker, &OptixWorker::onSetClasHistorySettings);
+    connect(this, &ZOptixViewport::sig_setClasTwoSidedOpaque, m_worker, &OptixWorker::onSetClasTwoSidedOpaque);
     connect(this, &ZOptixViewport::sig_setRayTracingSettings, m_worker, &OptixWorker::onSetRayTracingSettings);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
@@ -1256,6 +1259,11 @@ void ZOptixViewport::setClasDebugView(int view)
 void ZOptixViewport::setClasHistorySettings(bool keep, int samples)
 {
     emit sig_setClasHistorySettings(keep, samples);
+}
+
+void ZOptixViewport::setClasTwoSidedOpaque(bool enabled)
+{
+    emit sig_setClasTwoSidedOpaque(enabled);
 }
 
 void ZOptixViewport::setRayTracingSettings(

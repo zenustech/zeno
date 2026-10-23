@@ -27,6 +27,7 @@ public:
     void resetSharcCache();
     void setClasDebugView(int view);
     void setClasHistorySettings(bool keep, int samples);
+    void setClasTwoSidedOpaque(bool enabled);
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

@@ -51,6 +51,7 @@ Asset loadAsset(const std::filesystem::path& manifest) {
         if (mesh.at("version").get<uint32_t>() != CacheVersion) throw std::runtime_error("Cluster mesh version mismatch");
         Geometry geometry;
         geometry.rtxmgShard = mesh.value("format", "") == "rtxmg.shard.v19";
+        geometry.hasAttributes = geometry.rtxmgShard || mesh.value("attributes", false);
         geometry.pages = asset.manifest.parent_path() / mesh.at("pages").get<std::string>();
         if (geometry.rtxmgShard) validateRtxmgShard(geometry.pages, mesh.at("sourceHash").get<uint64_t>(), mesh.at("configHash").get<uint64_t>());
         const auto fileBytes = std::filesystem::file_size(geometry.pages);
@@ -95,14 +96,26 @@ uint64_t writePage(std::ostream& stream, const Page& page) {
     PageHeader h{PageMagic, 3, uint32_t(page.clusters.size()), uint32_t(page.vertices.size()),
                  uint32_t(page.indices.size()), uint32_t(count)};
     const size_t clusterBytes=page.clusters.size()*sizeof(Cluster);
-    std::vector<uint8_t> body(clusterBytes+count+page.indices.size());
+    const bool attributes = !page.attributes.empty();
+    if(attributes && (page.attributes.size()!=page.vertices.size() || page.materials.size()!=page.indices.size()/3))
+        throw std::runtime_error("Cluster attribute count mismatch");
+    const size_t attributeBytes=attributes?page.attributes.size()*sizeof(zeno_cluster_device::ShadingVertex):0;
+    const size_t materialBytes=attributes?page.materials.size()*sizeof(uint16_t):0;
+    std::vector<uint8_t> body(clusterBytes+count+page.indices.size()+attributeBytes+materialBytes);
     std::memcpy(body.data(),page.clusters.data(),clusterBytes);
     std::memcpy(body.data()+clusterBytes,encoded.data(),count);
     std::memcpy(body.data()+clusterBytes+count,page.indices.data(),page.indices.size());
+    if(attributes) {
+        std::memcpy(body.data()+clusterBytes+count+page.indices.size(),page.attributes.data(),attributeBytes);
+        std::memcpy(body.data()+clusterBytes+count+page.indices.size()+attributeBytes,page.materials.data(),materialBytes);
+    }
     std::vector<uint8_t> compressed(ZSTD_compressBound(body.size()));
     const auto compressedBytes=ZSTD_compress(compressed.data(),compressed.size(),body.data(),body.size(),1);
     if(ZSTD_isError(compressedBytes))throw std::runtime_error("Cluster page compression failed");
-    if(compressedBytes<body.size()) {h.version=4;compressed.resize(compressedBytes);body=std::move(compressed);}
+    // Attribute pages are always framed, including incompressible ones.
+    if(attributes || compressedBytes<body.size()) {
+        h.version=attributes?5:4;compressed.resize(compressedBytes);body=std::move(compressed);
+    }
     stream.write(reinterpret_cast<const char*>(&h), sizeof(h));
     stream.write(reinterpret_cast<const char*>(body.data()),body.size());
     if (!stream) throw std::runtime_error("Cluster page write failed");
@@ -118,11 +131,14 @@ Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
     stream.clear();
     stream.seekg(meta.offset);
     PageHeader h{}; stream.read(reinterpret_cast<char*>(&h), sizeof(h));
-    const uint64_t bytes = sizeof(h) + uint64_t(h.clusterCount) * sizeof(Cluster) + h.encodedVertexBytes + h.indexBytes;
-    const bool compressed=h.version==2||h.version==4;
-    if (!stream || h.magic != PageMagic || h.version<1 || h.version>4 ||
+    const bool attributes=h.version==5;
+    const uint64_t attributeBytes=attributes?uint64_t(h.vertexCount)*sizeof(zeno_cluster_device::ShadingVertex):0;
+    const uint64_t materialBytes=attributes?uint64_t(h.indexBytes)/3*sizeof(uint16_t):0;
+    const uint64_t bytes = sizeof(h) + uint64_t(h.clusterCount) * sizeof(Cluster) + h.encodedVertexBytes + h.indexBytes+attributeBytes+materialBytes;
+    const bool compressed=h.version==2||h.version==4||attributes;
+    if (!stream || h.magic != PageMagic || h.version<1 || h.version>5 ||
         (!compressed && bytes != meta.bytes) || bytes>4u*1024u*1024u ||
-        (compressed && (meta.bytes<=sizeof(h) || meta.bytes>=bytes)) ||
+        (compressed && (meta.bytes<=sizeof(h) || (!attributes && meta.bytes>=bytes))) ||
         h.clusterCount != meta.refined.size() || h.vertexCount != meta.vertices || h.indexBytes != uint64_t(meta.triangles) * 3 ||
         !h.clusterCount || !h.vertexCount || !h.encodedVertexBytes ||
         h.clusterCount > 256 || h.vertexCount > h.clusterCount * MaxVertices)
@@ -138,6 +154,14 @@ Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
     const size_t clusterBytes=p.clusters.size()*sizeof(Cluster);
     std::memcpy(p.clusters.data(),body.data(),clusterBytes);
     std::memcpy(p.indices.data(),body.data()+clusterBytes+h.encodedVertexBytes,p.indices.size());
+    if(attributes) {
+        p.attributes.resize(h.vertexCount);p.materials.resize(h.indexBytes/3);
+        const auto* data=body.data()+clusterBytes+h.encodedVertexBytes+h.indexBytes;
+        std::memcpy(p.attributes.data(),data,attributeBytes);
+        std::memcpy(p.materials.data(),data+attributeBytes,materialBytes);
+        for(const auto& a:p.attributes) for(float uv:a.uv)
+            if(!std::isfinite(uv)) throw std::runtime_error("Non-finite cluster UV");
+    }
     if(h.version>=3){
         std::vector<PackedVertex> packed(h.vertexCount);
         if(!stream||meshopt_decodeVertexBuffer(packed.data(),packed.size(),sizeof(PackedVertex),body.data()+clusterBytes,h.encodedVertexBytes))

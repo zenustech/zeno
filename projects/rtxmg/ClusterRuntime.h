@@ -13,6 +13,8 @@ struct RuntimeSettings {
     uint64_t geometryBytes = 2ull << 30, clasBytes = 2ull << 30;
     float pixelError = 2.0f;
     uint32_t loadsPerFrame = 32;
+    bool materials = false;
+    uint32_t textureMiB = 2048, hostTextureMiB = 256;
 };
 struct RuntimeStats {
     uint64_t geometryBytes{}, clasBytes{}, loads{}, evictions{};
@@ -46,8 +48,9 @@ class Runtime {
     Runtime(const std::filesystem::path &manifest, RuntimeSettings settings = {});
     ~Runtime();
     Runtime(const Runtime &) = delete;
-    // Builds and rendering share ordered compute stream 0. Interactive host
-    // preparation has a context-bound worker; only update() publishes a version.
+    // Interactive preparation owns the back scene on a context-bound worker
+    // and a separate CUDA build stream. Only update() publishes a completed
+    // version; last-use events protect front-scene storage during retirement.
     bool update(OptixDeviceContext context, uint32_t sbtIndex, const std::array<float, 3> &eye,
                 float projectionScale, bool interactive = false);
     OptixTraversableHandle handle() const;

@@ -355,6 +355,9 @@ struct GraphicsManager {
                     settings.clasBytes=uint64_t(ud.get2<int>("clusterClasMiB",2048))<<20;
                     settings.pixelError=ud.get2<float>("clusterLodError",2.f);
                     settings.loadsPerFrame=ud.get2<int>("clusterLoadsPerFrame",32);
+                    settings.materials=ud.get2<bool>("clusterMaterials",false);
+                    settings.textureMiB=uint32_t(ud.get2<int>("clusterTextureMiB",2048));
+                    settings.hostTextureMiB=uint32_t(ud.get2<int>("clusterTextureHostMiB",256));
                     defaultScene.preloadClusterAsset(key,ud.get2<std::string>("clusterManifest"),
                                                     ud.get2<std::string>("clusterRevision",""),settings);
                     return;

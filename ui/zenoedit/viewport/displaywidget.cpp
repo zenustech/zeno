@@ -802,6 +802,11 @@ void DisplayWidget::setClasHistorySettings(bool keep, int samples)
     if (!m_bGLView) m_optixView->setClasHistorySettings(keep, samples);
 }
 
+void DisplayWidget::setClasTwoSidedOpaque(bool enabled)
+{
+    if (!m_bGLView) m_optixView->setClasTwoSidedOpaque(enabled);
+}
+
 void DisplayWidget::setRayTracingSettings(
     bool denoise,
     int maxBounce,

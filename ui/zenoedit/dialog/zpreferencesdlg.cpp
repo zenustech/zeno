@@ -283,6 +283,15 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     };
     connect(m_pClasKeepHistory, &QCheckBox::toggled, this, [applyHistory](bool) { applyHistory(); });
     connect(m_pClasHistoryLimit, QOverload<int>::of(&QSpinBox::valueChanged), this, [applyHistory](int) { applyHistory(); });
+    m_pClasTwoSidedOpaque = new QCheckBox;
+    m_pClasTwoSidedOpaque->setChecked(settingOr(zsClasTwoSidedOpaque, true).toBool());
+    m_pClasTwoSidedOpaque->setToolTip(tr("Render imported opaque materials from both sides, including their shadows. Alpha cutouts, blended materials and transmission retain their authored sidedness."));
+    connect(m_pClasTwoSidedOpaque, &QCheckBox::toggled, this, [this](bool enabled) {
+        ZenoSettingsManager::GetInstance().setValue(zsClasTwoSidedOpaque, enabled);
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasTwoSidedOpaque(enabled);
+    });
 
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
@@ -321,8 +330,10 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pClasKeepHistory, 16, 1);
     pLayout->addWidget(new QLabel(tr("CLAS refinement history samples")), 17, 0);
     pLayout->addWidget(m_pClasHistoryLimit, 17, 1);
+    pLayout->addWidget(new QLabel(tr("Two-sided imported opaque materials")), 18, 0);
+    pLayout->addWidget(m_pClasTwoSidedOpaque, 18, 1);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
-    pLayout->addItem(pSpacerItem, 0, 2, 18);
+    pLayout->addItem(pSpacerItem, 0, 2, 19);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 
@@ -344,6 +355,7 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
     inst.setValue(zsRayTracingDenoise, m_pDenoise->isChecked());
     inst.setValue(zsRayTracingMaxBounce, m_pMaxBounce->value());
+    inst.setValue(zsClasTwoSidedOpaque, m_pClasTwoSidedOpaque->isChecked());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
     inst.setValue(zsSharcSceneScale, m_pSharcSceneScale->value());

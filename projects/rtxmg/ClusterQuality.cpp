@@ -16,7 +16,7 @@ using namespace zeno::cluster;
 namespace fs = std::filesystem;
 using Clock = std::chrono::steady_clock;
 namespace {
-constexpr uint32_t QualityVersion = 4;
+constexpr uint32_t QualityVersion = 5;
 struct Analysis {
     fs::path metadata;
     nlohmann::json report;
@@ -85,8 +85,12 @@ double triangleArea(const Vertex* const v[3]) {
 Analysis analyze(const Geometry& geometry, const fs::path& input, const fs::path& output,
                  uint32_t sourceMesh, float weight, float minAreaRatio, float coverageWeight, bool gpuCoverage, bool convexCoverage) {
     auto meta = readJson(input);
-    if (meta.contains("lodQuality"))
+    // Normal-only enrichment takes a maximum with the existing error. It is
+    // idempotent and preserves earlier coverage bounds, spheres and guards.
+    const bool normalOnly = weight > 0 && minAreaRatio == 0 && coverageWeight == 0;
+    if (meta.contains("lodQuality") && !normalOnly)
         throw std::runtime_error("Quality analysis must start from the original geometry index");
+    const auto previousQuality = meta.value("lodQuality", nlohmann::json());
     std::vector<float> errors(geometry.groups.size());
     std::vector<double> area(errors.size()), simplifiedArea(errors.size());
     std::vector<bool> hasSimplified(errors.size());
@@ -210,6 +214,7 @@ Analysis analyze(const Geometry& geometry, const fs::path& input, const fs::path
                            {"coverageMethod",convexCoverage?"convex":"tight"},
                            {"minAreaRatio", minAreaRatio},
                            {"inputMetadata", input.string()}};
+    if (!previousQuality.is_null()) meta["lodQuality"]["previous"] = previousQuality;
     const auto path = output / ("mesh-" + std::to_string(sourceMesh) + ".json");
     writeJson(path, meta);
     return {path, {{"sourceMesh", sourceMesh}, {"groups", errors.size()},
@@ -269,7 +274,9 @@ int main(int argc, char** argv) try {
     const auto asset = loadAsset(input);
     if (asset.geometries.empty() || asset.placements.empty())
         throw std::runtime_error("Input has no renderable geometry");
-    if (manifest.contains("lodQuality") && selected.empty())
+    const bool normalOnly = weight > 0 && minAreaRatio == 0 && coverageWeight == 0;
+    const auto previousQuality = manifest.value("lodQuality", nlohmann::json());
+    if (manifest.contains("lodQuality") && selected.empty() && !normalOnly)
         throw std::runtime_error("Input is already a quality index; use the original asset index");
     std::vector<bool> process(asset.geometries.size());
     std::set<uint32_t> found, uniqueMeshes;
@@ -284,7 +291,7 @@ int main(int argc, char** argv) try {
             if (manifest.contains("lodQuality")) {
                 auto path = fs::path(sourceMeshes.at(g).at("metadata").get<std::string>());
                 if (path.is_relative()) path = input.parent_path() / path;
-                if (readJson(path).contains("lodQuality"))
+                if (readJson(path).contains("lodQuality") && !normalOnly)
                     throw std::runtime_error("Selected mesh is already a quality index; start from its original metadata");
             }
         }
@@ -343,6 +350,7 @@ int main(int argc, char** argv) try {
                                {"coverageMethod",convexCoverage?"convex":"tight"},
                                {"minAreaRatio", minAreaRatio},
                                {"inputManifest", input.string()}, {"analyzedMeshes", found.size()}};
+    if (!previousQuality.is_null()) manifest["lodQuality"]["previous"] = previousQuality;
     writeJson(output/"asset.json.tmp", manifest);
     // Reopen through the production parser before publishing a usable index.
     loadAsset(output/"asset.json.tmp");

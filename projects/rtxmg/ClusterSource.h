@@ -95,6 +95,24 @@ struct Source {
         }
         throw std::runtime_error("Unsupported glTF component type");
     }
+    std::vector<std::array<float,4>> attributes(size_t id,size_t components) {
+        const auto& a=scene.at("accessors").at(id);
+        if(components<2||components>4||a.at("type")!=("VEC"+std::to_string(components)))
+            throw std::runtime_error("Unexpected glTF attribute type");
+        const auto& viewMeta=scene.at("bufferViews").at(a.at("bufferView").get<size_t>());
+        const auto& data=view(a.at("bufferView").get<size_t>());
+        const int type=a.at("componentType");
+        const size_t width=(type==5120||type==5121)?1:(type==5122||type==5123)?2:4;
+        const size_t stride=viewMeta.value("byteStride",width*components),offset=a.value("byteOffset",size_t(0)),count=a.at("count");
+        if(!count||stride<width*components||offset>data.size()||(count-1)>(data.size()-offset)/stride||(count-1)*stride+width*components>data.size()-offset)
+            throw std::runtime_error("glTF attribute outside decoded buffer");
+        std::vector<std::array<float,4>> result(count);
+        for(size_t i=0;i<count;++i)for(size_t j=0;j<components;++j) {
+            result[i][j]=component(data.data()+offset+i*stride+j*width,type,a.value("normalized",false));
+            if(!std::isfinite(result[i][j]))throw std::runtime_error("Non-finite glTF attribute");
+        }
+        return result;
+    }
     std::vector<glm::vec3> vectors(size_t id) {
         const auto &a = scene.at("accessors").at(id);
         if (a.at("type") != "VEC3")
@@ -147,7 +165,7 @@ struct Source {
         }
         return result;
     }
-    std::string geometryKey(size_t id) const {
+    std::string geometryKey(size_t id,bool shading=false) const {
         auto accessor = [&](size_t id) {
             const auto &a = scene.at("accessors").at(id);
             const auto &v = scene.at("bufferViews").at(a.at("bufferView").get<size_t>());
@@ -171,14 +189,17 @@ struct Source {
             auto position = accessor(a.at("POSITION"));
             auto index = accessor(p.at("indices"));
             auto normal = a.contains("NORMAL") ? accessor(a.at("NORMAL")) : Json();
+            auto uv = shading && a.contains("TEXCOORD_0") ? accessor(a.at("TEXCOORD_0")) : Json();
+            auto tangent = shading && a.contains("TANGENT") ? accessor(a.at("TANGENT")) : Json();
             // Buffer indices vary between aliases; the URI/range identifies bytes.
-            for (auto *value : {&position, &index, &normal})
+            for (auto *value : {&position, &index, &normal, &uv, &tangent})
                 if (!value->is_null() && !(*value)["codec"].is_null())
                     (*value)["codec"].erase("buffer");
             key.push_back({{"mode", p.value("mode", 4)},
                            {"position", position},
                            {"normal", normal},
                            {"indices", index}});
+            if(shading) {key.back()["uv"]=uv;key.back()["tangent"]=tangent;}
         }
         return key.dump();
     }

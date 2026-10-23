@@ -211,7 +211,8 @@ Page readRtxmgPage(const Geometry &geometry, uint32_t id, std::istream &stream) 
     page.indices.reserve(meta.triangles * 3);
     for (uint32_t i = 0; i < count; ++i) {
         const uint64_t c = 32 + i * 16;
-        const uint32_t counts = b.at<uint32_t>(c), attr = b.at<uint32_t>(c + 4) & 255;
+        const uint32_t counts = b.at<uint32_t>(c), packedAttributes=b.at<uint32_t>(c+4);
+        const uint32_t attr = packedAttributes & 255, material=(packedAttributes>>8)&255, encoding=packedAttributes>>24;
         const uint32_t triangles = (counts & 255) + 1, vertices = ((counts >> 8) & 255) + 1;
         if (triangles > MaxTriangles || vertices > MaxVertices || (attr & (16 | 128)))
             throw std::runtime_error("Unsupported RTXMG cluster position layout");
@@ -235,6 +236,31 @@ Page readRtxmgPage(const Geometry &geometry, uint32_t id, std::istream &stream) 
                 normal(vertex.normal, b.at<uint32_t>(vp + vertices * 12 + v * 4));
             page.vertices.push_back(vertex);
         }
+        uint64_t uvOffset=vp+vertices*12+((attr&1)?vertices*4:0);
+        if(attr&4) {
+            if(attr&32)throw std::runtime_error("Unsupported compressed native UV encoding");
+            uvOffset=(uvOffset+7)&~uint64_t(7);
+            b.range(uvOffset,(encoding&1)?16+vertices*4:vertices*8);
+        }
+        for(uint32_t v=0;v<vertices;++v) {
+            zeno_cluster_device::ShadingVertex a{};
+            if(attr&4) {
+                a.tangent=0x40000000u;
+                for(uint32_t k=0;k<2;++k) {
+                    const uint32_t q=(encoding&1)?(b.at<uint32_t>(uvOffset+16+v*4)>>(k*16))&65535:0;
+                    a.uv[k]=(encoding&1)?b.at<float>(uvOffset+k*4)+float(q)*b.at<float>(uvOffset+8+k*4):b.at<float>(uvOffset+v*8+k*4);
+                    if(!std::isfinite(a.uv[k]))throw std::runtime_error("Invalid native UV");
+                }
+            }
+            if(attr&2) {
+                if(!(attr&1))throw std::runtime_error("Native tangent without normal");
+                a.tangent|=0x80000000u|(b.at<uint32_t>(vp+vertices*12+v*4)>>22);
+            }
+            page.attributes.push_back(a);
+        }
+        if(material==255)b.range(ip+triangles*3,triangles);
+        for(uint32_t t=0;t<triangles;++t)
+            page.materials.push_back(uint16_t(material==255?(b.at<uint8_t>(ip+triangles*3+t)&63):material));
         for (uint32_t t = 0; t < triangles * 3; ++t) {
             const uint8_t index = b.at<uint8_t>(ip + t);
             if (index >= vertices)

@@ -25,6 +25,7 @@ const char* const zsRayTracingMaxBounce = "rayTracingMaxBounce";
 const char* const zsClasDebugView = "clasDebugView";
 const char* const zsClasKeepHistory = "clasKeepHistory";
 const char* const zsClasHistoryLimit = "clasHistoryLimit";
+const char* const zsClasTwoSidedOpaque = "clasTwoSidedOpaque";
 const char* const zsEnableSharc = "enableSharc";
 const char* const zsSharcDownscaleFactor = "sharcDownscaleFactor";
 const char* const zsSharcSceneScale = "sharcSceneScale";

@@ -29,13 +29,18 @@ struct LoadPrebakedAsset : INode {
         ud.set2("clusterRevision",std::to_string(revision));
         ud.set2("clusterGeometryMiB",geometry);ud.set2("clusterClasMiB",clas);
         ud.set2("clusterLodError",error);ud.set2("clusterLoadsPerFrame",loads);
+        const bool materials=get_input2<bool>("loadMaterials",false);
+        const int textureMiB=get_input2<int>("textureBudgetMiB",2048),hostMiB=get_input2<int>("textureHostMiB",256);
+        if(materials && (textureMiB<64||hostMiB<32))throw std::runtime_error("CLAS material streaming needs at least 64 MiB texture and 32 MiB host budgets");
+        ud.set2("clusterMaterials",materials);ud.set2("clusterTextureMiB",textureMiB);ud.set2("clusterTextureHostMiB",hostMiB);
         set_output("asset",std::move(ref));
     }
 };
 ZENDEFNODE(LoadPrebakedAsset, {
     {{"readpath","manifest",""},{"string","objectName","ZorahGray"},
      {"int","geometryBudgetMiB","2048"},{"int","clasBudgetMiB","2048"},
-     {"float","lodPixelError","2"},{"int","loadsPerFrame","32"}},
+     {"float","lodPixelError","2"},{"int","loadsPerFrame","32"},
+     {"bool","loadMaterials","0"},{"int","textureBudgetMiB","2048"},{"int","textureHostMiB","256"}},
     {"asset"},{},{"read"},
 });
 }

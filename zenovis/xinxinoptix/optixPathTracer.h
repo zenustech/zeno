@@ -7,6 +7,7 @@
 #include "LightSelection.h"
 #include "SharcLaunchParameters.h"
 #include "ClusterDevice.h"
+#include "ClusterMaterialDevice.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -217,6 +218,7 @@ struct Params
     OptixTraversableHandle handle;
     const zeno_cluster_device::Cluster* cluster_data;
     unsigned int cluster_debug_view;
+    zeno_cluster_device::MaterialLaunch cluster_materials;
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;

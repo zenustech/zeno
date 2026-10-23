@@ -3,6 +3,7 @@
 
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
+#include "ClusterProfiling.h"
 
 #include <memory>
 #include <optix.h>
@@ -171,9 +172,12 @@ struct PathTracerState
 
     OptixShaderBindingTable sbt {};
     bool keep_cluster_history = false;
+    bool cluster_two_sided_opaque = true;
     uint32_t cluster_history_limit = 16;
     uint32_t cluster_history_recovery = 0;
     bool cluster_history_bounded = false;
+    void* viewport_pixels = nullptr;
+    int viewport_width = 0, viewport_height = 0;
     uint64_t sharc_clear_count = 0;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     OptixShaderBindingTable sharc_update_sbt {};
@@ -2321,6 +2325,8 @@ static void updateRayGen(bool aov, bool denoise) {
 }
 
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+    zeno::cluster::TimelineRange timeline("OptiX: render frame");
+    state.viewport_pixels=nullptr;
 
     const auto renderStart=std::chrono::steady_clock::now();
     const char* timingEnv=std::getenv("ZENO_OPTIX_RENDER_TIMING");
@@ -2342,6 +2348,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     // Denoising mixes cluster IDs, coverage and signed normal colors.
     if(debugView)denoise=false;
     updateRayGen(enable_output_aov, denoise);
+    const bool viewMoving=camera_changed||resize_dirty;
     updateState( *output_buffer_o, state.params, enable_output_aov );
     const bool interactive = !runtimeOptions.has("optix_image_path");
     const bool keepHistory = interactive && defaultScene.clusterAsset && debugView == 0 &&
@@ -2368,6 +2375,22 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         updateRootIAS();
         OptixUtil::createPipeline(defaultScene.maxNodeDepth,false);
     }
+    auto* materials=debugView==0?defaultScene.clusterMaterials.get():nullptr;
+    const bool twoSidedOpaque=runtimeOptions.get2<bool>("optix-clas-two-sided-opaque",true);
+    if(twoSidedOpaque!=state.cluster_two_sided_opaque) {
+        state.cluster_two_sided_opaque=twoSidedOpaque;
+        state.params.subframe_index=0;state.params.history_samples=0;state.cluster_history_recovery=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+        if(profile)zeno::log_info("CLAS material sidedness: twoSidedOpaque={}, history reset=1",twoSidedOpaque);
+    }
+    if(materials)materials->prepare();
+    state.params.cluster_materials=materials?materials->launch(twoSidedOpaque):zeno_cluster_device::MaterialLaunch{};
+    // Texture requests also come from new stochastic secondary paths at a
+    // fixed camera. They must not keep the entire image in short history.
+    // Coarse texture previews wash out through normal progressive averaging;
+    // offline output still retries every incomplete texture pass below.
     if (cutChanged) {
         if (keepHistory)
             state.cluster_history_recovery = historyLimit;
@@ -2452,6 +2475,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.params.denoised_buffer = 0;
     }
     cudaEvent_t traceBegin{},traceEnd{};
+    bool traceEndRecorded=false;
     if(profile){CUDA_CHECK(cudaEventCreate(&traceBegin));CUDA_CHECK(cudaEventCreate(&traceEnd));CUDA_CHECK(cudaEventRecord(traceBegin,0));}
     const double setupMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count();
     if (state.params.subframe_index == 0)
@@ -2476,14 +2500,27 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const uint32_t historyStart = state.params.history_samples;
     const bool boundedThisRender = state.cluster_history_bounded;
     timer.tick();
-    for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+    const uint32_t textureRandomSeed=state.params.outside_random_number;
+    for(unsigned int texturePass=0;;++texturePass) {
+    // Probe one sample while cold, then replay the full requested sample set.
+    // Failed texture passes never become offline output. Interactive passes
+    // keep bounded history while the demand loader processes requests.
+    const bool textureProbe=materials&&!interactive&&!materials->settled();
+    const int passSamples=textureProbe?1:samples;
+    if(materials) {
+        if(!interactive)materials->wait();
+        materials->prepare();materials->beginPass();
+        state.params.cluster_materials=materials->launch(twoSidedOpaque);
+    }
+    if(profile && interactive)CUDA_CHECK(cudaEventRecord(traceBegin,0));
+    for (int f = 0; f < passSamples; f += max_samples_once) { // 张心欣不要改这里
 
         if (state.params.subframe_index == 0)
             state.params.history_samples = 0;
         state.cluster_history_bounded = keepHistory && state.cluster_history_recovery > 0;
         if (state.cluster_history_bounded)
             state.params.history_samples = std::min(state.params.history_samples, historyLimit - 1);
-        state.params.samples_per_launch = std::min(samples - f, max_samples_once);
+        state.params.samples_per_launch = std::min(passSamples - f, max_samples_once);
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
         if (sharc_enabled) {
             sharc_enabled = launchSharcUpdate(state);
@@ -2497,9 +2534,32 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         if (state.cluster_history_recovery && clusterStats.settled)
             --state.cluster_history_recovery;
     }
+    // Interactive endPass submits CPU-side texture requests and can block on
+    // loader locks. Exclude that host wait from the GPU trace interval.
+    if(profile && interactive){CUDA_CHECK(cudaEventRecord(traceEnd,0));traceEndRecorded=true;}
+    if(!materials)break;
+    materials->endPass(interactive,viewMoving);
+    if(interactive)break;
+    const bool textureMiss=materials->missed();materials->wait();
+    if(!textureMiss && (!textureProbe||samples==1))break;
+    if(texturePass>=127)throw std::runtime_error("Demand textures did not settle within 128 passes; the working set may exceed the texture budget");
+    const auto textureStats=materials->stats(true);
+    zeno::log_info("CLAS texture retry: pass={}, missing={}, probe={}, tiles={}, GPU bytes={}, host mip bytes={}",
+        texturePass,textureMiss,textureProbe,textureStats.tilesRead,textureStats.deviceBytes,textureStats.hostMipBytes);
+    state.params.subframe_index=0;state.params.history_samples=0;state.params.outside_random_number=textureRandomSeed;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    state.sharc_reset_pending=true;
+    if(sharc_enabled)sharc_enabled=prepareSharc(state);
+#endif
+    }
+    // Serialize CPU submission, not GPU completion. Candidate builds own
+    // another stream and disjoint back-scene storage, so the preparation
+    // worker can submit its next phase while this frame is tracing.
+    if(clusterSubmission.owns_lock())clusterSubmission.unlock();
     float traceMs=0;
     if(profile){
-        CUDA_CHECK(cudaEventRecord(traceEnd,0));CUDA_CHECK(cudaEventSynchronize(traceEnd));
+        if(!traceEndRecorded)CUDA_CHECK(cudaEventRecord(traceEnd,0));
+        CUDA_CHECK(cudaEventSynchronize(traceEnd));
         CUDA_CHECK(cudaEventElapsedTime(&traceMs,traceBegin,traceEnd));
         CUDA_CHECK(cudaEventDestroy(traceBegin));CUDA_CHECK(cudaEventDestroy(traceEnd));
     }
@@ -2507,8 +2567,21 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.denoiser.exec();
     }
     output_buffer_o->unmap();
+    double viewportReadbackMs=0;
+    if(interactive && defaultScene.clusterAsset) {
+        zeno::cluster::TimelineRange readback("OptiX: display readback");
+        const auto start=std::chrono::steady_clock::now();
+        // Snapshot the completed frame once. getOptixImg() can then serve
+        // the host pixels without another CUDA synchronization/readback.
+        state.viewport_pixels=output_buffer_o->getHostPointer();
+        state.viewport_width=output_buffer_o->width();
+        state.viewport_height=output_buffer_o->height();
+        viewportReadbackMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+    }
     timer.tock();
     state.params.frame_time = timer.elapsed();
+    if(materials && interactive)
+        materials->frameComplete(std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count());
     // Integration capture: read the existing linear accumulation without an
     // extra render, a display transform, or a change of history policy.
     if (runtimeOptions.has("optix-test-linear-output")) {
@@ -2529,10 +2602,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         CUDA_CHECK(cudaMemGetInfo(&freeBytes, &totalBytes));
         zeno::log_info("[viewport resources] label={}, gpuUsed={}, gpuTotal={}",
             runtimeOptions.get2<std::string>("optix-test-resource-checkpoint"), totalBytes-freeBytes, totalBytes);
+        int device{};cudaMemPool_t pool{};uint64_t reserved{},used{};
+        CUDA_CHECK(cudaGetDevice(&device));CUDA_CHECK(cudaDeviceGetDefaultMemPool(&pool,device));
+        CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrReservedMemCurrent,&reserved));
+        CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrUsedMemCurrent,&used));
+        zeno::log_info("[viewport allocator] asyncReserved={}, asyncUsed={}, asyncCached={}",reserved,used,reserved>used?reserved-used:0);
         zeno::getSession().userData().erase("optix-test-resource-checkpoint");
     }
     if (profile) {
         const double totalMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count();
+        if(interactive && defaultScene.clusterAsset)
+            zeno::log_info("OptiX viewport snapshot: readback={} ms",viewportReadbackMs);
         zeno::log_info("OptiX render: {} samples, {}x{}, setup={} ms, GPU={} ms ({} ms/sample), total={} ms, debugView={}, subframe={}, historySamples={}",
                        samples,state.params.width,state.params.height,setupMs,traceMs,traceMs/std::max(samples,1),totalMs,
                        debugView,state.params.subframe_index,state.params.history_samples);
@@ -2551,6 +2631,16 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             zeno::log_info("CLAS scheduling: render submission wait={} ms, background submission wait={} ms, render event wait={} ms",
                 s.submissionWaitMs+clusterSubmitWaitMs,s.backgroundSubmissionWaitMs,s.syncMs);
             zeno::log_info("CLAS completed task: active host work={} ms",s.hostTaskMs);
+        }
+        if(materials) {
+            const auto s=materials->stats(!interactive);
+            if(!interactive)
+                zeno::log_info("CLAS textures: settled={}, textures={}, virtual={} bytes, GPU={} bytes, transferred={} bytes, tiles={}, evictions={}, host mip={} bytes, host peak={} bytes",
+                    materials->settled(),s.textures,s.virtualBytes,s.deviceBytes,s.transferredBytes,s.tilesRead,s.evictions,s.hostMipBytes,s.hostPeakBytes);
+            else
+                zeno::log_info("CLAS texture preview: settled={}, host mip={} bytes, host peak={} bytes",materials->settled(),s.hostMipBytes,s.hostPeakBytes);
+            zeno::log_info("CLAS texture CPU: prepare={} ms, request={} ms, statistics={} ms; cumulative mip loads={}, source={} bytes, read={} ms, decode={} ms; admitted={}, pending={}",
+                s.prepareMs,s.requestMs,s.statisticsMs,s.mipLoads,s.sourceBytes,s.sourceReadMs,s.decodeMs,s.requestsAllowed,s.pendingRequests);
         }
     }
 
@@ -2666,6 +2756,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 void *optixgetimg(int &w, int &h) {
     w = output_buffer_o->width();
     h = output_buffer_o->height();
+    if(state.viewport_pixels && w==state.viewport_width && h==state.viewport_height)
+        return state.viewport_pixels;
     return output_buffer_o->getHostPointer();
 }
 
@@ -2682,6 +2774,7 @@ void *optixgetimg(int &w, int &h) {
 void optixCleanup() {
 
     CUDA_SYNC_CHECK();
+    state.viewport_pixels=nullptr;
     state.lightSelectionDirty = true;
     OptixUtil::pipeline.reset();
     OptixUtil::pipelineMark = {};
@@ -2742,7 +2835,7 @@ void optixDestroy() {
         // context; release them before OptixUtil destroys that context.
         state.sharc.reset();
 #endif
-        defaultScene.clusterAsset.reset();
+        defaultScene.clusterMaterials.reset();defaultScene.clusterAsset.reset();
         optixCleanup();
 
         // Program groups must be released before the modules they reference.

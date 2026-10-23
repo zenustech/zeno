@@ -134,6 +134,11 @@ void ZOptixProcViewport::setClasHistorySettings(bool keep, int samples)
     m_worker->onSetClasHistorySettings(keep, samples);
 }
 
+void ZOptixProcViewport::setClasTwoSidedOpaque(bool enabled)
+{
+    m_worker->onSetClasTwoSidedOpaque(enabled);
+}
+
 void ZOptixProcViewport::setRayTracingSettings(
     bool denoise,
     int maxBounce,

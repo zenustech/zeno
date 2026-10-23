@@ -79,6 +79,7 @@ struct ShadowPRD : CommonPRD {
     uint8_t nonThinTransHit;
 
     float3 ShadowNormal;
+    float textureConeWidth=0.f,textureConeSpread=0.f;
 };
 
 enum class RadianceCacheEvent : uint8_t {
@@ -132,6 +133,7 @@ struct RadiancePRD : CommonPRD {
     float        scatterStep;
 
     float        pixel_area;
+    float        textureConeWidth=0.f,textureConeSpread=0.f;
 
     float        samplePdf;
     vec3         mask_value;

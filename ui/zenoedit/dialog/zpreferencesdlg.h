@@ -50,6 +50,7 @@ private:
     QComboBox* m_pClasDebugView;
     QCheckBox* m_pClasKeepHistory;
     QSpinBox* m_pClasHistoryLimit;
+    QCheckBox* m_pClasTwoSidedOpaque;
     QCheckBox* m_pEnableSharc;
     QPushButton* m_pSharcResetCache;
     QSpinBox* m_pSharcDownscaleFactor;

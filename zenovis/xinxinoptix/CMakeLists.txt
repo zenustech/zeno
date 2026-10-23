@@ -12,6 +12,8 @@ target_sources(zenovis PRIVATE
   ChiefDesignerEXR.h
   optixPathTracer.cpp
   optixPathTracer.h
+  ClusterMaterials.cpp
+  ClusterMaterials.h
   NvrtcWorker.cpp
   NvrtcWorker.h
   NvrtcCompileProtocol.h
@@ -199,15 +201,23 @@ set(OTK_FETCH_CONTENT OFF CACHE BOOL "Fetch OptiX Toolkit dependencies" FORCE)
 set(OTK_BUILD_DOCS OFF CACHE BOOL "Build OptiX Toolkit documentation" FORCE)
 set(OTK_BUILD_TESTS OFF CACHE BOOL "Build OptiX Toolkit tests" FORCE)
 set(OTK_BUILD_EXAMPLES OFF CACHE BOOL "Build OptiX Toolkit examples" FORCE)
-set(OTK_LIBRARIES OmmBaking CACHE STRING "OptiX Toolkit libraries required by Zeno" FORCE)
+set(OTK_LIBRARIES "OmmBaking;DemandLoading" CACHE STRING "OptiX Toolkit libraries required by Zeno" FORCE)
+set(OTK_USE_OPENEXR OFF CACHE BOOL "Use OTK OpenEXR readers" FORCE)
+set(OTK_USE_OIIO OFF CACHE BOOL "Use OTK OpenImageIO readers" FORCE)
 
 if (DEFINED CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit)
     set(_zeno_saved_disable_find_cudatoolkit
         "${CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit}")
     set(_zeno_had_disable_find_cudatoolkit TRUE)
 endif()
-set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit TRUE)
+set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit FALSE)
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk EXCLUDE_FROM_ALL)
+include(cmake/OtkBlockMipCompat.cmake)
+zeno_otk_block_mip_compat()
+zeno_otk_request_dispatch_compat()
+# TextureInfo.cpp in this SDK includes EXRReader.h even with its EXR reader
+# disabled. Use the existing OpenEXR target for that header dependency.
+target_link_libraries(ImageSource PRIVATE OpenEXR::OpenEXR)
 if (_zeno_had_disable_find_cudatoolkit)
     set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit
         "${_zeno_saved_disable_find_cudatoolkit}")
@@ -217,12 +227,15 @@ endif()
 unset(_zeno_saved_disable_find_cudatoolkit)
 unset(_zeno_had_disable_find_cudatoolkit)
 
-target_link_libraries(zenovis PRIVATE OptiXToolkit::CuOmmBaking)
+target_link_libraries(zenovis PRIVATE OptiXToolkit::CuOmmBaking OptiXToolkit::DemandLoading)
+target_include_directories(zenovis PRIVATE "${CMAKE_SOURCE_DIR}/projects/zstd/lib")
 
-get_target_property(_incs CuOmmBaking INTERFACE_INCLUDE_DIRECTORIES)
-list(TRANSFORM _incs REPLACE "^${OptiX_ROOT_DIR}/include$"
-    "$<BUILD_INTERFACE:${OptiX_ROOT_DIR}/include>;$<INSTALL_INTERFACE:include>")
-set_target_properties(CuOmmBaking PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_incs}")
+foreach(_otk_target CuOmmBaking DemandLoading)
+    get_target_property(_incs ${_otk_target} INTERFACE_INCLUDE_DIRECTORIES)
+    list(TRANSFORM _incs REPLACE "^${OptiX_ROOT_DIR}/include$"
+        "$<BUILD_INTERFACE:${OptiX_ROOT_DIR}/include>;$<INSTALL_INTERFACE:include>")
+    set_target_properties(${_otk_target} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${_incs}")
+endforeach()
 
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
 
@@ -274,6 +287,9 @@ endif()
 
 set(FILE_LIST
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterDevice.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterMaterialDevice.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterMaterialShader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterTextureFallback.h
     ${OPTIX_PATH}/include/@optix.h
     ${OPTIX_PATH}/include/@optix_types.h
     ${OPTIX_PATH}/include/@optix_host.h
@@ -357,6 +373,19 @@ set(FILE_LIST
     )
 
 list(APPEND FILE_LIST ${SHARC_NVRTC_FILES})
+# Embed the demand sampler's device include closure. Do not add duplicate
+# ShaderUtil include names: NVRTC rejects duplicate in-memory header names.
+zeno_otk_nvrtc_headers(_otk_nvrtc_include)
+foreach(_otk_header DeviceContext.h LRU.h Paging.h Texture2D.h Texture2DFootprint.h
+                    TextureCascade.h TextureSampler.h TileIndexing.h)
+    if(_otk_header STREQUAL "Paging.h" OR _otk_header STREQUAL "TextureSampler.h" OR _otk_header STREQUAL "Texture2D.h")
+        list(APPEND FILE_LIST "${_otk_nvrtc_include}@OptiXToolkit/DemandLoading/${_otk_header}")
+    else()
+        list(APPEND FILE_LIST "${CMAKE_SOURCE_DIR}/projects/optix-toolkit/DemandLoading/DemandLoading/include/@OptiXToolkit/DemandLoading/${_otk_header}")
+    endif()
+endforeach()
+list(APPEND FILE_LIST "${_otk_nvrtc_include}@OptiXToolkit/ImageSource/ImageHelpers.h")
+list(APPEND FILE_LIST "${CMAKE_SOURCE_DIR}/projects/optix-toolkit/ShaderUtil/include/@OptiXToolkit/ShaderUtil/TextureUtil.h")
 
 set(SHARC_NVRTC_TEST_FILES ${SHARC_NVRTC_FILES})
 list(APPEND SHARC_NVRTC_TEST_FILES

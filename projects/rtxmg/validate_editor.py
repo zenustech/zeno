@@ -518,6 +518,16 @@ def main():
         applied = re.findall(r"CLAS history: .*?keep=(\d+)", history_switch)
         if args.debug_view == 0 and applied != [str(int(not args.keep_clas_history)), str(int(args.keep_clas_history))]:
             raise RuntimeError("Runtime history settings did not reach the renderer")
+        sidedness = section("runtime opaque sidedness")
+        sidedness_values = re.findall(r"CLAS material sidedness: twoSidedOpaque=(\d+), history reset=1", sidedness)
+        initial_sidedness = re.findall(r"CLAS startup settings: .*?twoSidedOpaque=(\d+)", log)
+        if not initial_sidedness or sidedness_values != [str(1-int(initial_sidedness[0])), initial_sidedness[0]]:
+            raise RuntimeError("Runtime opaque sidedness did not toggle and restore the launch policy")
+        if re.findall(r"OptiX camera: changed=(\d+), resized=(\d+)", sidedness) != [("0", "0")] * 2:
+            raise RuntimeError("Runtime opaque sidedness unnecessarily updated the camera")
+        sidedness_plans = re.findall(r"CLAS update: .*?plans=(\d+)", sidedness)
+        if plans and sidedness_plans and set(sidedness_plans) != {plans[-1]}:
+            raise RuntimeError("Runtime opaque sidedness unnecessarily replanned CLAS residency")
         w, h = map(int, args.pixels.split("x"))
         for label, size in (("quality simple ratio=2", f"{max(w//2,1)}x{max(h//2,1)}"), ("quality idle ratio=2", args.pixels)):
             part = section(label)
@@ -529,7 +539,8 @@ def main():
         (output / "runtime-switch-validation.json").write_text(json.dumps({"same_resolution_subframes":subframes,
             "camera_positions":list(set(camera_positions)),"debug_modes":list(range(8)),"clas_plan_versions":sorted(set(plans)),
             "history_policy_switches":list(map(int, applied)),
-            "checks":"quality accumulation, real resize, camera stability, runtime modes, shaded-view restore and history policy passed"}, indent=2))
+            "opaque_sidedness_switches":list(map(int, sidedness_values)),
+            "checks":"quality accumulation, real resize, camera stability, runtime modes, shaded-view restore, history and opaque sidedness policies passed"}, indent=2))
     if args.viewport_iterations:
         selections=re.findall(r"OptiX sample selection: mode=viewport, viewportSamples=(\d+), cameraSamples=(\d+), actualSamples=(\d+)",log)
         expected_camera=args.camera_samples if args.camera_samples is not None else args.samples

@@ -171,6 +171,7 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     shadowPRD.fog_tmax = tmax;
     shadowPRD.ShadowNormal = ray_dir;
     shadowPRD.depth = prd.depth;
+    shadowPRD.textureConeWidth=prd.textureConeWidth;shadowPRD.textureConeSpread=prd.textureConeSpread;
     shadowPRD.origin = new_orig;
     shadowPRD.attanuation = vec3(1.0f);
 
@@ -419,6 +420,7 @@ extern "C" __global__ void __raygen__rg()
         prd.offset2 = seed1;
         prd.offset3 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
+        prd.textureConeWidth=0.f;prd.textureConeSpread=prd.pixel_area;
 
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);

@@ -1,5 +1,6 @@
 #include "ClusterCache.h"
 #include "ClusterSource.h"
+#include "ClusterAttributes.h"
 #include <meshoptimizer.h>
 #define CLUSTERLOD_IMPLEMENTATION
 #include <clusterlod.h>
@@ -49,6 +50,10 @@ struct BakeContext {
     const std::vector<glm::vec3>& positions;
     const std::vector<glm::vec3>& normals;
     Json& groups;
+    const std::vector<std::array<float,4>>& uvs;
+    const std::vector<std::array<float,4>>& tangents;
+    uint16_t material;
+    bool attributes;
 };
 static int outputGroup(void* context, clodGroup group, const clodCluster* clusters, size_t count) {
     auto& c = *static_cast<BakeContext*>(context);
@@ -67,8 +72,15 @@ static int outputGroup(void* context, clodGroup group, const clodCluster* cluste
             std::memcpy(v.position,glm::value_ptr(c.positions.at(vertices[j])),12);
             std::memcpy(v.normal,glm::value_ptr(c.normals.at(vertices[j])),12);
             page.vertices.push_back(v);
+            if(c.attributes) {
+                zeno_cluster_device::ShadingVertex a{};
+                if(!c.uvs.empty()) {a.uv[0]=c.uvs.at(vertices[j])[0];a.uv[1]=c.uvs.at(vertices[j])[1];a.tangent=0x40000000u;}
+                if(!c.tangents.empty()) a.tangent|=packTangent(v.normal,c.tangents.at(vertices[j]).data());
+                page.attributes.push_back(a);
+            }
         }
         page.indices.insert(page.indices.end(),indices,indices+in.index_count);
+        if(c.attributes)page.materials.insert(page.materials.end(),cl.triangleCount,c.material);
     }
     const uint64_t offset=uint64_t(c.stream.tellp());
     const auto bytes=writePage(c.stream,page);
@@ -84,6 +96,7 @@ int main(int argc,char** argv) try {
     bool preserveFolds=false,dilateBorders=false;
     bool fallbackSloppy=true,permissive=true;
     bool preserveOpenBorders=false;
+    bool bakeAttributes=false;
     int errorClamped=-1;
     for(int i=1;i<argc;++i) {
         const std::string arg=argv[i];
@@ -101,6 +114,7 @@ int main(int argc,char** argv) try {
         else if(arg=="--permissive") permissive=std::stoi(argv[++i])!=0;
         else if(arg=="--error-clamped") errorClamped=std::stoi(argv[++i])!=0;
         else if(arg=="--preserve-open-borders") preserveOpenBorders=std::stoi(argv[++i])!=0;
+        else if(arg=="--attributes") bakeAttributes=std::stoi(argv[++i])!=0;
         else throw std::runtime_error("Unknown bake option: "+arg);
     }
     if(source.empty() || output.empty()) throw std::runtime_error("Usage: zeno_cluster_bake --source scene.gltf --output cache-directory [--selection file] [--mesh id] [--max-meshes n]");
@@ -142,7 +156,7 @@ int main(int argc,char** argv) try {
     std::vector<size_t> meshOrder(selectedMeshes.begin(),selectedMeshes.end()); std::sort(meshOrder.begin(),meshOrder.end());
     if(maxMeshes>0 && meshOrder.size()>size_t(maxMeshes)) meshOrder.resize(maxMeshes);
     std::map<std::string,std::vector<size_t>> aliases;
-    for(size_t mesh:meshOrder)aliases[input.geometryKey(mesh)].push_back(mesh);
+    for(size_t mesh:meshOrder)aliases[input.geometryKey(mesh,bakeAttributes)].push_back(mesh);
     std::unordered_map<size_t,size_t> canonical;
     meshOrder.clear();
     for(const auto& [key,ids]:aliases){
@@ -157,7 +171,7 @@ int main(int argc,char** argv) try {
         {"maxTriangles",MaxTriangles},{"partitionSize",8},{"fallbackSloppy",fallbackSloppy},
         {"permissive",permissive},{"errorClamped",errorClamped<0?MESHOPTIMIZER_VERSION>=1030:errorClamped!=0},
         {"normalWeight",0.5},{"preserveFolds",preserveFolds},{"dilateBorders",dilateBorders},
-        {"preserveOpenBorders",preserveOpenBorders}};
+        {"preserveOpenBorders",preserveOpenBorders},{"attributes",bakeAttributes}};
     const std::string signature=std::to_string(fingerprint)+"-gray-clod-v2-"+bakeSettings.dump();
     Json asset{{"schema","zeno.rtxmg.asset"},{"version",CacheVersion},{"source",source.string()},
                {"sourceSignature",signature},{"bakeSettings",bakeSettings},{"meshes",Json::array()},{"nodes",Json::array()},{"gray",true},{"gpuInstancing",includeInstances}};
@@ -179,7 +193,9 @@ int main(int argc,char** argv) try {
             uint64_t lockedBoundaryVertices=0;
             const auto& mesh=input.scene.at("meshes").at(meshID);
             {std::lock_guard<std::mutex> lock(logMutex);std::cout<<"[cluster bake] mesh="<<meshID<<" name="<<mesh.value("name","")<<std::endl;}
+            uint32_t materialSlot=0;
             for(const auto& primitive:mesh.at("primitives")) {
+                if(materialSlot>65535)throw std::runtime_error("Too many source material slots");
                 if(primitive.value("mode",4)!=4) throw std::runtime_error("Stage 1 only supports triangle meshes");
                 const auto& attributes=primitive.at("attributes");
                 auto positions=input.vectors(attributes.at("POSITION"));
@@ -187,6 +203,11 @@ int main(int argc,char** argv) try {
                 std::vector<glm::vec3> normals(positions.size(),glm::vec3(0));
                 if(attributes.contains("NORMAL")) normals=input.vectors(attributes.at("NORMAL"));
                 if(normals.size()!=positions.size()) throw std::runtime_error("Normal accessor count mismatch");
+                std::vector<std::array<float,4>> uvs,tangents;
+                if(bakeAttributes && attributes.contains("TEXCOORD_0"))uvs=input.attributes(attributes.at("TEXCOORD_0"),2);
+                if(bakeAttributes && attributes.contains("TANGENT"))tangents=input.attributes(attributes.at("TANGENT"),4);
+                if((!uvs.empty()&&uvs.size()!=positions.size())||(!tangents.empty()&&tangents.size()!=positions.size()))
+                    throw std::runtime_error("Source shading attribute count mismatch");
                 for(uint32_t index:indices) if(index>=positions.size()) throw std::runtime_error("Source triangle index out of range");
                 for(const auto& p:positions) for(int j=0;j<3;++j) if(!std::isfinite(p[j])) throw std::runtime_error("Non-finite source position");
                 if(!attributes.contains("NORMAL")) {
@@ -209,10 +230,18 @@ int main(int argc,char** argv) try {
                 in.vertex_positions=glm::value_ptr(positions[0]); in.vertex_positions_stride=sizeof(glm::vec3);
                 in.vertex_attributes=glm::value_ptr(normals[0]); in.vertex_attributes_stride=sizeof(glm::vec3);
                 in.attribute_weights=weights; in.attribute_count=3;
+                std::vector<std::array<float,5>> shading;
+                const float shadingWeights[5]={.5f,.5f,.5f,.25f,.25f};
+                if(!uvs.empty()) {
+                    shading.resize(positions.size());
+                    for(size_t i=0;i<shading.size();++i)shading[i]={normals[i].x,normals[i].y,normals[i].z,uvs[i][0],uvs[i][1]};
+                    in.vertex_attributes=shading.front().data();in.vertex_attributes_stride=sizeof(shading[0]);
+                    in.attribute_weights=shadingWeights;in.attribute_count=5;
+                }
                 auto borderLocks=preserveOpenBorders?openBorderLocks(positions,indices):std::vector<unsigned char>{};
                 in.vertex_lock=borderLocks.empty()?nullptr:borderLocks.data();
                 lockedBoundaryVertices+=std::count(borderLocks.begin(),borderLocks.end(),meshopt_SimplifyVertex_Lock);
-                BakeContext context{stream,positions,normals,groups};
+                BakeContext context{stream,positions,normals,groups,uvs,tangents,uint16_t(materialSlot++),bakeAttributes};
                 // outputGroup serializes positions immediately: border dilation
                 // mutates this private vertex copy before producing coarser LODs.
                 clodBuild(config,in,&context,outputGroup);
@@ -226,7 +255,8 @@ int main(int argc,char** argv) try {
             Json result{{"version",CacheVersion},{"signature",signature},{"sourceMesh",meshID},
                         {"bakeSettings",bakeSettings},
                         {"lockedBoundaryVertices",lockedBoundaryVertices},
-                        {"pages",pages.filename().string()},{"pageBytes",fs::file_size(pages)},{"pageCodec",4},
+                        {"pages",pages.filename().string()},{"pageBytes",fs::file_size(pages)},{"pageCodec",bakeAttributes?5:4},
+                        {"attributes",bakeAttributes},
                         {"groups",std::move(groups)},{"roots",std::move(roots)}};
             writeJson(metadata.string()+".tmp",result);
             if(fs::exists(metadata)) fs::remove(metadata);

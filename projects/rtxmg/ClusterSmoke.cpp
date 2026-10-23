@@ -22,7 +22,7 @@ static const char* shader=R"CUDA(
 #include <optix.h>
 #include <optix_device.h>
 struct Vertex{float position[3],normal[3];};
-struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group;};
+struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
 struct Params{OptixTraversableHandle handle;const Cluster* clusters;float3 eye,u,v,w;float4* image;unsigned int width,height;};
 extern "C" {__constant__ Params params;}
 static __device__ float3 add(float3 a,float3 b){return make_float3(a.x+b.x,a.y+b.y,a.z+b.z);}

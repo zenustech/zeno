@@ -49,6 +49,7 @@
 
 #include "LightsWrapper.h"
 #include "ClusterRuntime.h"
+#include "ClusterMaterials.h"
 
 #include <parallel_hashmap/phmap.h>
 
@@ -108,6 +109,7 @@ private:
     
 public:
     std::shared_ptr<zeno::cluster::Runtime> clusterAsset;
+    std::unique_ptr<zeno::cluster::Materials> clusterMaterials;
     std::string clusterAssetKey, clusterAssetManifest, clusterAssetRevision;
     zeno::cluster::RuntimeSettings clusterSettings;
     bool clusterRootDirty = false;
@@ -116,10 +118,13 @@ public:
                              zeno::cluster::RuntimeSettings settings) {
         if(clusterAsset && clusterAssetManifest==path && clusterAssetRevision==revision &&
            clusterSettings.geometryBytes==settings.geometryBytes && clusterSettings.clasBytes==settings.clasBytes &&
-           clusterSettings.pixelError==settings.pixelError && clusterSettings.loadsPerFrame==settings.loadsPerFrame) {
+           clusterSettings.pixelError==settings.pixelError && clusterSettings.loadsPerFrame==settings.loadsPerFrame &&
+           clusterSettings.materials==settings.materials && clusterSettings.textureMiB==settings.textureMiB &&
+           clusterSettings.hostTextureMiB==settings.hostTextureMiB) {
             clusterAssetKey=key;clusterUnloadPending=false;return;
         }
-        clusterAsset=std::make_shared<zeno::cluster::Runtime>(std::filesystem::u8path(path),settings);
+        auto next=std::make_shared<zeno::cluster::Runtime>(std::filesystem::u8path(path),settings);
+        clusterMaterials.reset();clusterAsset=std::move(next);
         clusterAssetKey=key;clusterAssetManifest=path;clusterAssetRevision=revision;clusterSettings=settings;
         clusterUnloadPending=false;
         clusterRootDirty=true;
@@ -130,11 +135,13 @@ public:
         // Delay deletion until both passes finish so a refreshed reference can
         // retain its renderer-owned residency instead of reloading every frame.
         if(!clusterUnloadPending)return;
-        clusterAsset.reset();clusterAssetKey.clear();clusterAssetManifest.clear();clusterAssetRevision.clear();
+        clusterMaterials.reset();clusterAsset.reset();clusterAssetKey.clear();clusterAssetManifest.clear();clusterAssetRevision.clear();
         clusterRootDirty=true;clusterUnloadPending=false;
     }
     bool updateClusters(const Params& params,bool interactive) {
         if(!clusterAsset)return false;
+        if(clusterSettings.materials && !clusterMaterials)
+            clusterMaterials=std::make_unique<zeno::cluster::Materials>(std::filesystem::u8path(clusterAssetManifest),clusterSettings.textureMiB,clusterSettings.hostTextureMiB);
         const auto index=shader_indice_table.at(std::make_tuple(std::string(""),ShaderMark::Mesh));
         const float projection=float(params.height)*params.cam.focal_length/std::max(params.cam.height,0.001f);
         if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1')

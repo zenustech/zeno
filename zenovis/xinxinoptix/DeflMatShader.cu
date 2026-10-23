@@ -15,6 +15,7 @@
 #include "DisneyBSDF.h"
 #include "Mnee.h"
 #include "SharcDevice.h"
+#include "ClusterMaterialShader.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -63,6 +64,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto prd = getPRD<ShadowPRD>();
     prd->radiance = make_float3(0,0,0);
     if(params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID) {
+        if(params.cluster_materials.materials) {
+            const float footprint=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+            const float coverage=clusterMaterial::shadowCoverage(footprint);
+            if(coverage<=0.f||(coverage<1.f&&rnd(prd->seed)>=coverage)){optixIgnoreIntersection();return;}
+        }
         prd->attanuation={};optixTerminateRay();return;
     }
     bool opaque = rt_data->opacity == +1.0f;
@@ -488,6 +494,29 @@ extern "C" __global__ void __closesthit__radiance()
         mats.ior=1.5f;mats.F0=0.04f;mats.doubleSide=1.f;mats.smoothness=1.f;
         mats.nrm=attrs.N;mats.metalColor=vec3(1.f);mats.transColor=vec3(1.f);mats.transTint=vec3(1.f);
         mats.reflectance=attrs.reflectance;
+        if(params.cluster_materials.materials && params.cluster_materials.diagnostics && prd->depth==0) {
+            // Read-only probes along the image center line. These distinguish
+            // absent source attributes and back faces from texture LOD loss.
+            const auto pixel=optixGetLaunchIndex();
+            if(pixel.x==params.width/2 && (pixel.y==params.height*9/10 || pixel.y==params.height*11/20 ||
+                                         pixel.y==params.height/4 || pixel.y==params.height/8)) {
+                clusterMaterial::Surface surface{};
+                const float footprint=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+                if(clusterMaterial::surface(surface,footprint)) {
+                    const auto& texture=surface.material->textures[zeno_cluster_device::BaseColor];
+                    const auto dx=clusterMaterial::uvTransform(texture,surface.dx,true),dy=clusterMaterial::uvTransform(texture,surface.dy,true);
+                    const auto c=params.cluster_data[optixGetClusterId()];
+                    printf("[CLAS surface probe] pixel=%u,%u placement=%u geometry=%u group=%u lod=%u material=%u backface=%d UV=%g,%g dx=%g,%g dy=%g,%g footprint=%g baseTexture=%d size=%u,%u desiredMip=%g hasUV=%d\n",
+                        pixel.x,params.height-1-pixel.y,optixGetInstanceId(),c.geometry,c.group,c.lod,
+                        unsigned(surface.material-params.cluster_materials.materials),int(optixIsBackFaceHit()),surface.uv.x,surface.uv.y,
+                        dx.x,dx.y,dy.x,dy.y,footprint,texture.id,texture.width,texture.height,
+                        getMipLevel(dx,dy,float(texture.width),float(texture.height),1.f/8.f),
+                        int((surface.a[0]->tangent&surface.a[1]->tangent&surface.a[2]->tangent&0x40000000u)!=0));
+                }
+            }
+        }
+        if(params.cluster_materials.materials)
+            mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread);
     } else {
         mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
     }
@@ -991,6 +1020,8 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.seed = prd->seed;
     rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);
     shadowPRD.depth = prd->depth;
+    shadowPRD.textureConeWidth=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+    shadowPRD.textureConeSpread=prd->textureConeSpread;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
@@ -1094,6 +1125,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radianceCache.materialDemodulation = sharcMaterialDemodulation;
     prd->radianceCache.radianceDirectionWorld = -normalize(ray_dir);
     prd->radianceCache.pathRoughness += isDiff ? 1.0f : mats.roughness;
+    prd->textureConeWidth+=optixGetRayTmax()*prd->textureConeSpread;
+    prd->textureConeSpread=fminf(prd->textureConeSpread+(isDiff?1.f:.5f*mats.roughness*mats.roughness),1.f);
     prd->radianceCache.segmentLength = cacheSegmentLength;
     prd->radianceCache.radianceDirectionWeight = (params.sharc.shEncoding != 0u && !isDiff)
             ? 1.0f - fminf(fmaxf(mats.roughness, 0.0f), 1.0f) : 0.0f;

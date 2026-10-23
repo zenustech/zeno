@@ -1,5 +1,6 @@
 #include "ClusterRuntime.h"
 #include "ClusterGpu.h"
+#include "ClusterProfiling.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -295,6 +296,7 @@ struct Runtime::Impl {
     bool initialized{}, allocationPressure{};
     uint32_t sbt{}, stamp{}, totalGroups{}, slotCount = 1u << 20, capacity = 4u << 20;
     int front = -1, candidate = -1;
+    bool traversalPending = false;
     uint64_t residencyVersion{}, traversedResidency{};
     float error{};
     std::array<float, 3> lastCamera{};
@@ -331,6 +333,8 @@ struct Runtime::Impl {
 
     explicit Impl(const std::filesystem::path &path, RuntimeSettings s)
         : asset(loadAsset(path)), settings(s), error(s.pixelError) {
+        if(settings.materials)for(const auto& geometry:asset.geometries)
+            if(!geometry.hasAttributes)throw std::runtime_error("Textured CLAS needs attributes on every mesh; rebake custom meshes with --attributes 1");
         if (asset.geometries.empty() || asset.placements.empty())
             throw std::runtime_error("CLAS asset has no renderable geometry");
         if (!s.geometryBytes || !s.clasBytes || !(s.pixelError > 0) || !std::isfinite(s.pixelError) ||
@@ -361,6 +365,8 @@ struct Runtime::Impl {
             cudaStreamSynchronize(0);
         if (uploadStream)
             cudaStreamDestroy(uploadStream);
+        if (buildStream)
+            cudaStreamDestroy(buildStream);
     }
     std::pair<uint32_t, uint32_t> key(uint32_t id) const {
         const uint32_t g = uint32_t(std::upper_bound(geometryOffsets.begin(), geometryOffsets.end(), id) -
@@ -373,7 +379,8 @@ struct Runtime::Impl {
     }
     uint64_t geometryBytes(uint32_t id) const {
         const auto &g = group(id);
-        return uint64_t(g.vertices) * sizeof(Vertex) + uint64_t(g.triangles) * 3;
+        const uint64_t core=uint64_t(g.vertices)*sizeof(Vertex)+uint64_t(g.triangles)*3;
+        return settings.materials?align(core,4)+uint64_t(g.vertices)*sizeof(zeno_cluster_device::ShadingVertex)+uint64_t(g.triangles)*2:core;
     }
     OptixClusterAccelBuildInput triangleInput(uint32_t count, uint32_t triangles, uint32_t vertices) const {
         OptixClusterAccelBuildInput in{};
@@ -415,9 +422,11 @@ struct Runtime::Impl {
             triangles < MaxTriangles)
             throw std::runtime_error("Device does not support these CLAS limits");
         check(cudaStreamCreateWithFlags(&uploadStream, cudaStreamNonBlocking));
-        // Compute phases share render stream 0, matching optix-subd's ordered
-        // builds. CPU preparation and nonblocking transfer still overlap rays.
-        buildStream = cudaStreamLegacy;
+        // The candidate owns immutable AS storage, and publication waits for
+        // phaseDone. Retired geometry/GAS spans remain fenced by render lastUse.
+        // Keep candidate builds off stream 0 so preview rays and readback do
+        // not sit behind another scene's sizing/build/receipt work.
+        check(cudaStreamCreateWithFlags(&buildStream,cudaStreamNonBlocking));
         geometryPool.init(settings.geometryBytes, buildStream);
         clasPool.init(settings.clasBytes, buildStream);
         const uint64_t gasBankBytes=std::max<uint64_t>(1ull<<30,settings.geometryBytes/2);
@@ -576,6 +585,7 @@ struct Runtime::Impl {
     }
     UploadJob stagePages(OptixDeviceContext ctx, const Batch &batch, bool permanent,
                          std::vector<gpu::GroupPatch> &patches) {
+        TimelineRange timeline("CLAS: stage geometry");
         UploadJob job;
         std::vector<OptixClusterAccelBuildInputTrianglesArgs> args;
         std::vector<gpu::PageBuild> pages;
@@ -606,6 +616,14 @@ struct Runtime::Impl {
             const auto vertexBytes = page.vertices.size() * sizeof(Vertex);
             job.copies.push_back({upload.add(page.vertices), base, vertexBytes});
             job.copies.push_back({upload.add(page.indices), base + vertexBytes, page.indices.size()});
+            const auto attributeBase=base+align(vertexBytes+page.indices.size(),4);
+            const auto materialBase=attributeBase+page.vertices.size()*sizeof(zeno_cluster_device::ShadingVertex);
+            if(settings.materials) {
+                if(page.attributes.size()!=page.vertices.size()||page.materials.size()*3!=page.indices.size())
+                    throw std::runtime_error("Incomplete cluster shading attributes");
+                job.copies.push_back({upload.add(page.attributes),attributeBase,page.attributes.size()*sizeof(page.attributes[0])});
+                job.copies.push_back({upload.add(page.materials),materialBase,page.materials.size()*sizeof(page.materials[0])});
+            }
             pages.push_back({uint32_t(args.size()), resident.count, 0, 0, resident.slot});
             for (uint32_t c = 0; c < resident.count; ++c) {
                 const auto &cluster = page.clusters[c];
@@ -616,7 +634,7 @@ struct Runtime::Impl {
                 a.triangleCount = cluster.triangleCount;
                 a.indexFormat = OPTIX_CLUSTER_ACCEL_INDICES_FORMAT_8BIT;
                 a.basePrimitiveInfo.sbtIndex = sbt;
-                a.basePrimitiveInfo.primitiveFlags = OPTIX_CLUSTER_ACCEL_PRIMITIVE_FLAG_DISABLE_ANYHIT;
+                a.basePrimitiveInfo.primitiveFlags = settings.materials?0:OPTIX_CLUSTER_ACCEL_PRIMITIVE_FLAG_DISABLE_ANYHIT;
                 a.vertexBuffer = base + cluster.vertexOffset * sizeof(Vertex);
                 a.vertexBufferStrideInBytes = sizeof(Vertex);
                 a.indexBuffer = base + vertexBytes + cluster.indexOffset;
@@ -624,7 +642,9 @@ struct Runtime::Impl {
                 descriptorPatches.push_back({slot,
                                              {ptr<const zeno_cluster_device::Vertex>(a.vertexBuffer),
                                               ptr<const unsigned char>(a.indexBuffer), group(id).depth,
-                                              geometry, local, cluster.triangleCount}});
+                                              geometry, local, cluster.triangleCount,
+                                              settings.materials?ptr<const zeno_cluster_device::ShadingVertex>(attributeBase+cluster.vertexOffset*sizeof(zeno_cluster_device::ShadingVertex)):nullptr,
+                                              settings.materials?ptr<const unsigned short>(materialBase+cluster.indexOffset/3*2):nullptr}});
                 slotOwners[slot] = {id, c};
                 job.triangles += cluster.triangleCount;
                 job.vertices += cluster.vertexCount;
@@ -1007,6 +1027,7 @@ struct Runtime::Impl {
     }
     bool beginTraversal(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection,
                         bool blocking) {
+        TimelineRange timeline("CLAS: begin traversal");
         const int index = front < 0 ? 0 : 1 - front;
         Scene &scene = scenes[index];
         if (scene.retiring) {
@@ -1228,6 +1249,7 @@ struct Runtime::Impl {
         counters.hostTaskMs = scene.pageReadMs + scene.stagingMs + scene.prepareMs;
     }
     void prepareCandidate(OptixDeviceContext ctx) {
+        TimelineRange timeline("CLAS: prepare candidate");
         auto &scene = scenes[candidate];
         const auto initialQueueWait = counters.submissionWaitMs;
         double activeMs = 0;
@@ -1290,13 +1312,15 @@ struct Runtime::Impl {
         counters.backgroundPrepareMs = std::max(0., activeMs - counters.backgroundSubmissionWaitMs);
         scene.prepareMs = counters.backgroundPrepareMs;
     }
-    void startPreparation(OptixDeviceContext ctx) {
-        if (preparing.valid() || candidate < 0)
+    void startPreparation(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection) {
+        if (preparing.valid() || (candidate < 0 && !traversalPending))
             throw std::runtime_error("Invalid CLAS preparation ownership");
         CUcontext current{};
         if (cuCtxGetCurrent(&current) != CUDA_SUCCESS || !current)
             throw std::runtime_error("CLAS preparation needs a current CUDA context");
-        preparing = std::async(std::launch::async, [this, ctx, current] {
+        const bool begin=traversalPending;
+        traversalPending=false;
+        preparing = std::async(std::launch::async, [this, ctx, current, begin, camera, projection] {
             if (cuCtxPushCurrent(current) != CUDA_SUCCESS)
                 throw std::runtime_error("Cannot bind CLAS build context");
             struct Pop {
@@ -1307,7 +1331,8 @@ struct Runtime::Impl {
             } pop;
             // This worker owns candidate/residency preparation exclusively.
             // It never changes front, the root IAS, or render launch state.
-            prepareCandidate(ctx);
+            if(begin)beginTraversal(ctx,camera,projection,false);
+            if(candidate>=0)prepareCandidate(ctx);
         });
     }
     bool finishCandidate(OptixDeviceContext ctx, bool blocking) {
@@ -1372,8 +1397,10 @@ struct Runtime::Impl {
                                                                  std::future_status::ready);
         const bool different = !hasView || camera != lastCamera || projection != lastProjection;
         if (different || residencyVersion != traversedResidency || ioReady || !pendingRemoval.empty() ||
-            pressure)
-            beginTraversal(ctx, camera, projection, blocking);
+            pressure) {
+            if(blocking)beginTraversal(ctx,camera,projection,true);
+            else traversalPending=true;
+        }
         return changed;
     }
     std::vector<ReferenceCut> referenceCuts() const {
@@ -1462,6 +1489,7 @@ Runtime::Runtime(const std::filesystem::path &path, RuntimeSettings settings)
 Runtime::~Runtime() = default;
 bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<float, 3> &camera,
                      float projection, bool interactive) {
+    TimelineRange timeline("CLAS: render update");
     auto &s = *impl;
     const auto start = Clock::now();
     ++s.mainUpdates;
@@ -1568,7 +1596,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     s.counters.geometryBytes = s.geometryPool.used;
     s.counters.clasBytes = s.clasPool.used;
     s.counters.gasBytes = s.gasPools[0].used + s.gasPools[1].used;
-    s.counters.planningPending = s.candidate >= 0 || s.reading.valid();
+    s.counters.planningPending = s.candidate >= 0 || s.traversalPending || s.reading.valid();
     s.counters.settled = settled();
     s.counters.updateMs = elapsed(start);
     s.counters.gpuSceneMs =
@@ -1591,8 +1619,8 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     // ownership to the worker. Pending viewport calls read only this snapshot
     // and the stable front scene; they never wait on the worker's CUDA event.
     s.frameStats = s.counters;
-    if (interactive && s.candidate >= 0)
-        s.startPreparation(ctx);
+    if (interactive && (s.candidate >= 0 || s.traversalPending))
+        s.startPreparation(ctx,camera,projection);
     s.frameStats.updateMs = elapsed(start);
     return changed;
 }

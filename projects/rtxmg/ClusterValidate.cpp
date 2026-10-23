@@ -1,5 +1,6 @@
 #include "ClusterRuntime.h"
 #include "ClusterSource.h"
+#include "ClusterAttributes.h"
 #include <cstdlib>
 #include <cuda_runtime.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -58,7 +59,7 @@ static const char *shader = R"CUDA(
 #include <optix.h>
 #include <optix_device.h>
 struct Vertex{float position[3],normal[3];};
-struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group;};
+struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
 struct Hit {float distance,nx,ny,nz;unsigned int instance,invalid,shadow;};
 struct Params {OptixTraversableHandle handle;const Cluster* clusters;float3 eye,u,v,w;Hit* hits;unsigned int width,height;float3 light;unsigned int traceShadow;OptixTraversableHandle mirror;Hit* mirrorHits;const Hit* shadowHits;};
 extern "C" {__constant__ Params params;}
@@ -175,6 +176,64 @@ static void validateSource(const fs::path &manifest, const Asset &asset) {
     }
 }
 
+// Compare source-corner UVs and tangent frames together with their material
+// slots; independent position-only hashes cannot detect attribute permutation.
+using AttributeTriangle=std::array<uint32_t,19>;
+static AttributeTriangle attributeTriangle(const Vertex* vertices,const zeno_cluster_device::ShadingVertex* attributes,
+                                          const uint32_t* indices,uint16_t material) {
+    std::array<std::array<uint32_t,6>,3> corners{};
+    for(int j=0;j<3;++j) {
+        const auto index=indices[j];const float values[5]={vertices[index].position[0],vertices[index].position[1],vertices[index].position[2],attributes[index].uv[0],attributes[index].uv[1]};
+        for(int k=0;k<5;++k){const float value=values[k]==0?0.f:values[k];std::memcpy(&corners[j][k],&value,4);}
+        corners[j][5]=attributes[index].tangent;
+    }
+    AttributeTriangle best;best.fill(~0u);
+    for(int first=0;first<3;++first) {
+        AttributeTriangle next{};next[18]=material;
+        for(int j=0;j<3;++j)for(int k=0;k<6;++k)next[j*6+k]=corners[(j+first)%3][k];
+        best=std::min(best,next);
+    }
+    return best;
+}
+static void validateSourceAttributes(const fs::path& manifest,const Asset& asset) {
+    const auto meta=readJson(manifest);auto sourcePath=fs::u8path(meta.at("source").get<std::string>());
+    if(!sourcePath.is_absolute())sourcePath=manifest.parent_path()/sourcePath;
+    const auto gltf=readJson(sourcePath);Source source{gltf,sourcePath.parent_path(),{}};
+    for(size_t g=0;g<asset.geometries.size();++g) {
+        const auto& geometry=asset.geometries[g];
+        if(geometry.rtxmgShard)throw std::runtime_error("Exact attribute comparison requires unquantized custom UV pages");
+        std::vector<AttributeTriangle> expected,actual;uint32_t material=0;
+        for(const auto& primitive:gltf.at("meshes").at(meta["meshes"][g]["sourceMesh"].get<size_t>()).at("primitives")) {
+            const auto& attributes=primitive.at("attributes");const auto positions=source.vectors(attributes.at("POSITION"));
+            const auto indices=source.indices(primitive.at("indices"));
+            const auto normals=attributes.contains("NORMAL")?source.vectors(attributes.at("NORMAL")):std::vector<glm::vec3>(positions.size());
+            const auto uv=attributes.contains("TEXCOORD_0")?source.attributes(attributes.at("TEXCOORD_0"),2):std::vector<std::array<float,4>>{};
+            const auto tangents=attributes.contains("TANGENT")?source.attributes(attributes.at("TANGENT"),4):std::vector<std::array<float,4>>{};
+            std::vector<Vertex> vertices(positions.size());std::vector<zeno_cluster_device::ShadingVertex> shading(positions.size());
+            for(size_t i=0;i<positions.size();++i) {
+                std::memcpy(vertices[i].position,glm::value_ptr(positions[i]),12);
+                if(!uv.empty()){shading[i].uv[0]=uv[i][0];shading[i].uv[1]=uv[i][1];shading[i].tangent=0x40000000u;}
+                if(!tangents.empty())shading[i].tangent|=packTangent(glm::value_ptr(normals[i]),tangents[i].data());
+            }
+            for(size_t i=0;i<indices.size();i+=3)expected.push_back(attributeTriangle(vertices.data(),shading.data(),indices.data()+i,uint16_t(material)));
+            ++material;
+        }
+        std::ifstream stream(geometry.pages,std::ios::binary);
+        for(uint32_t id=0;id<geometry.groups.size();++id)if(geometry.groups[id].depth==0) {
+            const auto page=readPage(geometry,id,stream);
+            if(page.attributes.size()!=page.vertices.size()||page.materials.size()*3!=page.indices.size())throw std::runtime_error("Missing finest shading attributes");
+            for(const auto& cluster:page.clusters)for(uint32_t i=0;i<cluster.triangleCount;++i) {
+                uint32_t indices[3];for(int k=0;k<3;++k)indices[k]=cluster.vertexOffset+page.indices[cluster.indexOffset+i*3+k];
+                actual.push_back(attributeTriangle(page.vertices.data(),page.attributes.data(),indices,page.materials.at(cluster.indexOffset/3+i)));
+            }
+        }
+        std::sort(expected.begin(),expected.end());std::sort(actual.begin(),actual.end());
+        if(expected!=actual)throw std::runtime_error("Finest UV/tangent/material association differs at geometry "+std::to_string(g));
+        std::cout<<"[reference attributes] geometry="<<g<<" triangles="<<actual.size()<<" exact=1"<<std::endl;
+        source.decoded.clear();
+    }
+}
+
 // The mirror is fixed at source resolution so this test isolates LOD of the
 // reflected scene. It is an ordinary triangle GAS, independent of cluster data.
 static OptixTraversableHandle buildMirror(OptixDeviceContext context, const fs::path &path,
@@ -240,7 +299,7 @@ int main(int argc, char **argv) try {
                                  "[--mirror mirror.json] [--error pixels]");
     fs::path manifest = argv[1], cameraPath, cameraSequencePath, outputPath, mirrorPath;
     bool original = false, finest = false, interactive = false, sourceOnly = false;
-    bool traceShadow = false, strictInstances = false;
+    bool traceShadow = false, strictInstances = false, sourceAttributesOnly = false;
     float3 light = make_float3(1, 1, 0);
     int frames = 1, width = 1920, height = 1080;
     uint64_t pool = 256ull << 20;
@@ -251,6 +310,8 @@ int main(int argc, char **argv) try {
             original = true;
         else if (a == "--source-only")
             original = sourceOnly = true;
+        else if (a == "--source-attributes-only")
+            sourceAttributesOnly = true;
         else if (a == "--interactive")
             interactive = true;
         else if (a == "--finest")
@@ -286,6 +347,7 @@ int main(int argc, char **argv) try {
             throw std::runtime_error("Unknown validation option");
     }
     const Asset asset = loadAsset(manifest);
+    if(sourceAttributesOnly){validateSourceAttributes(manifest,asset);return 0;}
     nlohmann::json cameraSequence;
     if (!cameraSequencePath.empty()) {
         if (!cameraPath.empty()) throw std::runtime_error("Use one camera source");
