@@ -16,7 +16,9 @@ __device__ float metric(const Group &g, const Placement &p, const Traversal &t) 
     float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - t.eye[0];
     float y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - t.eye[1];
     float z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - t.eye[2];
-    return b[4] * p.scale / fmaxf(sqrtf(x * x + y * y + z * z) - b[3] * p.scale, .01f) * t.projection;
+    const float distance = sqrtf(x * x + y * y + z * z), radius = b[3] * p.scale;
+    return b[4] * p.scale / fmaxf(distance - radius, .01f) *
+           projectionForSphere(t.zoom, x, y, z, radius, distance, t.projection);
 }
 // One warp per resident group/placement. A resident group can only be admitted
 // after all its parents, and parents cannot be retired while children remain.

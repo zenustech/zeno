@@ -144,11 +144,20 @@ public:
             clusterMaterials=std::make_unique<zeno::cluster::Materials>(std::filesystem::u8path(clusterAssetManifest),clusterSettings.textureMiB,clusterSettings.hostTextureMiB);
         const auto index=shader_indice_table.at(std::make_tuple(std::string(""),ShaderMark::Mesh));
         const float projection=float(params.height)*params.cam.focal_length/std::max(params.cam.height,0.001f);
+        const float right[]{params.cam.right.x,params.cam.right.y,params.cam.right.z};
+        const float up[]{params.cam.up.x,params.cam.up.y,params.cam.up.z};
+        const float forward[]{params.cam.front.x,params.cam.front.y,params.cam.front.z};
+        // Extra detail from a lens narrower than 60 degrees follows the image.
+        // Periphery keeps the existing wide-lens metric, including secondary rays.
+        const float peripheralProjection=float(params.height)*0.866025404f;
+        const auto zoom=params.physical_camera_panorama_camera || projection<=peripheralProjection ? zeno::cluster::ZoomView{} : zeno::cluster::makeZoomView(right,up,forward,
+            params.cam.width/(2.f*params.cam.focal_length),params.cam.height/(2.f*params.cam.focal_length),
+            peripheralProjection,params.cam.horizontal_shift,params.cam.vertical_shift);
         if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1')
             zeno::log_info("CLAS view: eye={},{},{}, projection={}",
                 params.cam.eye.x, params.cam.eye.y, params.cam.eye.z, projection);
         const bool changed=clusterAsset->update(OptixUtil::context,index,
-                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive);
+                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive,zoom);
         clusterRootDirty|=changed;return changed;
     }
     uint32_t frameid;

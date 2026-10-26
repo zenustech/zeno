@@ -1,6 +1,7 @@
 #pragma once
 #include "ClusterCache.h"
 #include "ClusterDevice.h"
+#include "ClusterLod.h"
 #include <map>
 #include <memory>
 #include <mutex>
@@ -53,7 +54,7 @@ class Runtime {
     // and a separate CUDA build stream. Only update() publishes a completed
     // version; last-use events protect front-scene storage during retirement.
     bool update(OptixDeviceContext context, uint32_t sbtIndex, const std::array<float, 3> &eye,
-                float projectionScale, bool interactive = false);
+                float projectionScale, bool interactive = false, const ZoomView &zoom = {});
     OptixTraversableHandle handle() const;
     const zeno_cluster_device::Cluster *descriptors() const;
     RuntimeStats stats() const;

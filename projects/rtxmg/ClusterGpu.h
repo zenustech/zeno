@@ -1,5 +1,6 @@
 #pragma once
 #include "ClusterDevice.h"
+#include "ClusterLod.h"
 #include <cstdint>
 #include <cuda_runtime.h>
 #include <optix.h>
@@ -79,6 +80,7 @@ struct Traversal {
     Request *requests;
     Result *result;
     float eye[3], projection, error;
+    ZoomView zoom;
 };
 size_t scanBytes(uint32_t count);
 size_t sortBytes(uint32_t count);

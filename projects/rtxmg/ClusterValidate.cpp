@@ -500,8 +500,12 @@ int main(int argc, char **argv) try {
                 if (cameraSequencePath.empty()) eye.x += frame * .05f;
             }
             const float t = std::tan(fov * 3.14159265f / 360.f), projection = height / (2 * t);
+            const auto forward = glm::normalize(center-eye), right = glm::normalize(glm::cross(forward,cameraUp)),
+                       up = glm::normalize(glm::cross(right,forward));
+            const auto zoom = makeZoomView(glm::value_ptr(right),glm::value_ptr(up),glm::value_ptr(forward),
+                                          t*float(width)/float(height),t,height*.866025404f);
             for (int i = 0; i < 20000; ++i) {
-                runtime.update(context, 0, {eye.x, eye.y, eye.z}, projection, interactive);
+                runtime.update(context, 0, {eye.x, eye.y, eye.z}, projection, interactive, zoom);
                 if (interactive || runtime.stats().settled)
                     break;
                 if (i == 19999)

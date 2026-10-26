@@ -324,6 +324,7 @@ struct Scene {
     OptixTraversableHandle traversable{};
     std::array<float, 3> camera{};
     float projection{}, error{};
+    ZoomView zoom;
     Clock::time_point submitted{};
     UploadJob uploadJob;
     std::vector<gpu::GroupPatch> patches;
@@ -388,9 +389,11 @@ struct Runtime::Impl {
     float error{};
     std::array<float, 3> lastCamera{};
     float lastProjection{};
+    ZoomView lastZoom;
     bool hasView{};
     std::array<float, 3> requestedCamera{};
     float requestedProjection{};
+    ZoomView requestedZoom;
     bool hasRequestedView{}, qualityRecoveryPending{};
     ChunkPool geometryPool,clasPool,gasPools[2];
     Pool descriptorPool;
@@ -1114,6 +1117,7 @@ struct Runtime::Impl {
         }
         std::copy(scene.camera.begin(), scene.camera.end(), t.eye);
         t.projection = scene.projection;
+        t.zoom = scene.zoom;
         t.error = error;
         scene.lodBegin.record(buildStream);
         gpu::traverse(t, ptr<void>(scene.scan.p), scene.scan.bytes, buildStream);
@@ -1142,8 +1146,7 @@ struct Runtime::Impl {
         counters.loadingMs = counters.hostStreamingMs;
         ++counters.plans;
     }
-    bool beginTraversal(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection,
-                        bool blocking) {
+    bool beginTraversal(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection, bool blocking, const ZoomView &zoom) {
         TimelineRange timeline("CLAS: begin traversal");
         const int index = front < 0 ? 0 : 1 - front;
         Scene &scene = scenes[index];
@@ -1174,6 +1177,7 @@ struct Runtime::Impl {
         scene.uploadJob = stagePages(ctx, batch, false, scene.patches);
         scene.camera = camera;
         scene.projection = projection;
+        scene.zoom = zoom;
         scene.submitted = start;
         scene.sizingMs = scene.uploadPriorMs = 0;
         scene.pageReadMs = batch.readMs;
@@ -1350,6 +1354,7 @@ struct Runtime::Impl {
         counters.maxLod = result.maxLod;
         lastCamera = scene.camera;
         lastProjection = scene.projection;
+        lastZoom = scene.zoom;
         hasView = true;
     }
     void profileScene(const Scene &scene, bool built) {
@@ -1431,7 +1436,7 @@ struct Runtime::Impl {
         counters.backgroundPrepareMs = std::max(0., activeMs - counters.backgroundSubmissionWaitMs);
         scene.prepareMs = counters.backgroundPrepareMs;
     }
-    void startPreparation(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection) {
+    void startPreparation(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection, const ZoomView &zoom) {
         if (preparing.valid() || (candidate < 0 && !traversalPending))
             throw std::runtime_error("Invalid CLAS preparation ownership");
         CUcontext current{};
@@ -1439,7 +1444,7 @@ struct Runtime::Impl {
             throw std::runtime_error("CLAS preparation needs a current CUDA context");
         const bool begin=traversalPending;
         traversalPending=false;
-        preparing = std::async(std::launch::async, [this, ctx, current, begin, camera, projection] {
+        preparing = std::async(std::launch::async, [this, ctx, current, begin, camera, projection, zoom] {
             if (cuCtxPushCurrent(current) != CUDA_SUCCESS)
                 throw std::runtime_error("Cannot bind CLAS build context");
             struct Pop {
@@ -1450,7 +1455,7 @@ struct Runtime::Impl {
             } pop;
             // This worker owns candidate/residency preparation exclusively.
             // It never changes front, the root IAS, or render launch state.
-            if(begin)beginTraversal(ctx,camera,projection,false);
+            if(begin)beginTraversal(ctx,camera,projection,false,zoom);
             if(candidate>=0)prepareCandidate(ctx);
         });
     }
@@ -1495,7 +1500,7 @@ struct Runtime::Impl {
         scene.phase = Scene::Idle;
         return changed;
     }
-    bool tick(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection, bool blocking) {
+    bool tick(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection, bool blocking, const ZoomView &zoom) {
         retireCompleted();
         bool changed = finishCandidate(ctx, blocking);
         if (candidate >= 0)
@@ -1514,10 +1519,10 @@ struct Runtime::Impl {
         }
         const bool ioReady = reading.valid() && (blocking || reading.wait_for(std::chrono::seconds(0)) ==
                                                                  std::future_status::ready);
-        const bool different = !hasView || camera != lastCamera || projection != lastProjection;
+        const bool different = !hasView || camera != lastCamera || projection != lastProjection || zoom != lastZoom;
         if (different || residencyVersion != traversedResidency || ioReady || !pendingRemoval.empty() ||
             pressure) {
-            if(blocking)beginTraversal(ctx,camera,projection,true);
+            if(blocking)beginTraversal(ctx,camera,projection,true,zoom);
             else traversalPending=true;
         }
         return changed;
@@ -1573,9 +1578,9 @@ struct Runtime::Impl {
                 const float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - scene.camera[0],
                             y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - scene.camera[1],
                             z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - scene.camera[2];
-                return b[4] * placement.scale /
-                           std::max(std::sqrt(x * x + y * y + z * z) - b[3] * placement.scale, .01f) *
-                           scene.projection >
+                const float distance = std::sqrt(x * x + y * y + z * z), radius = b[3] * placement.scale;
+                return b[4] * placement.scale / std::max(distance - radius, .01f) *
+                           projectionForSphere(scene.zoom, x, y, z, radius, distance, scene.projection) >
                        scene.error;
             };
             const auto visit = [&](auto &&self, uint32_t id) -> void {
@@ -1607,7 +1612,7 @@ Runtime::Runtime(const std::filesystem::path &path, RuntimeSettings settings)
     : impl(std::make_unique<Impl>(path, settings)) {}
 Runtime::~Runtime() = default;
 bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<float, 3> &camera,
-                     float projection, bool interactive) {
+                     float projection, bool interactive, const ZoomView &zoom) {
     TimelineRange timeline("CLAS: render update");
     auto &s = *impl;
     const auto start = Clock::now();
@@ -1615,6 +1620,14 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     if (!(projection > 0) || !std::isfinite(projection) ||
         !std::all_of(camera.begin(), camera.end(), [](float v) { return std::isfinite(v); }))
         throw std::runtime_error("Invalid CLAS view");
+    if (zoom.peripheralProjection != 0.f) {
+        if (!(zoom.peripheralProjection > 0.f) || !std::isfinite(zoom.peripheralProjection) ||
+            !(zoom.feather > 0.f) || !std::isfinite(zoom.feather))
+            throw std::runtime_error("Invalid CLAS zoom projection");
+        for (const auto &plane : zoom.planes)
+            for (float v : plane)
+                if (!std::isfinite(v)) throw std::runtime_error("Invalid CLAS zoom plane");
+    }
     bool completedPreparation = false;
     if (s.preparing.valid()) {
         if (interactive && s.preparing.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
@@ -1641,10 +1654,11 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     // attempt to recover the requested quality after its current work settles.
     // Track requested views separately from asynchronously published views;
     // publishing an older candidate must not schedule repeated recovery.
-    if (!s.hasRequestedView || camera != s.requestedCamera || projection != s.requestedProjection) {
+    if (!s.hasRequestedView || camera != s.requestedCamera || projection != s.requestedProjection || zoom != s.requestedZoom) {
         s.qualityRecoveryPending = s.hasRequestedView && s.error > s.settings.pixelError;
         s.requestedCamera = camera;
         s.requestedProjection = projection;
+        s.requestedZoom = zoom;
         s.hasRequestedView = true;
     }
     s.counters.updates = s.mainUpdates;
@@ -1669,7 +1683,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     const auto settled = [&] {
         return s.front >= 0 && s.candidate < 0 && !s.reading.valid() && s.requests.empty() &&
                s.pendingRemoval.empty() && s.traversedResidency == s.residencyVersion && s.hasView &&
-               camera == s.lastCamera && projection == s.lastProjection;
+               camera == s.lastCamera && projection == s.lastProjection && zoom == s.lastZoom;
     };
     const auto recoverQuality = [&] {
         if (!s.qualityRecoveryPending) return false;
@@ -1698,7 +1712,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     bool changed = false;
     const bool blocking = !interactive || s.front < 0;
     for (uint32_t iterations = 0;; ++iterations) {
-        changed |= s.tick(ctx, camera, projection, blocking);
+        changed |= s.tick(ctx, camera, projection, blocking, zoom);
         if (blocking && s.candidate >= 0)
             changed |= s.finishCandidate(ctx, true);
         if (interactive && s.front >= 0)
@@ -1742,7 +1756,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     // and the stable front scene; they never wait on the worker's CUDA event.
     s.frameStats = s.counters;
     if (interactive && (s.candidate >= 0 || s.traversalPending))
-        s.startPreparation(ctx,camera,projection);
+        s.startPreparation(ctx,camera,projection,zoom);
     s.frameStats.updateMs = elapsed(start);
     return changed;
 }
