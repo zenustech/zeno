@@ -1,7 +1,10 @@
 #pragma once
 namespace zeno_cluster_device {
-struct Vertex {
-    float position[3], normal[3];
+// Positions are build-only and live in staging until the CLAS build completes.
+// Hit positions come from optixGetTriangleVertexData; only shading normals
+// need persistent vertex storage. The on-disk Vertex layout is unchanged.
+struct VertexNormal {
+    float normal[3];
 };
 struct ShadingVertex {
     float uv[2];
@@ -10,7 +13,7 @@ struct ShadingVertex {
 };
 // Shared host/NVRTC layout; keep ClusterSmoke's standalone shader in sync.
 struct Cluster {
-    const Vertex *vertices;
+    const VertexNormal *normals;
     const unsigned char *indices;
     unsigned int lod, geometry, group, triangles;
     const ShadingVertex* attributes;

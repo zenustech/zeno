@@ -58,8 +58,8 @@ template <class T> struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) Record {
 static const char *shader = R"CUDA(
 #include <optix.h>
 #include <optix_device.h>
-struct Vertex{float position[3],normal[3];};
-struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
+struct VertexNormal{float normal[3];};
+struct Cluster{const VertexNormal* normals;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
 struct Hit {float distance,nx,ny,nz;unsigned int instance,invalid,shadow;};
 struct Params {OptixTraversableHandle handle;const Cluster* clusters;float3 eye,u,v,w;Hit* hits;unsigned int width,height;float3 light;unsigned int traceShadow;OptixTraversableHandle mirror;Hit* mirrorHits;const Hit* shadowHits;};
 extern "C" {__constant__ Params params;}
@@ -103,8 +103,9 @@ extern "C" __global__ void __closesthit__main(){
    optixGetTriangleVertexData(v);
    unsigned int id=optixGetClusterId();if(id==OPTIX_CLUSTER_ID_INVALID)invalid=1;
    else {const Cluster c=params.clusters[id];unsigned int t=optixGetPrimitiveIndex();
-     for(unsigned int j=0;j<3;++j){const Vertex a=c.vertices[c.indices[t*3+j]];
-       for(unsigned int k=0;k<3;++k)if(fabsf(a.position[k]-(&v[j].x)[k])>1.e-5f*fmaxf(1.f,fabsf(a.position[k])))invalid=1;
+     if(t>=c.triangles || !c.normals || !c.indices)invalid=1;
+     else for(unsigned int j=0;j<3;++j){const VertexNormal a=c.normals[c.indices[t*3+j]];
+       for(unsigned int k=0;k<3;++k)if(!isfinite(a.normal[k]) || !isfinite((&v[j].x)[k]))invalid=1;
      }
    }
  }else optixGetTriangleVertexData(optixGetGASTraversableHandle(),optixGetPrimitiveIndex(),optixGetSbtGASIndex(),0,v);

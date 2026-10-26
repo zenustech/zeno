@@ -2607,6 +2607,11 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrReservedMemCurrent,&reserved));
         CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrUsedMemCurrent,&used));
         zeno::log_info("[viewport allocator] asyncReserved={}, asyncUsed={}, asyncCached={}",reserved,used,reserved>used?reserved-used:0);
+        if(defaultScene.clusterAsset) {
+            const auto residency=defaultScene.clusterAsset->residencyMemory();
+            zeno::log_info("[viewport residency allocator] reserved={}, used={}, cached={}",
+                residency[0],residency[1],residency[0]>residency[1]?residency[0]-residency[1]:0);
+        }
         zeno::getSession().userData().erase("optix-test-resource-checkpoint");
     }
     if (profile) {
@@ -2626,8 +2631,10 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                 s.updateMs,s.planningMs,s.loadingMs,s.accelerationMs,s.settled,s.pendingGroups,s.plans,s.staticSkips,s.loads,s.evictions,s.gasBuilds,s.iasBuilds);
             zeno::log_info("CLAS GPU: LOD={} ms, CLAS={} ms, GAS={} ms, IAS={} ms, scene={} ms, upload={} ms; host staging={} ms, background prepare={} ms, background IO={} ms, version={}",
                 s.gpuLodMs,s.gpuClasMs,s.gpuGasMs,s.gpuIasMs,s.gpuSceneMs,s.gpuUploadMs,s.hostStreamingMs,s.backgroundPrepareMs,s.pageReadMs,s.sceneVersion);
-            zeno::log_info("CLAS residency: AS pool={} bytes, new GAS={}, reused GAS={}, ready latency={} ms, preparation pending={}",
-                s.gasBytes,s.rebuiltGases,s.reusedGases,s.sceneLatencyMs,s.planningPending);
+            zeno::log_info("CLAS residency: AS pool={} bytes, reserved={} bytes, new GAS={}, reused GAS={}, ready latency={} ms, preparation pending={}",
+                s.gasBytes,s.gasReservedBytes,s.rebuiltGases,s.reusedGases,s.sceneLatencyMs,s.planningPending);
+            zeno::log_info("CLAS memory: geometry used={} reserved={}, CLAS used={} reserved={}, GAS used={} reserved={} bytes",
+                s.geometryBytes,s.geometryReservedBytes,s.clasBytes,s.clasReservedBytes,s.gasBytes,s.gasReservedBytes);
             zeno::log_info("CLAS scheduling: render submission wait={} ms, background submission wait={} ms, render event wait={} ms",
                 s.submissionWaitMs+clusterSubmitWaitMs,s.backgroundSubmissionWaitMs,s.syncMs);
             zeno::log_info("CLAS completed task: active host work={} ms",s.hostTaskMs);

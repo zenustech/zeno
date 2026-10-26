@@ -18,6 +18,7 @@ struct RuntimeSettings {
 };
 struct RuntimeStats {
     uint64_t geometryBytes{}, clasBytes{}, loads{}, evictions{};
+    uint64_t geometryReservedBytes{},clasReservedBytes{};
     uint64_t updates{}, plans{}, staticSkips{}, gasBuilds{}, iasBuilds{}, renderTriangles{};
     uint32_t residentGroups{}, renderClusters{}, pendingGroups{}, minLod{}, maxLod{};
     float effectivePixelError{};
@@ -33,7 +34,7 @@ struct RuntimeStats {
     double backgroundPrepareMs{};
     double hostTaskMs{};
     double submissionWaitMs{}, backgroundSubmissionWaitMs{};
-    uint64_t gasBytes{};
+    uint64_t gasBytes{},gasReservedBytes{};
     uint32_t rebuiltGases{}, reusedGases{};
     uint64_t gasCompactions{};
 };
@@ -56,6 +57,8 @@ class Runtime {
     OptixTraversableHandle handle() const;
     const zeno_cluster_device::Cluster *descriptors() const;
     RuntimeStats stats() const;
+    // Physical allocator counters, queried only at explicit resource snapshots.
+    std::array<uint64_t,2> residencyMemory() const; // Reserved, used bytes.
     std::vector<ReferenceCut> referenceCut() const;
     void validateCut() const;
 

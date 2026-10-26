@@ -16,7 +16,7 @@ struct Surface {
     float2 uv,dx,dy;
     float3 p[3];
     const ShadingVertex* a[3];
-    const Vertex* vertices[3];
+    const VertexNormal* vertices[3];
     const PlacementMaterials* placement;
 };
 __forceinline__ __device__ const Material* resolve(const Cluster& c,const PlacementMaterials*& placement) {
@@ -45,9 +45,11 @@ __forceinline__ __device__ bool surface(Surface& s,float footprint) {
     }
     s.material=resolve(c,s.placement);if(!s.material)return false;
     const auto index=c.indices+triangle*3;
+    float3 positions[3];
+    optixGetTriangleVertexData(positions);
     for(int i=0;i<3;++i) {
-        s.a[i]=c.attributes+index[i];s.vertices[i]=c.vertices+index[i];
-        const auto* v=s.vertices[i]->position;s.p[i]=transform(*s.placement,make_float3(v[0],v[1],v[2]),true);
+        s.a[i]=c.attributes+index[i];s.vertices[i]=c.normals+index[i];
+        s.p[i]=transform(*s.placement,positions[i],true);
     }
     const auto bary=optixGetTriangleBarycentrics();
     s.uv=make_float2(0.f);s.dx=s.dy=make_float2(0.f);
@@ -140,7 +142,7 @@ __forceinline__ __device__ float shadowCoverage(float footprint) {
     if(!(material->flags&(AlphaMask|AlphaBlend)))return 1.f;
     Surface s{};return surface(s,footprint)?alpha(s,sample(s,BaseColor)):1.f;
 }
-__forceinline__ __device__ float3 tangent(const Vertex& v,unsigned int packed) {
+__forceinline__ __device__ float3 tangent(const VertexNormal& v,unsigned int packed) {
     const auto n=make_float3(v.normal[0],v.normal[1],v.normal[2]);float3 t,b;
     if(n.z<-.99998796f){t=make_float3(0,-1,0);b=make_float3(-1,0,0);}
     else {const float a=1.f/(1.f+n.z),q=-n.x*n.y*a;t=make_float3(1-n.x*n.x*a,q,-n.x);b=make_float3(q,1-n.y*n.y*a,-n.y);}

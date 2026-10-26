@@ -283,9 +283,9 @@ extern "C" __global__ void __closesthit__radiance()
             float3 vertices[3];optixGetTriangleVertexData(vertices);
             const float3 ng=optixTransformNormalFromObjectToWorldSpace(cross(vertices[1]-vertices[0],vertices[2]-vertices[0]));
             const auto* indices=cluster.indices+optixGetPrimitiveIndex()*3;
-            const auto& a=cluster.vertices[indices[0]];
-            const auto& b=cluster.vertices[indices[1]];
-            const auto& c=cluster.vertices[indices[2]];
+            const auto& a=cluster.normals[indices[0]];
+            const auto& b=cluster.normals[indices[1]];
+            const auto& c=cluster.normals[indices[2]];
             const float3 ns=optixTransformNormalFromObjectToWorldSpace(interp(optixGetTriangleBarycentrics(),
                 make_float3(a.normal[0],a.normal[1],a.normal[2]),make_float3(b.normal[0],b.normal[1],b.normal[2]),
                 make_float3(c.normal[0],c.normal[1],c.normal[2])));
@@ -443,9 +443,9 @@ extern "C" __global__ void __closesthit__radiance()
         const auto cluster=params.cluster_data[optixGetClusterId()];
         const auto* indices=cluster.indices+primIdx*3;
         attrs.vertex_idx=make_uint3(indices[0],indices[1],indices[2]);
-        const auto& a=cluster.vertices[indices[0]];
-        const auto& b=cluster.vertices[indices[1]];
-        const auto& c=cluster.vertices[indices[2]];
+        const auto& a=cluster.normals[indices[0]];
+        const auto& b=cluster.normals[indices[1]];
+        const auto& c=cluster.normals[indices[2]];
         const float3 n0=make_float3(a.normal[0],a.normal[1],a.normal[2]);
         const float3 n1=make_float3(b.normal[0],b.normal[1],b.normal[2]);
         const float3 n2=make_float3(c.normal[0],c.normal[1],c.normal[2]);

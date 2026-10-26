@@ -188,7 +188,9 @@ struct Pool {
         insert(offset, bytes);
     }
 };
+struct PoolChunk;
 struct Resident {
+    PoolChunk *geometryChunk{},*clasChunk{};
     uint64_t geometryOffset{}, geometryBytes{}, clasOffset{}, clasBytes{};
     uint32_t slot{}, count{}, children{}, wanted{1};
     bool permanent{}, retiring{}, ready{};
@@ -211,13 +213,97 @@ struct UploadJob {
     std::vector<Copy> copies;
     std::vector<uint32_t> ids;
 };
+// Resident groups and GAS batches keep stable addresses until their render
+// fences release them. Commit storage in chunks within each configured budget
+// instead of eagerly allocating every pool's complete ceiling. An empty chunk
+// can be returned without relocating any live geometry or acceleration data.
+struct ResidencyHeap {
+    cudaMemPool_t memory{};
+    uint64_t committed{};
+    void init() {
+        int device{};check(cudaGetDevice(&device));
+        cudaMemPoolProps props{};
+        props.allocType=cudaMemAllocationTypePinned;
+        props.location.type=cudaMemLocationTypeDevice;
+        props.location.id=device;
+        check(cudaMemPoolCreate(&memory,&props));
+    }
+    void updateReleaseThreshold() {
+        // CUDA's threshold includes live allocations, rather than just cache.
+        uint64_t threshold=committed+(128ull<<20);
+        check(cudaMemPoolSetAttribute(memory,cudaMemPoolAttrReleaseThreshold,&threshold));
+    }
+    CUdeviceptr allocate(uint64_t bytes,cudaStream_t stream) {
+        void* address{};check(cudaMallocFromPoolAsync(&address,bytes,memory,stream));
+        committed+=bytes;
+        try { updateReleaseThreshold(); }
+        catch(...) { committed-=bytes;cudaFreeAsync(address,stream);throw; }
+        return reinterpret_cast<CUdeviceptr>(address);
+    }
+    void release(CUdeviceptr address,uint64_t bytes,cudaStream_t stream) {
+        check(cudaFreeAsync(ptr<void>(address),stream));
+        committed-=bytes;updateReleaseThreshold();
+    }
+};
+struct PoolChunk {
+    Pool storage;
+    cudaStream_t stream;
+    ResidencyHeap* heap;
+    PoolChunk(uint64_t bytes,cudaStream_t s,ResidencyHeap* h):stream(s),heap(h) {
+        storage.buffer.p=heap->allocate(bytes,s);
+        storage.buffer.bytes=bytes;
+        storage.insert(0,bytes);
+    }
+    ~PoolChunk() {
+        if(storage.buffer.p) {
+            heap->release(storage.buffer.p,storage.buffer.bytes,stream);
+            storage.buffer.p=0;
+        }
+    }
+};
+struct ChunkPool {
+    uint64_t capacity{},reserved{},used{};
+    cudaStream_t stream{};
+    ResidencyHeap* memoryPool{};
+    std::vector<std::unique_ptr<PoolChunk>> chunks;
+    void init(uint64_t bytes,cudaStream_t s,ResidencyHeap* pool) { capacity=bytes&~uint64_t(255);stream=s;memoryPool=pool; }
+    bool fits(uint64_t bytes) const {
+        bytes=align(bytes);
+        for(const auto& chunk:chunks)if(chunk->storage.fits(bytes))return true;
+        return bytes<=capacity-reserved;
+    }
+    std::pair<PoolChunk*,uint64_t> allocate(uint64_t bytes) {
+        bytes=align(bytes);
+        PoolChunk* chosen=nullptr;
+        for(const auto& chunk:chunks)if(chunk->storage.fits(bytes)){chosen=chunk.get();break;}
+        if(!chosen) {
+            if(bytes>capacity-reserved)throw std::runtime_error("Resident storage pool is full");
+            const uint64_t size=std::min(align(bytes,64ull<<20),capacity-reserved);
+            chunks.push_back(std::make_unique<PoolChunk>(size,stream,memoryPool));
+            chosen=chunks.back().get();reserved+=size;
+            if(renderStats)++renderStats->allocationCalls;
+        }
+        const auto offset=chosen->storage.allocate(bytes);used+=bytes;
+        return {chosen,offset};
+    }
+    void release(PoolChunk* chunk,uint64_t offset,uint64_t bytes) {
+        chunk->storage.release(offset,bytes);used-=align(bytes);
+        if(chunk->storage.used)return;
+        reserved-=chunk->storage.buffer.bytes;
+        const auto it=std::find_if(chunks.begin(),chunks.end(),[&](const auto& p){return p.get()==chunk;});
+        chunks.erase(it);
+        if(renderStats)++renderStats->freeCalls;
+    }
+};
 struct GasBatch {
-    Pool *pool{};
+    ChunkPool *pool{};
+    PoolChunk *chunk{};
     uint64_t offset{}, bytes{};
     ~GasBatch() {
         if (pool)
-            pool->release(offset, bytes);
+            pool->release(chunk,offset,bytes);
     }
+    CUdeviceptr address() const { return chunk->storage.buffer.p+offset; }
 };
 struct GasToken {
     std::shared_ptr<GasBatch> owner;
@@ -293,6 +379,7 @@ struct Runtime::Impl {
     uint64_t mainUpdates{};
     std::future<void> preparing;
     cudaStream_t uploadStream{}, buildStream{};
+    ResidencyHeap residencyHeap;
     bool initialized{}, allocationPressure{};
     uint32_t sbt{}, stamp{}, totalGroups{}, slotCount = 1u << 20, capacity = 4u << 20;
     int front = -1, candidate = -1;
@@ -305,7 +392,8 @@ struct Runtime::Impl {
     std::array<float, 3> requestedCamera{};
     float requestedProjection{};
     bool hasRequestedView{}, qualityRecoveryPending{};
-    Pool geometryPool, clasPool, descriptorPool, gasPools[2];
+    ChunkPool geometryPool,clasPool,gasPools[2];
+    Pool descriptorPool;
     uint32_t activeGasPool{};
     bool compactGasPool{};
     Buffer gasHandleTable;
@@ -363,6 +451,13 @@ struct Runtime::Impl {
             cudaStreamSynchronize(uploadStream);
         if (initialized)
             cudaStreamSynchronize(0);
+        // PoolChunk uses stream-ordered freeing; destroy its owners while the
+        // build stream is still valid, after all scene readers have finished.
+        gasTokens.clear();
+        geometryPool.chunks.clear();
+        clasPool.chunks.clear();
+        if(buildStream)cudaStreamSynchronize(buildStream);
+        if(residencyHeap.memory)cudaMemPoolDestroy(residencyHeap.memory);
         if (uploadStream)
             cudaStreamDestroy(uploadStream);
         if (buildStream)
@@ -379,7 +474,7 @@ struct Runtime::Impl {
     }
     uint64_t geometryBytes(uint32_t id) const {
         const auto &g = group(id);
-        const uint64_t core=uint64_t(g.vertices)*sizeof(Vertex)+uint64_t(g.triangles)*3;
+        const uint64_t core=uint64_t(g.vertices)*sizeof(zeno_cluster_device::VertexNormal)+uint64_t(g.triangles)*3;
         return settings.materials?align(core,4)+uint64_t(g.vertices)*sizeof(zeno_cluster_device::ShadingVertex)+uint64_t(g.triangles)*2:core;
     }
     OptixClusterAccelBuildInput triangleInput(uint32_t count, uint32_t triangles, uint32_t vertices) const {
@@ -427,11 +522,16 @@ struct Runtime::Impl {
         // Keep candidate builds off stream 0 so preview rays and readback do
         // not sit behind another scene's sizing/build/receipt work.
         check(cudaStreamCreateWithFlags(&buildStream,cudaStreamNonBlocking));
-        geometryPool.init(settings.geometryBytes, buildStream);
-        clasPool.init(settings.clasBytes, buildStream);
+        // The renderer's default async allocator retains a large working set.
+        // Keep residency recycling separate so retired chunks can actually
+        // return VRAM after the existing worker completion events, while a
+        // small cache avoids physical allocation churn for replacement GASes.
+        residencyHeap.init();
+        geometryPool.init(settings.geometryBytes, buildStream,&residencyHeap);
+        clasPool.init(settings.clasBytes, buildStream,&residencyHeap);
         const uint64_t gasBankBytes=std::max<uint64_t>(1ull<<30,settings.geometryBytes/2);
         for (auto &pool : gasPools)
-            pool.init(gasBankBytes, buildStream);
+            pool.init(gasBankBytes, buildStream,&residencyHeap);
         gasTokens.resize(asset.placements.size() * 3 + 128);
         reserve(gasHandleTable, gasTokens.size() * sizeof(uint64_t));
         for (uint32_t i = uint32_t(gasTokens.size()); i > 0; --i)
@@ -607,16 +707,27 @@ struct Runtime::Impl {
                 continue;
             }
             Resident resident;
-            resident.geometryOffset = geometryPool.allocate(bytes);
+            const auto geometryAllocation=geometryPool.allocate(bytes);
+            resident.geometryChunk=geometryAllocation.first;
+            resident.geometryOffset=geometryAllocation.second;
             resident.geometryBytes = align(bytes);
             resident.count = uint32_t(page.clusters.size());
             resident.slot = uint32_t(descriptorPool.allocate(resident.count * 128) / 128);
             resident.permanent = permanent;
-            const auto base = geometryPool.buffer.p + resident.geometryOffset;
-            const auto vertexBytes = page.vertices.size() * sizeof(Vertex);
-            job.copies.push_back({upload.add(page.vertices), base, vertexBytes});
-            job.copies.push_back({upload.add(page.indices), base + vertexBytes, page.indices.size()});
-            const auto attributeBase=base+align(vertexBytes+page.indices.size(),4);
+            const auto base = resident.geometryChunk->storage.buffer.p + resident.geometryOffset;
+            std::vector<std::array<float,3>> positions(page.vertices.size());
+            std::vector<zeno_cluster_device::VertexNormal> normals(page.vertices.size());
+            for(size_t i=0;i<page.vertices.size();++i) {
+                std::memcpy(positions[i].data(),page.vertices[i].position,sizeof(positions[i]));
+                std::memcpy(normals[i].normal,page.vertices[i].normal,sizeof(normals[i]));
+            }
+            // The upload arena is not reused until the candidate's build fence
+            // completes. CLAS input positions never enter the resident pool.
+            const auto positionData=upload.add(positions);
+            const auto normalBytes=normals.size()*sizeof(normals[0]);
+            job.copies.push_back({upload.add(normals),base,normalBytes});
+            job.copies.push_back({upload.add(page.indices), base + normalBytes, page.indices.size()});
+            const auto attributeBase=base+align(normalBytes+page.indices.size(),4);
             const auto materialBase=attributeBase+page.vertices.size()*sizeof(zeno_cluster_device::ShadingVertex);
             if(settings.materials) {
                 if(page.attributes.size()!=page.vertices.size()||page.materials.size()*3!=page.indices.size())
@@ -635,12 +746,12 @@ struct Runtime::Impl {
                 a.indexFormat = OPTIX_CLUSTER_ACCEL_INDICES_FORMAT_8BIT;
                 a.basePrimitiveInfo.sbtIndex = sbt;
                 a.basePrimitiveInfo.primitiveFlags = settings.materials?0:OPTIX_CLUSTER_ACCEL_PRIMITIVE_FLAG_DISABLE_ANYHIT;
-                a.vertexBuffer = base + cluster.vertexOffset * sizeof(Vertex);
-                a.vertexBufferStrideInBytes = sizeof(Vertex);
-                a.indexBuffer = base + vertexBytes + cluster.indexOffset;
+                a.vertexBuffer = positionData + cluster.vertexOffset * sizeof(positions[0]);
+                a.vertexBufferStrideInBytes = sizeof(positions[0]);
+                a.indexBuffer = base + normalBytes + cluster.indexOffset;
                 args.push_back(a);
                 descriptorPatches.push_back({slot,
-                                             {ptr<const zeno_cluster_device::Vertex>(a.vertexBuffer),
+                                             {ptr<const zeno_cluster_device::VertexNormal>(base+cluster.vertexOffset*sizeof(normals[0])),
                                               ptr<const unsigned char>(a.indexBuffer), group(id).depth,
                                               geometry, local, cluster.triangleCount,
                                               settings.materials?ptr<const zeno_cluster_device::ShadingVertex>(attributeBase+cluster.vertexOffset*sizeof(zeno_cluster_device::ShadingVertex)):nullptr,
@@ -679,9 +790,11 @@ struct Runtime::Impl {
                 admitted = false;
                 break;
             }
-            resident.clasOffset = clasPool.allocate(bytes);
+            const auto clasAllocation=clasPool.allocate(bytes);
+            resident.clasChunk=clasAllocation.first;
+            resident.clasOffset=clasAllocation.second;
             resident.clasBytes = bytes;
-            actual[i].output = clasPool.buffer.p + resident.clasOffset;
+            actual[i].output = resident.clasChunk->storage.buffer.p + resident.clasOffset;
         }
         if (admitted) {
             for (uint32_t id : job.ids)
@@ -695,8 +808,8 @@ struct Runtime::Impl {
         for (uint32_t id : job.ids) {
             const auto resident = residents.at(id);
             if (resident.clasBytes)
-                clasPool.release(resident.clasOffset, resident.clasBytes);
-            geometryPool.release(resident.geometryOffset, resident.geometryBytes);
+                clasPool.release(resident.clasChunk,resident.clasOffset,resident.clasBytes);
+            geometryPool.release(resident.geometryChunk,resident.geometryOffset,resident.geometryBytes);
             descriptorPool.release(uint64_t(resident.slot) * 128, uint64_t(resident.count) * 128);
             for (uint32_t i = parentOffsets[id]; i < parentOffsets[id + 1]; ++i)
                 --residents.at(parentIDs[i]).children;
@@ -780,14 +893,18 @@ struct Runtime::Impl {
                     throw std::runtime_error("Retiring a CLAS parent with live descendants");
                 for (uint32_t i = parentOffsets[id]; i < parentOffsets[id + 1]; ++i)
                     --residents.at(parentIDs[i]).children;
-                geometryPool.release(resident.geometryOffset, resident.geometryBytes);
-                clasPool.release(resident.clasOffset, resident.clasBytes);
+                geometryPool.release(resident.geometryChunk,resident.geometryOffset,resident.geometryBytes);
+                clasPool.release(resident.clasChunk,resident.clasOffset,resident.clasBytes);
                 descriptorPool.release(uint64_t(resident.slot) * 128, uint64_t(resident.count) * 128);
                 residents.erase(found);
                 ++counters.evictions;
             }
             it = retired.erase(it);
         }
+        counters.gasBytes=gasPools[0].used+gasPools[1].used;
+        counters.gasReservedBytes=gasPools[0].reserved+gasPools[1].reserved;
+        counters.geometryReservedBytes=geometryPool.reserved;
+        counters.clasReservedBytes=clasPool.reserved;
     }
     void retireRemoved(std::vector<uint32_t> pages) {
         if (pages.empty())
@@ -987,7 +1104,7 @@ struct Runtime::Impl {
         t.result = ptr<gpu::Result>(scene.result.p);
         t.same = ptr<uint32_t>(scene.same.p);
         t.rebuildAll = compactGasPool ||
-                       gasPools[activeGasPool].used > gasPools[activeGasPool].buffer.bytes * .70 ||
+                       gasPools[activeGasPool].used > gasPools[activeGasPool].capacity * .70 ||
                        (front >= 0 && std::getenv("ZENO_CLAS_FORCE_GAS_COMPACTION"));
         scene.rebuildAllGases = t.rebuildAll;
         if (front >= 0) {
@@ -1120,7 +1237,7 @@ struct Runtime::Impl {
         if (newCount) {
             check(optixClusterAccelComputeMemoryUsage(
                 ctx, OPTIX_CLUSTER_ACCEL_BUILD_MODE_IMPLICIT_DESTINATIONS, &input, &sizes));
-            if (sizes.outputSizeInBytes > gasPool.buffer.bytes)
+            if (sizes.outputSizeInBytes > gasPool.capacity)
                 throw std::runtime_error("Complete GAS batch exceeds its storage bank capacity");
             if (!gasPool.fits(sizes.outputSizeInBytes) || freeGasTokens.size() < newCount) {
                 ++counters.deferredUpdates;
@@ -1130,7 +1247,9 @@ struct Runtime::Impl {
             }
             batch = std::make_shared<GasBatch>();
             batch->bytes = align(sizes.outputSizeInBytes);
-            batch->offset = gasPool.allocate(batch->bytes);
+            const auto allocation=gasPool.allocate(batch->bytes);
+            batch->chunk=allocation.first;
+            batch->offset=allocation.second;
             batch->pool = &gasPool;
             reserve(scene.scratch, sizes.tempSizeInBytes);
         }
@@ -1187,7 +1306,7 @@ struct Runtime::Impl {
                          buildStream);
             OptixClusterAccelBuildModeDesc desc{};
             desc.mode = OPTIX_CLUSTER_ACCEL_BUILD_MODE_IMPLICIT_DESTINATIONS;
-            desc.implicitDest.outputBuffer = gasPool.buffer.p + batch->offset;
+            desc.implicitDest.outputBuffer = batch->address();
             desc.implicitDest.outputBufferSizeInBytes = batch->bytes;
             desc.implicitDest.tempBuffer = scene.scratch.p;
             desc.implicitDest.tempBufferSizeInBytes = scene.scratch.bytes;
@@ -1596,6 +1715,9 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     s.counters.geometryBytes = s.geometryPool.used;
     s.counters.clasBytes = s.clasPool.used;
     s.counters.gasBytes = s.gasPools[0].used + s.gasPools[1].used;
+    s.counters.gasReservedBytes = s.gasPools[0].reserved + s.gasPools[1].reserved;
+    s.counters.geometryReservedBytes=s.geometryPool.reserved;
+    s.counters.clasReservedBytes=s.clasPool.reserved;
     s.counters.planningPending = s.candidate >= 0 || s.traversalPending || s.reading.valid();
     s.counters.settled = settled();
     s.counters.updateMs = elapsed(start);
@@ -1631,6 +1753,14 @@ const zeno_cluster_device::Cluster *Runtime::descriptors() const {
     return ptr<const zeno_cluster_device::Cluster>(impl->descriptors.p);
 }
 RuntimeStats Runtime::stats() const { return impl->frameStats; }
+std::array<uint64_t,2> Runtime::residencyMemory() const {
+    std::array<uint64_t,2> bytes{};
+    if(impl->residencyHeap.memory) {
+        check(cudaMemPoolGetAttribute(impl->residencyHeap.memory,cudaMemPoolAttrReservedMemCurrent,&bytes[0]));
+        check(cudaMemPoolGetAttribute(impl->residencyHeap.memory,cudaMemPoolAttrUsedMemCurrent,&bytes[1]));
+    }
+    return bytes;
+}
 std::vector<ReferenceCut> Runtime::referenceCut() const { return impl->referenceCuts(); }
 void Runtime::validateCut() const { impl->validateCut(); }
 } // namespace zeno::cluster

@@ -21,8 +21,8 @@ struct Params{OptixTraversableHandle handle;const zeno_cluster_device::Cluster* 
 static const char* shader=R"CUDA(
 #include <optix.h>
 #include <optix_device.h>
-struct Vertex{float position[3],normal[3];};
-struct Cluster{const Vertex* vertices;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
+struct VertexNormal{float normal[3];};
+struct Cluster{const VertexNormal* normals;const unsigned char* indices;unsigned int lod,geometry,group,triangles;const void* attributes;const unsigned short* materials;};
 struct Params{OptixTraversableHandle handle;const Cluster* clusters;float3 eye,u,v,w;float4* image;unsigned int width,height;};
 extern "C" {__constant__ Params params;}
 static __device__ float3 add(float3 a,float3 b){return make_float3(a.x+b.x,a.y+b.y,a.z+b.z);}
@@ -39,7 +39,7 @@ extern "C" __global__ void __miss__main(){optixSetPayload_0(__float_as_uint(.08f
 extern "C" __global__ void __miss__shadow(){optixSetPayload_0(1);}
 extern "C" __global__ void __closesthit__main(){
  const Cluster c=params.clusters[optixGetClusterId()];unsigned int tri=optixGetPrimitiveIndex();float2 uv=optixGetTriangleBarycentrics();
- const Vertex a=c.vertices[c.indices[tri*3]],b=c.vertices[c.indices[tri*3+1]],d=c.vertices[c.indices[tri*3+2]];
+ const VertexNormal a=c.normals[c.indices[tri*3]],b=c.normals[c.indices[tri*3+1]],d=c.normals[c.indices[tri*3+2]];
  float3 n=norm(make_float3(a.normal[0]*(1-uv.x-uv.y)+b.normal[0]*uv.x+d.normal[0]*uv.y,a.normal[1]*(1-uv.x-uv.y)+b.normal[1]*uv.x+d.normal[1]*uv.y,a.normal[2]*(1-uv.x-uv.y)+b.normal[2]*uv.x+d.normal[2]*uv.y));
  n=norm(optixTransformNormalFromObjectToWorldSpace(n));
  float3 ray=optixGetWorldRayDirection();if(dot3(n,ray)>0)n=mul(n,-1);
