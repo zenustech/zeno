@@ -293,6 +293,41 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
                 if (viewport) viewport->setClasTwoSidedOpaque(enabled);
     });
 
+    m_pClasAdaptiveLod = new QCheckBox;
+    m_pClasAdaptiveLod->setChecked(settingOr(zsClasAdaptiveLod,true).toBool());
+    m_pClasAdaptiveLod->setToolTip(tr("Adapt geometry quality to streaming pressure. Coarsen above 85% pool occupancy and recover below 70%. Off holds the requested error; insufficient budgets are reported in the status below."));
+    m_pClasPixelError = new QDoubleSpinBox;
+    m_pClasPixelError->setDecimals(2);
+    m_pClasPixelError->setRange(0.,1024.);
+    m_pClasPixelError->setSingleStep(.25);
+    m_pClasPixelError->setSpecialValueText(tr("Use asset setting"));
+    m_pClasPixelError->setValue(settingOr(zsClasPixelError,0.).toDouble());
+    m_pClasPixelError->setToolTip(tr("Requested geometric error in pixels. Smaller values request more detail. Zero uses the asset node's value. Changes apply without reloading the graph or cache."));
+    auto applyLod = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasAdaptiveLod,m_pClasAdaptiveLod->isChecked());
+        settings.setValue(zsClasPixelError,m_pClasPixelError->value());
+        if (auto main=zenoApp->getMainWindow())
+            for (auto viewport:main->viewports())
+                if(viewport)viewport->setClasLodSettings(m_pClasAdaptiveLod->isChecked(),m_pClasPixelError->value());
+    };
+    connect(m_pClasAdaptiveLod,&QCheckBox::toggled,this,[applyLod](bool){applyLod();});
+    connect(m_pClasPixelError,QOverload<double>::of(&QDoubleSpinBox::valueChanged),this,[applyLod](double){applyLod();});
+    m_pClasLodStatus = new QLabel(tr("No CLAS asset"));
+    m_pClasLodStatus->setWordWrap(true);
+    auto refreshLod = [this]() {
+        QString status;
+        if(auto main=zenoApp->getMainWindow())
+            for(auto viewport:main->viewports())
+                if(viewport && viewport->isVisible() && !viewport->clasLodStatus().isEmpty()) {
+                    status=viewport->clasLodStatus();break;
+                }
+        m_pClasLodStatus->setText(status.isEmpty()?tr("No CLAS asset"):status);
+    };
+    auto lodTimer=new QTimer(this);
+    connect(lodTimer,&QTimer::timeout,this,refreshLod);
+    lodTimer->start(500);
+    refreshLod();
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
     pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
@@ -332,6 +367,11 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pClasHistoryLimit, 17, 1);
     pLayout->addWidget(new QLabel(tr("Two-sided imported opaque materials")), 18, 0);
     pLayout->addWidget(m_pClasTwoSidedOpaque, 18, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS requested pixel error")),19,0);
+    pLayout->addWidget(m_pClasPixelError,19,1);
+    pLayout->addWidget(new QLabel(tr("Adaptive CLAS LOD")),20,0);
+    pLayout->addWidget(m_pClasAdaptiveLod,20,1);
+    pLayout->addWidget(m_pClasLodStatus,21,0,1,2);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
     pLayout->addItem(pSpacerItem, 0, 2, 19);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);

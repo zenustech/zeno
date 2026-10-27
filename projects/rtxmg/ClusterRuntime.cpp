@@ -1,4 +1,5 @@
 #include "ClusterRuntime.h"
+#include "ClusterAdaptiveLod.h"
 #include "ClusterGpu.h"
 #include "ClusterProfiling.h"
 #include <algorithm>
@@ -387,6 +388,12 @@ struct Runtime::Impl {
     bool traversalPending = false;
     uint64_t residencyVersion{}, traversedResidency{};
     float error{};
+    AdaptiveLod adaptive;
+    LodControl lodControl;
+    float requestedError{};
+    Clock::time_point policyTime{};
+    uint32_t unusedGroups{}, refinableGroups{};
+    bool budgetBlocked{};
     std::array<float, 3> lastCamera{};
     float lastProjection{};
     ZoomView lastZoom;
@@ -394,7 +401,7 @@ struct Runtime::Impl {
     std::array<float, 3> requestedCamera{};
     float requestedProjection{};
     ZoomView requestedZoom;
-    bool hasRequestedView{}, qualityRecoveryPending{};
+    bool hasRequestedView{};
     ChunkPool geometryPool,clasPool,gasPools[2];
     Pool descriptorPool;
     uint32_t activeGasPool{};
@@ -424,6 +431,8 @@ struct Runtime::Impl {
 
     explicit Impl(const std::filesystem::path &path, RuntimeSettings s)
         : asset(loadAsset(path)), settings(s), error(s.pixelError) {
+        requestedError = s.pixelError;
+        adaptive.reset(requestedError);
         if(settings.materials)for(const auto& geometry:asset.geometries)
             if(!geometry.hasAttributes)throw std::runtime_error("Textured CLAS needs attributes on every mesh; rebake custom meshes with --attributes 1");
         if (asset.geometries.empty() || asset.placements.empty())
@@ -932,7 +941,7 @@ struct Runtime::Impl {
         }
     }
     void startReading() {
-        if (reading.valid() || requests.empty())
+        if (reading.valid() || requests.empty() || budgetBlocked)
             return;
         std::set<uint32_t> needed;
         const auto ancestors = [&](auto &&self, uint32_t id) -> void {
@@ -1388,7 +1397,6 @@ struct Runtime::Impl {
                                                    [&](auto p) { return rejected.count(p.group) != 0; }),
                                     scene.patches.end());
                 scene.uploadJob = {};
-                error *= 1.02f;
             }
             startTraversal(ctx, scene);
             activeMs += elapsed(start);
@@ -1412,13 +1420,21 @@ struct Runtime::Impl {
             requests.assign(scene.requestReceipt,
                             scene.requestReceipt + std::min(result.requests, gpu::MaxRequests));
             size_t flag = 0;
+            unusedGroups = refinableGroups = 0;
             for (auto &[id, resident] : residents)
-                if (flag < scene.residentIDs.size() && id == scene.residentIDs[flag])
+                if (flag < scene.residentIDs.size() && id == scene.residentIDs[flag]) {
                     resident.wanted = scene.wantedReceipt[flag++] & 1;
+                    if (!resident.permanent && !resident.retiring) {
+                        if (resident.wanted) ++refinableGroups;
+                        else ++unusedGroups;
+                    }
+                }
             if (flag != scene.residentIDs.size())
                 throw std::runtime_error("CLAS residency receipt lost its owner");
-            // Read/decode the next task while this candidate's GAS/IAS builds.
-            startReading();
+            // A rejected fixed-quality load waits for a view/control change or
+            // reclaimed storage. Do not repeatedly decode an unadmittable page.
+            if (!lodControl.adaptive && allocationPressure) budgetBlocked = true;
+            else startReading();
             if (result.changed) {
                 if (!buildScene(ctx, scene)) {
                     scene.phase = Scene::Retry;
@@ -1500,28 +1516,49 @@ struct Runtime::Impl {
         scene.phase = Scene::Idle;
         return changed;
     }
+    float poolLoad() const {
+        return std::max({float(double(geometryPool.used)/settings.geometryBytes),
+                         float(double(clasPool.used)/settings.clasBytes),
+                         float(double(descriptorPool.used)/(uint64_t(slotCount)*128))});
+    }
+    bool policyPending() const {
+        const float load = poolLoad();
+        return (budgetBlocked && !retired.empty()) ||
+            (unusedGroups && load > (error > requestedError ? .70f : .85f)) ||
+            adaptive.pending(requestedError, load, lodControl.adaptive,
+                             refinableGroups || !requests.empty(), allocationPressure);
+    }
     bool tick(OptixDeviceContext ctx, const std::array<float, 3> &camera, float projection, bool blocking, const ZoomView &zoom) {
+        const auto geometryBefore=geometryPool.used, clasBefore=clasPool.used;
         retireCompleted();
+        if(geometryPool.used<geometryBefore || clasPool.used<clasBefore)
+            allocationPressure=budgetBlocked=false;
         bool changed = finishCandidate(ctx, blocking);
         if (candidate >= 0)
             return changed;
-        bool pressure = false;
-        if (!requests.empty()) {
-            pressure = allocationPressure || descriptorPool.used > uint64_t(slotCount) * 128 * .90 ||
-                       clasPool.used > uint64_t(settings.clasBytes * .90) ||
-                       geometryPool.used > uint64_t(settings.geometryBytes * .90);
-            if (pressure) {
-                chooseEvictions();
-                if (pendingRemoval.empty())
-                    error *= 1.02f;
-            }
-            startReading();
+        const float load = poolLoad();
+        if (allocationPressure || load > (error > requestedError ? .70f : .85f))
+            chooseEvictions();
+        const bool reclaiming = !pendingRemoval.empty() || !retired.empty();
+        const auto now = Clock::now();
+        const double seconds = !blocking && policyTime != Clock::time_point{} ?
+            std::chrono::duration<double>(now-policyTime).count() : 1./60.;
+        policyTime = now;
+        const float nextError = adaptive.advance(requestedError, load, seconds, lodControl.adaptive,
+            !reclaiming && (refinableGroups || !requests.empty()), allocationPressure);
+        if (nextError != error) {
+            error = nextError;
+            traversedResidency = ~0ull;
+            budgetBlocked = false;
         }
+        if (reclaiming) budgetBlocked = false;
+        if (!lodControl.adaptive && allocationPressure && !reclaiming && !reading.valid())
+            budgetBlocked = true;
+        startReading();
         const bool ioReady = reading.valid() && (blocking || reading.wait_for(std::chrono::seconds(0)) ==
                                                                  std::future_status::ready);
         const bool different = !hasView || camera != lastCamera || projection != lastProjection || zoom != lastZoom;
-        if (different || residencyVersion != traversedResidency || ioReady || !pendingRemoval.empty() ||
-            pressure) {
+        if (different || residencyVersion != traversedResidency || ioReady || !pendingRemoval.empty()) {
             if(blocking)beginTraversal(ctx,camera,projection,true,zoom);
             else traversalPending=true;
         }
@@ -1612,7 +1649,7 @@ Runtime::Runtime(const std::filesystem::path &path, RuntimeSettings settings)
     : impl(std::make_unique<Impl>(path, settings)) {}
 Runtime::~Runtime() = default;
 bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<float, 3> &camera,
-                     float projection, bool interactive, const ZoomView &zoom) {
+                     float projection, bool interactive, const ZoomView &zoom, LodControl control) {
     TimelineRange timeline("CLAS: render update");
     auto &s = *impl;
     const auto start = Clock::now();
@@ -1620,6 +1657,8 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     if (!(projection > 0) || !std::isfinite(projection) ||
         !std::all_of(camera.begin(), camera.end(), [](float v) { return std::isfinite(v); }))
         throw std::runtime_error("Invalid CLAS view");
+    if (!(control.pixelError >= 0.f) || !std::isfinite(control.pixelError))
+        throw std::runtime_error("Invalid requested CLAS pixel error");
     if (zoom.peripheralProjection != 0.f) {
         if (!(zoom.peripheralProjection > 0.f) || !std::isfinite(zoom.peripheralProjection) ||
             !(zoom.feather > 0.f) || !std::isfinite(zoom.feather))
@@ -1650,12 +1689,20 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
         s.preparing.get();
         completedPreparation = true;
     }
-    // Pool pressure adapts a view's error upward. A later view gets one
-    // attempt to recover the requested quality after its current work settles.
-    // Track requested views separately from asynchronously published views;
-    // publishing an older candidate must not schedule repeated recovery.
+    const float requestedError = control.pixelError > 0.f ? control.pixelError : s.settings.pixelError;
+    if (control.adaptive != s.lodControl.adaptive || requestedError != s.requestedError) {
+        s.lodControl = control;
+        s.requestedError = requestedError;
+        s.adaptive.reset(requestedError);
+        s.error = requestedError;
+        s.budgetBlocked = s.allocationPressure = false;
+        s.traversedResidency = ~0ull;
+    }
+    // A new view may recover beyond the discrete-LOD limit learned for the
+    // previous view. Keep its effective error; recover gradually with headroom.
     if (!s.hasRequestedView || camera != s.requestedCamera || projection != s.requestedProjection || zoom != s.requestedZoom) {
-        s.qualityRecoveryPending = s.hasRequestedView && s.error > s.settings.pixelError;
+        s.adaptive.viewChanged(requestedError);
+        s.budgetBlocked = s.allocationPressure = false;
         s.requestedCamera = camera;
         s.requestedProjection = projection;
         s.requestedZoom = zoom;
@@ -1681,19 +1728,18 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     else if (s.sbt != sbt)
         throw std::runtime_error("CLAS SBT binding changed; reload asset");
     const auto settled = [&] {
-        return s.front >= 0 && s.candidate < 0 && !s.reading.valid() && s.requests.empty() &&
+        return s.front >= 0 && s.candidate < 0 && !s.reading.valid() && (s.requests.empty() || s.budgetBlocked) &&
                s.pendingRemoval.empty() && s.traversedResidency == s.residencyVersion && s.hasView &&
                camera == s.lastCamera && projection == s.lastProjection && zoom == s.lastZoom;
     };
-    const auto recoverQuality = [&] {
-        if (!s.qualityRecoveryPending) return false;
-        s.qualityRecoveryPending = false;
-        if (s.error <= s.settings.pixelError) return false;
-        std::cout << "[CLAS quality recovery] previousError=" << s.error
-                  << " requestedError=" << s.settings.pixelError << std::endl;
-        s.error = s.settings.pixelError;
-        s.traversedResidency = ~0ull;
-        return true;
+    const auto policyStats = [&] {
+        s.counters.requestedPixelError = s.requestedError;
+        s.counters.adaptiveLod = s.lodControl.adaptive;
+        s.counters.poolLoad = s.poolLoad();
+        s.counters.smoothedPoolLoad = s.adaptive.load();
+        s.counters.qualityLimited = s.budgetBlocked || s.error > s.requestedError * 1.0001f;
+        if (!interactive && s.budgetBlocked)
+            throw std::runtime_error("Fixed CLAS quality exceeds streaming budgets; increase geometry/CLAS budgets or enable adaptive LOD");
     };
     // The opt-in stress test also exercises AS-only publications at a fixed
     // camera. Normal static views retain the zero-work early exit below.
@@ -1701,11 +1747,12 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
         s.compactGasPool = true;
         s.traversedResidency = ~0ull;
     }
-    if (settled() && !recoverQuality()) {
+    if (settled() && !s.policyPending()) {
         s.retireCompleted();
         ++s.counters.staticSkips;
         s.counters.updateMs = elapsed(start);
         s.counters.settled = true;
+        policyStats();
         s.frameStats = s.counters;
         return false;
     }
@@ -1718,7 +1765,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
         if (interactive && s.front >= 0)
             break;
         if (settled()) {
-            if (recoverQuality()) continue;
+            if (s.policyPending()) continue;
             break;
         }
         if (iterations > 20000)
@@ -1733,7 +1780,8 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     s.counters.geometryReservedBytes=s.geometryPool.reserved;
     s.counters.clasReservedBytes=s.clasPool.reserved;
     s.counters.planningPending = s.candidate >= 0 || s.traversalPending || s.reading.valid();
-    s.counters.settled = settled();
+    s.counters.settled = settled() && !s.policyPending();
+    policyStats();
     s.counters.updateMs = elapsed(start);
     s.counters.gpuSceneMs =
         s.counters.gpuClasMs + s.counters.gpuLodMs + s.counters.gpuGasMs + s.counters.gpuIasMs;
@@ -1745,6 +1793,11 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
                   << " evictions=" << s.counters.evictions << " sharedGases=" << s.counters.sharedGases
                   << " geometryBytes=" << s.counters.geometryBytes << " clasBytes=" << s.counters.clasBytes
                   << " lodError=" << s.counters.effectivePixelError
+                  << " requestedError=" << s.counters.requestedPixelError
+                  << " adaptive=" << s.counters.adaptiveLod
+                  << " poolLoad=" << s.counters.poolLoad
+                  << " smoothedLoad=" << s.counters.smoothedPoolLoad
+                  << " qualityLimited=" << s.counters.qualityLimited
                   << " pendingGroups=" << s.counters.pendingGroups << " settled=" << s.counters.settled
                   << " hostMs=" << s.counters.hostStreamingMs << " gpuLodMs=" << s.counters.gpuLodMs
                   << " gpuClasMs=" << s.counters.gpuClasMs << " gpuGasMs=" << s.counters.gpuGasMs

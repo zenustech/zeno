@@ -28,6 +28,11 @@ public:
     void setClasDebugView(int view);
     void setClasHistorySettings(bool keep, int samples);
     void setClasTwoSidedOpaque(bool enabled);
+    void setClasLodSettings(bool adaptive, double pixelError);
+    QString clasLodStatus() const { return m_clasLodStatus; }
+private:
+    QString m_clasLodStatus;
+public:
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

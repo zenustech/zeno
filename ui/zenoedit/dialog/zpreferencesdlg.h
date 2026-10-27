@@ -51,6 +51,9 @@ private:
     QCheckBox* m_pClasKeepHistory;
     QSpinBox* m_pClasHistoryLimit;
     QCheckBox* m_pClasTwoSidedOpaque;
+    QCheckBox* m_pClasAdaptiveLod;
+    QDoubleSpinBox* m_pClasPixelError;
+    QLabel* m_pClasLodStatus;
     QCheckBox* m_pEnableSharc;
     QPushButton* m_pSharcResetCache;
     QSpinBox* m_pSharcDownscaleFactor;

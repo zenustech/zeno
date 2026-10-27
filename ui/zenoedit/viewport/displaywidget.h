@@ -86,6 +86,8 @@ public slots:
     void setClasDebugView(int view);
     void setClasHistorySettings(bool keep, int samples);
     void setClasTwoSidedOpaque(bool enabled);
+    void setClasLodSettings(bool adaptive, double pixelError);
+    QString clasLodStatus() const;
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

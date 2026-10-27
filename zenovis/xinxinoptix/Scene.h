@@ -138,7 +138,7 @@ public:
         clusterMaterials.reset();clusterAsset.reset();clusterAssetKey.clear();clusterAssetManifest.clear();clusterAssetRevision.clear();
         clusterRootDirty=true;clusterUnloadPending=false;
     }
-    bool updateClusters(const Params& params,bool interactive) {
+    bool updateClusters(const Params& params,bool interactive,zeno::cluster::LodControl control = {}) {
         if(!clusterAsset)return false;
         if(clusterSettings.materials && !clusterMaterials)
             clusterMaterials=std::make_unique<zeno::cluster::Materials>(std::filesystem::u8path(clusterAssetManifest),clusterSettings.textureMiB,clusterSettings.hostTextureMiB);
@@ -157,7 +157,7 @@ public:
             zeno::log_info("CLAS view: eye={},{},{}, projection={}",
                 params.cam.eye.x, params.cam.eye.y, params.cam.eye.z, projection);
         const bool changed=clusterAsset->update(OptixUtil::context,index,
-                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive,zoom);
+                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive,zoom,control);
         clusterRootDirty|=changed;return changed;
     }
     uint32_t frameid;

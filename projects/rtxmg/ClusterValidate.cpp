@@ -300,7 +300,7 @@ int main(int argc, char **argv) try {
                                  "[--mirror mirror.json] [--error pixels]");
     fs::path manifest = argv[1], cameraPath, cameraSequencePath, outputPath, mirrorPath;
     bool original = false, finest = false, interactive = false, sourceOnly = false;
-    bool traceShadow = false, strictInstances = false, sourceAttributesOnly = false;
+    bool traceShadow = false, strictInstances = false, sourceAttributesOnly = false, adaptiveLod = true;
     float3 light = make_float3(1, 1, 0);
     int frames = 1, width = 1920, height = 1080;
     uint64_t pool = 256ull << 20;
@@ -319,6 +319,8 @@ int main(int argc, char **argv) try {
             finest = true;
         else if (a == "--strict-instances")
             strictInstances = true;
+        else if (a == "--fixed-lod")
+            adaptiveLod = false;
         else if (a == "--output")
             outputPath = argv[++i];
         else if (a == "--mirror")
@@ -505,7 +507,7 @@ int main(int argc, char **argv) try {
             const auto zoom = makeZoomView(glm::value_ptr(right),glm::value_ptr(up),glm::value_ptr(forward),
                                           t*float(width)/float(height),t,height*.866025404f);
             for (int i = 0; i < 20000; ++i) {
-                runtime.update(context, 0, {eye.x, eye.y, eye.z}, projection, interactive, zoom);
+                runtime.update(context, 0, {eye.x, eye.y, eye.z}, projection, interactive, zoom, {adaptiveLod,0.f});
                 if (interactive || runtime.stats().settled)
                     break;
                 if (i == 19999)

@@ -2364,8 +2364,14 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.keep_cluster_history = keepHistory;
     state.cluster_history_limit = historyLimit;
     const uint64_t previousCut = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats().cutVersion : 0;
-    const bool clusterChanged=defaultScene.updateClusters(state.params,interactive);
+    const bool clusterChanged=defaultScene.updateClusters(state.params,interactive,
+        {runtimeOptions.get2<bool>("optix-clas-adaptive-lod",true),runtimeOptions.get2<float>("optix-clas-pixel-error",0.f)});
     const auto clusterStats = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats() : zeno::cluster::RuntimeStats{};
+    zeno::getSession().userData().set2("optix-clas-lod-status",defaultScene.clusterAsset ? zeno::format(
+        "Requested {} px | Effective {} px | Pool {}% | {}",
+        std::round(clusterStats.requestedPixelError*100.f)/100.f,std::round(clusterStats.effectivePixelError*100.f)/100.f,int(100.f*clusterStats.poolLoad+.5f),
+        clusterStats.qualityLimited ? (clusterStats.adaptiveLod ? "Budget limited" : "Requested quality cannot fit") :
+            clusterStats.settled ? "Settled" : "Streaming") : std::string("No CLAS asset"));
     const bool cutChanged = clusterChanged && clusterStats.cutVersion != previousCut;
     std::unique_lock<std::recursive_mutex> clusterSubmission;
     const auto clusterSubmitStart=std::chrono::steady_clock::now();

@@ -366,7 +366,7 @@ def main():
                ZENO_OPTIX_SHARC=str(int(not args.disable_sharc)),
                ZENO_OPTIX_VIEWPORT_CAPTURE_HISTORY=str(int(args.capture_history)))
     if args.use_saved_clas_settings:
-        for key in ("ZENO_OPTIX_CLAS_DEBUG_VIEW", "ZENO_OPTIX_CLAS_KEEP_HISTORY", "ZENO_OPTIX_CLAS_HISTORY_LIMIT"):
+        for key in ("ZENO_OPTIX_CLAS_DEBUG_VIEW", "ZENO_OPTIX_CLAS_KEEP_HISTORY", "ZENO_OPTIX_CLAS_HISTORY_LIMIT", "ZENO_OPTIX_CLAS_ADAPTIVE_LOD"):
             env.pop(key, None)
     if args.test_preferences_file:
         env["ZENO_OPTIX_TEST_PREFERENCES_FILE"] = str(args.test_preferences_file.resolve())
@@ -528,6 +528,13 @@ def main():
         sidedness_plans = re.findall(r"CLAS update: .*?plans=(\d+)", sidedness)
         if plans and sidedness_plans and set(sidedness_plans) != {plans[-1]}:
             raise RuntimeError("Runtime opaque sidedness unnecessarily replanned CLAS residency")
+        policy = section("runtime LOD policy")
+        changes = [(int(a),float(e)) for a,e in re.findall(r"CLAS runtime LOD: adaptive=(\d+), pixelErrorOverride=([\d.]+)",policy)]
+        startup_policy = re.findall(r"CLAS startup LOD: adaptive=(\d+), pixelErrorOverride=([\d.]+)",log)
+        if not startup_policy or changes != [(0,8.),(1,4.),(int(startup_policy[0][0]),float(startup_policy[0][1]))]:
+            raise RuntimeError("Runtime adaptive LOD controls did not toggle and restore")
+        if log.count("[CLAS] GPU resident-cut pipeline") != 1:
+            raise RuntimeError("Runtime LOD controls reloaded the asset")
         w, h = map(int, args.pixels.split("x"))
         for label, size in (("quality simple ratio=2", f"{max(w//2,1)}x{max(h//2,1)}"), ("quality idle ratio=2", args.pixels)):
             part = section(label)
@@ -540,6 +547,7 @@ def main():
             "camera_positions":list(set(camera_positions)),"debug_modes":list(range(8)),"clas_plan_versions":sorted(set(plans)),
             "history_policy_switches":list(map(int, applied)),
             "opaque_sidedness_switches":list(map(int, sidedness_values)),
+            "lod_policy_switches":changes,"asset_initializations":1,
             "checks":"quality accumulation, real resize, camera stability, runtime modes, shaded-view restore, history and opaque sidedness policies passed"}, indent=2))
     if args.viewport_iterations:
         selections=re.findall(r"OptiX sample selection: mode=viewport, viewportSamples=(\d+), cameraSamples=(\d+), actualSamples=(\d+)",log)

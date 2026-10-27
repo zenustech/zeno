@@ -118,6 +118,8 @@ static void initializeOptixRenderSettings(Zenovis* vis)
     userData.set2("optix-clas-keep-history", clasBoolSetting("ZENO_OPTIX_CLAS_KEEP_HISTORY", zsClasKeepHistory, false));
     userData.set2("optix-clas-history-limit", std::clamp(clasSetting("ZENO_OPTIX_CLAS_HISTORY_LIMIT", zsClasHistoryLimit, 16), 4, 256));
     userData.set2("optix-clas-two-sided-opaque", clasBoolSetting("ZENO_OPTIX_CLAS_TWO_SIDED_OPAQUE", zsClasTwoSidedOpaque, true));
+    userData.set2("optix-clas-adaptive-lod", clasBoolSetting("ZENO_OPTIX_CLAS_ADAPTIVE_LOD", zsClasAdaptiveLod, true));
+    userData.set2("optix-clas-pixel-error", std::max(0.f,settingOr(zsClasPixelError,0.f).toFloat()));
     userData.set2("optix-sharc", qEnvironmentVariableIsSet("ZENO_OPTIX_SHARC") ? qEnvironmentVariableIntValue("ZENO_OPTIX_SHARC") != 0 : settingOr(zsEnableSharc, true).toBool());
     userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
     userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
@@ -135,6 +137,8 @@ static void initializeOptixRenderSettings(Zenovis* vis)
         zeno::log_info("CLAS stored history: type={}, bool={}, int={}, envOverride={}",
             storedKeep.typeName(), storedKeep.toBool(), storedKeep.toInt(),
             qEnvironmentVariableIsSet("ZENO_OPTIX_CLAS_KEEP_HISTORY"));
+        zeno::log_info("CLAS startup LOD: adaptive={}, pixelErrorOverride={}",
+            userData.get2<bool>("optix-clas-adaptive-lod"),userData.get2<float>("optix-clas-pixel-error"));
     }
 }
 
@@ -226,6 +230,7 @@ void OptixWorker::updateFrame()
     QElapsedTimer frameTimer;
     if(profile)frameTimer.start();
     m_zenoVis->paintGL();
+    emit clasLodStatus(QString::fromStdString(zeno::getSession().userData().get2<std::string>("optix-clas-lod-status","No CLAS asset")));
     const double paintMs=profile?frameTimer.nsecsElapsed()/1.e6:0;
     int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
@@ -509,6 +514,12 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         const bool oldTwoSided = options.get2<bool>("optix-clas-two-sided-opaque", true);
         onSetClasTwoSidedOpaque(!oldTwoSided);
         onSetClasTwoSidedOpaque(oldTwoSided);
+        zeno::log_info("[viewport regression] runtime LOD policy");
+        const bool oldAdaptive=options.get2<bool>("optix-clas-adaptive-lod",true);
+        const float oldError=options.get2<float>("optix-clas-pixel-error",0.f);
+        onSetClasLodSettings(false,8.);
+        onSetClasLodSettings(true,4.);
+        onSetClasLodSettings(oldAdaptive,oldError);
         zeno::log_info("[viewport regression] quality simple ratio=2");
         scene->camera->zOptixCameraSettingInfo.renderRatio = 2;
         scene->drawOptions->simpleRender = true; updateFrame(); updateFrame();
@@ -537,6 +548,10 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
             int stepIndex = 0;
             for (const auto& step : script.at("steps")) {
                 const auto label = QString("cycle-%1-step-%2").arg(cycle,3,10,QChar('0')).arg(stepIndex++,2,10,QChar('0'));
+                if(step.contains("adaptiveLod") || step.contains("lodPixelError")) {
+                    options.set2("optix-clas-adaptive-lod",step.value("adaptiveLod",options.get2<bool>("optix-clas-adaptive-lod",true)));
+                    options.set2("optix-clas-pixel-error",step.value("lodPixelError",options.get2<float>("optix-clas-pixel-error",0.f)));
+                }
                 if (step.value("reload", false)) {
                     onCleanUpScene();
                     if (!m_zenoVis->getSession()->load_objects())
@@ -765,6 +780,15 @@ void OptixWorker::onSetClasHistorySettings(bool keep, int samples)
 void OptixWorker::onSetClasTwoSidedOpaque(bool enabled)
 {
     zeno::getSession().userData().set2("optix-clas-two-sided-opaque", enabled);
+    updateFrame();
+}
+
+void OptixWorker::onSetClasLodSettings(bool adaptive, double pixelError)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix-clas-adaptive-lod",adaptive);
+    ud.set2("optix-clas-pixel-error",float(std::clamp(pixelError,0.,1024.)));
+    zeno::log_info("CLAS runtime LOD: adaptive={}, pixelErrorOverride={}",adaptive,pixelError);
     updateFrame();
 }
 
@@ -1047,6 +1071,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setClasDebugView, m_worker, &OptixWorker::onSetClasDebugView);
     connect(this, &ZOptixViewport::sig_setClasHistorySettings, m_worker, &OptixWorker::onSetClasHistorySettings);
     connect(this, &ZOptixViewport::sig_setClasTwoSidedOpaque, m_worker, &OptixWorker::onSetClasTwoSidedOpaque);
+    connect(this, &ZOptixViewport::sig_setClasLodSettings, m_worker, &OptixWorker::onSetClasLodSettings);
+    connect(m_worker, &OptixWorker::clasLodStatus, this, [this](const QString& status) { m_clasLodStatus=status; });
     connect(this, &ZOptixViewport::sig_setRayTracingSettings, m_worker, &OptixWorker::onSetRayTracingSettings);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
@@ -1264,6 +1290,11 @@ void ZOptixViewport::setClasHistorySettings(bool keep, int samples)
 void ZOptixViewport::setClasTwoSidedOpaque(bool enabled)
 {
     emit sig_setClasTwoSidedOpaque(enabled);
+}
+
+void ZOptixViewport::setClasLodSettings(bool adaptive, double pixelError)
+{
+    emit sig_setClasLodSettings(adaptive,pixelError);
 }
 
 void ZOptixViewport::setRayTracingSettings(

@@ -17,12 +17,18 @@ struct RuntimeSettings {
     bool materials = false;
     uint32_t textureMiB = 2048, hostTextureMiB = 256;
 };
+struct LodControl {
+    bool adaptive = true;
+    float pixelError = 0.f; // Zero uses the asset node's requested error.
+};
 struct RuntimeStats {
     uint64_t geometryBytes{}, clasBytes{}, loads{}, evictions{};
     uint64_t geometryReservedBytes{},clasReservedBytes{};
     uint64_t updates{}, plans{}, staticSkips{}, gasBuilds{}, iasBuilds{}, renderTriangles{};
     uint32_t residentGroups{}, renderClusters{}, pendingGroups{}, minLod{}, maxLod{};
     float effectivePixelError{};
+    float requestedPixelError{}, poolLoad{}, smoothedPoolLoad{};
+    bool adaptiveLod = true, qualityLimited{};
     double updateMs{}, planningMs{}, loadingMs{}, accelerationMs{};
     double syncMs{}, pageReadMs{};
     uint64_t syncCalls{}, allocationCalls{}, freeCalls{};
@@ -54,7 +60,7 @@ class Runtime {
     // and a separate CUDA build stream. Only update() publishes a completed
     // version; last-use events protect front-scene storage during retirement.
     bool update(OptixDeviceContext context, uint32_t sbtIndex, const std::array<float, 3> &eye,
-                float projectionScale, bool interactive = false, const ZoomView &zoom = {});
+                float projectionScale, bool interactive = false, const ZoomView &zoom = {}, LodControl control = {});
     OptixTraversableHandle handle() const;
     const zeno_cluster_device::Cluster *descriptors() const;
     RuntimeStats stats() const;
