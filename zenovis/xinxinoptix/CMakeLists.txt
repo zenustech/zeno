@@ -51,6 +51,13 @@ target_sources(zenovis PRIVATE
   ShaderBuffer.h
   GeometryAux.h
   SharcLaunchParameters.h
+  SppmLaunchParameters.h
+  SppmDevice.h
+  SppmPhotonMaterial.h
+  SppmCameraMaterial.h
+  SobolDirections.h
+  CameraRay.h
+  CameraPostProcess.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
@@ -314,6 +321,16 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmLaunchParameters.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmDevice.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmPhotonMaterial.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmCameraMaterial.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SobolDirections.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmCamera.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmPhoton.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@SppmResolve.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@CameraRay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@CameraPostProcess.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@SharcLaunchParameters.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu

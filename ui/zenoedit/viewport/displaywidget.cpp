@@ -792,6 +792,12 @@ void DisplayWidget::resetSharcCache()
     }
 }
 
+void DisplayWidget::setSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding)
+{
+    if (!m_bGLView)
+        m_optixView->setSppmSettings(integrator, photons, radius, alpha, guiding);
+}
+
 void DisplayWidget::setRayTracingSettings(
     bool denoise,
     int maxBounce,

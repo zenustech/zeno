@@ -15,6 +15,7 @@
 #include "DisneyBSDF.h"
 #include "Mnee.h"
 #include "SharcDevice.h"
+#include "SppmDevice.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -406,6 +407,22 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
+#if defined(SPPM_CAMERA_PROGRAM)
+    if (rt_data->camera_callable!=UINT_MAX) {
+        uint4 record;*reinterpret_cast<uint64_t*>(&record.x)=gas;
+        record.z=dc_index;record.w=primIdx;
+        optixDirectCall<void,cudaTextureObject_t[],MatInput&,RadiancePRD&,float,uint4>(
+            rt_data->camera_callable,rt_data->textures,attrs,*prd,wldOffset,record);
+        return;
+    }
+#endif
+#if defined(SPPM_PHOTON_PROGRAM)
+    if (rt_data->photon_callable != UINT_MAX) {
+        optixDirectCall<void, cudaTextureObject_t[], MatInput&, RadiancePRD&, float>(
+            rt_data->photon_callable, rt_data->textures, attrs, *prd, wldOffset);
+        return;
+    }
+#endif
     MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index , rt_data->textures, attrs );
 
     if(mats.shadowReceiver>0.0f && 1<=prd->depth)
@@ -441,6 +458,15 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
     prd->_tmax_ = optixGetRayTmax();
+    if (prd->sppmMode != 0u && (mats.isHair > 0.5f || mats.subsurface > 0.0f ||
+                               sppmMax(float3(mats.emission)) > 0.0f)) {
+        // Callable closures may vary per hit. Ask the host to discard this
+        // SPPM frame and render it with PT rather than lose these paths.
+        atomicAdd(&params.sppm.statistics->unsupported, 1ull);
+        prd->radiance = make_float3(0.0f);
+        prd->done = true;
+        return;
+    }
     const float cacheSegmentLength = fmaxf(optixGetRayTmax() - prd->_tmin_, 0.0f);
     const bool cacheIncomingVacuum = prd->medium == DisneyBSDF::PhaseFunctions::vacuum;
 
@@ -631,6 +657,16 @@ extern "C" __global__ void __closesthit__radiance()
         Onb a(N);
         T = a.m_tangent;
         B = a.m_binormal;
+    }
+
+#if defined(SPPM_PHOTON_PROGRAM) || defined(SPPM_CAMERA_PROGRAM)
+    if (true) {
+#else
+    if (prd->sppmMode != 0u) {
+#endif
+        sppmSurface(*prd, mats, wldPos, prd->geometryNormal, N, T, B,
+                    wldOffset, ray_dir);
+        return;
     }
 
     DisneyBSDF::SurfaceEventFlags flag;

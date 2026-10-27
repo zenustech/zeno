@@ -109,6 +109,12 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     scene->drawOptions->denoise = settingOr(zsRayTracingDenoise, false).toBool();
     auto& userData = zeno::getSession().userData();
     userData.set2("optix-max-bounce", settingOr(zsRayTracingMaxBounce, 4).toInt());
+    userData.set2("optix-integrator", settingOr(zsRayTracingIntegrator, "path").toString().toStdString());
+    userData.set2("optix-sppm", false);
+    userData.set2("optix-sppm-photons", settingOr(zsSppmPhotons, 0).toInt());
+    userData.set2("optix-sppm-radius", settingOr(zsSppmRadius, 0.0).toFloat());
+    userData.set2("optix-sppm-alpha", settingOr(zsSppmAlpha, 2.0 / 3.0).toFloat());
+    userData.set2("optix-sppm-guiding", settingOr(zsSppmGuiding, true).toBool());
     userData.set2("optix-sharc", settingOr(zsEnableSharc, true).toBool());
     userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
     userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
@@ -533,6 +539,20 @@ void OptixWorker::onResetSharcCache()
     updateFrame();
 }
 
+void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding)
+{
+    auto& userData = zeno::getSession().userData();
+    userData.set2("optix-integrator", integrator.toStdString());
+    userData.set2("optix-sppm", false);
+    userData.set2("optix-sppm-photons", photons);
+    userData.set2("optix-sppm-radius", radius);
+    userData.set2("optix-sppm-alpha", alpha);
+    userData.set2("optix-sppm-guiding", guiding);
+    if (m_zenoVis && m_zenoVis->getSession()->get_scene())
+        m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
+    updateFrame();
+}
+
 void OptixWorker::onSetRayTracingSettings(
     bool denoise,
     int maxBounce,
@@ -811,6 +831,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_resetSharcCache, m_worker, &OptixWorker::onResetSharcCache);
     connect(this, &ZOptixViewport::sig_setRayTracingSettings, m_worker, &OptixWorker::onSetRayTracingSettings);
+    connect(this, &ZOptixViewport::sig_setSppmSettings, m_worker, &OptixWorker::onSetSppmSettings);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
     connect(this, &ZOptixViewport::sig_sendOptixMessage, m_worker, &OptixWorker::onSendOptixMessage, Qt::QueuedConnection);
@@ -1012,6 +1033,11 @@ void ZOptixViewport::setSampleNumber(int sample_number)
 void ZOptixViewport::resetSharcCache()
 {
     emit sig_resetSharcCache();
+}
+
+void ZOptixViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding)
+{
+    emit sig_setSppmSettings(integrator, photons, radius, alpha, guiding);
 }
 
 void ZOptixViewport::setRayTracingSettings(

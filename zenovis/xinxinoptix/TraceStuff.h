@@ -22,6 +22,12 @@
 #define SPECULAR_HIT 2
 #define TRANSMIT_HIT 3
 
+static __forceinline__ __device__ uint32_t sppmPhotonSeed(uint32_t photon, uint32_t iteration, uint32_t renderSeed) {
+    // Separate the render and iteration domains before combining: directly
+    // XORing them permutes identical photon batches between nearby render seeds.
+    return tea<4>(photon, pcg_hash(iteration) ^ pcg_hash(renderSeed ^ 0xb5297a4du));
+}
+
 static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned int i1 )
 {
     const unsigned long long uptr = static_cast<unsigned long long>( i0 ) << 32 | i1;
@@ -77,6 +83,19 @@ struct ShadowPRD : CommonPRD {
     uint8_t nonThinTransHit;
 
     float3 ShadowNormal;
+    float3 oppositeOrigin;
+    bool surfaceTransmission = false;
+
+    __device__ __forceinline__ float3 spawnOrigin(float3 direction) const {
+        return surfaceTransmission && dot(direction, ShadowNormal) < 0.0f ? oppositeOrigin : origin;
+    }
+};
+
+struct SppmCameraShadow {
+    ShadowPRD state;
+    float3 direction, radiance;
+    float distance;
+    bool pending=false;
 };
 
 enum class RadianceCacheEvent : uint8_t {
@@ -101,6 +120,21 @@ struct RadianceCacheProxy {
 };
 
 struct RadiancePRD : CommonPRD {
+    uint32_t sppmSpecular = 0u;
+    uint32_t sppmMode = 0u; // 0: path tracer, 1: camera, 2: photon
+    uint32_t sppmPixel = 0u;
+    uint32_t sppmLight = UINT_MAX;
+    uint32_t sppmGuideBin = UINT_MAX, sppmGuideUseful = 0u;
+    float sppmGuideWeight = 0.0f;
+    double sppmGuideScore = 0.0;
+    float3 sppmGatherPosition, sppmGatherNormal, sppmGatherWi, sppmGatherBeta;
+    uint32_t sppmGatherPending = 0u, sppmGatherSpecular = 0u;
+    unsigned long long sppmGathered = 0u, sppmCaustics = 0u;
+    float3 sppmIncoming;
+    float sppmEtaScale = 1.0f;
+    uint32_t sppmCameraSample = 0u;
+    uint32_t sppmCameraSamples = 1u;
+    SppmCameraShadow* sppmCameraShadow=nullptr;
     //zxx seed
     unsigned int offset = 0;
     unsigned int offset2 = 0;

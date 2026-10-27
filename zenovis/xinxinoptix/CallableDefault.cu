@@ -37,7 +37,7 @@ __device__ __forceinline__ vec4 parallaxCall(TriangleInput& attrs, cudaTextureOb
                         attrs.isShadowRay, attrs.pOffset, attrs.depth, h, forced_hit);
 }
 
-extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
+static __forceinline__ __device__ MatOutput zenoEvaluateMaterial(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
 
     let uniforms = params.d_uniforms;
     let buffers = params.global_buffers;
@@ -228,4 +228,35 @@ if (mats.nrm != n) {
     attrs.T = t;
     mats.nrm = n;
     return mats;
+}
+
+extern "C" __device__ MatOutput __direct_callable__evalmat(cudaTextureObject_t zenotex[], WrapperInput& attrs) {
+    return zenoEvaluateMaterial(zenotex, attrs);
+}
+
+#ifndef SPPM_PHOTON_PROGRAM
+#define SPPM_PHOTON_PROGRAM
+#define SPPM_LOCAL_PHOTON_MATERIAL_MODE
+#endif
+#include "SppmPhotonMaterial.h"
+#ifdef SPPM_LOCAL_PHOTON_MATERIAL_MODE
+#undef SPPM_PHOTON_PROGRAM
+#undef SPPM_LOCAL_PHOTON_MATERIAL_MODE
+#endif
+
+extern "C" __device__ void __direct_callable__photon(
+    cudaTextureObject_t zenotex[], WrapperInput& attrs, RadiancePRD& prd, float offset) {
+    const float3 rayDirection = -float3(attrs.V);
+    const float segmentLength = attrs.rayLength;
+    const MatOutput material = zenoEvaluateMaterial(zenotex, attrs);
+    sppmPhotonMaterial(prd, material, attrs, offset, rayDirection, segmentLength);
+}
+
+#include "SppmCameraMaterial.h"
+extern "C" __device__ void __direct_callable__camera(
+    cudaTextureObject_t zenotex[],WrapperInput& attrs,RadiancePRD& prd,float offset,uint4 record) {
+    const float3 direction=-float3(attrs.V);
+    const float distance=attrs.rayLength;
+    const MatOutput material=zenoEvaluateMaterial(zenotex,attrs);
+    sppmCameraMaterial(prd,material,attrs,offset,direction,distance,record);
 }

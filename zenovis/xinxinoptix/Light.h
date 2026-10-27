@@ -237,10 +237,11 @@ namespace detail {
     };
 }
 
-template<bool _MIS_, bool CHEAP_BXDF=false, typename TypeEvalBxDF, typename TypeAux = void, typename TypeMnee = void>
+template<bool _MIS_, bool CHEAP_BXDF=false, bool DEFER_VISIBILITY=false, typename TypeEvalBxDF, typename TypeAux = void, typename TypeMnee = void>
 static __forceinline__ __device__
 void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir, 
-                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, TypeMnee* taskMnee=nullptr) {
+                    TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr, TypeMnee* taskMnee=nullptr,
+                    SppmCameraShadow* deferred=nullptr) {
 
     const float3 wo = normalize(-ray_dir);
 
@@ -570,7 +571,9 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
                 }
             }
             
-            traceOcclusion(params.handle, shadowPRD.origin, lsr.dir, 0, lsr.dist, &shadowPRD, ~LightMatMask & EverythingMask);
+            if constexpr (DEFER_VISIBILITY) {
+                deferred->direction=lsr.dir;deferred->distance=lsr.dist;deferred->pending=true;
+            } else traceOcclusion(params.handle, shadowPRD.spawnOrigin(lsr.dir), lsr.dir, 0, lsr.dist, &shadowPRD, ~LightMatMask & EverythingMask);
             
             const auto& light_attenuation = shadowPRD.attanuation;
             if (lengthSquared(shadowPRD.attanuation)==0) return;
@@ -677,7 +680,9 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
 
         shadowPRD.attanuation = vec3(1.0);
         shadowPRD.maxDistance = FLT_MAX;
-        traceOcclusion(params.handle, shadowPRD.origin, lsr.dir,
+        if constexpr (DEFER_VISIBILITY) {
+            deferred->direction=lsr.dir;deferred->distance=FLT_MAX;deferred->pending=true;
+        } else traceOcclusion(params.handle, shadowPRD.spawnOrigin(lsr.dir), lsr.dir,
                         0, FLT_MAX,
                         &shadowPRD, ~LightMatMask & EverythingMask);
             

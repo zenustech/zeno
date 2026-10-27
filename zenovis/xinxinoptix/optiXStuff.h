@@ -92,6 +92,9 @@ inline raii<OptixPipeline>                  pipeline                 ;
 inline std::tuple<bool, bool>  raygen_config;
 inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
+inline raii<OptixModule>                    sppm_modules[3];
+inline raii<OptixProgramGroup>              sppm_prog_groups[4], sppm_photon_miss;
+inline raii<CUdeviceptr>                    d_sppm_records[4], d_sppm_miss_records;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
 inline raii<OptixModule>                    sharc_update_raygen_module;
 inline raii<OptixProgramGroup>              sharc_update_raygen_prog_group;
@@ -126,6 +129,11 @@ inline void resetPipelineProgramGroupsDirty(bool dirty = false);
 inline void resetAll() {
 
     raygen_prog_group.reset();
+    for (auto& group : sppm_prog_groups) group.reset();
+    sppm_photon_miss.reset();
+    for (auto& record : d_sppm_records) record.reset();
+    d_sppm_miss_records.reset();
+    for (auto& module : sppm_modules) module.reset();
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     sharc_update_raygen_prog_group.reset();
 #endif
@@ -172,6 +180,8 @@ inline static auto DefaultCompileOptions() {
     module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
     module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
+    if (const char* lineinfo = std::getenv("ZENO_NVRTC_LINEINFO"); lineinfo && lineinfo[0] == '1')
+        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
     return module_compile_options;
 }
 
@@ -202,7 +212,9 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = optixLogCallbackLevel();
-    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
+    options.validationMode = std::getenv("ZENO_OPTIX_VALIDATION") &&
+        std::string(std::getenv("ZENO_OPTIX_VALIDATION")) == "1"
+        ? OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL : OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
@@ -229,13 +241,16 @@ inline void configureAsyncMemoryPool()
 }
 
 inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
+    usesPrimitiveTypeFlags = OptixPrimitiveTypeFlags(unsigned(usesPrimitiveTypeFlags) | unsigned(OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM));
 
     auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
     if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
     CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
 
     pipeline_compile_options = {};
-    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+    // Shared assemblies can retain nested IAS, and photon queries use a bare
+    // custom-primitive GAS. Both must remain valid in the common pipeline.
+    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
     pipeline_compile_options.usesMotionBlur        = false;
     pipeline_compile_options.numPayloadValues      = 2;
     pipeline_compile_options.numAttributeValues    = 2;
@@ -429,7 +444,10 @@ inline CompileModuleKind classifyCompileModule(const char* name)
     if (name == nullptr) {
         return CompileModuleKind::Other;
     }
-    if (std::strstr(name, "PTKernel.cu") != nullptr) {
+    if (std::strstr(name, "PTKernel.cu") != nullptr ||
+        std::strstr(name, "SppmCamera.cu") != nullptr ||
+        std::strstr(name, "SppmPhoton.cu") != nullptr ||
+        std::strstr(name, "SppmResolve.cu") != nullptr) {
         return CompileModuleKind::Raygen;
     }
     if (std::strstr(name, "Callable.cu") != nullptr) {
@@ -633,6 +651,8 @@ inline bool createModule(
         "-lineinfo" //"-G"//"--dopt=on",
     #endif
     };
+    if (const char* lineinfo = std::getenv("ZENO_NVRTC_LINEINFO"); lineinfo && lineinfo[0] == '1')
+        compilerOptions.push_back("-lineinfo");
     if (compiled_ptx == nullptr) {
         compilerOptions.push_back("--optix-ir");
     }
@@ -771,6 +791,37 @@ inline bool createModule(
         *compiled_ptx = std::move(compile_result.data);
     }
     return true;
+}
+
+inline void createSppmPrograms(OptixDeviceContext& context)
+{
+    const char* sources[] = {"SppmCamera.cu", "SppmPhoton.cu", "SppmResolve.cu"};
+    for (int i = 0; i < 3; ++i) {
+        if (!createModule(sppm_modules[i].reset(), context,
+                sutil::lookupIncFile(sources[i]), sources[i], {}))
+            throw std::runtime_error(std::string("SPPM module failed to compile: ") + sources[i]);
+    }
+    const char* entries[] = {"__raygen__sppm_camera", "__raygen__sppm_grid",
+                             "__raygen__sppm_photon", "__raygen__sppm_resolve"};
+    const int modules[] = {0, 2, 1, 2};
+    OptixProgramGroupOptions options = {};
+    for (int i = 0; i < 5; ++i) {
+        OptixProgramGroupDesc desc = {};
+        if (i == 4) {
+            desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+            desc.miss.module = sppm_modules[1];
+            desc.miss.entryFunctionName = "__miss__sppm_photon";
+        } else {
+            desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+            desc.raygen.module = sppm_modules[modules[i]];
+            desc.raygen.entryFunctionName = entries[i];
+        }
+        char log[2048] = {};
+        size_t logSize = sizeof(log);
+        auto& group = i == 4 ? sppm_photon_miss : sppm_prog_groups[i];
+        OPTIX_CHECK_LOG(optixProgramGroupCreate(context, &desc, 1, &options,
+            log, &logSize, &group.reset()));
+    }
 }
 
 inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
@@ -1678,10 +1729,14 @@ inline void setSkyTexture(std::string& path) {
 
 struct OptixShaderCore {
     raii<OptixModule>                        module {}; 
+    raii<OptixModule> photon_module {};
+    raii<OptixModule> camera_module {};
     OptixModule*                    moduleIS = nullptr;
 
     raii<OptixProgramGroup>   m_radiance_hit_group  {};
     raii<OptixProgramGroup>   m_occlusion_hit_group {};
+    raii<OptixProgramGroup>   m_photon_hit_group {};
+    raii<OptixProgramGroup>   m_camera_hit_group {};
 
     const char* _source;
 
@@ -1735,6 +1790,26 @@ struct OptixShaderCore {
                 "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
                 _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group);
 
+            if (idx==0 || idx==1 || idx==10) {
+                // Photon transport has no direct-light visibility rays. Compile
+                // it separately so that camera/PT code does not inflate its
+                // instruction footprint and live state across material calls.
+                auto photonMacros=macro_list;
+                photonMacros.push_back("--define-macro=SPPM_PHOTON_PROGRAM=1");
+                const auto photonName="$"+std::to_string(idx)+"PhotonMatShader.cu";
+                if (!createModule(photon_module.reset(),context,_source,photonName.c_str(),photonMacros,_c_group))
+                    return false;
+                createRTProgramGroups(context,photon_module,"OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP",
+                    _shadingEntry,_hittingEntry,moduleIS,m_photon_hit_group);
+                auto cameraMacros=macro_list;
+                cameraMacros.push_back("--define-macro=SPPM_CAMERA_PROGRAM=1");
+                const auto cameraName="$"+std::to_string(idx)+"CameraMatShader.cu";
+                if (!createModule(camera_module.reset(),context,_source,cameraName.c_str(),cameraMacros,_c_group))
+                    return false;
+                createRTProgramGroups(context,camera_module,"OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP",
+                    _shadingEntry,_hittingEntry,moduleIS,m_camera_hit_group);
+            }
+
             markPipelineProgramGroupsDirty();
             //_c_group.wait();
             return true;
@@ -1749,6 +1824,8 @@ struct CallableProgram
     std::string ptx {};
     raii<OptixModule> module {};
     raii<OptixProgramGroup> prog_group {};
+    raii<OptixProgramGroup> photon_group {};
+    raii<OptixProgramGroup> camera_group {};
 };
 
 struct CallableProgramCacheEntry
@@ -1930,6 +2007,20 @@ struct OptixShaderWrapper
                 OPTIX_CHECK( 
                     optixProgramGroupCreate( context, callable_prog_group_descs, 1, &callable_prog_group_options, LOG, &LOG_SIZE, &program->prog_group.reset())
                 );
+                if (callable_src.find("__direct_callable__photon") != std::string::npos) {
+                    callable_prog_group_descs[0].callables.entryFunctionNameDC = "__direct_callable__photon";
+                    LOG_SIZE = sizeof(LOG);
+                    OPTIX_CHECK(optixProgramGroupCreate(context, callable_prog_group_descs, 1,
+                        &callable_prog_group_options, LOG, &LOG_SIZE, &program->photon_group.reset()));
+                }
+                if (callable_src.find("__direct_callable__camera") != std::string::npos) {
+                    callable_prog_group_descs[0].callables={};
+                    callable_prog_group_descs[0].callables.moduleDC=program->module;
+                    callable_prog_group_descs[0].callables.entryFunctionNameDC="__direct_callable__camera";
+                    LOG_SIZE=sizeof(LOG);
+                    OPTIX_CHECK(optixProgramGroupCreate(context,callable_prog_group_descs,1,
+                        &callable_prog_group_options,LOG,&LOG_SIZE,&program->camera_group.reset()));
+                }
                 callable_prg = program;
                 if (old_callable_group != callable_prg->prog_group.handle) {
                     markPipelineProgramGroupsDirty();
@@ -1985,7 +2076,6 @@ struct PipelineStackRequirements {
     uint32_t continuation = 0;
 };
 inline PipelineStackRequirements pipelineStackRequirements;
-
 inline void createPipeline(uint tree_depth, bool shaderDirty)
 {
     auto shader_count = rtMaterialShaders.size();
@@ -2008,20 +2098,42 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
 
-    size_t num_progs = 3 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 8 + rtMaterialShaders.size() * 2;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     ++num_progs;
 #endif
     num_progs += rtMaterialShaders.size(); // callables;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.callable_prg->photon_group.handle) ++num_progs;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.callable_prg->camera_group.handle) ++num_progs;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.core->m_photon_hit_group.handle) ++num_progs;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.core->m_camera_hit_group.handle) ++num_progs;
 
     std::vector<OptixProgramGroup> program_groups(num_progs, {});
     size_t program_index = 0;
     program_groups[program_index++] = raygen_prog_group;
+    for (auto& group : sppm_prog_groups) program_groups[program_index++] = group;
+    program_groups[program_index++] = sppm_photon_miss;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     program_groups[program_index++] = sharc_update_raygen_prog_group;
 #endif
     program_groups[program_index++] = radiance_miss_group;
     program_groups[program_index++] = occlusion_miss_group;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.core->m_photon_hit_group.handle)
+            program_groups[program_index++]=shader.core->m_photon_hit_group;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.core->m_camera_hit_group.handle)
+            program_groups[program_index++]=shader.core->m_camera_hit_group;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.callable_prg->photon_group.handle)
+            program_groups[program_index++] = shader.callable_prg->photon_group;
+    for (const auto& shader : rtMaterialShaders)
+        if (shader.callable_prg->camera_group.handle)
+            program_groups[program_index++] = shader.callable_prg->camera_group;
     const size_t hitgroup_begin = program_index;
     for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
@@ -2047,6 +2159,9 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
 
     OptixStackSizes stack_sizes = {};
     OPTIX_CHECK( optixUtilAccumulateStackSizes( raygen_prog_group,    &stack_sizes, pipeline ) );
+    for (auto& group : sppm_prog_groups)
+        OPTIX_CHECK(optixUtilAccumulateStackSizes(group, &stack_sizes, pipeline));
+    OPTIX_CHECK(optixUtilAccumulateStackSizes(sppm_photon_miss, &stack_sizes, pipeline));
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     OPTIX_CHECK( optixUtilAccumulateStackSizes( sharc_update_raygen_prog_group, &stack_sizes, pipeline ) );
 #endif
@@ -2057,6 +2172,14 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_radiance_hit_group, &stack_sizes, pipeline ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].core->m_occlusion_hit_group, &stack_sizes, pipeline ) );
         OPTIX_CHECK( optixUtilAccumulateStackSizes( rtMaterialShaders[i].callable_prg->prog_group, &stack_sizes, pipeline ) );
+        if (rtMaterialShaders[i].callable_prg->photon_group.handle)
+            OPTIX_CHECK(optixUtilAccumulateStackSizes(rtMaterialShaders[i].callable_prg->photon_group, &stack_sizes, pipeline));
+        if (rtMaterialShaders[i].callable_prg->camera_group.handle)
+            OPTIX_CHECK(optixUtilAccumulateStackSizes(rtMaterialShaders[i].callable_prg->camera_group,&stack_sizes,pipeline));
+        if (rtMaterialShaders[i].core->m_photon_hit_group.handle)
+            OPTIX_CHECK(optixUtilAccumulateStackSizes(rtMaterialShaders[i].core->m_photon_hit_group,&stack_sizes,pipeline));
+        if (rtMaterialShaders[i].core->m_camera_hit_group.handle)
+            OPTIX_CHECK(optixUtilAccumulateStackSizes(rtMaterialShaders[i].core->m_camera_hit_group,&stack_sizes,pipeline));
     }
     uint32_t max_trace_depth = 2;
     uint32_t max_cc_depth = 0;

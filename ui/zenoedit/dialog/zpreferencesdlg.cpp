@@ -171,8 +171,7 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pViewportSampleNumber->setRange(1, 10000);
     m_pViewportSampleNumber->setValue(1);
     auto main = zenoApp->getMainWindow();
-    ZASSERT_EXIT(main);
-    for (auto displaywid : main->viewports()) {
+    if (main) for (auto displaywid : main->viewports()) {
         if (displaywid && !displaywid->isGLViewport()) {
             if (auto vis = displaywid->getZenoVis()) {
                 if (auto scene = vis->getSession()->get_scene()) {
@@ -194,8 +193,40 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pMaxBounce->setRange(1, 64);
     m_pMaxBounce->setValue(settingOr(zsRayTracingMaxBounce, 4).toInt());
 
+    m_pIntegrator = new QComboBox;
+    m_pIntegrator->setObjectName("rayTracingIntegrator");
+    m_pIntegrator->addItem(tr("Path Tracing"), "path");
+    m_pIntegrator->addItem(tr("Stochastic Progressive Photon Mapping"), "sppm");
+    m_pIntegrator->setCurrentIndex(std::max(0, m_pIntegrator->findData(
+        settingOr(zsRayTracingIntegrator, "path"))));
+    m_pIntegrator->setToolTip(tr("SPPM renders surface light transport and caustics. Unsupported scenes use Path Tracing and report the reason in the render log."));
+    m_pSppmPhotons = new QSpinBox;
+    m_pSppmPhotons->setRange(0, 1 << 28);
+    m_pSppmPhotons->setSpecialValueText(tr("Automatic (one per pixel)"));
+    m_pSppmPhotons->setValue(settingOr(zsSppmPhotons, 0).toInt());
+    m_pSppmPhotons->setToolTip(tr("Photon emission attempts per iteration. Viewport Sample Number controls the number of iterations."));
+    m_pSppmRadius = new QDoubleSpinBox;
+    m_pSppmRadius->setObjectName("photonWorldRadius");
+    m_pSppmRadius->setDecimals(6);
+    m_pSppmRadius->setRange(0.0, 1000000.0);
+    m_pSppmRadius->setSpecialValueText(tr("Automatic (scene size)"));
+    m_pSppmRadius->setValue(settingOr(zsSppmRadius, 0.0).toDouble());
+    m_pSppmRadius->setToolTip(tr("Initial gather radius in scene units. Smaller radii preserve detail but need more photons."));
+    m_pSppmAlpha = new QDoubleSpinBox;
+    m_pSppmAlpha->setDecimals(6);
+    m_pSppmAlpha->setRange(0.01, 1.0);
+    m_pSppmAlpha->setSingleStep(0.05);
+    m_pSppmAlpha->setValue(settingOr(zsSppmAlpha, 2.0 / 3.0).toDouble());
+    m_pSppmAlpha->setToolTip(tr("Progressive radius reduction parameter. The standard value is 2/3."));
+    m_pSppmGuiding = new QCheckBox;
+    m_pSppmGuiding->setObjectName("photonGuiding");
+    m_pSppmGuiding->setChecked(settingOr(zsSppmGuiding, true).toBool());
+    m_pSppmGuiding->setToolTip(tr("Learn which lights and emission directions contribute to the photon image, including caustics. Retains uniform exploration and full photon energy. May add overhead in simple scenes."));
+
     m_pEnableSharc = new QCheckBox;
+    m_pEnableSharc->setObjectName("enableSharc");
     m_pEnableSharc->setChecked(settingOr(zsEnableSharc, true).toBool());
+    m_pEnableSharc->setToolTip(tr("Used by Path Tracing, including unsupported-scene fallback. Photon rendering bypasses SHARC. You can turn this preference off in either integrator."));
 
     m_pSharcResetCache = new QPushButton(tr("Reset"), this);
     m_pSharcResetCache->setAutoDefault(false);
@@ -250,40 +281,75 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSharcSHEncoding->setToolTip(
         tr("Preserve directional glossy/specular radiance in SHARC; increases cache memory and update cost"));
 
-    QGridLayout* pLayout = new QGridLayout(this);
-    pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
-    pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
-    pLayout->addWidget(new QLabel(tr("Viewport Point Size scale")), 1, 0);
-    pLayout->addWidget(m_pViewportPointSizeScaleSpinBox, 1, 1);
-    pLayout->addWidget(new QLabel(tr("Viewport Sample Number")), 2, 0);
-    pLayout->addWidget(m_pViewportSampleNumber, 2, 1);
-    pLayout->addWidget(new QLabel(tr("Denoise")), 3, 0);
-    pLayout->addWidget(m_pDenoise, 3, 1);
-    pLayout->addWidget(new QLabel(tr("Max Bounce")), 4, 0);
-    pLayout->addWidget(m_pMaxBounce, 4, 1);
-    pLayout->addWidget(new QLabel(tr("Enable SHARC")), 5, 0);
-    pLayout->addWidget(m_pEnableSharc, 5, 1);
-    pLayout->addWidget(new QLabel(tr("Reset SHARC Cache")), 6, 0);
-    pLayout->addWidget(m_pSharcResetCache, 6, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Downscale Factor")), 7, 0);
-    pLayout->addWidget(m_pSharcDownscaleFactor, 7, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Scene Scale")), 8, 0);
-    pLayout->addWidget(m_pSharcSceneScale, 8, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Accumulation Frame Number")), 9, 0);
-    pLayout->addWidget(m_pSharcAccumulationFrameNum, 9, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Stale Frame Number")), 10, 0);
-    pLayout->addWidget(m_pSharcStaleFrameNum, 10, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Minimum Roughness")), 11, 0);
-    pLayout->addWidget(m_pSharcRoughnessMin, 11, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Debug Mode")), 12, 0);
-    pLayout->addWidget(m_pSharcDebugMode, 12, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Material Demodulation")), 13, 0);
-    pLayout->addWidget(m_pSharcMaterialDemodulation, 13, 1);
-    pLayout->addWidget(new QLabel(tr("SHARC Directional SH Encoding")), 14, 0);
-    pLayout->addWidget(m_pSharcSHEncoding, 14, 1);
-    QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
-    pLayout->addItem(pSpacerItem, 0, 2, 15);
-    pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    auto layout = new QVBoxLayout(this);
+    layout->setAlignment(Qt::AlignTop);
+    auto common = new QFormLayout;
+    common->addRow(tr("Integrator"), m_pIntegrator);
+    common->addRow(tr("Viewport Sample Number"), m_pViewportSampleNumber);
+    common->addRow(tr("Denoise"), m_pDenoise);
+    common->addRow(tr("Max Bounce"), m_pMaxBounce);
+    common->addRow(tr("Enable SHARC for Path Tracing"), m_pEnableSharc);
+    auto sharcStatus = new QLabel;
+    sharcStatus->setObjectName("sharcStatus");
+    sharcStatus->setWordWrap(true);
+    common->addRow(sharcStatus);
+    layout->addLayout(common);
+
+    auto photons = new QGroupBox(tr("Photon Mapping"));
+    auto photonLayout = new QFormLayout(photons);
+    photonLayout->addRow(tr("Initial radius in world units"), m_pSppmRadius);
+    auto radiusStatus = new QLabel;
+    radiusStatus->setObjectName("photonRadiusStatus");
+    radiusStatus->setWordWrap(true);
+    photonLayout->addRow(radiusStatus);
+    photonLayout->addRow(tr("Photons per iteration"), m_pSppmPhotons);
+    photonLayout->addRow(tr("Progressive radius alpha"), m_pSppmAlpha);
+    photonLayout->addRow(tr("Photon guiding"), m_pSppmGuiding);
+    auto guidingStatus = new QLabel;
+    guidingStatus->setObjectName("photonGuidingStatus");
+    guidingStatus->setWordWrap(true);
+    photonLayout->addRow(guidingStatus);
+    layout->addWidget(photons);
+
+    auto sharc = new QGroupBox(tr("SHARC Settings"));
+    sharc->setObjectName("sharcSettings");
+    auto sharcLayout = new QFormLayout(sharc);
+    sharcLayout->addRow(tr("Reset cache"), m_pSharcResetCache);
+    sharcLayout->addRow(tr("Downscale factor"), m_pSharcDownscaleFactor);
+    sharcLayout->addRow(tr("Scene scale"), m_pSharcSceneScale);
+    sharcLayout->addRow(tr("Accumulation frame number"), m_pSharcAccumulationFrameNum);
+    sharcLayout->addRow(tr("Stale frame number"), m_pSharcStaleFrameNum);
+    sharcLayout->addRow(tr("Minimum roughness"), m_pSharcRoughnessMin);
+    sharcLayout->addRow(tr("Debug mode"), m_pSharcDebugMode);
+    sharcLayout->addRow(tr("Material demodulation"), m_pSharcMaterialDemodulation);
+    sharcLayout->addRow(tr("Directional SH encoding"), m_pSharcSHEncoding);
+    layout->addWidget(sharc);
+
+    auto viewport = new QGroupBox(tr("Viewport Controls"));
+    auto viewportLayout = new QFormLayout(viewport);
+    viewportLayout->addRow(tr("Enable Shift change FOV"), m_pEnableShiftChangeFOV);
+    viewportLayout->addRow(tr("Point size scale"), m_pViewportPointSizeScaleSpinBox);
+    layout->addWidget(viewport);
+
+    auto updateIntegratorControls = [this, photons, sharc, sharcStatus, radiusStatus, guidingStatus]() {
+        const bool sppm = m_pIntegrator->currentData().toString() == "sppm";
+        photons->setEnabled(sppm);
+        guidingStatus->setText(m_pSppmGuiding->isChecked()
+            ? tr("Photon guiding is enabled for progressive SPPM.") : tr("Photon guiding is off."));
+        radiusStatus->setText(tr("SPPM progressively shrinks the gather radius at each receiver."));
+        // Keep the preference editable even while photon transport bypasses it.
+        sharc->setVisible(!sppm && m_pEnableSharc->isChecked());
+        sharcStatus->setText(sppm
+            ? (m_pEnableSharc->isChecked()
+                ? tr("SHARC is bypassed for photons; enabled only if the scene falls back to Path Tracing.")
+                : tr("SHARC is off, including Path Tracing fallback."))
+            : (m_pEnableSharc->isChecked() ? tr("SHARC is enabled for Path Tracing.") : tr("SHARC is off.")));
+    };
+    connect(m_pIntegrator, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [updateIntegratorControls](int) { updateIntegratorControls(); });
+    connect(m_pSppmGuiding, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
+    connect(m_pEnableSharc, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
+    updateIntegratorControls();
 }
 
 void ZRayTracingPane::saveValue()
@@ -304,6 +370,11 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
     inst.setValue(zsRayTracingDenoise, m_pDenoise->isChecked());
     inst.setValue(zsRayTracingMaxBounce, m_pMaxBounce->value());
+    inst.setValue(zsRayTracingIntegrator, m_pIntegrator->currentData());
+    inst.setValue(zsSppmPhotons, m_pSppmPhotons->value());
+    inst.setValue(zsSppmRadius, m_pSppmRadius->value());
+    inst.setValue(zsSppmGuiding, m_pSppmGuiding->isChecked());
+    inst.setValue(zsSppmAlpha, m_pSppmAlpha->value());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
     inst.setValue(zsSharcSceneScale, m_pSharcSceneScale->value());
@@ -315,10 +386,13 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsSharcSHEncoding, m_pSharcSHEncoding->isChecked());
 
     auto main = zenoApp->getMainWindow();
-    ZASSERT_EXIT(main);
+    if (!main) return;
     for (auto displaywid : main->viewports()) {
         if (displaywid) {
             displaywid->setSampleNumber(m_pViewportSampleNumber->value());
+            displaywid->setSppmSettings(m_pIntegrator->currentData().toString(),
+                m_pSppmPhotons->value(), static_cast<float>(m_pSppmRadius->value()),
+                static_cast<float>(m_pSppmAlpha->value()), m_pSppmGuiding->isChecked());
             displaywid->setRayTracingSettings(
                 m_pDenoise->isChecked(),
                 m_pMaxBounce->value(),
@@ -500,7 +574,16 @@ void ZPreferencesTabWidget::initUI()
     addTab(m_pZenoCachePane, tr("Zeno Cache"));
     //ray tracing pane
     m_pRayTracingPane = new ZRayTracingPane(this);
-    addTab(m_pRayTracingPane, tr("Ray Tracing"));
+    auto rayTracingScroll = new QScrollArea(this);
+    rayTracingScroll->setObjectName("rayTracingScroll");
+    rayTracingScroll->setWidgetResizable(true);
+    rayTracingScroll->setFrameShape(QFrame::NoFrame);
+    rayTracingScroll->setWidget(m_pRayTracingPane);
+    // QScrollArea enables a light autofill background on its content by default.
+    // Keep the preferences dialog's dark background through both layers.
+    rayTracingScroll->viewport()->setAutoFillBackground(false);
+    m_pRayTracingPane->setAutoFillBackground(false);
+    addTab(rayTracingScroll, tr("Ray Tracing"));
     //shortcut panel
     m_pShortcutsPane = new ShortcutsPane(this);
     addTab(m_pShortcutsPane, tr("Shortcuts"));

@@ -47,6 +47,11 @@ private:
     QSpinBox* m_pViewportSampleNumber;
     QCheckBox* m_pDenoise;
     QSpinBox* m_pMaxBounce;
+    QComboBox* m_pIntegrator;
+    QSpinBox* m_pSppmPhotons;
+    QDoubleSpinBox* m_pSppmRadius;
+    QCheckBox* m_pSppmGuiding;
+    QDoubleSpinBox* m_pSppmAlpha;
     QCheckBox* m_pEnableSharc;
     QPushButton* m_pSharcResetCache;
     QSpinBox* m_pSharcDownscaleFactor;

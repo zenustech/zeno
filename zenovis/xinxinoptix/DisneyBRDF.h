@@ -458,14 +458,17 @@ float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay)
   return (2.0f * NDotV) / (NDotV + sqrtf(a * a + b * b + c * c));
 }
 static __inline__ __device__
-vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
+vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf, bool physical = false)
 {
 
   pdf = 0.0;
 //  if (L.z * V.z <= 0.0)
 //    return vec3(0.0);
 
-  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f, 10.0f);
+  // SPPM MIS requires the actual VNDF density. The legacy interactive cap
+  // changes the reported PDF without changing the sampled distribution.
+  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  if (!physical) D = clamp(D, 0.0f, 10.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
 
@@ -475,7 +478,7 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
 
 
 static __inline__ __device__
-vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
+vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf, bool physical = false)
 {
 //  ax = max(0.04f,ax);
 //  ay = max(0.04f,ay);
@@ -486,12 +489,18 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float LDotH = dot(L, H); //always negative
   float VDotH = dot(V, H); //always positive
 
-  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f, 10.0f);
+  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  if (!physical) D = clamp(D, 0.0f, 10.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
   float denom = LDotH * eta + VDotH;
   denom *= denom;
-  float jacobian = abs(LDotH) / (denom + 1e-5f);
+  if (physical && (denom == 0.0f || VDotH * V.z * H.z <= 0.0f || LDotH * L.z * H.z <= 0.0f))
+    return vec3(0.0f);
+  // VNDF refraction changes solid angle by eta^2. Keep this in both f
+  // (importance transport) and the PDF; radiance applies eta^-2 separately.
+  float jacobian = physical ? abs(LDotH) * eta * eta / denom
+                           : abs(LDotH) / (denom + 1e-5f);
 
   pdf = G1 * abs(VDotH) * D * jacobian / abs(V.z);
   return baseColor * (vec3(1.0f) - F)

@@ -6,6 +6,7 @@
 #include "LightBounds.h"
 #include "LightSelection.h"
 #include "SharcLaunchParameters.h"
+#include "SppmLaunchParameters.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -258,6 +259,7 @@ struct Params
     float physical_camera_pupillary_distance;
 
     SharcLaunchParameters sharc;
+    SppmLaunchParameters sppm;
 };
 
 
@@ -279,6 +281,7 @@ enum class TransmittanceMethod : uint8_t
 struct HitGroupData
 {
     uint16_t dc_index;
+    uint32_t photon_callable = UINT_MAX;
     float opacity = FLT_MAX;
     uint16_t vol_depth=0;
     float vol_extinction=1.0f;
@@ -292,4 +295,5 @@ struct HitGroupData
     cudaTextureObject_t textures[32];
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];
+    uint32_t camera_callable=UINT_MAX;
 };

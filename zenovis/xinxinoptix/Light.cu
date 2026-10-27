@@ -86,7 +86,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     auto visible = (light.config & zeno::LightConfigVisible);
 
-    if (!visible && prd->depth == 0) {
+    if (!visible && prd->depth == 0 && prd->sppmMode != 2u) {
         prd->alphaHit = true;
         prd->_tmin_ = optixGetRayTmax();
         return;
@@ -98,7 +98,7 @@ extern "C" __global__ void __closesthit__radiance()
     LightSampleRecord lsr;
 
     if (light.type != zeno::LightType::Diffuse) {
-        if (prd->depth > 0) {
+        if (prd->depth > 0 || prd->sppmMode == 2u) {
             prd->alphaHit = true;
             prd->_tmin_ = optixGetRayTmax();
             return;
@@ -210,7 +210,7 @@ extern "C" __global__ void __closesthit__radiance()
         lsr.intensity *= atten;
     }
 
-    if (!cihouMaxDistanceContinue(lsr, light)) { return; }
+    if (prd->sppmMode != 2u && !cihouMaxDistanceContinue(lsr, light)) { return; }
     const auto rgba = cihouLightEmission(lsr, light, prd->depth);
     if (rgba.w<1.0f && prd->rndf()>rgba.w) {
         prd->alphaHit = true;
@@ -219,6 +219,16 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
     const float3& emission = *(float3*)&rgba;
+
+    // Photon paths carry flux, not visible emission. Diffuse light surfaces
+    // absorb incident photons, including the inner side of a spherical light.
+    // Ellipse clipping and texture cutouts above apply before absorption.
+    if (prd->sppmMode == 2u) {
+        atomicAdd(&params.sppm.statistics->absorbed, 1ull);
+        prd->radiance = make_float3(0.0f);
+        prd->done = true;
+        return;
+    }
 
     if (light.config & zeno::LightConfigDoubleside) {
         lsr.NoL = abs(lsr.NoL);
@@ -256,7 +266,9 @@ extern "C" __global__ void __closesthit__radiance()
         float scatterPDF = prd->samplePdf; //BxDF PDF from previous hit
         float misWeight = 1.0f;
         
-        if (!lsr.isDelta) {
+        // A zero BSDF PDF marks a delta event, as in the environment miss
+        // shader. NEE cannot sample that path and its light hit has weight 1.
+        if (!lsr.isDelta && (prd->sppmMode == 0u || scatterPDF > 0.0f)) {
             misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
         }
 
@@ -273,6 +285,9 @@ extern "C" __global__ void __closesthit__radiance()
             prd->_tmax_ = FLT_MAX;
         }
     }
+    // The SPPM camera finishes on an emitter; the legacy raygen advances
+    // its tmin after this shader, while SPPM traces one surface per step.
+    if (prd->sppmMode == 1u) prd->done = true;
     return;
 }
 

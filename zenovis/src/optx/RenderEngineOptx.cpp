@@ -2655,7 +2655,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->camera->zOptixCameraSettingInfo.num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
+        // Recording/CLI --sample writes DrawOptions; the camera node controls
+        // only work per interactive update. Do not make offline quality require
+        // a large, unresponsive viewport batch.
+        const bool recording = zeno::getSession().userData().has("optix_image_path");
+        const int samples = recording ? scene->drawOptions->num_samples
+                                     : scene->camera->zOptixCameraSettingInfo.num_samples;
+        xinxinoptix::optixrender(0, std::max(1,samples), scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 

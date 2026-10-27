@@ -32,6 +32,7 @@
 #include "XAS.h"
 #include "magic_enum.hpp"
 #include "optixPathTracer.h"
+#include "SobolDirections.h"
 
 #include <zeno/para/parallel_sort.h>
 #include <zeno/para/parallel_scan.h>
@@ -49,6 +50,7 @@
 #include <chrono>
 #include <optional>
 #include <cstring>
+#include <fstream>
 
 #include <iostream>
 #include <mutex>
@@ -170,6 +172,18 @@ struct PathTracerState
     raii<CUdeviceptr>            d_params;
 
     OptixShaderBindingTable sbt {};
+    raii<CUdeviceptr> sppm_pixels, sppm_heads, sppm_statistics, sppm_bounds;
+    raii<CUdeviceptr> sppm_guide_cdf, sppm_guide_scores;
+    std::vector<double> sppm_guide_history;
+    raii<CUdeviceptr> photon_hit_records, camera_hit_records;
+    OptixShaderBindingTable sppm_sbt[4] {};
+    std::array<double,7> sppm_profile_ms {};
+    uint32_t sppm_iteration = 0u, sppm_max_bounce = 0u;
+    bool sppm_reset_pending = true, sppm_has_volumes = false;
+    float sppm_configured_radius = 0.0f;
+    bool sppm_unsupported_material = false;
+    bool sppm_denoise = false;
+    std::string sppm_fallback_reason;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     OptixShaderBindingTable sharc_update_sbt {};
     std::unique_ptr<SharcResources> sharc;
@@ -318,8 +332,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
 static void updateState(sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
     // Update params on device
-    if( camera_changed || resize_dirty )
+    if( camera_changed || resize_dirty ) {
         params.subframe_index = 0;
+        state.sppm_reset_pending = true;
+    }
 
     handleCameraUpdate( params );
     handleResize( output_buffer, params, enable_aov);
@@ -525,6 +541,233 @@ static bool launchSharcUpdate(PathTracerState& state)
 }
 #endif
 
+static void disableSppm(PathTracerState& state)
+{
+    zeno::getSession().userData().set2("optix-sppm-guiding-active", false);
+    if (state.params.sppm.enabled) state.params.subframe_index = 0;
+    state.params.sppm = {};
+    state.sppm_pixels.reset();
+    state.sppm_heads.reset();
+    state.sppm_statistics.reset();
+    state.sppm_bounds.reset();
+    state.sppm_guide_cdf.reset();
+    state.sppm_guide_scores.reset();
+    state.sppm_guide_history.clear();
+    state.sppm_iteration = 0;
+    state.sppm_reset_pending = true;
+}
+
+static void reportSppmFallback(PathTracerState& state, const std::string& reason)
+{
+    if (reason != state.sppm_fallback_reason && !reason.empty())
+        zeno::log_warn("SPPM switched to Path Tracing: {}", reason);
+    state.sppm_fallback_reason = reason;
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix-sppm-fallback-reason", reason);
+    ud.set2("optix-integrator-active", std::string("path"));
+    disableSppm(state);
+}
+
+static bool prepareSppm(PathTracerState& state)
+{
+    auto& ud = zeno::getSession().userData();
+    auto& launch = state.params.sppm;
+    const bool enabled = ud.get2<std::string>("optix-integrator", "path") == "sppm" ||
+                         ud.get2<bool>("optix-sppm", false);
+    if (!enabled) {
+        reportSppmFallback(state, "");
+        return false;
+    }
+    const std::string fallback = state.params.needAOV ? "AOV output is requested" :
+        state.sppm_has_volumes ? "the scene contains volumes" :
+        state.sppm_unsupported_material ? "a hair, subsurface, or unregistered emissive material was encountered" : "";
+    if (!fallback.empty()) {
+        reportSppmFallback(state, fallback);
+        return false;
+    }
+    state.sppm_fallback_reason.clear();
+    ud.set2("optix-sppm-fallback-reason", std::string());
+    ud.set2("optix-integrator-active", std::string("sppm"));
+
+    const size_t count = size_t(state.params.width) * state.params.height;
+    if (count == 0u || count > (1u << 28)) throw std::runtime_error("Unsupported SPPM image size");
+    const int requestedPhotons = ud.get2<int>("optix-sppm-photons", 0);
+    const uint32_t photons = uint32_t(std::clamp(requestedPhotons > 0 ? requestedPhotons : int(count), 1, 1 << 28));
+    const float alpha = std::clamp(ud.get2<float>("optix-sppm-alpha", 2.0f/3.0f), 0.01f, 1.0f);
+    const float configuredRadius = ud.get2<float>("optix-sppm-radius", 0.0f);
+    const bool guiding = ud.get2<bool>("optix-sppm-guiding", true);
+    const uint32_t distantCount = uint32_t(state.dlights.list.size());
+    const uint32_t environment = state.params.sky_texture != 0u && state.params.sky_strength > 0.0f;
+    const uint32_t emitterCount = state.params.num_lights + distantCount + environment;
+    // Bound GPU guide storage to 4 MiB. Large triangle-light scenes retain the
+    // complete original emitter sampler rather than losing any light support.
+    const uint32_t guideCells = guiding && emitterCount <= 4096u ? emitterCount*SppmGuideBins : 0u;
+    if (!std::isfinite(alpha) || !std::isfinite(configuredRadius))
+        throw std::runtime_error("SPPM radius and alpha must be finite");
+    const bool reset = state.sppm_reset_pending || !launch.enabled ||
+        state.sppm_pixels.size != count*sizeof(SppmPixel) ||
+        launch.photonsPerIteration != photons || launch.alpha != alpha ||
+        launch.guiding != uint32_t(guiding) || launch.emitterCount != emitterCount ||
+        state.sppm_max_bounce != state.params.max_bounce ||
+        state.sppm_denoise != state.params.denoise ||
+        state.params.subframe_index != uint16_t(state.sppm_iteration) ||
+        state.sppm_iteration == UINT_MAX;
+    // The explicit radius is compared against the previous requested value,
+    // while initialRadius stores the automatic, scene-derived radius.
+    const bool radiusChanged = state.sppm_configured_radius != configuredRadius;
+    state.sppm_configured_radius = configuredRadius;
+    if (reset || radiusChanged) {
+        state.sppm_pixels.resize(count*sizeof(SppmPixel));
+        uint32_t hashSize = 1u;
+        while (hashSize < count*2u) hashSize <<= 1u;
+        state.sppm_heads.resize(size_t(hashSize)*sizeof(uint32_t));
+        state.sppm_statistics.resize(sizeof(SppmStatistics));
+        state.sppm_bounds.resize(sizeof(OptixAabb));
+        OptixAabb bounds = {-1,-1,-1,1,1,1};
+        if (state.params.handle) {
+            OptixAccelEmitDesc property = {};
+            property.type = OPTIX_PROPERTY_TYPE_AABBS;
+            property.result = state.sppm_bounds;
+            OPTIX_CHECK(optixAccelEmitProperty(OptixUtil::context, nullptr, state.params.handle, &property));
+            CUDA_CHECK(cudaMemcpy(&bounds, reinterpret_cast<void*>(state.sppm_bounds.handle), sizeof(bounds), cudaMemcpyDeviceToHost));
+        }
+        const float3 lower = make_float3(bounds.minX, bounds.minY, bounds.minZ);
+        const float3 upper = make_float3(bounds.maxX, bounds.maxY, bounds.maxZ);
+        launch.sceneCenter = (lower+upper)*0.5f;
+        launch.sceneRadius = std::max(length(upper-lower)*0.5005f, 1.0e-3f);
+        if (!std::isfinite(launch.sceneRadius)) throw std::runtime_error("SPPM received invalid scene bounds");
+        launch.initialRadius = configuredRadius > 0.0f ? configuredRadius : launch.sceneRadius*0.01f;
+        launch.guiding = uint32_t(guiding);
+        launch.guideCells = guideCells;
+        launch.guideActive = 0u;
+        state.sppm_guide_history.assign(guideCells, 0.0);
+        if (guideCells) {
+            state.sppm_guide_cdf.resize(size_t(guideCells)*sizeof(double));
+            state.sppm_guide_scores.resize(size_t(guideCells)*sizeof(double));
+            CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(state.sppm_guide_scores.handle), 0, state.sppm_guide_scores.size, nullptr));
+            CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(state.sppm_guide_cdf.handle), 0, state.sppm_guide_cdf.size, nullptr));
+        } else {
+            state.sppm_guide_cdf.reset();
+            state.sppm_guide_scores.reset();
+        }
+        launch.guideCdf = reinterpret_cast<double*>(state.sppm_guide_cdf.handle);
+        launch.guideScores = reinterpret_cast<double*>(state.sppm_guide_scores.handle);
+        launch.hashSize = hashSize;
+        launch.alpha = alpha;
+        launch.photonsPerIteration = photons;
+        launch.pixels = reinterpret_cast<SppmPixel*>(state.sppm_pixels.handle);
+        launch.heads = reinterpret_cast<uint32_t*>(state.sppm_heads.handle);
+        launch.statistics = reinterpret_cast<SppmStatistics*>(state.sppm_statistics.handle);
+        CUDA_CHECK(cudaMemsetAsync(launch.pixels, 0, state.sppm_pixels.size, nullptr));
+        SppmStatistics statistics = {};
+        CUDA_CHECK(cudaMemcpy(launch.statistics, &statistics, sizeof(statistics), cudaMemcpyHostToDevice));
+        // Initialize progressive radii in the first grid pass.
+        state.sppm_iteration = 0u;
+        state.params.subframe_index = 0u;
+        state.sppm_max_bounce = state.params.max_bounce;
+        state.sppm_denoise = state.params.denoise;
+        state.sppm_reset_pending = false;
+    }
+    launch.enabled = 1u;
+    launch.distantCount = distantCount;
+    launch.environment = environment;
+    launch.emitterCount = emitterCount;
+    ud.set2("optix-sppm-guiding-active", launch.guideActive != 0u);
+    return true;
+}
+
+static void launchSppm(PathTracerState& state)
+{
+    using namespace OptixUtil;
+    auto& launch = state.params.sppm;
+    launch.iteration = state.sppm_iteration;
+    // Opt-in profiling only: normal rendering creates no events or extra syncs.
+    const char* profileEnv=std::getenv("ZENO_SPPM_PROFILE");
+    const bool profile=profileEnv && profileEnv[0]=='1';
+    const char* sharedHit=std::getenv("ZENO_SPPM_SHARED_HIT_PROGRAMS");
+    const bool specializedHit=!(sharedHit && sharedHit[0]=='1');
+    struct ProfileEvents {
+        cudaEvent_t start[7]={}, end[7]={};
+        ~ProfileEvents() { for(int i=0;i<7;++i) {
+            if(start[i]) cudaEventDestroy(start[i]);
+            if(end[i]) cudaEventDestroy(end[i]);
+        } }
+    } events;
+    auto profileStart=[&](int pass) {
+        if(!profile) return;
+        CUDA_CHECK(cudaEventCreate(&events.start[pass]));
+        CUDA_CHECK(cudaEventCreate(&events.end[pass]));
+        CUDA_CHECK(cudaEventRecord(events.start[pass]));
+    };
+    auto profileEnd=[&](int pass) { if(profile) CUDA_CHECK(cudaEventRecord(events.end[pass])); };
+    if(profile && launch.iteration==0u) state.sppm_profile_ms={};
+    const char* cacheSobol=std::getenv("ZENO_SPPM_SOBOL_CACHE");
+    launch.cacheCameraSobol=!cacheSobol || cacheSobol[0]!='0';
+    for (unsigned dimension=0;dimension<8;++dimension) {
+        uint32_t bits=0,index=launch.iteration;
+        for(unsigned bit=0;index;index>>=1u,++bit)
+            if(index&1u) bits^=zenoSobolDirections[dimension*32u+bit];
+        launch.cameraSobol[dimension]=bits;
+    }
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
+    CUDA_CHECK(cudaMemsetAsync(launch.heads, 0xff, state.sppm_heads.size, nullptr));
+    for (int pass = 0; pass < 4; ++pass) {
+        state.sppm_sbt[pass] = state.sbt;
+        state.sppm_sbt[pass].raygenRecord = d_sppm_records[pass];
+        if (pass==0 && specializedHit) state.sppm_sbt[pass].hitgroupRecordBase=state.camera_hit_records;
+        if (pass == 2) {
+            if(specializedHit) state.sppm_sbt[pass].hitgroupRecordBase=state.photon_hit_records;
+            state.sppm_sbt[pass].missRecordBase = d_sppm_miss_records;
+            state.sppm_sbt[pass].missRecordCount = 2;
+        }
+        uint32_t width = pass == 2 ? launch.photonsPerIteration : state.params.width;
+        uint32_t height = pass == 2 ? 1u : state.params.height;
+        profileStart(pass);
+        OPTIX_CHECK(optixLaunch(pipeline, nullptr, state.d_params, sizeof(Params), &state.sppm_sbt[pass], width, height, 1u));
+        profileEnd(pass);
+    }
+    if(profile) {
+        CUDA_CHECK(cudaEventSynchronize(events.end[3]));
+        for(int pass=0;pass<7;++pass) if(events.start[pass]) {
+            float ms=0; CUDA_CHECK(cudaEventElapsedTime(&ms,events.start[pass],events.end[pass]));
+            state.sppm_profile_ms[pass]+=ms;
+        }
+    }
+    ++state.sppm_iteration;
+    if (launch.guideCells && state.sppm_iteration % 16u == 0u) {
+        // Learn only from completed batches. For contribution F/q, training
+        // (F/q)^2*q estimates integral(F^2) in each equal-area emission bin.
+        // Sampling proportional to its square root targets image variance.
+        std::vector<double> scores(launch.guideCells);
+        CUDA_CHECK(cudaMemcpy(scores.data(), launch.guideScores, scores.size()*sizeof(double), cudaMemcpyDeviceToHost));
+        double total = 0.0;
+        for (size_t i=0; i<scores.size(); ++i) {
+            auto& value = state.sppm_guide_history[i];
+            value = 0.5*value + double(scores[i]);
+            total += std::sqrt(value);
+        }
+        if (!std::isfinite(total)) throw std::runtime_error("Nonfinite SPPM guiding feedback");
+        if (total > 0.0) {
+            std::vector<double> cdf(scores.size());
+            double sum = 0.0;
+            for (size_t i=0; i<cdf.size(); ++i) {
+                // A broad guide and 50% exploration limit overfitting of noisy
+                // second moments while preserving every emitter/direction.
+                sum += 0.5/double(cdf.size()) + 0.5*std::sqrt(state.sppm_guide_history[i])/total;
+                cdf[i] = sum;
+            }
+            cdf.back() = 1.0;
+            CUDA_CHECK(cudaMemcpy(launch.guideCdf, cdf.data(), cdf.size()*sizeof(double), cudaMemcpyHostToDevice));
+            launch.guideActive = 1u;
+            zeno::getSession().userData().set2("optix-sppm-guiding-active", true);
+        }
+        CUDA_CHECK(cudaMemsetAsync(launch.guideScores, 0, scores.size()*sizeof(double), nullptr));
+        const uint32_t updates = state.sppm_iteration/16u;
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,guideUpdates),
+                              &updates, sizeof(updates), cudaMemcpyHostToDevice));
+    }
+}
+
 static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
 {
     // All samples in this render reuse the finalized light selection.
@@ -532,6 +775,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
     state.params.frame_buffer  = result_buffer_data;
     state.params.denoise = denoise;
     if(denoise == true) state.params.outside_random_number = 0;
+    if (state.params.sppm.enabled) { launchSppm(state); return; }
     
         CUDA_CHECK( cudaMemcpyAsync((void*)state.d_params.handle, &state.params, sizeof( Params ), cudaMemcpyHostToDevice, 0) );
 
@@ -638,6 +882,18 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 ) );
 
     state.sbt.raygenRecord                = d_raygen_record;
+    for (int i = 0; i < 4; ++i) {
+        auto& record = OptixUtil::d_sppm_records[i];
+        record.resize(raygen_record_size);
+        RayGenRecord rg = {};
+        OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_prog_groups[i], &rg));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(record.handle), &rg, raygen_record_size, cudaMemcpyHostToDevice));
+    }
+    MissRecord sppmMiss[2] = {ms_sbt[0], ms_sbt[1]};
+    OptixUtil::d_sppm_miss_records.resize(sizeof(sppmMiss));
+    OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_photon_miss, &sppmMiss[0]));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(OptixUtil::d_sppm_miss_records.handle),
+        sppmMiss, sizeof(sppmMiss), cudaMemcpyHostToDevice));
     state.sbt.missRecordBase              = d_miss_records;
     state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
     state.sbt.missRecordCount             = RAY_TYPE_COUNT;
@@ -659,7 +915,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     d_hitgroup_records.resize(hitgroup_record_size * hitgroup_record_count);
 
     std::vector<HitGroupRecord> hitgroup_records(hitgroup_record_count);
-    std::vector<CallablesRecord> callable_records(shader_count);
+    std::vector<CallablesRecord> callable_records(shader_count * 3);
 
     for( int j = 0; j < shader_count; ++j ) {
 
@@ -667,6 +923,12 @@ static void createSBT( PathTracerState& state, bool raygen=false)
         const uint sbt_idx = RAY_TYPE_COUNT * j;
 
         OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.callable_prg->prog_group, &callable_records[j] ) );
+        const auto photonCallable = shader_ref.callable_prg->photon_group.handle;
+        OPTIX_CHECK(optixSbtRecordPackHeader(photonCallable ? photonCallable : shader_ref.callable_prg->prog_group.handle,
+            &callable_records[shader_count + j]));
+        const auto cameraCallable=shader_ref.callable_prg->camera_group.handle;
+        OPTIX_CHECK(optixSbtRecordPackHeader(cameraCallable ? cameraCallable : shader_ref.callable_prg->prog_group.handle,
+            &callable_records[shader_count*2+j]));
 
         if (!shader_ref.isVol()) {
 
@@ -702,6 +964,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
             }
 
             hitgroup_records[sbt_idx+1] = hitgroup_records[sbt_idx]; // SBT for occlusion ray-type for ith material
+
 
             OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.core->m_radiance_hit_group, &hitgroup_records[sbt_idx] ) );
             OPTIX_CHECK( optixSbtRecordPackHeader( shader_ref.core->m_occlusion_hit_group, &hitgroup_records[sbt_idx+1] ) );
@@ -765,17 +1028,42 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( hitgroup_record_size );
     state.sbt.hitgroupRecordCount         = hitgroup_records.size();
 
+    // Same records/indices as the scene SBT; only the radiance headers differ.
+    // Shared light and volume programs retain their original headers.
+    for (size_t j=0;j<shader_count;++j) {
+        const auto& group=OptixUtil::rtMaterialShaders[j].core->m_photon_hit_group;
+        if (group.handle) OPTIX_CHECK(optixSbtRecordPackHeader(group,&hitgroup_records[RAY_TYPE_COUNT*j]));
+        const char* fused = std::getenv("ZENO_SPPM_FUSED_MATERIAL");
+        if (group.handle && (!fused || std::string(fused) != "0") &&
+            OptixUtil::rtMaterialShaders[j].callable_prg->photon_group.handle)
+            hitgroup_records[RAY_TYPE_COUNT*j].data.photon_callable = uint32_t(shader_count + j);
+    }
+    state.photon_hit_records.resize(hitgroup_record_size*hitgroup_records.size());
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(state.photon_hit_records.handle),hitgroup_records.data(),
+        hitgroup_record_size*hitgroup_records.size(),cudaMemcpyHostToDevice));
+    for (size_t j=0;j<shader_count;++j) {
+        const auto& group=OptixUtil::rtMaterialShaders[j].core->m_camera_hit_group;
+        if (group.handle) OPTIX_CHECK(optixSbtRecordPackHeader(group,&hitgroup_records[RAY_TYPE_COUNT*j]));
+        hitgroup_records[RAY_TYPE_COUNT*j].data.photon_callable = UINT_MAX;
+        const char* cameraFused=std::getenv("ZENO_SPPM_CAMERA_FUSED");
+        if ((!cameraFused || cameraFused[0]!='0') && OptixUtil::rtMaterialShaders[j].callable_prg->camera_group.handle)
+            hitgroup_records[RAY_TYPE_COUNT*j].data.camera_callable=uint32_t(shader_count*2+j);
+    }
+    state.camera_hit_records.resize(hitgroup_record_size*hitgroup_records.size());
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(state.camera_hit_records.handle),hitgroup_records.data(),
+        hitgroup_record_size*hitgroup_records.size(),cudaMemcpyHostToDevice));
+
     {
         raii<CUdeviceptr>& d_callable_records = OptixUtil::d_callable_records;
         size_t      sizeof_callable_record = sizeof( CallablesRecord );
 
-        d_callable_records.resize( sizeof_callable_record * shader_count );
+        d_callable_records.resize( sizeof_callable_record * callable_records.size() );
 
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_callable_records ), callable_records.data(),
-                                sizeof_callable_record * shader_count, cudaMemcpyHostToDevice ) );
+                                sizeof_callable_record * callable_records.size(), cudaMemcpyHostToDevice ) );
 
         state.sbt.callablesRecordBase          = d_callable_records;
-        state.sbt.callablesRecordCount         = shader_count;
+        state.sbt.callablesRecordCount         = callable_records.size();
         state.sbt.callablesRecordStrideInBytes = static_cast<unsigned int>( sizeof_callable_record );
     }
 
@@ -1611,6 +1899,9 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                    bool requireVolumeObj, uint usesCurveTypeFlags, bool refresh)
 {
     camera_changed = true;
+    state.sppm_has_volumes = requireVolumeObj;
+    state.sppm_unsupported_material = false;
+    state.sppm_reset_pending = true;
 
     OptixUtil::resetShaderModuleBuildStats();
 
@@ -1664,6 +1955,10 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                 OptixUtil::context,
                 OptixUtil::sharc_update_raygen_module);
 #endif
+        });
+
+        OptixUtil::_compile_group.run([&] () {
+            OptixUtil::createSppmPrograms(OptixUtil::context);
         });
 
         if (requireTriangObj) {
@@ -1949,7 +2244,8 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
                   << "  time=" << build_stats.cuda_module_time_ms << " ms"      << std::endl;
         std::cout << "---Shader Summary End---" << std::endl;
     }
-    if (defaultScene.consumeVolumeSceneBindingsDirty()) {
+    const bool volumeBindingsDirty=defaultScene.consumeVolumeSceneBindingsDirty();
+    if (volumeBindingsDirty) {
         rebuildSceneAndBenchmark();
         state.params.handle = defaultScene.rootNode.handle;
     }
@@ -1984,6 +2280,8 @@ void prepareScene()
     rebuildSceneAndBenchmark();
     state.params.handle = defaultScene.rootNode.handle;
     state.params.subframe_index = 0;
+    state.sppm_reset_pending = true;
+    state.sppm_unsupported_material = false;
 }
 
 void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
@@ -2211,14 +2509,10 @@ std::vector<Imath::half> optixgetimg_extra3(std::string name, int w, int h) {
 #include <condition_variable>
 
 bool isPosClick = false;
+static float2 pendingClickUV = {};
 std::function<void(glm::vec3)> clickPosCallback;
 void get_click_pos(float xf, float yf, std::function<void(glm::vec3)> cbClickPosSig) {
-    int w = state.params.width;
-    int h = state.params.height;
-    int x = xf * w;
-    int y = yf * h;
-
-    state.params.click_coord = make_uint2(x, h - 1 - y);
+    pendingClickUV = make_float2(xf,yf);
     state.params.click_dirty = true;
 
     clickPosCallback = std::move(cbClickPosSig);
@@ -2227,12 +2521,7 @@ void get_click_pos(float xf, float yf, std::function<void(glm::vec3)> cbClickPos
 
 std::function<void(std::tuple<std::string, std::string, uint32_t>)> clickIdCallback;
 void get_click_id(float xf, float yf, std::function<void(std::tuple<std::string, std::string, uint32_t>)> cbClickIdSig) {
-    int w = state.params.width;
-    int h = state.params.height;
-    int x = xf * w;
-    int y = yf * h;
-    
-    state.params.click_coord = make_uint2(x, h - 1 - y);
+    pendingClickUV = make_float2(xf,yf);
     state.params.click_dirty = true;
 
     clickIdCallback = std::move(cbClickIdSig);
@@ -2310,10 +2599,20 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     state.params.needAOV = enable_output_aov;
     updateRayGen(enable_output_aov, denoise);
     updateState( *output_buffer_o, state.params, enable_output_aov );
+    if (state.params.click_dirty) {
+        // Dragging can switch to a reduced-resolution image after the mouse
+        // event. Map the normalized click only after that resize, and never
+        // return stale device memory for a miss or an out-of-viewport event.
+        CUDA_CHECK(cudaMemset(reinterpret_cast<void*>(state.pick_buffer.handle),0,sizeof(PickInfo)));
+        state.params.click_coord=make_uint2(UINT_MAX,UINT_MAX);
+        if (pendingClickUV.x>=0 && pendingClickUV.x<=1 && pendingClickUV.y>=0 && pendingClickUV.y<=1) {
+            const auto w=state.params.width, h=state.params.height;
+            const unsigned x=std::min(unsigned(pendingClickUV.x*w),w-1u);
+            const unsigned y=std::min(unsigned(pendingClickUV.y*h),h-1u);
+            state.params.click_coord=make_uint2(x,h-1u-y);
+        }
+    }
     finalizeLightSelectionWeights(state);
-#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
-    bool sharc_enabled = prepareSharc(state);
-#endif
 
     if (denoise) {
         auto w = state.params.width;
@@ -2331,6 +2630,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     auto &ud = zeno::getSession().userData();
     state.params.max_bounce = static_cast<unsigned int>(std::clamp(
         ud.get2<int>("optix-max-bounce", 4), 1, 255));
+    state.params.denoise = denoise;
+    bool sppm_enabled = prepareSppm(state);
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    bool sharc_enabled = false;
+    if (sppm_enabled) state.params.sharc = {};
+    else sharc_enabled = prepareSharc(state);
+#endif
     auto pause = ud.get2<bool>("viewport-optix-pause", false);
 
     const int max_samples_once = 1;
@@ -2387,12 +2693,45 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         launchSubframe( result_buffer_data, state, denoise);
         state.params.subframe_index++;
     }
+    if (sppm_enabled) {
+        SppmStatistics statistics = {};
+        CUDA_CHECK(cudaMemcpy(&statistics, state.params.sppm.statistics,
+                              sizeof(statistics), cudaMemcpyDeviceToHost));
+        if (statistics.unsupported != 0) {
+            // A callable can decide its closure dynamically. Never display a
+            // partially black SPPM result when such a closure is discovered.
+            state.sppm_unsupported_material = true;
+            reportSppmFallback(state, "a hair, subsurface, or unregistered emissive material was encountered");
+            sppm_enabled = false;
+            state.params.sharc = {};
+            for (int f = 0; f < samples; ++f) {
+                state.params.samples_per_launch = 1;
+                launchSubframe(result_buffer_data, state, denoise);
+                ++state.params.subframe_index;
+            }
+        }
+    }
     if (denoise) {
         state.denoiser.exec();
     }
     output_buffer_o->unmap();
     timer.tock();
+    if (sppm_enabled && ud.get2<bool>("optix-sppm-statistics", false)) {
+        SppmStatistics statistics = {};
+        CUDA_CHECK(cudaMemcpy(&statistics, state.params.sppm.statistics, sizeof(statistics), cudaMemcpyDeviceToHost));
+        zeno::log_info("SPPM: iterations={} emitted={} traced={} visible={} gathered={} caustic={} unsupported={} radius={}",
+            state.sppm_iteration, statistics.emitted, statistics.traced, statistics.visible,
+            statistics.gathered, statistics.caustic, statistics.unsupported, state.params.sppm.initialRadius);
+    }
     state.params.frame_time = timer.elapsed();
+    if (sppm_enabled) {
+        const char* profile=std::getenv("ZENO_SPPM_PROFILE");
+        if(profile && profile[0]=='1') {
+            const auto& p=state.sppm_profile_ms;
+            zeno::log_info("SPPM profile total ms: camera={} grid={} photon={} resolve={} iterations={}",
+                p[0],p[1],p[2],p[3],state.sppm_iteration);
+        }
+    }
     if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
         zeno::log_info("OptiX render: {} samples, {}x{}, {} ms",
                        samples, state.params.width, state.params.height, timer.elapsed());
@@ -2581,6 +2920,13 @@ void optixDestroy() {
     }
 
     try {
+        state.sppm_pixels.reset();
+        state.sppm_heads.reset();
+        state.sppm_statistics.reset();
+        state.sppm_bounds.reset();
+        state.sppm_guide_cdf.reset();
+        state.sppm_guide_scores.reset();
+        state.sppm_guide_history.clear();
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
         // SHARC owns CUDA allocations and a CUDA module in the primary
         // context; release them before OptixUtil destroys that context.

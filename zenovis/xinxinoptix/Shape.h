@@ -815,7 +815,10 @@ struct ConeShape {
         // cosTheta_p in the importance function.
         assert(cosFalloffEnd <= cosFalloffStart);
 
-        if (cosTheta_e == 1 && cosFalloffEnd != cosFalloffStart)
+        // Full-sphere IES profiles can round both cutoff cosines to -1.
+        // importance() rejects cosThetap <= cosTheta_e, so a cutoff of
+        // exactly 1 would reject every direction even inside the cone.
+        if (cosTheta_e == 1)
             cosTheta_e = 0.999f;
 
         auto& w = reinterpret_cast<Vector3f&>(dir);
