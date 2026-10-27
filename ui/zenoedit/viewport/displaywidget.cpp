@@ -792,10 +792,10 @@ void DisplayWidget::resetSharcCache()
     }
 }
 
-void DisplayWidget::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search)
+void DisplayWidget::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search, bool finalGather)
 {
     if (!m_bGLView)
-        m_optixView->setSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding, search);
+        m_optixView->setSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding, search, finalGather);
 }
 
 void DisplayWidget::setRayTracingSettings(

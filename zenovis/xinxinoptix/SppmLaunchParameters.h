@@ -34,6 +34,45 @@ struct SppmStatistics {
     float initialRadius, radiusReferenceDepth;
     unsigned long long usefulPhotonPaths;
     uint32_t guideUpdates;
+    uint32_t photonRecords;
+    unsigned long long fgInitial, fgTemporal, fgSpatial;
+};
+
+struct FgSurface {
+    float3 position, normal, shadingNormal, tangent, bitangent, wo;
+    SppmMaterial material;
+    uint32_t valid, depth;
+    float3 extinction;
+};
+struct FgPhoton {
+    float3 position, normal, wi, power;
+    uint32_t caustic;
+};
+struct FgCandidate {
+    FgSurface point;
+    float pdf;
+};
+struct FgReservoir {
+    FgSurface point;
+    // A flux-weighted photon sample estimates the directional incident field.
+    // Keeping its direction lets reconnection reevaluate the full Disney BSDF.
+    float3 incident, photonDirection;
+    // Exact outgoing radiance for the renderer's purely Lambertian closure.
+    // Direction-dependent closures retain the directional photon estimator.
+    float3 diffuseRadiance;
+    uint32_t diffuse;
+    float weight, target, jacobian;
+    uint32_t confidence, valid;
+};
+struct FgCausticReservoir {
+    FgPhoton photon;
+    float weight, target;
+    uint32_t confidence, valid;
+};
+struct FgReservoirPair {
+    FgSurface source;
+    FgReservoir fg;
+    FgCausticReservoir caustic;
 };
 
 constexpr uint32_t SppmGuideSide = 8u;
@@ -61,12 +100,38 @@ struct SppmLaunchParameters {
     SppmSearchBounds* searchBounds;
     unsigned long long searchHandle;
     uint32_t searchBackend, searchRecord;
+    uint32_t fgEnabled, fgReuse, fgCull;
+    uint32_t fgConfidence, fgSpatialSamples, fgPairwiseOutput;
+    FgPhoton* fgPhotons;
+    FgCandidate* fgCandidates;
+    FgReservoirPair *fgInitial, *fgPrevious, *fgCurrent;
     uint32_t cameraSobol[8], cacheCameraSobol;
 };
 
 // Cell keys are retained in each node: bucket collisions must never count a
 // visible point twice when querying the 27 neighboring cells.
 #ifdef __CUDACC_RTC__
+static __forceinline__ __device__ bool fgLambertian(const SppmMaterial& m) {
+    // EvalDisneyDiffuse is Lambertian with no sheen. Directional closures
+    // must keep the full Disney evaluation and directional photon estimator.
+    return m.specular==0.0f && m.metallic==0.0f && m.specTrans==0.0f &&
+        m.sheen==0.0f && m.clearcoat==0.0f;
+}
+// Front-side Lambertian closure, including EvaluateDisney3's grazing floor.
+static __forceinline__ __device__ float3 fgDiffuseBsdf(float3 base, float cosine) {
+    const float scale=cosine>0.0f ? fmaxf(.001f,cosine)*0.3183098861837907f : 0.0f;
+    return make_float3(base.x*scale,base.y*scale,base.z*scale);
+}
+struct FgPairWeights { double current, other; };
+static __forceinline__ __device__ FgPairWeights fgPairWeights(
+    double target0, double target1, double target0Elsewhere, double target1Here,
+    double jacobian0, double jacobian1, double weight0, double weight1,
+    uint32_t confidence0, uint32_t confidence1) {
+    const double p0=target0*confidence0, q0=target0Elsewhere*jacobian0*confidence1;
+    const double p1=target1*confidence1, q1=target1Here*jacobian1*confidence0;
+    return {p0+q0>0 ? p0/(p0+q0)*target0*weight0 : 0,
+            p1+q1>0 ? p1/(p1+q1)*target1Here*jacobian1*weight1 : 0};
+}
 static __forceinline__ __device__ uint32_t sppmGuideSelect(const double* cdf, uint32_t count, float u) {
     uint32_t lo=0u, hi=count;
     while (lo<hi) {

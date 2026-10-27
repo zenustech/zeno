@@ -233,6 +233,10 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSppmAlpha->setSingleStep(0.05);
     m_pSppmAlpha->setValue(settingOr(zsSppmAlpha, 2.0 / 3.0).toDouble());
     m_pSppmAlpha->setToolTip(tr("Progressive radius reduction parameter. The standard value is 2/3."));
+    m_pRestirFg = new QCheckBox;
+    m_pRestirFg->setObjectName("restirFinalGathering");
+    m_pRestirFg->setChecked(settingOr(zsRestirFg, false).toBool());
+    m_pRestirFg->setToolTip(tr("Reuse final-gather and caustic samples across pixels and iterations. Uses a fixed-radius photon BVH. Camera or scene changes clear history. Turn off to return to progressive SPPM."));
     m_pSppmGuiding = new QCheckBox;
     m_pSppmGuiding->setObjectName("photonGuiding");
     m_pSppmGuiding->setChecked(settingOr(zsSppmGuiding, true).toBool());
@@ -241,7 +245,7 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSppmSearch->addItem(tr("Hardware ray tracing (BVH)"), "bvh");
     m_pSppmSearch->setCurrentIndex(qMax(0, m_pSppmSearch->findData(settingOr(zsSppmSearch, "hash"))));
     m_pSppmSearch->setToolTip(tr("Choose how photons find nearby receivers. Both methods use the same radius and lighting estimator. BVH build cost is included in rendering time."));
-    m_pSppmGuiding->setToolTip(tr("Learn which lights and emission directions contribute to the photon image, including caustics. Retains uniform exploration and full photon energy. May add overhead in simple scenes."));
+    m_pSppmGuiding->setToolTip(tr("Learn which lights and emission directions contribute to the photon image, including caustics. Retains uniform exploration and full photon energy. May add overhead in simple scenes. ReSTIR FG bypasses guiding; this preference is used when returning to progressive SPPM."));
 
     m_pEnableSharc = new QCheckBox;
     m_pEnableSharc->setObjectName("enableSharc");
@@ -325,6 +329,7 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     radiusStatus->setWordWrap(true);
     photonLayout->addRow(radiusStatus);
     photonLayout->addRow(tr("Photons per iteration"), m_pSppmPhotons);
+    photonLayout->addRow(tr("ReSTIR Final Gathering (experimental)"), m_pRestirFg);
     photonLayout->addRow(tr("Progressive radius alpha"), m_pSppmAlpha);
     photonLayout->addRow(tr("Photon guiding"), m_pSppmGuiding);
     auto guidingStatus = new QLabel;
@@ -360,9 +365,18 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
         photons->setEnabled(sppm);
         m_pSppmRadius->setEnabled(!pixels);
         m_pSppmRadiusPixels->setEnabled(pixels);
+        const bool fg = m_pRestirFg->isChecked();
+        // Guiding is bypassed by ReSTIR FG, but its saved SPPM preference must
+        // remain editable, just like the SHARC preference in photon mode.
         guidingStatus->setText(m_pSppmGuiding->isChecked()
-            ? tr("Photon guiding is enabled for progressive SPPM.") : tr("Photon guiding is off."));
-        radiusStatus->setText(tr("SPPM progressively shrinks the gather radius at each receiver. Pixel mode scales the shared starting radius with the camera."));
+            ? (fg ? tr("Photon guiding is bypassed during ReSTIR FG; enabled when returning to progressive SPPM.")
+                  : tr("Photon guiding is enabled for progressive SPPM."))
+            : tr("Photon guiding is off."));
+        m_pSppmSearch->setEnabled(!fg);
+        m_pSppmAlpha->setEnabled(!fg);
+        radiusStatus->setText(fg
+            ? tr("ReSTIR FG keeps the selected radius fixed during accumulation and uses hardware photon search.")
+            : tr("SPPM progressively shrinks the gather radius at each receiver. Pixel mode scales the shared starting radius with the camera."));
         // Keep the preference editable even while photon transport bypasses it.
         sharc->setVisible(!sppm && m_pEnableSharc->isChecked());
         sharcStatus->setText(sppm
@@ -375,6 +389,7 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
             this, [updateIntegratorControls](int) { updateIntegratorControls(); });
     connect(m_pSppmRadiusMode, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [updateIntegratorControls](int) { updateIntegratorControls(); });
+    connect(m_pRestirFg, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
     connect(m_pSppmGuiding, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
     connect(m_pEnableSharc, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
     updateIntegratorControls();
@@ -406,6 +421,7 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsSppmRadiusPixels, radiusPixels);
     inst.setValue(zsSppmGuiding, m_pSppmGuiding->isChecked());
     inst.setValue(zsSppmSearch, m_pSppmSearch->currentData());
+    inst.setValue(zsRestirFg, m_pRestirFg->isChecked());
     inst.setValue(zsSppmAlpha, m_pSppmAlpha->value());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
@@ -424,7 +440,7 @@ void ZRayTracingPane::saveValue()
             displaywid->setSampleNumber(m_pViewportSampleNumber->value());
             displaywid->setSppmSettings(m_pIntegrator->currentData().toString(),
                 m_pSppmPhotons->value(), static_cast<float>(m_pSppmRadius->value()),
-                static_cast<float>(m_pSppmAlpha->value()), static_cast<float>(radiusPixels), m_pSppmGuiding->isChecked(), m_pSppmSearch->currentData().toString());
+                static_cast<float>(m_pSppmAlpha->value()), static_cast<float>(radiusPixels), m_pSppmGuiding->isChecked(), m_pSppmSearch->currentData().toString(), m_pRestirFg->isChecked());
             displaywid->setRayTracingSettings(
                 m_pDenoise->isChecked(),
                 m_pMaxBounce->value(),

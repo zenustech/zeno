@@ -3,10 +3,31 @@
 #include "CameraPostProcess.h"
 #include "OSD.h"
 extern "C" { __constant__ Params params; }
+#include "RestirFg.h"
+
+static __forceinline__ __device__ void fgMarkQuery(const FgSurface& s) {
+    if (!s.valid) return;
+    const float r=params.sppm.initialRadius, cellSize=2*r;
+    // Conservative sphere AABB, including boundary roundoff. Hash collisions
+    // keep extra photons; they can never discard a contributing one.
+    const int3 lo=sppmCell(make_float3(nextafterf(s.position.x-r,-INFINITY),
+        nextafterf(s.position.y-r,-INFINITY),nextafterf(s.position.z-r,-INFINITY)),cellSize);
+    const int3 hi=sppmCell(make_float3(nextafterf(s.position.x+r,INFINITY),
+        nextafterf(s.position.y+r,INFINITY),nextafterf(s.position.z+r,INFINITY)),cellSize);
+    for(int z=lo.z;z<=hi.z;++z) for(int y=lo.y;y<=hi.y;++y) for(int x=lo.x;x<=hi.x;++x)
+        atomicExch(&params.sppm.heads[sppmHash(make_int3(x,y,z),params.sppm.hashSize)],0u);
+}
+
 extern "C" __global__ void __raygen__sppm_grid() {
     const uint3 index = optixGetLaunchIndex();
     const uint32_t i = index.y*params.width + index.x;
     auto& pixel = params.sppm.pixels[i];
+    if (params.sppm.fgEnabled) {
+        if (!params.sppm.fgCull) return;
+        fgMarkQuery(params.sppm.fgInitial[i].source);
+        fgMarkQuery(params.sppm.fgCandidates[i].point);
+        return;
+    }
     // Pixel-radius calibration completes after camera tracing, before this pass.
     if (params.sppm.iteration == 0u) pixel.radius = params.sppm.initialRadius;
     if (params.sppm.searchBackend) {
@@ -37,7 +58,8 @@ extern "C" __global__ void __raygen__sppm_resolve() {
     const auto index = optixGetLaunchIndex();
     const uint32_t i = index.y*params.width + index.x;
     auto& pixel = params.sppm.pixels[i];
-    if (pixel.m > 0u) {
+    if (params.sppm.fgEnabled) pixel.radius=params.sppm.initialRadius;
+    if (!params.sppm.fgEnabled && pixel.m > 0u) {
         const float n = pixel.n + params.sppm.alpha*float(pixel.m);
         const float ratio = n / (pixel.n + float(pixel.m));
         pixel.radius *= sqrtf(ratio);
@@ -47,7 +69,8 @@ extern "C" __global__ void __raygen__sppm_resolve() {
     const float iterations = float(params.sppm.iteration)+1.0f;
     const double emitted = double(params.sppm.photonsPerIteration) * double(params.sppm.iteration+1ull);
     float3 color = pixel.direct / iterations;
-    if (emitted > 0.0)
+    if (params.sppm.fgEnabled) color += pixel.tau / iterations;
+    else if (emitted > 0.0)
         color += pixel.tau * float(1.0 / (emitted * double(M_PIf) * pixel.radius * pixel.radius));
     const auto& cam = params.cam;
     if (params.physical_camera_exposure)

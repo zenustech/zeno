@@ -10,6 +10,10 @@ extern "C" __global__ void __raygen__sppm_camera() {
     auto& pixel = params.sppm.pixels[i];
     pixel.visible = pixel.m = 0u;
     pixel.phi = make_float3(0.0f);
+    if (params.sppm.fgEnabled) {
+        params.sppm.fgCandidates[i] = {};
+        params.sppm.fgInitial[i] = {};
+    }
 
     uint32_t primarySeed=pcg_hash(tea<4>(i,params.sppm.iteration)+params.outside_random_number);
     const uint32_t vdcseed=pcg_hash(tea<4>(i,0u)+params.outside_random_number);
@@ -57,6 +61,7 @@ extern "C" __global__ void __raygen__sppm_camera() {
             prd.direction = direction;
             prd.radiance = make_float3(0.0f);
             const float3 beta = prd.attenuation;
+            const bool beforeFinalGather = prd.fgStage == 0u;
             float tmin = 0.0f;
             do {
                 prd.alphaHit = false;
@@ -71,7 +76,7 @@ extern "C" __global__ void __raygen__sppm_camera() {
                     0,shadow.distance,&shadow.state,~LightMatMask&EverythingMask);
                 prd.radiance+=shadow.radiance*shadow.state.attanuation;
             }
-            pathDirect += beta * prd.radiance;
+            if (beforeFinalGather) pathDirect += beta * prd.radiance;
             if (depth == 0u && replica == 0u) {
                 albedo = prd.tmp_albedo;
                 normal = prd.tmp_normal;
@@ -88,7 +93,7 @@ extern "C" __global__ void __raygen__sppm_camera() {
                 prd.denoise = false;
             }
             if (prd.done || !sppmFinite(prd.attenuation)) break;
-            if (depth >= 3u) {
+            if (depth >= 3u && prd.fgStage == 0u) {
                 // Refraction's radiance scaling is reversed on leaving the glass.
                 // It must not cause premature roulette and large surviving weights.
                 const float survival = fminf(0.95f, sppmMax(prd.attenuation) * prd.sppmEtaScale);

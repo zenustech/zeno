@@ -33,6 +33,24 @@ static __forceinline__ __device__ MatOutput sppmUnpack(const SppmMaterial& m) {
 }
 #undef SPPM_MATERIAL_FIELDS
 
+static __forceinline__ __device__ bool fgGatherable(const MatOutput& m) {
+    // Continue every transmissive surface with the existing medium stack.
+    // Reconnection joins opaque receivers through one homogeneous segment.
+    return m.specTrans<=0.0f && (m.metallic<1.0f || m.roughness>=0.2f);
+}
+static __forceinline__ __device__ FgSurface fgSurface(const SppmPixel& p) {
+    return {p.position,p.normal,p.shadingNormal,p.tangent,p.bitangent,p.wo,p.material,p.visible,0u};
+}
+struct FgQuery {
+    const FgSurface* surface;
+    FgPhoton selected;
+    double sum;
+    float selectedTarget;
+    float3 diffuseRadiance;
+    uint32_t seed, causticOnly, diffuse;
+    unsigned long long gathered, caustics;
+};
+
 // Evaluate camera-side transport with the same density as the VNDF sampler.
 static __forceinline__ __device__ float3 sppmEvaluate(
     const MatOutput& material, float3 wi, float3 wo, float3 tangent,
@@ -199,7 +217,7 @@ static __forceinline__ __device__ void sppmSurfaceMode(
             prd.attenuation *= powf(fmaxf(distance, 1.0e-6f), 2.0f - light.falloffExponent);
     }
 
-    if (photon && prd.depth > 0u) {
+    if (photon && (params.sppm.fgEnabled ? fgGatherable(material) : prd.depth > 0u)) {
         // Defer collection until the surface trace has returned. Both search
         // backends then leave the transport shader and its numerical path identical.
         prd.sppmGatherPosition = position;
@@ -207,15 +225,28 @@ static __forceinline__ __device__ void sppmSurfaceMode(
         prd.sppmGatherWi = wo;
         prd.sppmGatherBeta = prd.attenuation;
         prd.sppmGatherSpecular = prd.sppmSpecular;
+        prd.fgGatherCaustic = prd.depth>0u && !prd.fgLastGatherable;
         prd.sppmGatherPending = 1u;
     }
 
+    if (!photon && params.sppm.fgEnabled && prd.fgStage == 1u) {
+        // Only the immediately adjacent gatherable vertex belongs to final
+        // gathering. Non-gatherable chains belong to the primary caustic map.
+        if (fgGatherable(material)) {
+            auto& c = params.sppm.fgCandidates[prd.sppmPixel];
+            c.point = {position,normal,shadingNormal,tangent,bitangent,wo,sppmPack(material),1u,prd.depth};
+        }
+        prd.done = true;
+        prd.radiance = make_float3(0.0f);
+        return;
+    }
 
     const bool diffuse = (1.0f - material.metallic) * (1.0f - material.specTrans) > 0.0f;
     const bool glossy = (material.roughness > 0.01f && (material.specular > 0.0f ||
         material.metallic > 0.0f || material.specTrans > 0.0f)) ||
         (material.clearcoat > 0.0f && material.clearcoatRoughness > 0.01f);
-    const bool gather = !photon && (diffuse || (glossy && prd.depth + 1u >= prd.max_depth));
+    const bool gather = !photon && (params.sppm.fgEnabled ? fgGatherable(material) :
+        (diffuse || (glossy && prd.depth + 1u >= prd.max_depth)));
     float3 front, back;
     SelfIntersectionAvoidance::offsetSpawnPoint(front, back, position, normal, offset);
     if constexpr (!Photon) {
@@ -267,9 +298,14 @@ static __forceinline__ __device__ void sppmSurfaceMode(
         pixel.material = sppmPack(material);
         pixel.visible = 1u;
         atomicAdd(&params.sppm.statistics->visible, 1ull);
-
-        prd.done = true;
-        return;
+        if (!params.sppm.fgEnabled) { prd.done = true; return; }
+        params.sppm.fgInitial[prd.sppmPixel].source = fgSurface(pixel);
+        params.sppm.fgInitial[prd.sppmPixel].source.depth = prd.depth;
+        if (prd.curMatIdx>0u) {
+            vec3 sigma,alpha; prd.readMat(sigma,alpha);
+            params.sppm.fgInitial[prd.sppmPixel].source.extinction=float3(sigma);
+        }
+        prd.fgStage = 1u;
     }
 
     bool inside = false, isDiffuse = false, isSS = false, isTransmission = false;
@@ -305,6 +341,9 @@ static __forceinline__ __device__ void sppmSurfaceMode(
     }
     if (!sppmFinite(weight)) { prd.done = true; return; }
     prd.sppmSpecular = !isDiffuse;
+    prd.fgLastGatherable = fgGatherable(material);
+    if (!photon && params.sppm.fgEnabled && prd.fgStage == 1u)
+        params.sppm.fgCandidates[prd.sppmPixel].pdf = forwardPdf;
     prd.attenuation *= weight;
     prd.direction = normalize(float3(wi));
     prd.origin = dot(prd.direction, normal) >= 0.0f ? front : back;

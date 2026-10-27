@@ -326,6 +326,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@SppmPhotonMaterial.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@SppmCameraMaterial.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@SobolDirections.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@RestirFg.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@SppmCamera.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@SppmPhoton.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@SppmResolve.cu

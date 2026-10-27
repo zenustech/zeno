@@ -222,6 +222,19 @@ static __forceinline__ __device__ float sppmSphereExit(
     return nextafterf(-b + sqrtf(fmaxf(0.0f, b*b-c)), 0.0f);
 }
 
+// Reserve a contiguous range for the currently active lanes. There is no
+// trace/call between mask capture and shuffle: OptiX may regroup lanes across
+// traces, but allocation does not depend on launch-index/warp correspondence.
+static __forceinline__ __device__ uint32_t sppmReservePhoton(uint32_t* counter) {
+    const unsigned mask=__activemask();
+    unsigned lane; asm("mov.u32 %0, %%laneid;" : "=r"(lane));
+    const unsigned leader=__ffs(mask)-1;
+    unsigned base=0;
+    if (lane==leader) base=atomicAdd(counter,__popc(mask));
+    base=__shfl_sync(mask,base,leader);
+    return base+__popc(mask & ((1u<<lane)-1u));
+}
+
 extern "C" __global__ void __raygen__sppm_photon() {
     const auto index = optixGetLaunchIndex();
     const uint32_t i = index.x + index.y * optixGetLaunchDimensions().x;
@@ -258,7 +271,25 @@ extern "C" __global__ void __raygen__sppm_photon() {
             tmin = prd._tmin_;
         } while (prd.alphaHit && !prd.done);
         if (prd.sppmGatherPending) {
-            sppmGather(prd.sppmGatherPosition, prd.sppmGatherNormal,
+            if (params.sppm.fgEnabled) {
+                // Query support was marked after all camera paths finished.
+                // Continue tracing culled photons: a later bounce may enter
+                // a gather region. Only their unused map records are omitted.
+                const int3 cell=sppmCell(prd.sppmGatherPosition,2*params.sppm.initialRadius);
+                if (!params.sppm.fgCull || params.sppm.heads[sppmHash(cell,params.sppm.hashSize)]!=UINT_MAX) {
+                // One record per surface bounce: capacity is attempts*maxBounce,
+                // so no path is dropped or reweighted by an overflow policy.
+                const uint32_t slot = sppmReservePhoton(&params.sppm.statistics->photonRecords);
+                params.sppm.fgPhotons[slot] = {prd.sppmGatherPosition,prd.sppmGatherNormal,
+                    prd.sppmGatherWi,prd.sppmGatherBeta,prd.fgGatherCaustic};
+                const float3 p=prd.sppmGatherPosition;
+                const float r=params.sppm.initialRadius;
+                params.sppm.searchBounds[slot] = {
+                    nextafterf(p.x-r,-INFINITY),nextafterf(p.y-r,-INFINITY),nextafterf(p.z-r,-INFINITY),
+                    nextafterf(p.x+r,INFINITY),nextafterf(p.y+r,INFINITY),nextafterf(p.z+r,INFINITY),
+                    params.sppm.searchRecord,0u};
+                }
+            } else sppmGather(prd.sppmGatherPosition, prd.sppmGatherNormal,
                 prd.sppmGatherWi, prd.sppmGatherBeta, prd);
         }
         ++traced;
@@ -306,11 +337,55 @@ extern "C" __global__ void __miss__sppm_photon() {
 
 // Hardware broad phase over receiver spheres (the transpose of photon gathering).
 extern "C" __global__ void __intersection__sppm_search() {
+    if (params.sppm.fgEnabled) {
+        const auto& photon=params.sppm.fgPhotons[optixGetPrimitiveIndex()];
+        if (lengthSquared(photon.position-optixGetWorldRayOrigin()) <= params.sppm.initialRadius*params.sppm.initialRadius)
+            optixReportIntersection(0.0f,0u);
+        return;
+    }
     const auto& pixel = params.sppm.pixels[optixGetPrimitiveIndex()];
     if (pixel.visible && lengthSquared(pixel.position-optixGetWorldRayOrigin()) <= pixel.radius*pixel.radius)
         optixReportIntersection(0.0f, 0u);
 }
 extern "C" __global__ void __anyhit__sppm_search() {
+    if (params.sppm.fgEnabled) {
+        auto* q=reinterpret_cast<FgQuery*>(unpackPointer(optixGetPayload_0(),optixGetPayload_1()));
+        const auto& p=params.sppm.fgPhotons[optixGetPrimitiveIndex()];
+        if ((!q->causticOnly || p.caustic) && dot(p.normal,q->surface->normal)>0.0f) {
+            float3 value=p.power;
+            if (q->diffuse) {
+                const auto& s=*q->surface;
+                const float cosine=dot(s.shadingNormal,p.wi);
+                if (cosine>1e-6f) {
+                    // Preserve EvaluateDisney3's grazing cosine floor exactly.
+                    q->diffuseRadiance += p.power*fgDiffuseBsdf(s.material.basecolor,cosine)/cosine;
+                    ++q->gathered;
+                    if (p.caustic) ++q->caustics;
+                }
+                optixIgnoreIntersection();
+                return;
+            }
+            if (q->causticOnly) {
+                float pdf=0;
+                const auto& s=*q->surface;
+                const float cosine=fabsf(dot(s.shadingNormal,p.wi));
+                value=cosine>1e-6f ? p.power*DisneyBSDF::EvaluateOpaqueSppm(s.material,p.wi,s.wo,
+                    s.tangent,s.bitangent,s.shadingNormal,pdf)/cosine : make_float3(0);
+            }
+            const float target=fmaxf(0.0f,dot(value,make_float3(.2126f,.7152f,.0722f)));
+            if (target>0.0f && isfinite(target)) {
+                q->sum+=double(target);
+                if (double(rnd(q->seed))*q->sum<double(target)) {
+                    q->selected=p;
+                    q->selectedTarget=target;
+                }
+                ++q->gathered;
+                if (p.caustic) ++q->caustics;
+            }
+        }
+        optixIgnoreIntersection();
+        return;
+    }
     auto* query = reinterpret_cast<SppmGatherQuery*>(unpackPointer(optixGetPayload_0(), optixGetPayload_1()));
     sppmAccumulate(optixGetPrimitiveIndex(), query->position, query->normal, query->wi, query->beta, *query->photon);
     optixIgnoreIntersection();

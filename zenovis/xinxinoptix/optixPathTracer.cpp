@@ -176,8 +176,9 @@ struct PathTracerState
     raii<CUdeviceptr> sppm_guide_cdf, sppm_guide_scores;
     raii<CUdeviceptr> sppm_search_bounds, sppm_search_scratch, sppm_search_gas;
     std::vector<double> sppm_guide_history;
+    raii<CUdeviceptr> fg_photons, fg_candidates, fg_initial, fg_history[2];
     raii<CUdeviceptr> photon_hit_records, camera_hit_records;
-    OptixShaderBindingTable sppm_sbt[4] {};
+    OptixShaderBindingTable sppm_sbt[6] {};
     std::array<double,7> sppm_profile_ms {};
     uint32_t sppm_iteration = 0u, sppm_max_bounce = 0u;
     bool sppm_reset_pending = true, sppm_has_volumes = false;
@@ -558,6 +559,8 @@ static void disableSppm(PathTracerState& state)
     state.sppm_search_bounds.reset();
     state.sppm_search_scratch.reset();
     state.sppm_search_gas.reset();
+    state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
+    for (auto& buffer : state.fg_history) buffer.reset();
     state.sppm_iteration = 0;
     state.sppm_reset_pending = true;
 }
@@ -592,7 +595,10 @@ static bool prepareSppm(PathTracerState& state)
     }
     state.sppm_fallback_reason.clear();
     ud.set2("optix-sppm-fallback-reason", std::string());
-    ud.set2("optix-integrator-active", std::string("sppm"));
+    const bool fg = ud.get2<bool>("optix-restir-fg", false);
+    const bool fgReuse = ud.get2<bool>("optix-restir-fg-reuse", true);
+    const bool fgCull = ud.get2<bool>("optix-restir-fg-cull", true);
+    ud.set2("optix-integrator-active", std::string(fg ? "restir-fg" : "sppm"));
 
     const size_t count = size_t(state.params.width) * state.params.height;
     if (count == 0u || count > (1u << 28)) throw std::runtime_error("Unsupported SPPM image size");
@@ -601,10 +607,12 @@ static bool prepareSppm(PathTracerState& state)
     const float alpha = std::clamp(ud.get2<float>("optix-sppm-alpha", 2.0f/3.0f), 0.01f, 1.0f);
     const float configuredRadius = ud.get2<float>("optix-sppm-radius", 0.0f);
     const float radiusPixels = ud.get2<float>("optix-sppm-radius-pixels", 0.0f);
-    const bool guiding = ud.get2<bool>("optix-sppm-guiding", true);
+    const bool guiding = !fg && ud.get2<bool>("optix-sppm-guiding", true);
     const auto search = ud.get2<std::string>("optix-sppm-search", "hash");
     if (search != "hash" && search != "bvh") throw std::runtime_error("Unknown SPPM search backend: "+search);
-    const uint32_t searchBackend = search == "bvh";
+    const uint32_t searchBackend = fg || search == "bvh";
+    const size_t photonCapacity = size_t(photons)*state.params.max_bounce;
+    if (fg && photonCapacity > UINT_MAX) throw std::runtime_error("ReSTIR-FG photon map exceeds 32-bit indexing");
     const uint32_t distantCount = uint32_t(state.dlights.list.size());
     const uint32_t environment = state.params.sky_texture != 0u && state.params.sky_strength > 0.0f;
     const uint32_t emitterCount = state.params.num_lights + distantCount + environment;
@@ -614,11 +622,15 @@ static bool prepareSppm(PathTracerState& state)
     if (!std::isfinite(alpha) || !std::isfinite(configuredRadius) ||
         !std::isfinite(radiusPixels) || radiusPixels < 0.0f)
         throw std::runtime_error("SPPM radius and alpha must be finite");
+    const uint32_t fgConfidence=std::clamp(ud.get2<int>("optix-restir-fg-confidence",1),1,64);
+    const uint32_t fgSpatialSamples=std::clamp(ud.get2<int>("optix-restir-fg-spatial-samples",2),0,16);
+    const uint32_t fgPairwiseOutput=ud.get2<bool>("optix-restir-fg-pairwise-output",true);
     const bool reset = state.sppm_reset_pending || !launch.enabled ||
         state.sppm_pixels.size != count*sizeof(SppmPixel) ||
         launch.photonsPerIteration != photons || launch.alpha != alpha ||
         launch.radiusPixels != radiusPixels ||
-        launch.searchBackend != searchBackend ||
+        launch.searchBackend != searchBackend || launch.fgEnabled != uint32_t(fg) || launch.fgReuse != uint32_t(fgReuse) ||
+        launch.fgConfidence != fgConfidence || launch.fgSpatialSamples != fgSpatialSamples || launch.fgPairwiseOutput != fgPairwiseOutput || launch.fgCull != uint32_t(fgCull) ||
         launch.guiding != uint32_t(guiding) || launch.emitterCount != emitterCount ||
         state.sppm_max_bounce != state.params.max_bounce ||
         state.sppm_denoise != state.params.denoise ||
@@ -632,7 +644,7 @@ static bool prepareSppm(PathTracerState& state)
         state.sppm_pixels.resize(count*sizeof(SppmPixel));
         uint32_t hashSize = 1u;
         while (hashSize < count*2u) hashSize <<= 1u;
-        if (searchBackend) state.sppm_heads.reset();
+        if (searchBackend && !fg) state.sppm_heads.reset();
         else state.sppm_heads.resize(size_t(hashSize)*sizeof(uint32_t));
         state.sppm_statistics.resize(sizeof(SppmStatistics));
         state.sppm_bounds.resize(sizeof(OptixAabb));
@@ -654,12 +666,29 @@ static bool prepareSppm(PathTracerState& state)
         launch.guiding = uint32_t(guiding);
         launch.searchBackend = searchBackend;
         launch.searchHandle = 0;
-        if (searchBackend) state.sppm_search_bounds.resize(count*sizeof(SppmSearchBounds));
+        if (searchBackend) state.sppm_search_bounds.resize((fg ? photonCapacity : count)*sizeof(SppmSearchBounds));
         else {
             state.sppm_search_bounds.reset();
             state.sppm_search_scratch.reset();
             state.sppm_search_gas.reset();
         }
+        launch.fgEnabled=fg; launch.fgReuse=fgReuse; launch.fgCull=fgCull;
+        launch.fgConfidence=fgConfidence; launch.fgSpatialSamples=fgSpatialSamples; launch.fgPairwiseOutput=fgPairwiseOutput;
+        if (fg) {
+            state.fg_photons.resize(photonCapacity*sizeof(FgPhoton));
+            state.fg_candidates.resize(count*sizeof(FgCandidate));
+            state.fg_initial.resize(count*sizeof(FgReservoirPair));
+            for (auto& buffer : state.fg_history) {
+                buffer.resize(count*sizeof(FgReservoirPair));
+                CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(buffer.handle),0,buffer.size,nullptr));
+            }
+        } else {
+            state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
+            for (auto& buffer : state.fg_history) buffer.reset();
+        }
+        launch.fgPhotons=reinterpret_cast<FgPhoton*>(state.fg_photons.handle);
+        launch.fgCandidates=reinterpret_cast<FgCandidate*>(state.fg_candidates.handle);
+        launch.fgInitial=reinterpret_cast<FgReservoirPair*>(state.fg_initial.handle);
         launch.searchBounds = reinterpret_cast<SppmSearchBounds*>(state.sppm_search_bounds.handle);
         launch.guideCells = guideCells;
         launch.guideActive = 0u;
@@ -760,6 +789,11 @@ static void launchSppm(PathTracerState& state)
     };
     auto profileEnd=[&](int pass) { if(profile) CUDA_CHECK(cudaEventRecord(events.end[pass])); };
     if(profile && launch.iteration==0u) state.sppm_profile_ms={};
+    launch.fgPrevious=reinterpret_cast<FgReservoirPair*>(state.fg_history[(launch.iteration+1u)%2u].handle);
+    launch.fgCurrent=reinterpret_cast<FgReservoirPair*>(state.fg_history[launch.iteration%2u].handle);
+    if (launch.fgEnabled) CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),0,sizeof(uint32_t),nullptr));
+    // SPPM scatters photons into receivers. FG instead builds a photon map,
+    // gathers at the next vertex, and resamples before resolving the image.
     const char* cacheSobol=std::getenv("ZENO_SPPM_SOBOL_CACHE");
     launch.cacheCameraSobol=!cacheSobol || cacheSobol[0]!='0';
     for (unsigned dimension=0;dimension<8;++dimension) {
@@ -769,8 +803,10 @@ static void launchSppm(PathTracerState& state)
         launch.cameraSobol[dimension]=bits;
     }
     CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
-    if (!launch.searchBackend) CUDA_CHECK(cudaMemsetAsync(launch.heads, 0xff, state.sppm_heads.size, nullptr));
-    for (int pass = 0; pass < 4; ++pass) {
+    if (!launch.searchBackend || launch.fgEnabled) CUDA_CHECK(cudaMemsetAsync(launch.heads, 0xff, state.sppm_heads.size, nullptr));
+    const int passes[] = {0,1,2,4,5,3};
+    for (int step = 0; step < (launch.fgEnabled ? 6 : 4); ++step) {
+        const int pass=launch.fgEnabled ? passes[step] : step;
         state.sppm_sbt[pass] = state.sbt;
         state.sppm_sbt[pass].raygenRecord = d_sppm_records[pass];
         if (pass==0 && specializedHit) state.sppm_sbt[pass].hitgroupRecordBase=state.camera_hit_records;
@@ -779,13 +815,23 @@ static void launchSppm(PathTracerState& state)
             state.sppm_sbt[pass].missRecordBase = d_sppm_miss_records;
             state.sppm_sbt[pass].missRecordCount = 3;
         }
+        if (pass >= 4) {
+            state.sppm_sbt[pass].missRecordBase=d_fg_miss_records;
+            state.sppm_sbt[pass].missRecordCount=3;
+        }
         uint32_t width = pass == 2 ? launch.photonsPerIteration : state.params.width;
         uint32_t height = pass == 2 ? 1u : state.params.height;
         profileStart(pass);
         OPTIX_CHECK(optixLaunch(pipeline, nullptr, state.d_params, sizeof(Params), &state.sppm_sbt[pass], width, height, 1u));
         profileEnd(pass);
-        if (pass == 1 && launch.searchBackend) {
+        if (pass == 1 && launch.searchBackend && !launch.fgEnabled) {
             profileStart(6); buildSppmSearch(state,state.params.width*state.params.height); profileEnd(6);
+        }
+        if (pass == 2 && launch.fgEnabled) {
+            uint32_t records;
+            CUDA_CHECK(cudaMemcpy(&records,reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),sizeof(records),cudaMemcpyDeviceToHost));
+            profileStart(6); buildSppmSearch(state,records); profileEnd(6);
+            CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
         }
         if (pass == 0 && launch.iteration == 0u && launch.radiusPixels > 0.0f) {
             // One readback per accumulation reset. Keep a single fixed initial
@@ -966,7 +1012,7 @@ static void createSBT( PathTracerState& state, bool raygen=false)
                 ) );
 
     state.sbt.raygenRecord                = d_raygen_record;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         auto& record = OptixUtil::d_sppm_records[i];
         record.resize(raygen_record_size);
         RayGenRecord rg = {};
@@ -979,6 +1025,10 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_search_miss, &sppmMiss[2]));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(OptixUtil::d_sppm_miss_records.handle),
         sppmMiss, sizeof(sppmMiss), cudaMemcpyHostToDevice));
+    OptixUtil::d_fg_miss_records.resize(sizeof(sppmMiss));
+    sppmMiss[0]=ms_sbt[0];
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(OptixUtil::d_fg_miss_records.handle),
+        sppmMiss,sizeof(sppmMiss),cudaMemcpyHostToDevice));
     state.sbt.missRecordBase              = d_miss_records;
     state.sbt.missRecordStrideInBytes     = static_cast<uint32_t>( miss_record_size );
     state.sbt.missRecordCount             = RAY_TYPE_COUNT;
@@ -2819,8 +2869,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         const char* profile=std::getenv("ZENO_SPPM_PROFILE");
         if(profile && profile[0]=='1') {
             const auto& p=state.sppm_profile_ms;
-            zeno::log_info("SPPM profile total ms: camera={} grid={} photon={} resolve={} bvh_build={} iterations={}",
-                p[0],p[1],p[2],p[3],p[6],state.sppm_iteration);
+            zeno::log_info("SPPM profile total ms: camera={} grid={} photon={} resolve={} fg_initial={} fg_reuse={} bvh_build={} iterations={}",
+                p[0],p[1],p[2],p[3],p[4],p[5],p[6],state.sppm_iteration);
         }
     }
     if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
@@ -3021,6 +3071,8 @@ void optixDestroy() {
         state.sppm_search_bounds.reset();
         state.sppm_search_scratch.reset();
         state.sppm_search_gas.reset();
+        state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
+        for (auto& buffer : state.fg_history) buffer.reset();
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
         // SHARC owns CUDA allocations and a CUDA module in the primary
         // context; release them before OptixUtil destroys that context.

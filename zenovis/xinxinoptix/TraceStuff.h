@@ -130,6 +130,7 @@ struct RadiancePRD : CommonPRD {
     float3 sppmGatherPosition, sppmGatherNormal, sppmGatherWi, sppmGatherBeta;
     uint32_t sppmGatherPending = 0u, sppmGatherSpecular = 0u;
     unsigned long long sppmGathered = 0u, sppmCaustics = 0u;
+    uint32_t fgStage = 0u, fgLastGatherable = 0u, fgGatherCaustic = 0u;
     float3 sppmIncoming;
     float sppmEtaScale = 1.0f;
     uint32_t sppmCameraSample = 0u;
