@@ -122,6 +122,17 @@ static __forceinline__ __device__ void sppmSurfaceMode(
     constexpr bool photon=Photon;
     const float3 wo = -normalize(rayDirection);
     if (!photon && prd.depth == 0u) {
+        if (params.sppm.iteration == 0u && params.sppm.radiusPixels > 0.0f &&
+            prd.sppmCameraSample == 0u) {
+            const float depth = params.physical_camera_panorama_camera ? length(position) :
+                dot(position, normalize(params.cam.front));
+            if (isfinite(depth) && depth > 0.0f) {
+                atomicMin(&params.sppm.statistics->cameraDepthBits, __float_as_uint(depth));
+                const bool caster = material.specTrans > 0.0f || material.metallic > 0.0f ||
+                    (material.roughness < 0.2f && (material.specular > 0.0f || material.clearcoat > 0.0f));
+                if (caster) atomicMin(&params.sppm.statistics->casterDepthBits, __float_as_uint(depth));
+            }
+        }
         // The independent pilot requests at least four display samples on
         // primary glass. Only replica zero supplies the photon visible point.
         prd.sppmCameraSamples = material.specTrans > 0.0f ? 4u : 1u;

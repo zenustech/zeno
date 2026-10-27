@@ -113,6 +113,8 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     userData.set2("optix-sppm", false);
     userData.set2("optix-sppm-photons", settingOr(zsSppmPhotons, 0).toInt());
     userData.set2("optix-sppm-radius", settingOr(zsSppmRadius, 0.0).toFloat());
+    userData.set2("optix-sppm-radius-pixels", settingOr(zsSppmRadiusPixels,
+        settings.getValue(zsSppmRadius).isValid() ? 0.0 : 4.0).toFloat());
     userData.set2("optix-sppm-alpha", settingOr(zsSppmAlpha, 2.0 / 3.0).toFloat());
     userData.set2("optix-sppm-guiding", settingOr(zsSppmGuiding, true).toBool());
     userData.set2("optix-sharc", settingOr(zsEnableSharc, true).toBool());
@@ -539,13 +541,14 @@ void OptixWorker::onResetSharcCache()
     updateFrame();
 }
 
-void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding)
+void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding)
 {
     auto& userData = zeno::getSession().userData();
     userData.set2("optix-integrator", integrator.toStdString());
     userData.set2("optix-sppm", false);
     userData.set2("optix-sppm-photons", photons);
     userData.set2("optix-sppm-radius", radius);
+    userData.set2("optix-sppm-radius-pixels", radiusPixels);
     userData.set2("optix-sppm-alpha", alpha);
     userData.set2("optix-sppm-guiding", guiding);
     if (m_zenoVis && m_zenoVis->getSession()->get_scene())
@@ -1035,9 +1038,9 @@ void ZOptixViewport::resetSharcCache()
     emit sig_resetSharcCache();
 }
 
-void ZOptixViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding)
+void ZOptixViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding)
 {
-    emit sig_setSppmSettings(integrator, photons, radius, alpha, guiding);
+    emit sig_setSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding);
 }
 
 void ZOptixViewport::setRayTracingSettings(

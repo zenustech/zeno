@@ -7,6 +7,7 @@ extern "C" __global__ void __raygen__sppm_grid() {
     const uint3 index = optixGetLaunchIndex();
     const uint32_t i = index.y*params.width + index.x;
     auto& pixel = params.sppm.pixels[i];
+    // Pixel-radius calibration completes after camera tracing, before this pass.
     if (params.sppm.iteration == 0u) pixel.radius = params.sppm.initialRadius;
     if (!pixel.visible) return;
     pixel.cell = sppmCell(pixel.position, params.sppm.initialRadius);

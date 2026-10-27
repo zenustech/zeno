@@ -25,7 +25,7 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     void resetSharcCache();
-    void setSppmSettings(QString integrator, int photons, float radius, float alpha, bool guiding);
+    void setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding);
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

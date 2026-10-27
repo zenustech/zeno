@@ -595,6 +595,7 @@ static bool prepareSppm(PathTracerState& state)
     const uint32_t photons = uint32_t(std::clamp(requestedPhotons > 0 ? requestedPhotons : int(count), 1, 1 << 28));
     const float alpha = std::clamp(ud.get2<float>("optix-sppm-alpha", 2.0f/3.0f), 0.01f, 1.0f);
     const float configuredRadius = ud.get2<float>("optix-sppm-radius", 0.0f);
+    const float radiusPixels = ud.get2<float>("optix-sppm-radius-pixels", 0.0f);
     const bool guiding = ud.get2<bool>("optix-sppm-guiding", true);
     const uint32_t distantCount = uint32_t(state.dlights.list.size());
     const uint32_t environment = state.params.sky_texture != 0u && state.params.sky_strength > 0.0f;
@@ -602,11 +603,13 @@ static bool prepareSppm(PathTracerState& state)
     // Bound GPU guide storage to 4 MiB. Large triangle-light scenes retain the
     // complete original emitter sampler rather than losing any light support.
     const uint32_t guideCells = guiding && emitterCount <= 4096u ? emitterCount*SppmGuideBins : 0u;
-    if (!std::isfinite(alpha) || !std::isfinite(configuredRadius))
+    if (!std::isfinite(alpha) || !std::isfinite(configuredRadius) ||
+        !std::isfinite(radiusPixels) || radiusPixels < 0.0f)
         throw std::runtime_error("SPPM radius and alpha must be finite");
     const bool reset = state.sppm_reset_pending || !launch.enabled ||
         state.sppm_pixels.size != count*sizeof(SppmPixel) ||
         launch.photonsPerIteration != photons || launch.alpha != alpha ||
+        launch.radiusPixels != radiusPixels ||
         launch.guiding != uint32_t(guiding) || launch.emitterCount != emitterCount ||
         state.sppm_max_bounce != state.params.max_bounce ||
         state.sppm_denoise != state.params.denoise ||
@@ -637,6 +640,7 @@ static bool prepareSppm(PathTracerState& state)
         launch.sceneRadius = std::max(length(upper-lower)*0.5005f, 1.0e-3f);
         if (!std::isfinite(launch.sceneRadius)) throw std::runtime_error("SPPM received invalid scene bounds");
         launch.initialRadius = configuredRadius > 0.0f ? configuredRadius : launch.sceneRadius*0.01f;
+        launch.radiusPixels = radiusPixels;
         launch.guiding = uint32_t(guiding);
         launch.guideCells = guideCells;
         launch.guideActive = 0u;
@@ -660,8 +664,10 @@ static bool prepareSppm(PathTracerState& state)
         launch.statistics = reinterpret_cast<SppmStatistics*>(state.sppm_statistics.handle);
         CUDA_CHECK(cudaMemsetAsync(launch.pixels, 0, state.sppm_pixels.size, nullptr));
         SppmStatistics statistics = {};
+        statistics.cameraDepthBits = statistics.casterDepthBits = 0x7f800000u;
+        statistics.initialRadius = launch.initialRadius;
         CUDA_CHECK(cudaMemcpy(launch.statistics, &statistics, sizeof(statistics), cudaMemcpyHostToDevice));
-        // Initialize progressive radii in the first grid pass.
+        // Initialize radii in the grid pass, after first-camera calibration.
         state.sppm_iteration = 0u;
         state.params.subframe_index = 0u;
         state.sppm_max_bounce = state.params.max_bounce;
@@ -725,6 +731,28 @@ static void launchSppm(PathTracerState& state)
         profileStart(pass);
         OPTIX_CHECK(optixLaunch(pipeline, nullptr, state.d_params, sizeof(Params), &state.sppm_sbt[pass], width, height, 1u));
         profileEnd(pass);
+        if (pass == 0 && launch.iteration == 0u && launch.radiusPixels > 0.0f) {
+            // One readback per accumulation reset. Keep a single fixed initial
+            // world-space radius for the grid and the existing SPPM recurrence.
+            SppmStatistics statistics;
+            CUDA_CHECK(cudaMemcpy(&statistics, launch.statistics, sizeof(statistics), cudaMemcpyDeviceToHost));
+            float depth;
+            uint32_t bits = std::min(statistics.cameraDepthBits, statistics.casterDepthBits);
+            if (statistics.casterDepthBits != 0x7f800000u) bits = statistics.casterDepthBits;
+            std::memcpy(&depth, &bits, sizeof(depth));
+            const auto& cam = state.params.cam;
+            if (!std::isfinite(depth) || depth <= 0.0f) depth = cam.focal_distance;
+            const float pixelFootprint = state.params.physical_camera_panorama_camera ?
+                std::min(2.0f * float(M_PI) / state.params.width, float(M_PI) / state.params.height) :
+                std::min(cam.width / state.params.width, cam.height / state.params.height) / cam.focal_length;
+            launch.initialRadius = launch.radiusPixels * depth * pixelFootprint;
+            if (!std::isfinite(launch.initialRadius) || launch.initialRadius <= 0.0f)
+                throw std::runtime_error("Invalid camera footprint for SPPM pixel radius");
+            statistics.initialRadius = launch.initialRadius;
+            statistics.radiusReferenceDepth = depth;
+            CUDA_CHECK(cudaMemcpy(launch.statistics, &statistics, sizeof(statistics), cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
+        }
     }
     if(profile) {
         CUDA_CHECK(cudaEventSynchronize(events.end[3]));

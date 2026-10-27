@@ -212,6 +212,21 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSppmRadius->setSpecialValueText(tr("Automatic (scene size)"));
     m_pSppmRadius->setValue(settingOr(zsSppmRadius, 0.0).toDouble());
     m_pSppmRadius->setToolTip(tr("Initial gather radius in scene units. Smaller radii preserve detail but need more photons."));
+    const double savedPixelRadius = settingOr(zsSppmRadiusPixels,
+        inst.getValue(zsSppmRadius).isValid() ? 0.0 : 4.0).toDouble();
+    m_pSppmRadiusMode = new QComboBox;
+    m_pSppmRadiusMode->setObjectName("photonRadiusMode");
+    m_pSppmRadiusMode->addItem(tr("Pixel size (camera scaled)"), "pixel");
+    m_pSppmRadiusMode->addItem(tr("World units"), "world");
+    m_pSppmRadiusMode->setCurrentIndex(savedPixelRadius > 0.0 ? 0 : 1);
+    m_pSppmRadiusPixels = new QDoubleSpinBox;
+    m_pSppmRadiusPixels->setObjectName("photonPixelRadius");
+    m_pSppmRadiusPixels->setDecimals(2);
+    m_pSppmRadiusPixels->setRange(0.01, 1000.0);
+    m_pSppmRadiusPixels->setSingleStep(0.5);
+    m_pSppmRadiusPixels->setSuffix(tr(" px"));
+    m_pSppmRadiusPixels->setValue(savedPixelRadius > 0.0 ? savedPixelRadius : 4.0);
+    m_pSppmRadiusPixels->setToolTip(tr("Converts pixel size to a shared initial world radius at the nearest camera-sampled caster (or nearest sampled surface). Recalculated when the camera or resolution changes. This is not a separate depth-adaptive radius at every pixel."));
     m_pSppmAlpha = new QDoubleSpinBox;
     m_pSppmAlpha->setDecimals(6);
     m_pSppmAlpha->setRange(0.01, 1.0);
@@ -297,6 +312,8 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
 
     auto photons = new QGroupBox(tr("Photon Mapping"));
     auto photonLayout = new QFormLayout(photons);
+    photonLayout->addRow(tr("Gather radius mode"), m_pSppmRadiusMode);
+    photonLayout->addRow(tr("Initial radius in pixels"), m_pSppmRadiusPixels);
     photonLayout->addRow(tr("Initial radius in world units"), m_pSppmRadius);
     auto radiusStatus = new QLabel;
     radiusStatus->setObjectName("photonRadiusStatus");
@@ -333,10 +350,13 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
 
     auto updateIntegratorControls = [this, photons, sharc, sharcStatus, radiusStatus, guidingStatus]() {
         const bool sppm = m_pIntegrator->currentData().toString() == "sppm";
+        const bool pixels = m_pSppmRadiusMode->currentData().toString() == "pixel";
         photons->setEnabled(sppm);
+        m_pSppmRadius->setEnabled(!pixels);
+        m_pSppmRadiusPixels->setEnabled(pixels);
         guidingStatus->setText(m_pSppmGuiding->isChecked()
             ? tr("Photon guiding is enabled for progressive SPPM.") : tr("Photon guiding is off."));
-        radiusStatus->setText(tr("SPPM progressively shrinks the gather radius at each receiver."));
+        radiusStatus->setText(tr("SPPM progressively shrinks the gather radius at each receiver. Pixel mode scales the shared starting radius with the camera."));
         // Keep the preference editable even while photon transport bypasses it.
         sharc->setVisible(!sppm && m_pEnableSharc->isChecked());
         sharcStatus->setText(sppm
@@ -346,6 +366,8 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
             : (m_pEnableSharc->isChecked() ? tr("SHARC is enabled for Path Tracing.") : tr("SHARC is off.")));
     };
     connect(m_pIntegrator, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [updateIntegratorControls](int) { updateIntegratorControls(); });
+    connect(m_pSppmRadiusMode, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [updateIntegratorControls](int) { updateIntegratorControls(); });
     connect(m_pSppmGuiding, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
     connect(m_pEnableSharc, &QCheckBox::toggled, this, [updateIntegratorControls](bool) { updateIntegratorControls(); });
@@ -373,6 +395,9 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsRayTracingIntegrator, m_pIntegrator->currentData());
     inst.setValue(zsSppmPhotons, m_pSppmPhotons->value());
     inst.setValue(zsSppmRadius, m_pSppmRadius->value());
+    const double radiusPixels = m_pSppmRadiusMode->currentData().toString() == "pixel"
+        ? m_pSppmRadiusPixels->value() : 0.0;
+    inst.setValue(zsSppmRadiusPixels, radiusPixels);
     inst.setValue(zsSppmGuiding, m_pSppmGuiding->isChecked());
     inst.setValue(zsSppmAlpha, m_pSppmAlpha->value());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
@@ -392,7 +417,7 @@ void ZRayTracingPane::saveValue()
             displaywid->setSampleNumber(m_pViewportSampleNumber->value());
             displaywid->setSppmSettings(m_pIntegrator->currentData().toString(),
                 m_pSppmPhotons->value(), static_cast<float>(m_pSppmRadius->value()),
-                static_cast<float>(m_pSppmAlpha->value()), m_pSppmGuiding->isChecked());
+                static_cast<float>(m_pSppmAlpha->value()), static_cast<float>(radiusPixels), m_pSppmGuiding->isChecked());
             displaywid->setRayTracingSettings(
                 m_pDenoise->isChecked(),
                 m_pMaxBounce->value(),

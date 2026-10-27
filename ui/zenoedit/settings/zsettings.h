@@ -25,6 +25,7 @@ const char* const zsRayTracingMaxBounce = "rayTracingMaxBounce";
 const char* const zsRayTracingIntegrator = "rayTracingIntegrator";
 const char* const zsSppmPhotons = "sppmPhotons";
 const char* const zsSppmRadius = "sppmRadius";
+const char* const zsSppmRadiusPixels = "sppmRadiusPixels";
 const char* const zsSppmGuiding = "sppmGuiding";
 const char* const zsSppmAlpha = "sppmAlpha";
 const char* const zsEnableSharc = "enableSharc";

@@ -50,6 +50,8 @@ private:
     QComboBox* m_pIntegrator;
     QSpinBox* m_pSppmPhotons;
     QDoubleSpinBox* m_pSppmRadius;
+    QComboBox* m_pSppmRadiusMode;
+    QDoubleSpinBox* m_pSppmRadiusPixels;
     QCheckBox* m_pSppmGuiding;
     QDoubleSpinBox* m_pSppmAlpha;
     QCheckBox* m_pEnableSharc;

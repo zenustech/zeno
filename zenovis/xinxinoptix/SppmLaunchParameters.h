@@ -29,6 +29,9 @@ struct SppmPixel {
 
 struct SppmStatistics {
     unsigned long long emitted, traced, gathered, visible, unsupported, caustic, absorbed;
+    // Positive float bit patterns support atomicMin during the first camera pass.
+    uint32_t cameraDepthBits, casterDepthBits;
+    float initialRadius, radiusReferenceDepth;
     unsigned long long usefulPhotonPaths;
     uint32_t guideUpdates;
 };
@@ -41,7 +44,7 @@ struct SppmLaunchParameters {
     uint32_t* heads;
     SppmStatistics* statistics;
     uint32_t enabled, iteration, photonsPerIteration, hashSize;
-    float initialRadius, alpha;
+    float initialRadius, alpha, radiusPixels;
     float3 sceneCenter;
     float sceneRadius;
     uint32_t emitterCount, distantCount, environment;
