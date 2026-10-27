@@ -174,6 +174,7 @@ struct PathTracerState
     OptixShaderBindingTable sbt {};
     raii<CUdeviceptr> sppm_pixels, sppm_heads, sppm_statistics, sppm_bounds;
     raii<CUdeviceptr> sppm_guide_cdf, sppm_guide_scores;
+    raii<CUdeviceptr> sppm_search_bounds, sppm_search_scratch, sppm_search_gas;
     std::vector<double> sppm_guide_history;
     raii<CUdeviceptr> photon_hit_records, camera_hit_records;
     OptixShaderBindingTable sppm_sbt[4] {};
@@ -544,6 +545,7 @@ static bool launchSharcUpdate(PathTracerState& state)
 static void disableSppm(PathTracerState& state)
 {
     zeno::getSession().userData().set2("optix-sppm-guiding-active", false);
+    zeno::getSession().userData().set2("optix-sppm-search-active", std::string());
     if (state.params.sppm.enabled) state.params.subframe_index = 0;
     state.params.sppm = {};
     state.sppm_pixels.reset();
@@ -553,6 +555,9 @@ static void disableSppm(PathTracerState& state)
     state.sppm_guide_cdf.reset();
     state.sppm_guide_scores.reset();
     state.sppm_guide_history.clear();
+    state.sppm_search_bounds.reset();
+    state.sppm_search_scratch.reset();
+    state.sppm_search_gas.reset();
     state.sppm_iteration = 0;
     state.sppm_reset_pending = true;
 }
@@ -597,6 +602,9 @@ static bool prepareSppm(PathTracerState& state)
     const float configuredRadius = ud.get2<float>("optix-sppm-radius", 0.0f);
     const float radiusPixels = ud.get2<float>("optix-sppm-radius-pixels", 0.0f);
     const bool guiding = ud.get2<bool>("optix-sppm-guiding", true);
+    const auto search = ud.get2<std::string>("optix-sppm-search", "hash");
+    if (search != "hash" && search != "bvh") throw std::runtime_error("Unknown SPPM search backend: "+search);
+    const uint32_t searchBackend = search == "bvh";
     const uint32_t distantCount = uint32_t(state.dlights.list.size());
     const uint32_t environment = state.params.sky_texture != 0u && state.params.sky_strength > 0.0f;
     const uint32_t emitterCount = state.params.num_lights + distantCount + environment;
@@ -610,6 +618,7 @@ static bool prepareSppm(PathTracerState& state)
         state.sppm_pixels.size != count*sizeof(SppmPixel) ||
         launch.photonsPerIteration != photons || launch.alpha != alpha ||
         launch.radiusPixels != radiusPixels ||
+        launch.searchBackend != searchBackend ||
         launch.guiding != uint32_t(guiding) || launch.emitterCount != emitterCount ||
         state.sppm_max_bounce != state.params.max_bounce ||
         state.sppm_denoise != state.params.denoise ||
@@ -623,7 +632,8 @@ static bool prepareSppm(PathTracerState& state)
         state.sppm_pixels.resize(count*sizeof(SppmPixel));
         uint32_t hashSize = 1u;
         while (hashSize < count*2u) hashSize <<= 1u;
-        state.sppm_heads.resize(size_t(hashSize)*sizeof(uint32_t));
+        if (searchBackend) state.sppm_heads.reset();
+        else state.sppm_heads.resize(size_t(hashSize)*sizeof(uint32_t));
         state.sppm_statistics.resize(sizeof(SppmStatistics));
         state.sppm_bounds.resize(sizeof(OptixAabb));
         OptixAabb bounds = {-1,-1,-1,1,1,1};
@@ -642,6 +652,15 @@ static bool prepareSppm(PathTracerState& state)
         launch.initialRadius = configuredRadius > 0.0f ? configuredRadius : launch.sceneRadius*0.01f;
         launch.radiusPixels = radiusPixels;
         launch.guiding = uint32_t(guiding);
+        launch.searchBackend = searchBackend;
+        launch.searchHandle = 0;
+        if (searchBackend) state.sppm_search_bounds.resize(count*sizeof(SppmSearchBounds));
+        else {
+            state.sppm_search_bounds.reset();
+            state.sppm_search_scratch.reset();
+            state.sppm_search_gas.reset();
+        }
+        launch.searchBounds = reinterpret_cast<SppmSearchBounds*>(state.sppm_search_bounds.handle);
         launch.guideCells = guideCells;
         launch.guideActive = 0u;
         state.sppm_guide_history.assign(guideCells, 0.0);
@@ -678,8 +697,42 @@ static bool prepareSppm(PathTracerState& state)
     launch.distantCount = distantCount;
     launch.environment = environment;
     launch.emitterCount = emitterCount;
+    launch.searchRecord = state.sbt.hitgroupRecordCount-1u;
+    ud.set2("optix-sppm-search-active", std::string(searchBackend ? "bvh" : "hash"));
     ud.set2("optix-sppm-guiding-active", launch.guideActive != 0u);
     return true;
+}
+
+static void buildSppmSearch(PathTracerState& state, uint32_t primitives)
+{
+    auto& launch = state.params.sppm;
+    if (!primitives) { launch.searchHandle=0; return; }
+    const CUdeviceptr bounds = state.sppm_search_bounds;
+    // A single invocation per primitive is essential: duplicate any-hit calls
+    // would double count flux. The final SBT record is reserved for this query.
+    std::vector<unsigned> flags(launch.searchRecord+1u, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
+    OptixBuildInput input = {};
+    input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+    auto& custom = input.customPrimitiveArray;
+    custom.aabbBuffers = &bounds;
+    custom.numPrimitives = primitives;
+    custom.strideInBytes = sizeof(SppmSearchBounds);
+    custom.numSbtRecords = unsigned(flags.size());
+    custom.flags = flags.data();
+    custom.sbtIndexOffsetBuffer = bounds + offsetof(SppmSearchBounds, record);
+    custom.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
+    custom.sbtIndexOffsetStrideInBytes = sizeof(SppmSearchBounds);
+    OptixAccelBuildOptions options = {};
+    options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    options.operation = OPTIX_BUILD_OPERATION_BUILD;
+    OptixAccelBufferSizes sizes = {};
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(OptixUtil::context, &options, &input, 1, &sizes));
+    if (state.sppm_search_scratch.size<sizes.tempSizeInBytes) state.sppm_search_scratch.resize(sizes.tempSizeInBytes);
+    if (state.sppm_search_gas.size<sizes.outputSizeInBytes) state.sppm_search_gas.resize(sizes.outputSizeInBytes);
+    OPTIX_CHECK(optixAccelBuild(OptixUtil::context, nullptr, &options, &input, 1,
+        state.sppm_search_scratch, sizes.tempSizeInBytes, state.sppm_search_gas,
+        sizes.outputSizeInBytes, &launch.searchHandle, nullptr, 0));
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
 }
 
 static void launchSppm(PathTracerState& state)
@@ -716,7 +769,7 @@ static void launchSppm(PathTracerState& state)
         launch.cameraSobol[dimension]=bits;
     }
     CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
-    CUDA_CHECK(cudaMemsetAsync(launch.heads, 0xff, state.sppm_heads.size, nullptr));
+    if (!launch.searchBackend) CUDA_CHECK(cudaMemsetAsync(launch.heads, 0xff, state.sppm_heads.size, nullptr));
     for (int pass = 0; pass < 4; ++pass) {
         state.sppm_sbt[pass] = state.sbt;
         state.sppm_sbt[pass].raygenRecord = d_sppm_records[pass];
@@ -724,13 +777,16 @@ static void launchSppm(PathTracerState& state)
         if (pass == 2) {
             if(specializedHit) state.sppm_sbt[pass].hitgroupRecordBase=state.photon_hit_records;
             state.sppm_sbt[pass].missRecordBase = d_sppm_miss_records;
-            state.sppm_sbt[pass].missRecordCount = 2;
+            state.sppm_sbt[pass].missRecordCount = 3;
         }
         uint32_t width = pass == 2 ? launch.photonsPerIteration : state.params.width;
         uint32_t height = pass == 2 ? 1u : state.params.height;
         profileStart(pass);
         OPTIX_CHECK(optixLaunch(pipeline, nullptr, state.d_params, sizeof(Params), &state.sppm_sbt[pass], width, height, 1u));
         profileEnd(pass);
+        if (pass == 1 && launch.searchBackend) {
+            profileStart(6); buildSppmSearch(state,state.params.width*state.params.height); profileEnd(6);
+        }
         if (pass == 0 && launch.iteration == 0u && launch.radiusPixels > 0.0f) {
             // One readback per accumulation reset. Keep a single fixed initial
             // world-space radius for the grid and the existing SPPM recurrence.
@@ -917,9 +973,10 @@ static void createSBT( PathTracerState& state, bool raygen=false)
         OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_prog_groups[i], &rg));
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(record.handle), &rg, raygen_record_size, cudaMemcpyHostToDevice));
     }
-    MissRecord sppmMiss[2] = {ms_sbt[0], ms_sbt[1]};
+    MissRecord sppmMiss[3] = {ms_sbt[0], ms_sbt[1], {}};
     OptixUtil::d_sppm_miss_records.resize(sizeof(sppmMiss));
     OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_photon_miss, &sppmMiss[0]));
+    OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_search_miss, &sppmMiss[2]));
     CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(OptixUtil::d_sppm_miss_records.handle),
         sppmMiss, sizeof(sppmMiss), cudaMemcpyHostToDevice));
     state.sbt.missRecordBase              = d_miss_records;
@@ -937,12 +994,13 @@ static void createSBT( PathTracerState& state, bool raygen=false)
     const auto shader_count = OptixUtil::rtMaterialShaders.size();
 
     const size_t hitgroup_record_size = sizeof( HitGroupRecord );
-    const size_t hitgroup_record_count = shader_count * RAY_TYPE_COUNT;
+    const size_t hitgroup_record_count = shader_count * RAY_TYPE_COUNT + 1;
 
     raii<CUdeviceptr>  &d_hitgroup_records = OptixUtil::d_hitgroup_records;
     d_hitgroup_records.resize(hitgroup_record_size * hitgroup_record_count);
 
     std::vector<HitGroupRecord> hitgroup_records(hitgroup_record_count);
+    OPTIX_CHECK(optixSbtRecordPackHeader(OptixUtil::sppm_search_hit, &hitgroup_records.back()));
     std::vector<CallablesRecord> callable_records(shader_count * 3);
 
     for( int j = 0; j < shader_count; ++j ) {
@@ -1927,6 +1985,10 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                    bool requireVolumeObj, uint usesCurveTypeFlags, bool refresh)
 {
     camera_changed = true;
+    const bool usesInstanceIndex = std::any_of(shaders.begin(), shaders.end(), [](const auto& shader) {
+        return shader->instanceIndexUsage!=0;
+    });
+    defaultScene.setPreserveInstanceIndices(usesInstanceIndex);
     state.sppm_has_volumes = requireVolumeObj;
     state.sppm_unsupported_material = false;
     state.sppm_reset_pending = true;
@@ -2273,7 +2335,8 @@ void configPipeline(bool shaderDirty, bool pipelineDirty) {
         std::cout << "---Shader Summary End---" << std::endl;
     }
     const bool volumeBindingsDirty=defaultScene.consumeVolumeSceneBindingsDirty();
-    if (volumeBindingsDirty) {
+    const bool instanceLayoutDirty=defaultScene.consumeInstanceLayoutDirty();
+    if (volumeBindingsDirty || instanceLayoutDirty) {
         rebuildSceneAndBenchmark();
         state.params.handle = defaultScene.rootNode.handle;
     }
@@ -2756,8 +2819,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         const char* profile=std::getenv("ZENO_SPPM_PROFILE");
         if(profile && profile[0]=='1') {
             const auto& p=state.sppm_profile_ms;
-            zeno::log_info("SPPM profile total ms: camera={} grid={} photon={} resolve={} iterations={}",
-                p[0],p[1],p[2],p[3],state.sppm_iteration);
+            zeno::log_info("SPPM profile total ms: camera={} grid={} photon={} resolve={} bvh_build={} iterations={}",
+                p[0],p[1],p[2],p[3],p[6],state.sppm_iteration);
         }
     }
     if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
@@ -2955,6 +3018,9 @@ void optixDestroy() {
         state.sppm_guide_cdf.reset();
         state.sppm_guide_scores.reset();
         state.sppm_guide_history.clear();
+        state.sppm_search_bounds.reset();
+        state.sppm_search_scratch.reset();
+        state.sppm_search_gas.reset();
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
         // SHARC owns CUDA allocations and a CUDA module in the primary
         // context; release them before OptixUtil destroys that context.

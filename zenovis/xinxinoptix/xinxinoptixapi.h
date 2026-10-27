@@ -85,6 +85,9 @@ static const std::map<zeno::CurveType, ShaderMark> CURVE_SHADER_MARK {
 
 struct ShaderPrepared {
     bool dirty = true;
+    // Unknown custom sources conservatively retain authored IAS indices.
+    // Renderer-generated shaders derive this from graph/common code only.
+    int8_t instanceIndexUsage = -1;
 
     ShaderMark mark;
     std::string matid;

@@ -83,7 +83,7 @@ public slots:
     void onSetBackground(bool bShowBackground);
     void setSampleNumber(int sample_number);
     void resetSharcCache();
-    void setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding);
+    void setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search);
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

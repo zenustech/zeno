@@ -117,6 +117,7 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
         settings.getValue(zsSppmRadius).isValid() ? 0.0 : 4.0).toFloat());
     userData.set2("optix-sppm-alpha", settingOr(zsSppmAlpha, 2.0 / 3.0).toFloat());
     userData.set2("optix-sppm-guiding", settingOr(zsSppmGuiding, true).toBool());
+    userData.set2("optix-sppm-search", settingOr(zsSppmSearch, "hash").toString().toStdString());
     userData.set2("optix-sharc", settingOr(zsEnableSharc, true).toBool());
     userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
     userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
@@ -541,7 +542,7 @@ void OptixWorker::onResetSharcCache()
     updateFrame();
 }
 
-void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding)
+void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search)
 {
     auto& userData = zeno::getSession().userData();
     userData.set2("optix-integrator", integrator.toStdString());
@@ -551,6 +552,7 @@ void OptixWorker::onSetSppmSettings(QString integrator, int photons, float radiu
     userData.set2("optix-sppm-radius-pixels", radiusPixels);
     userData.set2("optix-sppm-alpha", alpha);
     userData.set2("optix-sppm-guiding", guiding);
+    userData.set2("optix-sppm-search", search.toStdString());
     if (m_zenoVis && m_zenoVis->getSession()->get_scene())
         m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
     updateFrame();
@@ -1038,9 +1040,9 @@ void ZOptixViewport::resetSharcCache()
     emit sig_resetSharcCache();
 }
 
-void ZOptixViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding)
+void ZOptixViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search)
 {
-    emit sig_setSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding);
+    emit sig_setSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding, search);
 }
 
 void ZOptixViewport::setRayTracingSettings(

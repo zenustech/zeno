@@ -236,6 +236,11 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSppmGuiding = new QCheckBox;
     m_pSppmGuiding->setObjectName("photonGuiding");
     m_pSppmGuiding->setChecked(settingOr(zsSppmGuiding, true).toBool());
+    m_pSppmSearch = new QComboBox;
+    m_pSppmSearch->addItem(tr("Spatial hash grid"), "hash");
+    m_pSppmSearch->addItem(tr("Hardware ray tracing (BVH)"), "bvh");
+    m_pSppmSearch->setCurrentIndex(qMax(0, m_pSppmSearch->findData(settingOr(zsSppmSearch, "hash"))));
+    m_pSppmSearch->setToolTip(tr("Choose how photons find nearby receivers. Both methods use the same radius and lighting estimator. BVH build cost is included in rendering time."));
     m_pSppmGuiding->setToolTip(tr("Learn which lights and emission directions contribute to the photon image, including caustics. Retains uniform exploration and full photon energy. May add overhead in simple scenes."));
 
     m_pEnableSharc = new QCheckBox;
@@ -326,6 +331,7 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     guidingStatus->setObjectName("photonGuidingStatus");
     guidingStatus->setWordWrap(true);
     photonLayout->addRow(guidingStatus);
+    photonLayout->addRow(tr("Photon search"), m_pSppmSearch);
     layout->addWidget(photons);
 
     auto sharc = new QGroupBox(tr("SHARC Settings"));
@@ -399,6 +405,7 @@ void ZRayTracingPane::saveValue()
         ? m_pSppmRadiusPixels->value() : 0.0;
     inst.setValue(zsSppmRadiusPixels, radiusPixels);
     inst.setValue(zsSppmGuiding, m_pSppmGuiding->isChecked());
+    inst.setValue(zsSppmSearch, m_pSppmSearch->currentData());
     inst.setValue(zsSppmAlpha, m_pSppmAlpha->value());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
@@ -417,7 +424,7 @@ void ZRayTracingPane::saveValue()
             displaywid->setSampleNumber(m_pViewportSampleNumber->value());
             displaywid->setSppmSettings(m_pIntegrator->currentData().toString(),
                 m_pSppmPhotons->value(), static_cast<float>(m_pSppmRadius->value()),
-                static_cast<float>(m_pSppmAlpha->value()), static_cast<float>(radiusPixels), m_pSppmGuiding->isChecked());
+                static_cast<float>(m_pSppmAlpha->value()), static_cast<float>(radiusPixels), m_pSppmGuiding->isChecked(), m_pSppmSearch->currentData().toString());
             displaywid->setRayTracingSettings(
                 m_pDenoise->isChecked(),
                 m_pMaxBounce->value(),

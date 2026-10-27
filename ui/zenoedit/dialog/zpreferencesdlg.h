@@ -53,6 +53,7 @@ private:
     QComboBox* m_pSppmRadiusMode;
     QDoubleSpinBox* m_pSppmRadiusPixels;
     QCheckBox* m_pSppmGuiding;
+    QComboBox* m_pSppmSearch;
     QDoubleSpinBox* m_pSppmAlpha;
     QCheckBox* m_pEnableSharc;
     QPushButton* m_pSharcResetCache;

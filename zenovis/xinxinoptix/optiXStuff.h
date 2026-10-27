@@ -94,6 +94,7 @@ inline raii<OptixModule>                    raygen_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixModule>                    sppm_modules[3];
 inline raii<OptixProgramGroup>              sppm_prog_groups[4], sppm_photon_miss;
+inline raii<OptixProgramGroup>              sppm_search_hit, sppm_search_miss;
 inline raii<CUdeviceptr>                    d_sppm_records[4], d_sppm_miss_records;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
 inline raii<OptixModule>                    sharc_update_raygen_module;
@@ -131,6 +132,8 @@ inline void resetAll() {
     raygen_prog_group.reset();
     for (auto& group : sppm_prog_groups) group.reset();
     sppm_photon_miss.reset();
+    sppm_search_hit.reset();
+    sppm_search_miss.reset();
     for (auto& record : d_sppm_records) record.reset();
     d_sppm_miss_records.reset();
     for (auto& module : sppm_modules) module.reset();
@@ -805,12 +808,17 @@ inline void createSppmPrograms(OptixDeviceContext& context)
                              "__raygen__sppm_photon", "__raygen__sppm_resolve"};
     const int modules[] = {0, 2, 1, 2};
     OptixProgramGroupOptions options = {};
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 7; ++i) {
         OptixProgramGroupDesc desc = {};
-        if (i == 4) {
+        if (i == 6) {
+            desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            desc.hitgroup.moduleIS = desc.hitgroup.moduleAH = sppm_modules[1];
+            desc.hitgroup.entryFunctionNameIS = "__intersection__sppm_search";
+            desc.hitgroup.entryFunctionNameAH = "__anyhit__sppm_search";
+        } else if (i >= 4) {
             desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
             desc.miss.module = sppm_modules[1];
-            desc.miss.entryFunctionName = "__miss__sppm_photon";
+            desc.miss.entryFunctionName = i == 4 ? "__miss__sppm_photon" : "__miss__sppm_search";
         } else {
             desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
             desc.raygen.module = sppm_modules[modules[i]];
@@ -818,7 +826,7 @@ inline void createSppmPrograms(OptixDeviceContext& context)
         }
         char log[2048] = {};
         size_t logSize = sizeof(log);
-        auto& group = i == 4 ? sppm_photon_miss : sppm_prog_groups[i];
+        auto& group = i == 6 ? sppm_search_hit : i == 5 ? sppm_search_miss : i == 4 ? sppm_photon_miss : sppm_prog_groups[i];
         OPTIX_CHECK_LOG(optixProgramGroupCreate(context, &desc, 1, &options,
             log, &logSize, &group.reset()));
     }
@@ -2098,7 +2106,7 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
 
-    size_t num_progs = 8 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 10 + rtMaterialShaders.size() * 2;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     ++num_progs;
 #endif
@@ -2117,6 +2125,8 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     program_groups[program_index++] = raygen_prog_group;
     for (auto& group : sppm_prog_groups) program_groups[program_index++] = group;
     program_groups[program_index++] = sppm_photon_miss;
+    program_groups[program_index++] = sppm_search_hit;
+    program_groups[program_index++] = sppm_search_miss;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     program_groups[program_index++] = sharc_update_raygen_prog_group;
 #endif
@@ -2162,6 +2172,8 @@ inline void createPipeline(uint tree_depth, bool shaderDirty)
     for (auto& group : sppm_prog_groups)
         OPTIX_CHECK(optixUtilAccumulateStackSizes(group, &stack_sizes, pipeline));
     OPTIX_CHECK(optixUtilAccumulateStackSizes(sppm_photon_miss, &stack_sizes, pipeline));
+    OPTIX_CHECK(optixUtilAccumulateStackSizes(sppm_search_hit, &stack_sizes, pipeline));
+    OPTIX_CHECK(optixUtilAccumulateStackSizes(sppm_search_miss, &stack_sizes, pipeline));
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     OPTIX_CHECK( optixUtilAccumulateStackSizes( sharc_update_raygen_prog_group, &stack_sizes, pipeline ) );
 #endif

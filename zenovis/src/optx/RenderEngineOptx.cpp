@@ -2292,6 +2292,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 auto default_shader = std::make_shared<ShaderPrepared>();
                 default_shader->mark = mark;
                 default_shader->matid = "";
+                default_shader->instanceIndexUsage=0;
                 if (mark==ShaderMark::Volume) {
                     default_shader->filename = _volume_shader_template.name;
                     default_shader->callable = _volume_callable_template.shadtmpl;
@@ -2476,6 +2477,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     ShaderPrepared shaderP; 
 
                         shaderP.callable = callable;
+                        const auto indexDependency=[](const std::string& text) {
+                            return text.find("instIdx")!=std::string::npos ||
+                                text.find("optixGetInstanceIndex")!=std::string::npos;
+                        };
+                        shaderP.instanceIndexUsage=indexDependency(common_code) || indexDependency(mtldet->shader);
                         shaderP.filename = selected_source.name;
                         shaderP.parameters = mtldet->parameters;
 
@@ -2552,6 +2558,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 tmp->callable = _default_callable_template.shadtmpl;
                 tmp->mark = smark;
                 tmp->matid = "Light";
+                tmp->instanceIndexUsage=0;
                 
                 cached_shaders[shader_key] = tmp;
                 ShaderDirty = true;

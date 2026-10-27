@@ -52,7 +52,7 @@ static __forceinline__ __device__ float3 sppmEvaluate(
     return f;
 }
 
-// Accumulate each photon once per visible receiver within its gather sphere.
+// Both search backends call this exact estimator; only candidate enumeration differs.
 static __forceinline__ __device__ void sppmAccumulate(uint32_t index,
     float3 position, float3 normal, float3 wi, float3 beta, RadiancePRD& prd)
 {
@@ -92,10 +92,26 @@ static __forceinline__ __device__ void sppmAccumulate(uint32_t index,
     }
 }
 
+struct SppmGatherQuery {
+    float3 position, normal, wi, beta;
+    RadiancePRD* photon;
+};
+
 static __forceinline__ __device__ void sppmGather(
     float3 position, float3 normal, float3 wi, float3 beta, RadiancePRD& prd)
 {
     const auto& launch = params.sppm;
+    if (launch.searchBackend) {
+        SppmGatherQuery query = {position, normal, wi, beta, &prd};
+        unsigned lo, hi;
+        packPointer(&query, lo, hi);
+        // Point containment query. Ignore every reported hit so all receivers
+        // are visited; the GAS's per-primitive SBT index selects our query shader.
+        optixTrace(launch.searchHandle, position, make_float3(1,0,0),
+            0.0f, fmaxf(launch.initialRadius*1.0e-4f, 1.0e-30f), 0.0f, 255, OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,
+            0, 1, 2, lo, hi);
+        return;
+    }
     const int3 cell = sppmCell(position, launch.initialRadius);
     for (int z=-1; z<=1; ++z)
     for (int y=-1; y<=1; ++y)

@@ -303,3 +303,16 @@ extern "C" __global__ void __miss__sppm_photon() {
     prd->done = true;
     prd->radiance = make_float3(0.0f);
 }
+
+// Hardware broad phase over receiver spheres (the transpose of photon gathering).
+extern "C" __global__ void __intersection__sppm_search() {
+    const auto& pixel = params.sppm.pixels[optixGetPrimitiveIndex()];
+    if (pixel.visible && lengthSquared(pixel.position-optixGetWorldRayOrigin()) <= pixel.radius*pixel.radius)
+        optixReportIntersection(0.0f, 0u);
+}
+extern "C" __global__ void __anyhit__sppm_search() {
+    auto* query = reinterpret_cast<SppmGatherQuery*>(unpackPointer(optixGetPayload_0(), optixGetPayload_1()));
+    sppmAccumulate(optixGetPrimitiveIndex(), query->position, query->normal, query->wi, query->beta, *query->photon);
+    optixIgnoreIntersection();
+}
+extern "C" __global__ void __miss__sppm_search() {}

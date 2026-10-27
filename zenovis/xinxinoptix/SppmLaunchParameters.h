@@ -39,6 +39,12 @@ struct SppmStatistics {
 constexpr uint32_t SppmGuideSide = 8u;
 constexpr uint32_t SppmGuideBins = SppmGuideSide * SppmGuideSide;
 
+// AABB followed by its per-primitive SBT index; 32-byte stride meets OptiX alignment.
+struct SppmSearchBounds {
+    float minX, minY, minZ, maxX, maxY, maxZ;
+    uint32_t record, padding;
+};
+
 struct SppmLaunchParameters {
     SppmPixel* pixels;
     uint32_t* heads;
@@ -52,6 +58,9 @@ struct SppmLaunchParameters {
     double* guideCdf;
     double* guideScores;
     uint32_t guiding, guideCells, guideActive;
+    SppmSearchBounds* searchBounds;
+    unsigned long long searchHandle;
+    uint32_t searchBackend, searchRecord;
     uint32_t cameraSobol[8], cacheCameraSobol;
 };
 

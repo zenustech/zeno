@@ -10,6 +10,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <sstream>
+#include <cstdlib>
 
 #include <tuple>
 #include <array>
@@ -76,6 +77,8 @@ private:
     std::optional<std::string> sceneJsonSource;
     bool candidateBindingsDirty {true};
     bool sceneGraphDirty {true};
+    bool preserveInstanceIndices {false};
+    bool instanceLayoutDirty {false};
     std::unordered_map<std::string, std::vector<std::string>> dynamicMatrixDependencies;
 
     phmap::parallel_node_hash_set_m<std::string> matrix_dirty;
@@ -104,6 +107,7 @@ private:
     uint16_t mesh_sbt_max = 0;
     std::unordered_map<shader_key_t, uint16_t, ByShaderKey> shader_indice_table;
     bool lightIasDirty = false;
+    std::vector<OptixInstance> lightInstances;
     
 public:
     uint32_t frameid;
@@ -355,6 +359,7 @@ public:
             optix_instances.push_back( opinstance );
         }
 
+        lightInstances = optix_instances;
         xinxinoptix::buildIAS(context, optix_instances, lightsWrapper.lightIasBuffer, lightsWrapper.lightIasHandle, false, &iasBuildWorkspace, true);
     }
 
@@ -378,6 +383,7 @@ private:
         bool collapseSingleChild{};
         bool allowUpdate{};
         bool preferFastBuild{};
+        const std::unordered_set<std::string>* inlineGroups{};
     };
 
     static m3r4c composeAffine(const m3r4c& parent, const m3r4c& local) {
@@ -626,6 +632,51 @@ public:
             CameraSapceMatrix[7] -= cam.y;
             CameraSapceMatrix[11] -= cam.z;
 
+            const char* flattenRoot = std::getenv("ZENO_OPTIX_FLATTEN_ROOT");
+            if (!preserveInstanceIndices && (!flattenRoot || std::string(flattenRoot) != "0")) {
+                // The scene description is an authoring hierarchy. Keep its
+                // transforms and leaf metadata, without another IAS around
+                // the already assembled dynamic/static/light instances.
+                InstanceCollector collector(rootNode);
+                maxNodeDepth = 1;
+                auto appendChildren = [&](const auto& instances, const m3r4c& parent) {
+                    collector.reserveAdditional(instances.size());
+                    for (auto instance : instances) {
+                        m3r4c local;
+                        memcpy(local.data(), instance.transform, sizeof(float) * 12);
+                        const auto composed = composeAffine(parent, local);
+                        memcpy(instance.transform, composed.data(), sizeof(float) * 12);
+                        collector.append(instance);
+                    }
+                };
+                if (lightsWrapper.lightIasHandle != 0u) {
+                    appendChildren(lightInstances, CameraSapceMatrix);
+                    maxNodeDepth = 2;
+                }
+                auto appendGroup = [&](uint64_t handle, const auto& cache, const char* key,
+                                       const m3r4c& parent) {
+                    if (!handle) return;
+                    const auto found = cache.find(key);
+                    if (found == cache.end() || !found->second || found->second->handle != handle)
+                        throw std::runtime_error("Missing assembled scene instances");
+                    const auto& node = *found->second;
+                    appendChildren(node.hostInstances, parent);
+                    maxNodeDepth = max(maxNodeDepth, node.depth);
+                };
+                appendGroup(staticRenderGroup, nodeCacheStatic, "StaticRenderGroups", CameraSapceMatrix);
+                appendGroup(dynamicRenderGroup, nodeCache, "DynamicRenderGroups", IdentityMatrix);
+                xinxinoptix::buildIAS(context, rootNode.hostInstances, rootNode,
+                    collector.canUpdate(), true);
+                collector.commit();
+                rootNode.depth = maxNodeDepth;
+                if (reportedSceneDepth != maxNodeDepth) {
+                    zeno::log_info("OptiX scene traversal depth={} root instances={}",
+                        unsigned(maxNodeDepth), rootNode.hostInstances.size());
+                    reportedSceneDepth = maxNodeDepth;
+                }
+                return;
+            }
+
             std::vector<OptixInstance> instanced {};
             instanced.reserve(3);
 
@@ -812,7 +863,8 @@ public:
             const auto group_it = renderGroup.find(obj_key);
             if (group_it == renderGroup.end() || group_it->empty()) return 0;
 
-            if (group_it->size() == 1 && policy.collapseSingleChild) {
+            const bool inlineUnique = policy.inlineGroups && policy.inlineGroups->count(obj_key) != 0;
+            if ((group_it->size() == 1 && policy.collapseSingleChild) || inlineUnique) {
 
                 uint8_t max_depth = 0;
                 // One child key can still expand to many matrix instances.
@@ -858,7 +910,32 @@ public:
 
             auto& rg = sceneJson[group_key];
             auto& entrys = sceneJson[entry_key];
-            const TreeLookPolicy policy { cameraSpace && collapseDynamicSingleChildIAS, allow_update, cameraSpace };
+            // Inline groups used by exactly one instance. This removes chains
+            // produced by MergeScene while retaining shared IAS subtrees:
+            // repeated assemblies do not expand into duplicated leaf lists.
+            std::unordered_map<std::string, size_t> groupUses;
+            auto countUses = [&](const auto& children) {
+                for (const auto& child : children.items()) {
+                    if (!rg.contains(child.key())) continue;
+                    size_t uses = child.value().empty() ? 1u : 0u;
+                    for (const auto& matrix : child.value().items()) {
+                        const auto found = matrix_map.find(matrix.value().template get<std::string>());
+                        if (found != matrix_map.end()) uses += found->second.size();
+                    }
+                    groupUses[child.key()] += uses;
+                }
+            };
+            for (const auto& group : rg.items()) countUses(group.value());
+            countUses(entrys);
+            std::unordered_set<std::string> inlineGroups;
+            const char* inlineSetting = std::getenv("ZENO_OPTIX_INLINE_GROUPS");
+            if (!preserveInstanceIndices && collapseDynamicSingleChildIAS &&
+                (!inlineSetting || std::string(inlineSetting) != "0")) {
+                for (const auto& [key, uses] : groupUses)
+                    if (uses == 1u) inlineGroups.insert(key);
+            }
+            const TreeLookPolicy policy { cameraSpace && collapseDynamicSingleChildIAS, allow_update,
+                cameraSpace, &inlineGroups };
 
             auto& top_node = nodeCache[group_key.data()];
             if (nullptr == top_node) top_node = std::make_shared<SceneNode>();
@@ -919,6 +996,7 @@ public:
     }
 
     uint8_t maxNodeDepth = 1;
+    uint8_t reportedSceneDepth = 0;
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCache {};
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> nodeCacheStatic {};
     bool collapseDynamicSingleChildIAS{true};
@@ -957,6 +1035,23 @@ public:
         const bool dirty = volume_scene_bindings_dirty;
         volume_scene_bindings_dirty = false;
         if (dirty) candidateBindingsDirty = true;
+        return dirty;
+    }
+
+    void setPreserveInstanceIndices(bool enabled) {
+        if (preserveInstanceIndices == enabled) return;
+        // A procedural material can deliberately use the innermost IAS slot
+        // (att_instIdx), which changes when instance lists are merged. Retain
+        // the original hierarchy for those materials, including after edits.
+        preserveInstanceIndices = enabled;
+        instanceLayoutDirty = true;
+        sceneGraphDirty = true;
+        candidateBindingsDirty = true;
+    }
+
+    bool consumeInstanceLayoutDirty() {
+        const bool dirty = instanceLayoutDirty;
+        instanceLayoutDirty = false;
         return dirty;
     }
 

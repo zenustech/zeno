@@ -9,6 +9,24 @@ extern "C" __global__ void __raygen__sppm_grid() {
     auto& pixel = params.sppm.pixels[i];
     // Pixel-radius calibration completes after camera tracing, before this pass.
     if (params.sppm.iteration == 0u) pixel.radius = params.sppm.initialRadius;
+    if (params.sppm.searchBackend) {
+        auto& box = params.sppm.searchBounds[i];
+        box.record = params.sppm.searchRecord;
+        if (pixel.visible) {
+            // Round outward so broad-phase bounds cannot reject a boundary
+            // accepted by the shared floating-point spherical distance test.
+            box.minX = nextafterf(pixel.position.x-pixel.radius, -INFINITY);
+            box.minY = nextafterf(pixel.position.y-pixel.radius, -INFINITY);
+            box.minZ = nextafterf(pixel.position.z-pixel.radius, -INFINITY);
+            box.maxX = nextafterf(pixel.position.x+pixel.radius, INFINITY);
+            box.maxY = nextafterf(pixel.position.y+pixel.radius, INFINITY);
+            box.maxZ = nextafterf(pixel.position.z+pixel.radius, INFINITY);
+        } else {
+            // NaN bounds mark inactive custom primitives in an OptiX build.
+            box.minX = box.minY = box.minZ = box.maxX = box.maxY = box.maxZ = __int_as_float(0x7fffffff);
+        }
+        return;
+    }
     if (!pixel.visible) return;
     pixel.cell = sppmCell(pixel.position, params.sppm.initialRadius);
     const uint32_t bucket = sppmHash(pixel.cell, params.sppm.hashSize);

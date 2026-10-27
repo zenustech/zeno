@@ -124,9 +124,9 @@ void ZOptixProcViewport::resetSharcCache()
     m_worker->onResetSharcCache();
 }
 
-void ZOptixProcViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding)
+void ZOptixProcViewport::setSppmSettings(QString integrator, int photons, float radius, float alpha, float radiusPixels, bool guiding, QString search)
 {
-    m_worker->onSetSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding);
+    m_worker->onSetSppmSettings(integrator, photons, radius, alpha, radiusPixels, guiding, search);
 }
 
 void ZOptixProcViewport::setRayTracingSettings(
