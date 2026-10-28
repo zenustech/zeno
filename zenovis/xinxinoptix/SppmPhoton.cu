@@ -225,14 +225,24 @@ static __forceinline__ __device__ float sppmSphereExit(
 // Reserve a contiguous range for the currently active lanes. There is no
 // trace/call between mask capture and shuffle: OptiX may regroup lanes across
 // traces, but allocation does not depend on launch-index/warp correspondence.
-static __forceinline__ __device__ uint32_t sppmReservePhoton(uint32_t* counter) {
-    const unsigned mask=__activemask();
+static __forceinline__ __device__ uint32_t sppmReservePhoton(bool caustic) {
+    // OptiX requires the shuffle mask to be the captured active mask. Reserve
+    // both classes in the leader, then shuffle with that unmodified mask.
+    const unsigned active=__activemask();
+    const unsigned causticMask=__ballot_sync(active,caustic);
     unsigned lane; asm("mov.u32 %0, %%laneid;" : "=r"(lane));
-    const unsigned leader=__ffs(mask)-1;
-    unsigned base=0;
-    if (lane==leader) base=atomicAdd(counter,__popc(mask));
-    base=__shfl_sync(mask,base,leader);
-    return base+__popc(mask & ((1u<<lane)-1u));
+    const unsigned leader=__ffs(active)-1;
+    unsigned globalBase=0,causticBase=0;
+    if (lane==leader) {
+        const unsigned globals=__popc(active&~causticMask), caustics=__popc(causticMask);
+        if (globals) globalBase=atomicAdd(&params.sppm.statistics->photonRecords,globals);
+        if (caustics) causticBase=atomicAdd(&params.sppm.statistics->causticPhotonRecords,caustics);
+    }
+    globalBase=__shfl_sync(active,globalBase,leader);
+    causticBase=__shfl_sync(active,causticBase,leader);
+    const unsigned same=caustic ? causticMask : active&~causticMask;
+    const unsigned rank=__popc(same&((1u<<lane)-1u));
+    return caustic ? params.sppm.fgPhotonCapacity-1u-causticBase-rank : globalBase+rank;
 }
 
 extern "C" __global__ void __raygen__sppm_photon() {
@@ -251,7 +261,7 @@ extern "C" __global__ void __raygen__sppm_photon() {
     prd.minSpecRough = 0.0f;
     prd.ss_alpha_queue[0] = half3(-1.0f);
     float3 origin, direction, power;
-    atomicAdd(&params.sppm.statistics->emitted, 1ull);
+    sppmStatAdd(&params.sppm.statistics->emitted);
     if (!sppmEmit(prd, origin, direction, power)) return;
     prd.attenuation = power;
     prd.maxDistance = FLT_MAX;
@@ -276,18 +286,17 @@ extern "C" __global__ void __raygen__sppm_photon() {
                 // Continue tracing culled photons: a later bounce may enter
                 // a gather region. Only their unused map records are omitted.
                 const int3 cell=sppmCell(prd.sppmGatherPosition,2*params.sppm.initialRadius);
-                if (!params.sppm.fgCull || params.sppm.heads[sppmHash(cell,params.sppm.hashSize)]!=UINT_MAX) {
+                const bool caustic=prd.fgGatherCaustic!=0u;
+                const uint32_t queryMask=caustic ? 2u : 1u;
+                if (!params.sppm.fgCull || !(params.sppm.heads[sppmHash(cell,params.sppm.hashSize)]&queryMask)) {
                 // One record per surface bounce: capacity is attempts*maxBounce,
                 // so no path is dropped or reweighted by an overflow policy.
-                const uint32_t slot = sppmReservePhoton(&params.sppm.statistics->photonRecords);
+                // Both maps share one worst-case allocation. Global records
+                // grow from the front, caustics from the back; their sum is
+                // bounded by attempts*maxBounce, so neither can overflow.
+                const uint32_t slot=sppmReservePhoton(caustic);
                 params.sppm.fgPhotons[slot] = {prd.sppmGatherPosition,prd.sppmGatherNormal,
                     prd.sppmGatherWi,prd.sppmGatherBeta,prd.fgGatherCaustic};
-                const float3 p=prd.sppmGatherPosition;
-                const float r=params.sppm.initialRadius;
-                params.sppm.searchBounds[slot] = {
-                    nextafterf(p.x-r,-INFINITY),nextafterf(p.y-r,-INFINITY),nextafterf(p.z-r,-INFINITY),
-                    nextafterf(p.x+r,INFINITY),nextafterf(p.y+r,INFINITY),nextafterf(p.z+r,INFINITY),
-                    params.sppm.searchRecord,0u};
                 }
             } else sppmGather(prd.sppmGatherPosition, prd.sppmGatherNormal,
                 prd.sppmGatherWi, prd.sppmGatherBeta, prd);
@@ -301,11 +310,11 @@ extern "C" __global__ void __raygen__sppm_photon() {
         origin = prd.origin;
         direction = prd.direction;
     }
-    atomicAdd(&params.sppm.statistics->traced, traced);
-    if (prd.sppmGathered) atomicAdd(&params.sppm.statistics->gathered, prd.sppmGathered);
-    if (prd.sppmCaustics) atomicAdd(&params.sppm.statistics->caustic, prd.sppmCaustics);
+    sppmStatAdd(&params.sppm.statistics->traced,traced);
+    sppmStatAdd(&params.sppm.statistics->gathered,prd.sppmGathered);
+    sppmStatAdd(&params.sppm.statistics->caustic,prd.sppmCaustics);
     if (prd.sppmGuideUseful) {
-        atomicAdd(&params.sppm.statistics->usefulPhotonPaths, 1ull);
+        sppmStatAdd(&params.sppm.statistics->usefulPhotonPaths);
     }
     if (params.sppm.guideCells && prd.sppmGuideBin < params.sppm.guideCells &&
         prd.sppmGuideWeight > 0.0f && prd.sppmGuideScore > 0.0)
@@ -329,7 +338,7 @@ extern "C" __global__ void __miss__sppm_photon() {
             prd->alphaHit = true;
             return;
         }
-        atomicAdd(&params.sppm.statistics->absorbed, 1ull);
+        sppmStatAdd(&params.sppm.statistics->absorbed);
     }
     prd->done = true;
     prd->radiance = make_float3(0.0f);
@@ -338,7 +347,9 @@ extern "C" __global__ void __miss__sppm_photon() {
 // Hardware broad phase over receiver spheres (the transpose of photon gathering).
 extern "C" __global__ void __intersection__sppm_search() {
     if (params.sppm.fgEnabled) {
-        const auto& photon=params.sppm.fgPhotons[optixGetPrimitiveIndex()];
+        const uint32_t offset=optixGetInstanceId()==1u ?
+            params.sppm.fgPhotonCapacity-params.sppm.statistics->causticPhotonRecords : 0u;
+        const auto& photon=params.sppm.fgPhotons[offset+optixGetPrimitiveIndex()];
         if (lengthSquared(photon.position-optixGetWorldRayOrigin()) <= params.sppm.initialRadius*params.sppm.initialRadius)
             optixReportIntersection(0.0f,0u);
         return;
@@ -350,7 +361,9 @@ extern "C" __global__ void __intersection__sppm_search() {
 extern "C" __global__ void __anyhit__sppm_search() {
     if (params.sppm.fgEnabled) {
         auto* q=reinterpret_cast<FgQuery*>(unpackPointer(optixGetPayload_0(),optixGetPayload_1()));
-        const auto& p=params.sppm.fgPhotons[optixGetPrimitiveIndex()];
+        const uint32_t offset=optixGetInstanceId()==1u ?
+            params.sppm.fgPhotonCapacity-params.sppm.statistics->causticPhotonRecords : 0u;
+        const auto& p=params.sppm.fgPhotons[offset+optixGetPrimitiveIndex()];
         if ((!q->causticOnly || p.caustic) && dot(p.normal,q->surface->normal)>0.0f) {
             float3 value=p.power;
             if (q->diffuse) {
@@ -366,11 +379,20 @@ extern "C" __global__ void __anyhit__sppm_search() {
                 return;
             }
             if (q->causticOnly) {
-                float pdf=0;
                 const auto& s=*q->surface;
                 const float cosine=fabsf(dot(s.shadingNormal,p.wi));
-                value=cosine>1e-6f ? p.power*DisneyBSDF::EvaluateOpaqueSppm(s.material,p.wi,s.wo,
-                    s.tangent,s.bitangent,s.shadingNormal,pdf)/cosine : make_float3(0);
+                if (cosine<=1e-6f || dot(s.shadingNormal,p.wi)*dot(s.shadingNormal,s.wo)<=0.0f)
+                    value=make_float3(0);
+                else if (fgLambertian(s.material) && dot(s.shadingNormal,s.wo)>0.0f)
+                    value=p.power*fgDiffuseBsdf(s.material.basecolor,cosine)/cosine;
+                else {
+                    // Keep directional importance sampling for glossy closures.
+                    // A flux-only proposal saves little in the measured scene
+                    // and can increase variance for a narrow BSDF lobe.
+                    float pdf=0;
+                    value=p.power*DisneyBSDF::EvaluateOpaqueSppm(s.material,p.wi,s.wo,
+                        s.tangent,s.bitangent,s.shadingNormal,pdf)/cosine;
+                }
             }
             const float target=fmaxf(0.0f,dot(value,make_float3(.2126f,.7152f,.0722f)));
             if (target>0.0f && isfinite(target)) {

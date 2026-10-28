@@ -35,12 +35,21 @@ struct SppmStatistics {
     unsigned long long usefulPhotonPaths;
     uint32_t guideUpdates;
     uint32_t photonRecords;
+    uint32_t causticPhotonRecords;
     unsigned long long fgInitial, fgTemporal, fgSpatial;
 };
 
+// Opaque FG evaluation never reads transmission colors, diffraction or thin
+// surface state. Retain full precision for every parameter it does read.
+struct FgMaterial {
+    float3 basecolor;
+    float roughness, anisotropic, anisoRotation, ior, metallic;
+    float specular, specularTint, sheen, sheenTint;
+    float clearcoat, clearcoatRoughness, clearcoatIOR, specTrans;
+};
 struct FgSurface {
     float3 position, normal, shadingNormal, tangent, bitangent, wo;
-    SppmMaterial material;
+    FgMaterial material;
     uint32_t valid, depth;
     float3 extinction;
 };
@@ -89,6 +98,7 @@ struct SppmLaunchParameters {
     uint32_t* heads;
     SppmStatistics* statistics;
     uint32_t enabled, iteration, photonsPerIteration, hashSize;
+    uint32_t statisticsEnabled;
     float initialRadius, alpha, radiusPixels;
     float3 sceneCenter;
     float sceneRadius;
@@ -102,6 +112,7 @@ struct SppmLaunchParameters {
     uint32_t searchBackend, searchRecord;
     uint32_t fgEnabled, fgReuse, fgCull;
     uint32_t fgConfidence, fgSpatialSamples, fgPairwiseOutput;
+    uint32_t fgPhotonCapacity, fgBuildBounds;
     FgPhoton* fgPhotons;
     FgCandidate* fgCandidates;
     FgReservoirPair *fgInitial, *fgPrevious, *fgCurrent;
@@ -111,7 +122,8 @@ struct SppmLaunchParameters {
 // Cell keys are retained in each node: bucket collisions must never count a
 // visible point twice when querying the 27 neighboring cells.
 #ifdef __CUDACC_RTC__
-static __forceinline__ __device__ bool fgLambertian(const SppmMaterial& m) {
+template<class Material>
+static __forceinline__ __device__ bool fgLambertian(const Material& m) {
     // EvalDisneyDiffuse is Lambertian with no sheen. Directional closures
     // must keep the full Disney evaluation and directional photon estimator.
     return m.specular==0.0f && m.metallic==0.0f && m.specTrans==0.0f &&

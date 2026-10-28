@@ -11,8 +11,9 @@ extern "C" __global__ void __raygen__sppm_camera() {
     pixel.visible = pixel.m = 0u;
     pixel.phi = make_float3(0.0f);
     if (params.sppm.fgEnabled) {
-        params.sppm.fgCandidates[i] = {};
-        params.sppm.fgInitial[i] = {};
+        // Initialize storage once; validity controls all subsequent reads.
+        params.sppm.fgCandidates[i].point.valid = 0u;
+        params.sppm.fgInitial[i].source.valid = 0u;
     }
 
     uint32_t primarySeed=pcg_hash(tea<4>(i,params.sppm.iteration)+params.outside_random_number);

@@ -5,7 +5,7 @@
 extern "C" { __constant__ Params params; }
 #include "RestirFg.h"
 
-static __forceinline__ __device__ void fgMarkQuery(const FgSurface& s) {
+static __forceinline__ __device__ void fgMarkQuery(const FgSurface& s, uint32_t mask) {
     if (!s.valid) return;
     const float r=params.sppm.initialRadius, cellSize=2*r;
     // Conservative sphere AABB, including boundary roundoff. Hash collisions
@@ -15,19 +15,34 @@ static __forceinline__ __device__ void fgMarkQuery(const FgSurface& s) {
     const int3 hi=sppmCell(make_float3(nextafterf(s.position.x+r,INFINITY),
         nextafterf(s.position.y+r,INFINITY),nextafterf(s.position.z+r,INFINITY)),cellSize);
     for(int z=lo.z;z<=hi.z;++z) for(int y=lo.y;y<=hi.y;++y) for(int x=lo.x;x<=hi.x;++x)
-        atomicExch(&params.sppm.heads[sppmHash(make_int3(x,y,z),params.sppm.hashSize)],0u);
+        atomicAnd(&params.sppm.heads[sppmHash(make_int3(x,y,z),params.sppm.hashSize)],~mask);
 }
 
 extern "C" __global__ void __raygen__sppm_grid() {
     const uint3 index = optixGetLaunchIndex();
-    const uint32_t i = index.y*params.width + index.x;
-    auto& pixel = params.sppm.pixels[i];
+    uint32_t i = index.y*params.width + index.x;
     if (params.sppm.fgEnabled) {
+        if (params.sppm.fgBuildBounds) {
+            const uint32_t globals=params.sppm.statistics->photonRecords;
+            const uint32_t caustics=params.sppm.statistics->causticPhotonRecords;
+            i=index.y*optixGetLaunchDimensions().x+index.x;
+            if (i>=globals+caustics) return;
+            const uint32_t photon=i<globals ? i : params.sppm.fgPhotonCapacity-caustics+i-globals;
+            const float3 p=params.sppm.fgPhotons[photon].position;
+            const float r=params.sppm.initialRadius;
+            params.sppm.searchBounds[i]={
+                nextafterf(p.x-r,-INFINITY),nextafterf(p.y-r,-INFINITY),nextafterf(p.z-r,-INFINITY),
+                nextafterf(p.x+r,INFINITY),nextafterf(p.y+r,INFINITY),nextafterf(p.z+r,INFINITY),0u,0u};
+            return;
+        }
         if (!params.sppm.fgCull) return;
-        fgMarkQuery(params.sppm.fgInitial[i].source);
-        fgMarkQuery(params.sppm.fgCandidates[i].point);
+        // The primary only queries caustics. The secondary queries both maps:
+        // retaining its caustics is necessary for indirect caustic transport.
+        fgMarkQuery(params.sppm.fgInitial[i].source,2u);
+        fgMarkQuery(params.sppm.fgCandidates[i].point,3u);
         return;
     }
+    auto& pixel = params.sppm.pixels[i];
     // Pixel-radius calibration completes after camera tracing, before this pass.
     if (params.sppm.iteration == 0u) pixel.radius = params.sppm.initialRadius;
     if (params.sppm.searchBackend) {

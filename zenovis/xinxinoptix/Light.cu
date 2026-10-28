@@ -224,7 +224,7 @@ extern "C" __global__ void __closesthit__radiance()
     // absorb incident photons, including the inner side of a spherical light.
     // Ellipse clipping and texture cutouts above apply before absorption.
     if (prd->sppmMode == 2u) {
-        atomicAdd(&params.sppm.statistics->absorbed, 1ull);
+        if (params.sppm.statisticsEnabled) atomicAdd(&params.sppm.statistics->absorbed, 1ull);
         prd->radiance = make_float3(0.0f);
         prd->done = true;
         return;

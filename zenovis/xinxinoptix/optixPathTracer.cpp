@@ -175,6 +175,7 @@ struct PathTracerState
     raii<CUdeviceptr> sppm_pixels, sppm_heads, sppm_statistics, sppm_bounds;
     raii<CUdeviceptr> sppm_guide_cdf, sppm_guide_scores;
     raii<CUdeviceptr> sppm_search_bounds, sppm_search_scratch, sppm_search_gas;
+    raii<CUdeviceptr> fg_caustic_gas, fg_search_ias, fg_search_instances;
     std::vector<double> sppm_guide_history;
     raii<CUdeviceptr> fg_photons, fg_candidates, fg_initial, fg_history[2];
     raii<CUdeviceptr> photon_hit_records, camera_hit_records;
@@ -559,6 +560,7 @@ static void disableSppm(PathTracerState& state)
     state.sppm_search_bounds.reset();
     state.sppm_search_scratch.reset();
     state.sppm_search_gas.reset();
+    state.fg_caustic_gas.reset(); state.fg_search_ias.reset(); state.fg_search_instances.reset();
     state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
     for (auto& buffer : state.fg_history) buffer.reset();
     state.sppm_iteration = 0;
@@ -666,25 +668,38 @@ static bool prepareSppm(PathTracerState& state)
         launch.guiding = uint32_t(guiding);
         launch.searchBackend = searchBackend;
         launch.searchHandle = 0;
-        if (searchBackend) state.sppm_search_bounds.resize((fg ? photonCapacity : count)*sizeof(SppmSearchBounds));
+        if (searchBackend) {
+            // FG bounds are generated only for live records after tracing;
+            // attempts*maxBounce remains a safe photon-data capacity, without
+            // imposing the same worst-case allocation on the BVH's AABBs.
+            if (!fg) state.sppm_search_bounds.resize(count*sizeof(SppmSearchBounds));
+        }
         else {
             state.sppm_search_bounds.reset();
             state.sppm_search_scratch.reset();
             state.sppm_search_gas.reset();
         }
         launch.fgEnabled=fg; launch.fgReuse=fgReuse; launch.fgCull=fgCull;
+        launch.fgPhotonCapacity=uint32_t(photonCapacity);
         launch.fgConfidence=fgConfidence; launch.fgSpatialSamples=fgSpatialSamples; launch.fgPairwiseOutput=fgPairwiseOutput;
         if (fg) {
             state.fg_photons.resize(photonCapacity*sizeof(FgPhoton));
-            state.fg_candidates.resize(count*sizeof(FgCandidate));
-            state.fg_initial.resize(count*sizeof(FgReservoirPair));
+            if (state.fg_candidates.resize(count*sizeof(FgCandidate)))
+                CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(state.fg_candidates.handle),0,state.fg_candidates.size,nullptr));
+            if (state.fg_initial.resize(count*sizeof(FgReservoirPair)))
+                CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(state.fg_initial.handle),0,state.fg_initial.size,nullptr));
             for (auto& buffer : state.fg_history) {
-                buffer.resize(count*sizeof(FgReservoirPair));
-                CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(buffer.handle),0,buffer.size,nullptr));
+                if (buffer.resize(count*sizeof(FgReservoirPair)))
+                    CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<void*>(buffer.handle),0,buffer.size,nullptr));
             }
+            // Camera/scene resets invalidate current source/candidate flags.
+            // Iteration zero never reads temporal history and overwrites the
+            // whole current history; every later iteration reads that output.
+            // Reused allocations therefore need no bulk clearing on a drag.
         } else {
             state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
             for (auto& buffer : state.fg_history) buffer.reset();
+            state.fg_caustic_gas.reset(); state.fg_search_ias.reset(); state.fg_search_instances.reset();
         }
         launch.fgPhotons=reinterpret_cast<FgPhoton*>(state.fg_photons.handle);
         launch.fgCandidates=reinterpret_cast<FgCandidate*>(state.fg_candidates.handle);
@@ -723,6 +738,7 @@ static bool prepareSppm(PathTracerState& state)
         state.sppm_reset_pending = false;
     }
     launch.enabled = 1u;
+    launch.statisticsEnabled = ud.get2<bool>("optix-sppm-statistics",false);
     launch.distantCount = distantCount;
     launch.environment = environment;
     launch.emitterCount = emitterCount;
@@ -752,7 +768,8 @@ static void buildSppmSearch(PathTracerState& state, uint32_t primitives)
     custom.sbtIndexOffsetSizeInBytes = sizeof(uint32_t);
     custom.sbtIndexOffsetStrideInBytes = sizeof(SppmSearchBounds);
     OptixAccelBuildOptions options = {};
-    options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    options.buildFlags = zeno::getSession().userData().get2<bool>("optix-sppm-fast-build",true) ?
+        OPTIX_BUILD_FLAG_PREFER_FAST_BUILD : OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
     options.operation = OPTIX_BUILD_OPERATION_BUILD;
     OptixAccelBufferSizes sizes = {};
     OPTIX_CHECK(optixAccelComputeMemoryUsage(OptixUtil::context, &options, &input, 1, &sizes));
@@ -762,6 +779,71 @@ static void buildSppmSearch(PathTracerState& state, uint32_t primitives)
         state.sppm_search_scratch, sizes.tempSizeInBytes, state.sppm_search_gas,
         sizes.outputSizeInBytes, &launch.searchHandle, nullptr, 0));
     CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
+}
+
+static void buildFgSearch(PathTracerState& state, uint32_t globalCount, uint32_t causticCount)
+{
+    auto& launch=state.params.sppm;
+    launch.searchHandle=0;
+    if (!globalCount && !causticCount) return;
+    const uint32_t total=globalCount+causticCount;
+    if (state.sppm_search_bounds.size<size_t(total)*sizeof(SppmSearchBounds))
+        state.sppm_search_bounds.resize(size_t(total)*sizeof(SppmSearchBounds));
+    launch.searchBounds=reinterpret_cast<SppmSearchBounds*>(state.sppm_search_bounds.handle);
+    launch.fgBuildBounds=1u;
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle),&state.params,sizeof(Params),cudaMemcpyHostToDevice,nullptr));
+    const uint32_t width=std::min(total,65536u), height=1u+(total-1u)/width;
+    OPTIX_CHECK(optixLaunch(OptixUtil::pipeline,nullptr,state.d_params,sizeof(Params),&state.sppm_sbt[1],width,height,1));
+    launch.fgBuildBounds=0u;
+    const unsigned flag=OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL;
+    const CUdeviceptr bounds[2]={state.sppm_search_bounds.handle,
+        state.sppm_search_bounds.handle+size_t(globalCount)*sizeof(SppmSearchBounds)};
+    const uint32_t counts[2]={globalCount,causticCount};
+    OptixBuildInput input[2]={};
+    OptixAccelBufferSizes sizes[2]={};
+    OptixAccelBuildOptions options={};
+    options.buildFlags=zeno::getSession().userData().get2<bool>("optix-sppm-fast-build",true) ?
+        OPTIX_BUILD_FLAG_PREFER_FAST_BUILD : OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+    options.operation=OPTIX_BUILD_OPERATION_BUILD;
+    size_t scratchBytes=0;
+    for (int kind=0;kind<2;++kind) if (counts[kind]) {
+        input[kind].type=OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+        auto& custom=input[kind].customPrimitiveArray;
+        custom.aabbBuffers=&bounds[kind]; custom.numPrimitives=counts[kind];
+        custom.strideInBytes=sizeof(SppmSearchBounds);
+        // One query hit group. The instance supplies its SBT offset; there
+        // is no per-photon SBT index or array of material geometry flags.
+        custom.numSbtRecords=1; custom.flags=&flag;
+        OPTIX_CHECK(optixAccelComputeMemoryUsage(OptixUtil::context,&options,&input[kind],1,&sizes[kind]));
+        scratchBytes=std::max(scratchBytes,sizes[kind].tempSizeInBytes);
+    }
+    const uint32_t instanceCount=uint32_t(globalCount!=0)+uint32_t(causticCount!=0);
+    state.fg_search_instances.resize(instanceCount*sizeof(OptixInstance));
+    OptixBuildInput top={}; top.type=OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+    top.instanceArray.instances=state.fg_search_instances;
+    top.instanceArray.numInstances=instanceCount;
+    OptixAccelBufferSizes topSizes={};
+    OPTIX_CHECK(optixAccelComputeMemoryUsage(OptixUtil::context,&options,&top,1,&topSizes));
+    scratchBytes=std::max(scratchBytes,topSizes.tempSizeInBytes);
+    if (state.sppm_search_scratch.size<scratchBytes) state.sppm_search_scratch.resize(scratchBytes);
+    if (state.fg_search_ias.size<topSizes.outputSizeInBytes) state.fg_search_ias.resize(topSizes.outputSizeInBytes);
+    OptixInstance instances[2]={}; uint32_t next=0;
+    for (int kind=0;kind<2;++kind) if (counts[kind]) {
+        auto& gas=kind ? state.fg_caustic_gas : state.sppm_search_gas;
+        if (gas.size<sizes[kind].outputSizeInBytes) gas.resize(sizes[kind].outputSizeInBytes);
+        auto& instance=instances[next++];
+        instance.transform[0]=instance.transform[5]=instance.transform[10]=1.0f;
+        instance.instanceId=kind; instance.sbtOffset=launch.searchRecord;
+        instance.visibilityMask=1u<<kind;
+        OPTIX_CHECK(optixAccelBuild(OptixUtil::context,nullptr,&options,&input[kind],1,
+            state.sppm_search_scratch,sizes[kind].tempSizeInBytes,gas,sizes[kind].outputSizeInBytes,
+            &instance.traversableHandle,nullptr,0));
+    }
+    CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.fg_search_instances.handle),instances,
+        instanceCount*sizeof(OptixInstance),cudaMemcpyHostToDevice,nullptr));
+    OPTIX_CHECK(optixAccelBuild(OptixUtil::context,nullptr,&options,&top,1,
+        state.sppm_search_scratch,topSizes.tempSizeInBytes,state.fg_search_ias,topSizes.outputSizeInBytes,
+        &launch.searchHandle,nullptr,0));
 }
 
 static void launchSppm(PathTracerState& state)
@@ -791,7 +873,7 @@ static void launchSppm(PathTracerState& state)
     if(profile && launch.iteration==0u) state.sppm_profile_ms={};
     launch.fgPrevious=reinterpret_cast<FgReservoirPair*>(state.fg_history[(launch.iteration+1u)%2u].handle);
     launch.fgCurrent=reinterpret_cast<FgReservoirPair*>(state.fg_history[launch.iteration%2u].handle);
-    if (launch.fgEnabled) CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),0,sizeof(uint32_t),nullptr));
+    if (launch.fgEnabled) CUDA_CHECK(cudaMemsetAsync(reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),0,2*sizeof(uint32_t),nullptr));
     // SPPM scatters photons into receivers. FG instead builds a photon map,
     // gathers at the next vertex, and resamples before resolving the image.
     const char* cacheSobol=std::getenv("ZENO_SPPM_SOBOL_CACHE");
@@ -828,9 +910,11 @@ static void launchSppm(PathTracerState& state)
             profileStart(6); buildSppmSearch(state,state.params.width*state.params.height); profileEnd(6);
         }
         if (pass == 2 && launch.fgEnabled) {
-            uint32_t records;
-            CUDA_CHECK(cudaMemcpy(&records,reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),sizeof(records),cudaMemcpyDeviceToHost));
-            profileStart(6); buildSppmSearch(state,records); profileEnd(6);
+            uint32_t records[2];
+            // Use exact counts. A previous-frame estimate can silently omit
+            // live photons when the current count grows, losing their energy.
+            CUDA_CHECK(cudaMemcpy(records,reinterpret_cast<char*>(launch.statistics)+offsetof(SppmStatistics,photonRecords),sizeof(records),cudaMemcpyDeviceToHost));
+            profileStart(6); buildFgSearch(state,records[0],records[1]); profileEnd(6);
             CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<void*>(state.d_params.handle), &state.params, sizeof(Params), cudaMemcpyHostToDevice, nullptr));
         }
         if (pass == 0 && launch.iteration == 0u && launch.radiusPixels > 0.0f) {
@@ -3071,6 +3155,7 @@ void optixDestroy() {
         state.sppm_search_bounds.reset();
         state.sppm_search_scratch.reset();
         state.sppm_search_gas.reset();
+        state.fg_caustic_gas.reset(); state.fg_search_ias.reset(); state.fg_search_instances.reset();
         state.fg_photons.reset(); state.fg_candidates.reset(); state.fg_initial.reset();
         for (auto& buffer : state.fg_history) buffer.reset();
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC

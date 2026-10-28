@@ -10,6 +10,16 @@ static __forceinline__ __device__ bool sppmFinite(float3 v) {
 static __forceinline__ __device__ float sppmMax(float3 v) {
     return fmaxf(v.x, fmaxf(v.y, v.z));
 }
+static __forceinline__ __device__ void sppmStatAdd(unsigned long long* counter, unsigned long long value=1ull) {
+    if (params.sppm.statisticsEnabled && value) atomicAdd(counter,value);
+}
+
+template<class Material>
+static __forceinline__ __device__ FgMaterial fgPack(const Material& m) {
+    return {m.basecolor,m.roughness,m.anisotropic,m.anisoRotation,m.ior,m.metallic,
+        m.specular,m.specularTint,m.sheen,m.sheenTint,m.clearcoat,
+        m.clearcoatRoughness,m.clearcoatIOR,m.specTrans};
+}
 
 #define SPPM_MATERIAL_FIELDS(F) \
     F(basecolor) F(transColor) F(diffractColor) F(roughness) F(anisotropic) \
@@ -39,7 +49,7 @@ static __forceinline__ __device__ bool fgGatherable(const MatOutput& m) {
     return m.specTrans<=0.0f && (m.metallic<1.0f || m.roughness>=0.2f);
 }
 static __forceinline__ __device__ FgSurface fgSurface(const SppmPixel& p) {
-    return {p.position,p.normal,p.shadingNormal,p.tangent,p.bitangent,p.wo,p.material,p.visible,0u};
+    return {p.position,p.normal,p.shadingNormal,p.tangent,p.bitangent,p.wo,fgPack(p.material),p.visible,0u};
 }
 struct FgQuery {
     const FgSurface* surface;
@@ -234,7 +244,7 @@ static __forceinline__ __device__ void sppmSurfaceMode(
         // gathering. Non-gatherable chains belong to the primary caustic map.
         if (fgGatherable(material)) {
             auto& c = params.sppm.fgCandidates[prd.sppmPixel];
-            c.point = {position,normal,shadingNormal,tangent,bitangent,wo,sppmPack(material),1u,prd.depth};
+            c.point = {position,normal,shadingNormal,tangent,bitangent,wo,fgPack(material),1u,prd.depth};
         }
         prd.done = true;
         prd.radiance = make_float3(0.0f);
@@ -297,7 +307,7 @@ static __forceinline__ __device__ void sppmSurfaceMode(
         pixel.beta = prd.attenuation;
         pixel.material = sppmPack(material);
         pixel.visible = 1u;
-        atomicAdd(&params.sppm.statistics->visible, 1ull);
+        sppmStatAdd(&params.sppm.statistics->visible);
         if (!params.sppm.fgEnabled) { prd.done = true; return; }
         params.sppm.fgInitial[prd.sppmPixel].source = fgSurface(pixel);
         params.sppm.fgInitial[prd.sppmPixel].source.depth = prd.depth;

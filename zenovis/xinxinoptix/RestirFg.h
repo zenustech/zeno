@@ -24,10 +24,10 @@ static __forceinline__ __device__ FgQuery fgQuery(const FgSurface& s, bool caust
     if (params.sppm.searchHandle) {
         unsigned lo,hi; packPointer(&q,lo,hi);
         optixTrace(params.sppm.searchHandle,s.position,make_float3(1,0,0),0.0f,
-            fmaxf(params.sppm.initialRadius*1e-4f,1e-30f),0.0f,255,OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,0,1,2,lo,hi);
+            fmaxf(params.sppm.initialRadius*1e-4f,1e-30f),0.0f,caustic ? 2u : 3u,OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,0,1,2,lo,hi);
     }
-    if (q.gathered) atomicAdd(&params.sppm.statistics->gathered,q.gathered);
-    if (q.caustics) atomicAdd(&params.sppm.statistics->caustic,q.caustics);
+    sppmStatAdd(&params.sppm.statistics->gathered,q.gathered);
+    sppmStatAdd(&params.sppm.statistics->caustic,q.caustics);
     seed=q.seed; return q;
 }
 static __forceinline__ __device__ float3 fgValue(const FgSurface& s, const FgReservoir& r,
@@ -149,6 +149,9 @@ extern "C" __global__ void __raygen__fg_initial() {
     const auto index=optixGetLaunchIndex(); const uint32_t i=index.y*params.width+index.x;
     auto& out=params.sppm.fgInitial[i];
     out.fg.confidence=out.caustic.confidence=1u;
+    out.fg.valid=out.caustic.valid=0u;
+    out.fg.target=out.fg.weight=out.fg.jacobian=0.0f;
+    out.caustic.target=out.caustic.weight=0.0f;
     if (!out.source.valid) return;
     RadiancePRD prd={}; prd.sppmMode=1u;
     prd.seed=pcg_hash(tea<4>(i,params.sppm.iteration)^params.outside_random_number^0x61d75a3bu);
@@ -174,7 +177,7 @@ extern "C" __global__ void __raygen__fg_initial() {
             r.weight=1.0f/candidate.pdf;
         }
     }
-    if (out.fg.target>0 || out.caustic.target>0) atomicAdd(&params.sppm.statistics->fgInitial,1ull);
+    if (out.fg.target>0 || out.caustic.target>0) sppmStatAdd(&params.sppm.statistics->fgInitial);
 }
 extern "C" __global__ void __raygen__fg_resample() {
     const auto index=optixGetLaunchIndex(); const uint32_t i=index.y*params.width+index.x;
@@ -187,7 +190,7 @@ extern "C" __global__ void __raygen__fg_resample() {
         const auto& temporal=params.sppm.fgPrevious[i];
         if (params.sppm.iteration && temporal.source.valid) {
             fgCombine(current,temporal,prd);
-            atomicAdd(&params.sppm.statistics->fgTemporal,1ull);
+            sppmStatAdd(&params.sppm.statistics->fgTemporal);
         }
         // Keep temporal history before spatial resampling. Feeding a shared
         // spatial winner back into every neighbor amplifies sample correlation.
@@ -212,7 +215,7 @@ extern "C" __global__ void __raygen__fg_resample() {
                     spatialEstimate+=pair;
                     ++spatialCount;
                 } else fgCombine(current,neighbor,prd);
-                atomicAdd(&params.sppm.statistics->fgSpatial,1ull);
+                sppmStatAdd(&params.sppm.statistics->fgSpatial);
             }
         }
     } else params.sppm.fgCurrent[i]=current;
