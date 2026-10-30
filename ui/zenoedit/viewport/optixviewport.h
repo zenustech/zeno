@@ -39,6 +39,7 @@ public:
 
 signals:
     void renderIterate(QImage);
+    void clasLodStatus(QString status);
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
     void sig_recordCanceled();
@@ -73,6 +74,10 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onResetSharcCache();
+    void onSetClasDebugView(int view);
+    void onSetClasHistorySettings(bool keep, int samples);
+    void onSetClasTwoSidedOpaque(bool enabled);
+    void onSetClasLodSettings(bool adaptive, double pixelError);
     void onSetRayTracingSettings(
         bool denoise,
         int maxBounce,
@@ -121,6 +126,11 @@ public:
     void showBackground(bool bShow);
     void setSampleNumber(int sample_number);
     void resetSharcCache();
+    void setClasDebugView(int view);
+    void setClasHistorySettings(bool keep, int samples);
+    void setClasTwoSidedOpaque(bool enabled);
+    void setClasLodSettings(bool adaptive, double pixelError);
+    QString clasLodStatus() const { return m_clasLodStatus; }
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,
@@ -176,6 +186,13 @@ signals:
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
     void sig_resetSharcCache();
+    void sig_setClasDebugView(int view);
+    void sig_setClasHistorySettings(bool keep, int samples);
+    void sig_setClasTwoSidedOpaque(bool enabled);
+    void sig_setClasLodSettings(bool adaptive, double pixelError);
+private:
+    QString m_clasLodStatus;
+signals:
     void sig_setRayTracingSettings(
         bool denoise,
         int maxBounce,

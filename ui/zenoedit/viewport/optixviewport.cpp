@@ -15,6 +15,11 @@
 #include <zenomodel/include/api.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zeno/utils/string.h>
+#include <QElapsedTimer>
+#include <QFileInfo>
+#include <QDir>
+#include <cstdlib>
+#include <algorithm>
 
 #include "viewport/zoptixviewport.h"
 #include "nodesview/zenographseditor.h"
@@ -86,6 +91,57 @@ static void add_set_node_xform(
     }
 }
 
+static void initializeOptixRenderSettings(Zenovis* vis)
+{
+    auto scene = vis->getSession()->get_scene();
+    auto& settings = ZenoSettingsManager::GetInstance();
+    // Integration tests use a real INI preferences file without touching the
+    // user's registry. QSettings can return persisted Booleans as strings.
+    std::unique_ptr<QSettings> testSettings;
+    const auto testFile = qEnvironmentVariable("ZENO_OPTIX_TEST_PREFERENCES_FILE");
+    if (!testFile.isEmpty())
+        testSettings = std::make_unique<QSettings>(testFile, QSettings::IniFormat);
+    auto settingOr = [&settings, &testSettings](const char* name, const QVariant& fallback) {
+        const QVariant value = testSettings ? testSettings->value(name) : settings.getValue(name);
+        return value.isValid() ? value : fallback;
+    };
+    scene->drawOptions->denoise = settingOr(zsRayTracingDenoise, false).toBool();
+    auto& userData = zeno::getSession().userData();
+    userData.set2("optix-max-bounce", settingOr(zsRayTracingMaxBounce, 4).toInt());
+    auto clasSetting = [&](const char* env, const char* setting, int fallback) {
+        return qEnvironmentVariableIsSet(env) ? qEnvironmentVariableIntValue(env) : settingOr(setting, fallback).toInt();
+    };
+    auto clasBoolSetting = [&](const char* env, const char* setting, bool fallback) {
+        return qEnvironmentVariableIsSet(env) ? qEnvironmentVariableIntValue(env) != 0 : settingOr(setting, fallback).toBool();
+    };
+    userData.set2("optix-clas-debug-view", std::clamp(clasSetting("ZENO_OPTIX_CLAS_DEBUG_VIEW", zsClasDebugView, 0), 0, 7));
+    userData.set2("optix-clas-keep-history", clasBoolSetting("ZENO_OPTIX_CLAS_KEEP_HISTORY", zsClasKeepHistory, false));
+    userData.set2("optix-clas-history-limit", std::clamp(clasSetting("ZENO_OPTIX_CLAS_HISTORY_LIMIT", zsClasHistoryLimit, 16), 4, 256));
+    userData.set2("optix-clas-two-sided-opaque", clasBoolSetting("ZENO_OPTIX_CLAS_TWO_SIDED_OPAQUE", zsClasTwoSidedOpaque, true));
+    userData.set2("optix-clas-adaptive-lod", clasBoolSetting("ZENO_OPTIX_CLAS_ADAPTIVE_LOD", zsClasAdaptiveLod, true));
+    userData.set2("optix-clas-pixel-error", std::max(0.f,settingOr(zsClasPixelError,0.f).toFloat()));
+    userData.set2("optix-sharc", qEnvironmentVariableIsSet("ZENO_OPTIX_SHARC") ? qEnvironmentVariableIntValue("ZENO_OPTIX_SHARC") != 0 : settingOr(zsEnableSharc, true).toBool());
+    userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
+    userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
+    userData.set2("optix-sharc-accumulation-frames", settingOr(zsSharcAccumulationFrameNum, 20).toInt());
+    userData.set2("optix-sharc-stale-frames", settingOr(zsSharcStaleFrameNum, 60).toInt());
+    userData.set2("optix-sharc-roughness-min", settingOr(zsSharcRoughnessMin, 0.4).toFloat());
+    userData.set2("optix-sharc-debug", settingOr(zsSharcDebugMode, false).toBool());
+    userData.set2("optix-sharc-material-demodulation", settingOr(zsSharcMaterialDemodulation, false).toBool());
+    userData.set2("optix-sharc-sh-encoding", settingOr(zsSharcSHEncoding, false).toBool());
+    if (qEnvironmentVariableIntValue("ZENO_OPTIX_RENDER_TIMING") == 1) {
+        const QVariant storedKeep = settingOr(zsClasKeepHistory, false);
+        zeno::log_info("CLAS startup settings: view={}, keepHistory={}, historyLimit={}, twoSidedOpaque={}",
+            userData.get2<int>("optix-clas-debug-view"), userData.get2<bool>("optix-clas-keep-history"),
+            userData.get2<int>("optix-clas-history-limit"), userData.get2<bool>("optix-clas-two-sided-opaque"));
+        zeno::log_info("CLAS stored history: type={}, bool={}, int={}, envOverride={}",
+            storedKeep.typeName(), storedKeep.toBool(), storedKeep.toInt(),
+            qEnvironmentVariableIsSet("ZENO_OPTIX_CLAS_KEEP_HISTORY"));
+        zeno::log_info("CLAS startup LOD: adaptive={}, pixelErrorOverride={}",
+            userData.get2<bool>("optix-clas-adaptive-lod"),userData.get2<float>("optix-clas-pixel-error"));
+    }
+}
+
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
@@ -100,24 +156,7 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     ZASSERT_EXIT(session);
     auto scene = session->get_scene();
     ZASSERT_EXIT(scene);
-
-    auto& settings = ZenoSettingsManager::GetInstance();
-    auto settingOr = [&settings](const char* name, const QVariant& fallback) {
-        const QVariant value = settings.getValue(name);
-        return value.isValid() ? value : fallback;
-    };
-    scene->drawOptions->denoise = settingOr(zsRayTracingDenoise, false).toBool();
-    auto& userData = zeno::getSession().userData();
-    userData.set2("optix-max-bounce", settingOr(zsRayTracingMaxBounce, 4).toInt());
-    userData.set2("optix-sharc", settingOr(zsEnableSharc, true).toBool());
-    userData.set2("optix-sharc-update-spacing", settingOr(zsSharcDownscaleFactor, 5).toInt());
-    userData.set2("optix-sharc-scene-scale", settingOr(zsSharcSceneScale, 50.0).toFloat());
-    userData.set2("optix-sharc-accumulation-frames", settingOr(zsSharcAccumulationFrameNum, 20).toInt());
-    userData.set2("optix-sharc-stale-frames", settingOr(zsSharcStaleFrameNum, 60).toInt());
-    userData.set2("optix-sharc-roughness-min", settingOr(zsSharcRoughnessMin, 0.4).toFloat());
-    userData.set2("optix-sharc-debug", settingOr(zsSharcDebugMode, false).toBool());
-    userData.set2("optix-sharc-material-demodulation", settingOr(zsSharcMaterialDemodulation, false).toBool());
-    userData.set2("optix-sharc-sh-encoding", settingOr(zsSharcSHEncoding, false).toBool());
+    initializeOptixRenderSettings(m_zenoVis);
 
     auto engin = scene->renderMan->getEngine("optx");
     engin->fun = [this](std::string content) {
@@ -177,6 +216,7 @@ OptixWorker::OptixWorker(QObject* parent)
 
     m_zenoVis->m_camera_control = new CameraControl(m_zenoVis, nullptr, nullptr, this);
     m_zenoVis->getSession()->set_render_engine("optx");
+    initializeOptixRenderSettings(m_zenoVis);
 }
 
 void OptixWorker::updateFrame()
@@ -185,32 +225,37 @@ void OptixWorker::updateFrame()
     if (m_bRecording)
         return;
 
+    const char* timing=std::getenv("ZENO_OPTIX_RENDER_TIMING");
+    const bool profile=timing && timing[0]=='1';
+    QElapsedTimer frameTimer;
+    if(profile)frameTimer.start();
     m_zenoVis->paintGL();
+    emit clasLodStatus(QString::fromStdString(zeno::getSession().userData().get2<std::string>("optix-clas-lod-status","No CLAS asset")));
+    const double paintMs=profile?frameTimer.nsecsElapsed()/1.e6:0;
     int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
+    const double readbackEndMs=profile?frameTimer.nsecsElapsed()/1.e6:0;
     int scale = zeno::getSession().userData().has("optix_image_path")?1:m_zenoVis->getSession()->get_scene()->camera->zOptixCameraSettingInfo.renderRatio;
     int scale2 = m_zenoVis->getSession()->get_scene()->drawOptions->simpleRender?scale:1;
     if(scale2 == 1 && (w != m_zenoVis->getSession()->get_scene()->camera->m_nx || h!= m_zenoVis->getSession()->get_scene()->camera->m_ny) )
         scale = scale;
     else
         scale = scale2;
-    //m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
-    std::vector<int32_t> img;
-    img.resize(w*h*scale*scale);
-    for(int j=0;j<h*scale;j++)
-        for(int i=0;i<w*scale;i++)
-        {
-            int jj = j/scale;
-            int ii = i/scale;
-            if(ii<w && jj<h)
-            {
-                img[j*w*scale + i]  = ((int32_t *)data)[jj*w + ii];
-            }
-        }
-    m_renderImg = QImage((uchar *)img.data(), w*scale, h*scale, QImage::Format_RGBA8888);
-    m_renderImg = m_renderImg.mirrored(false, true);
+    // mirrored() owns the pixels before the renderer reuses its host buffer.
+    // Qt's scanline copy/nearest-neighbor scaler avoids two integer divisions
+    // per displayed pixel and the extra full-frame temporary allocation.
+    const QImage source(static_cast<const uchar*>(data),w,h,QImage::Format_RGBA8888);
+    m_renderImg=source.mirrored(false,true);
+    if(scale>1)m_renderImg=m_renderImg.scaled(w*scale,h*scale,Qt::IgnoreAspectRatio,Qt::FastTransformation);
 
     emit renderIterate(m_renderImg);
+    if(profile) {
+        const auto* scene=m_zenoVis->getSession()->get_scene();
+        const double totalMs=frameTimer.nsecsElapsed()/1.e6;
+        zeno::log_info("OptiX viewport: {}x{}, viewportSamples={}, cameraSamples={}, paint={} ms, readback={} ms, image/emit={} ms, total={} ms",
+            w,h,scene->drawOptions->num_samples,scene->camera->zOptixCameraSettingInfo.num_samples,
+            paintMs,readbackEndMs-paintMs,totalMs-readbackEndMs,totalMs);
+    }
 }
 
 void OptixWorker::onPlayToggled(bool bToggled)
@@ -435,7 +480,189 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         zeno::getSession().globalComm->removeCache(frame);
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
-    m_zenoVis->getSession()->do_screenshot(record_file, extname, true);
+    if (qEnvironmentVariableIntValue("ZENO_OPTIX_CLAS_DIAGNOSTIC_SWEEP") == 1)
+        zeno::getSession().userData().set2("optix-clas-debug-view", frame % 8);
+    const bool interactiveOnly = qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_SKIP_RECORD_CAPTURE") == 1;
+    if (!interactiveOnly) {
+        if (qEnvironmentVariableIntValue("ZENO_OPTIX_LINEAR_CAPTURE") == 1)
+            zeno::getSession().userData().set2("optix-test-linear-output", record_file + ".pfm");
+        m_zenoVis->getSession()->do_screenshot(record_file, extname, true);
+    }
+    // Opt-in integration check: use the same worker slots as Preferences,
+    // without evaluating or replacing any graph/scene snapshot.
+    if (qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_TEST_RUNTIME_SWITCHES") == 1) {
+        auto& options = zeno::getSession().userData();
+        const int oldView = options.get2<int>("optix-clas-debug-view", 0);
+        const int oldRatio = scene->camera->zOptixCameraSettingInfo.renderRatio;
+        scene->camera->zOptixCameraSettingInfo.renderRatio = 1;
+        zeno::log_info("[viewport regression] quality baseline");
+        scene->drawOptions->simpleRender = false; updateFrame(); updateFrame();
+        zeno::log_info("[viewport regression] quality simple ratio=1");
+        scene->drawOptions->simpleRender = true; updateFrame(); updateFrame();
+        zeno::log_info("[viewport regression] quality idle ratio=1");
+        scene->drawOptions->simpleRender = false; updateFrame(); updateFrame();
+        zeno::log_info("[viewport regression] runtime debug views");
+        for (int view = 0; view < 8; ++view) onSetClasDebugView(view);
+        zeno::log_info("[viewport regression] restore debug view");
+        onSetClasDebugView(oldView);
+        zeno::log_info("[viewport regression] runtime history options");
+        const bool oldKeep = options.get2<bool>("optix-clas-keep-history", false);
+        const int oldLimit = options.get2<int>("optix-clas-history-limit", 16);
+        onSetClasHistorySettings(!oldKeep, oldLimit == 8 ? 16 : 8);
+        onSetClasHistorySettings(oldKeep, oldLimit);
+        zeno::log_info("[viewport regression] runtime opaque sidedness");
+        const bool oldTwoSided = options.get2<bool>("optix-clas-two-sided-opaque", true);
+        onSetClasTwoSidedOpaque(!oldTwoSided);
+        onSetClasTwoSidedOpaque(oldTwoSided);
+        zeno::log_info("[viewport regression] runtime LOD policy");
+        const bool oldAdaptive=options.get2<bool>("optix-clas-adaptive-lod",true);
+        const float oldError=options.get2<float>("optix-clas-pixel-error",0.f);
+        onSetClasLodSettings(false,8.);
+        onSetClasLodSettings(true,4.);
+        onSetClasLodSettings(oldAdaptive,oldError);
+        zeno::log_info("[viewport regression] quality simple ratio=2");
+        scene->camera->zOptixCameraSettingInfo.renderRatio = 2;
+        scene->drawOptions->simpleRender = true; updateFrame(); updateFrame();
+        zeno::log_info("[viewport regression] quality idle ratio=2");
+        scene->drawOptions->simpleRender = false; updateFrame(); updateFrame();
+        scene->camera->zOptixCameraSettingInfo.renderRatio = oldRatio;
+        zeno::log_info("[viewport regression] complete");
+    }
+    const auto scriptedViews = qEnvironmentVariable("ZENO_OPTIX_VIEWPORT_SCRIPT");
+    if (!scriptedViews.isEmpty()) {
+        QFile input(scriptedViews);
+        if (!input.open(QIODevice::ReadOnly)) throw std::runtime_error("Cannot open viewport script");
+        const auto script = Json::parse(input.readAll().toStdString());
+        const int cycles = script.value("cycles", 1);
+        if (cycles < 1 || cycles > 100) throw std::runtime_error("Viewport script cycles out of range");
+        int totalTicks = 0;
+        for (const auto& step : script.at("steps")) {
+            const int ticks = step.at("ticks").get<int>();
+            if (ticks < 1 || ticks > 5000) throw std::runtime_error("Viewport script ticks out of range");
+            totalTicks += ticks;
+        }
+        if (uint64_t(totalTicks) * cycles > 200000) throw std::runtime_error("Viewport script too long");
+        auto& options = zeno::getSession().userData();
+        const auto directory = QFileInfo(QString::fromStdString(record_file)).absoluteDir();
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            int stepIndex = 0;
+            for (const auto& step : script.at("steps")) {
+                const auto label = QString("cycle-%1-step-%2").arg(cycle,3,10,QChar('0')).arg(stepIndex++,2,10,QChar('0'));
+                if(step.contains("adaptiveLod") || step.contains("lodPixelError")) {
+                    options.set2("optix-clas-adaptive-lod",step.value("adaptiveLod",options.get2<bool>("optix-clas-adaptive-lod",true)));
+                    options.set2("optix-clas-pixel-error",step.value("lodPixelError",options.get2<float>("optix-clas-pixel-error",0.f)));
+                }
+                if (step.value("reload", false)) {
+                    onCleanUpScene();
+                    if (!m_zenoVis->getSession()->load_objects())
+                        throw std::runtime_error("Viewport script could not reload descriptor scene");
+                }
+                const auto original = *scene->camera;
+                auto target = original;
+                if (step.value("reset", false)) target.reset();
+                if (step.contains("view")) {
+                    const auto& view = step.at("view");
+                    const auto p = view.at("position").get<std::array<float,3>>();
+                    const auto l = view.at("lookat").get<std::array<float,3>>();
+                    const auto u = view.at("up").get<std::array<float,3>>();
+                    const glm::vec3 pos(p[0],p[1],p[2]), up(u[0],u[1],u[2]);
+                    const auto direction = glm::normalize(glm::vec3(l[0],l[1],l[2])-pos);
+                    target.placeCamera(pos,direction,glm::normalize(glm::cross(glm::normalize(glm::cross(direction,up)),direction)));
+                    target.m_fov = view.at("fov").get<float>();
+                }
+                if (step.contains("pixels")) {
+                    const auto pixels = step.at("pixels").get<std::array<int,2>>();
+                    if (pixels[0]<16 || pixels[1]<16 || pixels[0]>4096 || pixels[1]>4096)
+                        throw std::runtime_error("Viewport script resolution out of range");
+                    m_zenoVis->getSession()->set_window_size(pixels[0],pixels[1]);
+                }
+                if (step.value("resume", false)) { work(); stop(); }
+                zeno::log_info("[viewport script] begin {} reload={}",label.toStdString(),step.value("reload",false));
+                const int ticks = step.at("ticks").get<int>();
+                for (int tick = 1; tick <= ticks; ++tick) {
+                    const float t = step.value("interpolate", false) ? float(tick)/ticks : 1.f;
+                    scene->camera->placeCamera(glm::mix(original.m_pos,target.m_pos,t),glm::slerp(original.m_rotation,target.m_rotation,t));
+                    scene->camera->m_fov = glm::mix(original.m_fov,target.m_fov,t);
+                    if (tick == 1 || tick == ticks)
+                        options.set2("optix-test-resource-checkpoint", label.toStdString()+"-"+std::to_string(tick));
+                    if (step.contains("capture") && std::find(step.at("capture").begin(),step.at("capture").end(),tick)!=step.at("capture").end())
+                        options.set2("optix-test-linear-output",directory.filePath(label+QString("-tick-%1.pfm").arg(tick)).toStdString());
+                    updateFrame();
+                }
+                zeno::log_info("[viewport script] end {}",label.toStdString());
+            }
+        }
+        if (interactiveOnly) m_renderImg.save(QString::fromStdString(record_file));
+    }
+    // Opt-in regression harness: exercise the actual interactive worker,
+    // including readback and QImage conversion, with optional camera panning.
+    const int viewportIterations=qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_BENCHMARK_FRAMES");
+    if(viewportIterations>0 && viewportIterations<=1000) {
+        scene->drawOptions->needRefresh=true;
+        const float panStep=qEnvironmentVariable("ZENO_OPTIX_VIEWPORT_PAN_STEP").toFloat();
+        const float dollyStep=qEnvironmentVariable("ZENO_OPTIX_VIEWPORT_DOLLY_STEP").toFloat();
+        const auto originalPosition=scene->camera->m_pos;
+        const auto originalRotation=scene->camera->m_rotation;
+        const float originalFov=scene->camera->m_fov;
+        auto targetCamera=*scene->camera;
+        const auto endCamera=qEnvironmentVariable("ZENO_OPTIX_VIEWPORT_CAMERA_END");
+        if (!endCamera.isEmpty()) {
+            const auto view=Json::parse(endCamera.toStdString());
+            const auto p=view.at("position").get<std::array<float,3>>();
+            const auto l=view.at("lookat").get<std::array<float,3>>();
+            const auto u=view.at("up").get<std::array<float,3>>();
+            const glm::vec3 pos(p[0],p[1],p[2]), up(u[0],u[1],u[2]);
+            const auto direction=glm::normalize(glm::vec3(l[0],l[1],l[2])-pos);
+            targetCamera.placeCamera(pos,direction,glm::normalize(glm::cross(glm::normalize(glm::cross(direction,up)),direction)));
+            targetCamera.m_fov=view.at("fov").get<float>();
+        }
+        const auto right=scene->camera->m_rotation*glm::vec3(1,0,0);
+        const auto backward=scene->camera->m_rotation*glm::vec3(0,0,1);
+        zeno::log_info("[viewport benchmark] motion ticks={}", viewportIterations);
+        for(int iteration=0;iteration<viewportIterations;++iteration) {
+            if (!endCamera.isEmpty()) {
+                const float t=float(iteration+1)/float(viewportIterations);
+                scene->camera->placeCamera(glm::mix(originalPosition,targetCamera.m_pos,t),
+                    glm::slerp(originalRotation,targetCamera.m_rotation,t));
+                scene->camera->m_fov=glm::mix(originalFov,targetCamera.m_fov,t);
+            } else if(panStep!=0 || dollyStep!=0)
+                scene->camera->setPos(originalPosition+(right*panStep+backward*dollyStep)*float(iteration+1));
+            updateFrame();
+            if (qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_CAPTURE_MOTION") == 1 &&
+                (iteration % 20 == 0 || iteration == viewportIterations - 1))
+                m_renderImg.save(QFileInfo(QString::fromStdString(record_file)).absoluteDir().filePath(
+                    QString("motion-%1.png").arg(iteration, 4, 10, QChar('0'))));
+        }
+        const int settleIterations=qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_SETTLE_FRAMES");
+        zeno::log_info("[viewport benchmark] hold ticks={}", settleIterations);
+        for(int iteration=0;iteration<std::clamp(settleIterations,0,1000);++iteration) {
+            updateFrame();
+            if (qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_CAPTURE_HISTORY") == 1 &&
+                (iteration == 0 || iteration == 1 || iteration == 4 || iteration == 15 || iteration == 31 || iteration == 63 || iteration == settleIterations - 1))
+                m_renderImg.save(QFileInfo(QString::fromStdString(record_file)).absoluteDir().filePath(
+                    QString("history-%1.png").arg(iteration, 4, 10, QChar('0'))));
+        }
+        zeno::log_info("[viewport benchmark] complete");
+        if (interactiveOnly) m_renderImg.save(QString::fromStdString(record_file));
+    }
+    // Exercise the same reset() used by Alt+G, then return to the saved view.
+    // Opt-in only; ordinary interactive camera handling does not enter here.
+    if (qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_TEST_CAMERA_RESET") == 1) {
+        const auto savedCamera = *scene->camera;
+        const int count = std::clamp(qEnvironmentVariableIntValue("ZENO_OPTIX_VIEWPORT_RESET_TICKS"), 1, 1000);
+        const auto exercise = [&](const char* label) {
+            zeno::log_info("[camera reset regression] {}", label);
+            scene->drawOptions->needRefresh = true;
+            for (int i = 0; i < count; ++i) updateFrame();
+            m_renderImg.save(QFileInfo(QString::fromStdString(record_file)).absoluteDir().filePath(
+                QString("camera-%1.png").arg(label)));
+        };
+        scene->camera->reset();
+        exercise("reset");
+        *scene->camera = savedCamera;
+        exercise("restore");
+        zeno::log_info("[camera reset regression] complete");
+    }
     m_zenoVis->getSession()->set_window_size(x, y);
 
     //todo: emit some signal to main thread(ui)
@@ -464,6 +691,8 @@ void OptixWorker::stop()
 
 void OptixWorker::work()
 {
+    // Match persisted Preferences when starting/resuming after graph runs.
+    initializeOptixRenderSettings(m_zenoVis);
     m_pTimer->start(m_sampleFeq);
 }
 
@@ -530,6 +759,36 @@ void OptixWorker::onResetSharcCache()
             }
         }
     }
+    updateFrame();
+}
+
+void OptixWorker::onSetClasDebugView(int view)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix-clas-debug-view", std::clamp(view, 0, 7));
+    updateFrame();
+}
+
+void OptixWorker::onSetClasHistorySettings(bool keep, int samples)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix-clas-keep-history", keep);
+    ud.set2("optix-clas-history-limit", std::clamp(samples, 4, 256));
+    updateFrame();
+}
+
+void OptixWorker::onSetClasTwoSidedOpaque(bool enabled)
+{
+    zeno::getSession().userData().set2("optix-clas-two-sided-opaque", enabled);
+    updateFrame();
+}
+
+void OptixWorker::onSetClasLodSettings(bool adaptive, double pixelError)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix-clas-adaptive-lod",adaptive);
+    ud.set2("optix-clas-pixel-error",float(std::clamp(pixelError,0.,1024.)));
+    zeno::log_info("CLAS runtime LOD: adaptive={}, pixelErrorOverride={}",adaptive,pixelError);
     updateFrame();
 }
 
@@ -780,7 +1039,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 //        zeno::log_info("time out\n");
         auto scene = m_zenovis->getSession()->get_scene();
         scene->drawOptions->simpleRender = false;
-        scene->drawOptions->needRefresh = true;
         m_pauseRenderDally->stop();
         //std::cout << "SR: SimpleRender false, Active " << m_pauseRenderDally->isActive() << "\n";
     });
@@ -810,6 +1068,11 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setBackground, m_worker, &OptixWorker::onSetBackground);
     connect(this, &ZOptixViewport::sig_setSampleNumber, m_worker, &OptixWorker::onSetSampleNumber);
     connect(this, &ZOptixViewport::sig_resetSharcCache, m_worker, &OptixWorker::onResetSharcCache);
+    connect(this, &ZOptixViewport::sig_setClasDebugView, m_worker, &OptixWorker::onSetClasDebugView);
+    connect(this, &ZOptixViewport::sig_setClasHistorySettings, m_worker, &OptixWorker::onSetClasHistorySettings);
+    connect(this, &ZOptixViewport::sig_setClasTwoSidedOpaque, m_worker, &OptixWorker::onSetClasTwoSidedOpaque);
+    connect(this, &ZOptixViewport::sig_setClasLodSettings, m_worker, &OptixWorker::onSetClasLodSettings);
+    connect(m_worker, &OptixWorker::clasLodStatus, this, [this](const QString& status) { m_clasLodStatus=status; });
     connect(this, &ZOptixViewport::sig_setRayTracingSettings, m_worker, &OptixWorker::onSetRayTracingSettings);
     connect(this, &ZOptixViewport::sig_setdata_on_optix_thread, m_worker, &OptixWorker::onSetData);
 
@@ -1012,6 +1275,26 @@ void ZOptixViewport::setSampleNumber(int sample_number)
 void ZOptixViewport::resetSharcCache()
 {
     emit sig_resetSharcCache();
+}
+
+void ZOptixViewport::setClasDebugView(int view)
+{
+    emit sig_setClasDebugView(view);
+}
+
+void ZOptixViewport::setClasHistorySettings(bool keep, int samples)
+{
+    emit sig_setClasHistorySettings(keep, samples);
+}
+
+void ZOptixViewport::setClasTwoSidedOpaque(bool enabled)
+{
+    emit sig_setClasTwoSidedOpaque(enabled);
+}
+
+void ZOptixViewport::setClasLodSettings(bool adaptive, double pixelError)
+{
+    emit sig_setClasLodSettings(adaptive,pixelError);
 }
 
 void ZOptixViewport::setRayTracingSettings(

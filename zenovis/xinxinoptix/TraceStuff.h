@@ -9,6 +9,8 @@
 #include <cuda/random.h>
 #include <cuda/climits.h>
 
+extern "C" { extern __constant__ Params params; }
+
 #define _FLT_MAX_ __FLT_MAX__
 #define _FLT_MIN_ __FLT_MIN__
 #define _FLT_EPL_ __FLT_EPSILON__
@@ -77,6 +79,7 @@ struct ShadowPRD : CommonPRD {
     uint8_t nonThinTransHit;
 
     float3 ShadowNormal;
+    float textureConeWidth=0.f,textureConeSpread=0.f;
 };
 
 enum class RadianceCacheEvent : uint8_t {
@@ -130,6 +133,7 @@ struct RadiancePRD : CommonPRD {
     float        scatterStep;
 
     float        pixel_area;
+    float        textureConeWidth=0.f,textureConeSpread=0.f;
 
     float        samplePdf;
     vec3         mask_value;

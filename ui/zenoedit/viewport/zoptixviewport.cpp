@@ -48,6 +48,7 @@ ZOptixProcViewport::ZOptixProcViewport(QWidget* parent)
         update();
     });
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixProcViewport::sig_frameRecordFinished);
+    connect(m_worker, &OptixWorker::clasLodStatus, this, [this](const QString& status) { m_clasLodStatus=status; });
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixProcViewport::sig_recordFinished);
 
     setRenderSeparately(false, false);
@@ -122,6 +123,26 @@ void ZOptixProcViewport::setNumSamples(int samples)
 void ZOptixProcViewport::resetSharcCache()
 {
     m_worker->onResetSharcCache();
+}
+
+void ZOptixProcViewport::setClasDebugView(int view)
+{
+    m_worker->onSetClasDebugView(view);
+}
+
+void ZOptixProcViewport::setClasHistorySettings(bool keep, int samples)
+{
+    m_worker->onSetClasHistorySettings(keep, samples);
+}
+
+void ZOptixProcViewport::setClasTwoSidedOpaque(bool enabled)
+{
+    m_worker->onSetClasTwoSidedOpaque(enabled);
+}
+
+void ZOptixProcViewport::setClasLodSettings(bool adaptive, double pixelError)
+{
+    m_worker->onSetClasLodSettings(adaptive,pixelError);
 }
 
 void ZOptixProcViewport::setRayTracingSettings(

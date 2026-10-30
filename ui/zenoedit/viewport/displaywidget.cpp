@@ -792,6 +792,31 @@ void DisplayWidget::resetSharcCache()
     }
 }
 
+void DisplayWidget::setClasDebugView(int view)
+{
+    if (!m_bGLView) m_optixView->setClasDebugView(view);
+}
+
+void DisplayWidget::setClasHistorySettings(bool keep, int samples)
+{
+    if (!m_bGLView) m_optixView->setClasHistorySettings(keep, samples);
+}
+
+void DisplayWidget::setClasTwoSidedOpaque(bool enabled)
+{
+    if (!m_bGLView) m_optixView->setClasTwoSidedOpaque(enabled);
+}
+
+void DisplayWidget::setClasLodSettings(bool adaptive, double pixelError)
+{
+    if (!m_bGLView) m_optixView->setClasLodSettings(adaptive,pixelError);
+}
+
+QString DisplayWidget::clasLodStatus() const
+{
+    return m_bGLView ? QString() : m_optixView->clasLodStatus();
+}
+
 void DisplayWidget::setRayTracingSettings(
     bool denoise,
     int maxBounce,

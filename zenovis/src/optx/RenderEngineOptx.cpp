@@ -47,13 +47,13 @@
 #include <string>
 #include <string_view>
 #include <random>
+#include <cstdlib>
 
 #include <curve/Hair.h>
 #include <curve/optixCurve.h>
 
 #include "ShaderBuffer.h"
 #include <zeno/extra/ShaderNode.h>
-static bool recordedSimpleRender = false;
 namespace zenovis::optx {
 
 float norm_infvec2(zeno::vec3f &p1,  zeno::vec3f &p2)
@@ -348,6 +348,20 @@ struct GraphicsManager {
 
             if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                if(prim_in0->userData().get2<std::string>("ResourceType","")=="ClusterAsset") {
+                    const auto& ud=prim_in0->userData();
+                    zeno::cluster::RuntimeSettings settings;
+                    settings.geometryBytes=uint64_t(ud.get2<int>("clusterGeometryMiB",2048))<<20;
+                    settings.clasBytes=uint64_t(ud.get2<int>("clusterClasMiB",2048))<<20;
+                    settings.pixelError=ud.get2<float>("clusterLodError",2.f);
+                    settings.loadsPerFrame=ud.get2<int>("clusterLoadsPerFrame",32);
+                    settings.materials=ud.get2<bool>("clusterMaterials",false);
+                    settings.textureMiB=uint32_t(ud.get2<int>("clusterTextureMiB",2048));
+                    settings.hostTextureMiB=uint32_t(ud.get2<int>("clusterTextureHostMiB",256));
+                    defaultScene.preloadClusterAsset(key,ud.get2<std::string>("clusterManifest"),
+                                                    ud.get2<std::string>("clusterRevision",""),settings);
+                    return;
+                }
                 // vvv deepcopy to cihou following inplace ops vvv
                 auto prim_in_lslislSp = std::make_shared<zeno::PrimitiveObject>(*prim_in0);
                 // ^^^ Don't wuhui, I mean: Literial Synthetic Lazy internal static Local Shared Pointer
@@ -2087,6 +2101,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
         }
+        defaultScene.finalizeClusterAssetRegistration();
         meshNeedUpdate = matNeedUpdate = true;
         if (scene->drawOptions->updateMatlOnly)
         {
@@ -2108,7 +2123,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
-#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny,cam.zOptixCameraSettingInfo.renderRatio
+#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
@@ -2185,16 +2200,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
 
+        const int renderRatio = zeno::getSession().userData().has("optix_image_path") ? 1 :
+            (opt.simpleRender ? std::max(cam.zOptixCameraSettingInfo.renderRatio, 1) : 1);
+        const int renderWidth = std::max(cam.m_nx / renderRatio, 1);
+        const int renderHeight = std::max(cam.m_ny / renderRatio, 1);
         bool sizeNeedUpdate = false;
         {
-            std::tuple newsizeid{MY_SIZE_ID(cam)};
+            std::tuple newsizeid{renderWidth, renderHeight};
             if (!oldsizeid || *oldsizeid != newsizeid)
                 sizeNeedUpdate = true;
-            if(scene->drawOptions->simpleRender!=recordedSimpleRender)
-            {
-                sizeNeedUpdate = true;
-                recordedSimpleRender = scene->drawOptions->simpleRender;
-            }
             oldsizeid = newsizeid;
         }
 
@@ -2213,10 +2227,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-            auto scale = zeno::getSession().userData().has("optix_image_path")?1:cam.zOptixCameraSettingInfo.renderRatio;
-            scale = scene->drawOptions->simpleRender?scale:1;
-            xinxinoptix::set_window_size(max(cam.m_nx/scale,1), max(cam.m_ny/scale,1));
+            xinxinoptix::set_window_size(renderWidth, renderHeight);
         }
+        if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1')
+            zeno::log_info("OptiX camera: changed={}, resized={}, pos={},{},{}, simple={}",
+                camNeedUpdate, sizeNeedUpdate, cam.m_pos.x, cam.m_pos.y, cam.m_pos.z, opt.simpleRender);
 
         if (sizeNeedUpdate || camNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating camera");
@@ -2609,7 +2624,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 if (usesCurveTypeFlags)
                     usesPrimitiveTypeFlags |= usesCurveTypeFlags;
 
-                auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags);
+                auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags,bool(defaultScene.clusterAsset));
                 ShaderDirty |= refresh;
 
                 if (ShaderDirty) {
@@ -2655,7 +2670,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->camera->zOptixCameraSettingInfo.num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
+        // Interactive batches must honor the viewport sample control. The
+        // physical camera's offline count can be much larger (e.g. 64), and
+        // using it for every viewport tick makes a static scene appear stalled.
+        const bool recording=zeno::getSession().userData().has("optix_image_path");
+        const int samples=std::max(1,recording?cam.zOptixCameraSettingInfo.num_samples:opt.num_samples);
+        if(const char* timing=std::getenv("ZENO_OPTIX_RENDER_TIMING");timing && timing[0]=='1') {
+            zeno::log_info("OptiX sample selection: mode={}, viewportSamples={}, cameraSamples={}, actualSamples={}",
+                recording?"record":"viewport",opt.num_samples,cam.zOptixCameraSettingInfo.num_samples,samples);
+        }
+        xinxinoptix::optixrender(0, samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 

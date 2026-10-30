@@ -9,6 +9,7 @@
 #include <zenoui/comctrl/zlabel.h>
 #include "viewport/displaywidget.h"
 #include <zenovis/DrawOptions.h>
+#include <algorithm>
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)
@@ -250,6 +251,83 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSharcSHEncoding->setToolTip(
         tr("Preserve directional glossy/specular radiance in SHARC; increases cache memory and update cost"));
 
+    m_pClasDebugView = new QComboBox;
+    m_pClasDebugView->addItems({tr("Shaded"), tr("LOD depth"), tr("Cluster IDs"), tr("Coverage"),
+        tr("Geometric normals"), tr("Shading normals (raw)"), tr("Front / back facing"), tr("Normal agreement")});
+    m_pClasDebugView->setToolTip(tr("Normal diagnostics show raw baked normals before the gray material's orientation and coarse-LOD normal fallback."));
+    m_pClasDebugView->setCurrentIndex(std::clamp(settingOr(zsClasDebugView, 0).toInt(), 0, 7));
+    auto applyClas = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasDebugView, m_pClasDebugView->currentIndex());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasDebugView(m_pClasDebugView->currentIndex());
+    };
+    connect(m_pClasDebugView, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [applyClas](int) { applyClas(); });
+    m_pClasKeepHistory = new QCheckBox;
+    m_pClasKeepHistory->setChecked(settingOr(zsClasKeepHistory, false).toBool());
+    m_pClasKeepHistory->setToolTip(tr("Only affects accumulated samples. CLAS LOD selection and streaming always run. Experimental viewport mode: fade older LOD samples and adapt SHARC while refinement settles. Offline rendering remains strict."));
+    m_pClasHistoryLimit = new QSpinBox;
+    m_pClasHistoryLimit->setRange(4, 256);
+    m_pClasHistoryLimit->setValue(std::clamp(settingOr(zsClasHistoryLimit, 16).toInt(), 4, 256));
+    m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+    m_pClasHistoryLimit->setToolTip(tr("Maximum effective sample history during refinement; normal progressive averaging resumes after this many settled samples."));
+    auto applyHistory = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasKeepHistory, m_pClasKeepHistory->isChecked());
+        settings.setValue(zsClasHistoryLimit, m_pClasHistoryLimit->value());
+        m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasHistorySettings(m_pClasKeepHistory->isChecked(), m_pClasHistoryLimit->value());
+    };
+    connect(m_pClasKeepHistory, &QCheckBox::toggled, this, [applyHistory](bool) { applyHistory(); });
+    connect(m_pClasHistoryLimit, QOverload<int>::of(&QSpinBox::valueChanged), this, [applyHistory](int) { applyHistory(); });
+    m_pClasTwoSidedOpaque = new QCheckBox;
+    m_pClasTwoSidedOpaque->setChecked(settingOr(zsClasTwoSidedOpaque, true).toBool());
+    m_pClasTwoSidedOpaque->setToolTip(tr("Render imported opaque materials from both sides, including their shadows. Alpha cutouts, blended materials and transmission retain their authored sidedness."));
+    connect(m_pClasTwoSidedOpaque, &QCheckBox::toggled, this, [this](bool enabled) {
+        ZenoSettingsManager::GetInstance().setValue(zsClasTwoSidedOpaque, enabled);
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasTwoSidedOpaque(enabled);
+    });
+
+    m_pClasAdaptiveLod = new QCheckBox;
+    m_pClasAdaptiveLod->setChecked(settingOr(zsClasAdaptiveLod,true).toBool());
+    m_pClasAdaptiveLod->setToolTip(tr("Adapt geometry quality to streaming pressure. Coarsen above 85% pool occupancy and recover below 70%. Off holds the requested error; insufficient budgets are reported in the status below."));
+    m_pClasPixelError = new QDoubleSpinBox;
+    m_pClasPixelError->setDecimals(2);
+    m_pClasPixelError->setRange(0.,1024.);
+    m_pClasPixelError->setSingleStep(.25);
+    m_pClasPixelError->setSpecialValueText(tr("Use asset setting"));
+    m_pClasPixelError->setValue(settingOr(zsClasPixelError,0.).toDouble());
+    m_pClasPixelError->setToolTip(tr("Requested geometric error in pixels. Smaller values request more detail. Zero uses the asset node's value. Changes apply without reloading the graph or cache."));
+    auto applyLod = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasAdaptiveLod,m_pClasAdaptiveLod->isChecked());
+        settings.setValue(zsClasPixelError,m_pClasPixelError->value());
+        if (auto main=zenoApp->getMainWindow())
+            for (auto viewport:main->viewports())
+                if(viewport)viewport->setClasLodSettings(m_pClasAdaptiveLod->isChecked(),m_pClasPixelError->value());
+    };
+    connect(m_pClasAdaptiveLod,&QCheckBox::toggled,this,[applyLod](bool){applyLod();});
+    connect(m_pClasPixelError,QOverload<double>::of(&QDoubleSpinBox::valueChanged),this,[applyLod](double){applyLod();});
+    m_pClasLodStatus = new QLabel(tr("No CLAS asset"));
+    m_pClasLodStatus->setWordWrap(true);
+    auto refreshLod = [this]() {
+        QString status;
+        if(auto main=zenoApp->getMainWindow())
+            for(auto viewport:main->viewports())
+                if(viewport && viewport->isVisible() && !viewport->clasLodStatus().isEmpty()) {
+                    status=viewport->clasLodStatus();break;
+                }
+        m_pClasLodStatus->setText(status.isEmpty()?tr("No CLAS asset"):status);
+    };
+    auto lodTimer=new QTimer(this);
+    connect(lodTimer,&QTimer::timeout,this,refreshLod);
+    lodTimer->start(500);
+    refreshLod();
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
     pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
@@ -281,8 +359,21 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pSharcMaterialDemodulation, 13, 1);
     pLayout->addWidget(new QLabel(tr("SHARC Directional SH Encoding")), 14, 0);
     pLayout->addWidget(m_pSharcSHEncoding, 14, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS debug view")), 15, 0);
+    pLayout->addWidget(m_pClasDebugView, 15, 1);
+    pLayout->addWidget(new QLabel(tr("Keep accumulation during CLAS LOD updates")), 16, 0);
+    pLayout->addWidget(m_pClasKeepHistory, 16, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS refinement history samples")), 17, 0);
+    pLayout->addWidget(m_pClasHistoryLimit, 17, 1);
+    pLayout->addWidget(new QLabel(tr("Two-sided imported opaque materials")), 18, 0);
+    pLayout->addWidget(m_pClasTwoSidedOpaque, 18, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS requested pixel error")),19,0);
+    pLayout->addWidget(m_pClasPixelError,19,1);
+    pLayout->addWidget(new QLabel(tr("Adaptive CLAS LOD")),20,0);
+    pLayout->addWidget(m_pClasAdaptiveLod,20,1);
+    pLayout->addWidget(m_pClasLodStatus,21,0,1,2);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
-    pLayout->addItem(pSpacerItem, 0, 2, 15);
+    pLayout->addItem(pSpacerItem, 0, 2, 19);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 
@@ -304,6 +395,7 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
     inst.setValue(zsRayTracingDenoise, m_pDenoise->isChecked());
     inst.setValue(zsRayTracingMaxBounce, m_pMaxBounce->value());
+    inst.setValue(zsClasTwoSidedOpaque, m_pClasTwoSidedOpaque->isChecked());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
     inst.setValue(zsSharcSceneScale, m_pSharcSceneScale->value());

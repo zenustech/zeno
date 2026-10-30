@@ -15,6 +15,7 @@
 #include "DisneyBSDF.h"
 #include "Mnee.h"
 #include "SharcDevice.h"
+#include "ClusterMaterialShader.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -62,6 +63,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     auto prd = getPRD<ShadowPRD>();
     prd->radiance = make_float3(0,0,0);
+    if(params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID) {
+        if(params.cluster_materials.materials) {
+            const float footprint=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+            const float coverage=clusterMaterial::shadowCoverage(footprint);
+            if(coverage<=0.f||(coverage<1.f&&rnd(prd->seed)>=coverage)){optixIgnoreIntersection();return;}
+        }
+        prd->attanuation={};optixTerminateRay();return;
+    }
     bool opaque = rt_data->opacity == +1.0f;
     bool useomm = rt_data->opacity == -1.0f;
     
@@ -247,7 +256,55 @@ vec3 FMA(vec3 a, vec3 b, vec3 c) {
 
 extern "C" __global__ void __closesthit__radiance()
 {
+    const bool clusterHit=params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID;
     RadiancePRD* prd = getPRD();
+    if(clusterHit && params.cluster_debug_view && !prd->test_distance) {
+        const auto cluster=params.cluster_data[optixGetClusterId()];
+        float3 color=make_float3(0.5f);
+        if(params.cluster_debug_view==zeno_cluster_device::Lod) {
+            // Actual selected group depth: 0 finest (blue), 5 cyan, 10 green,
+            // 15 yellow, 20 and above red. One fixed scale across the scene.
+            const float level=fminf(float(cluster.lod),20.f)/5.f;
+            if(level<1.f)color=make_float3(0.f,level,1.f);
+            else if(level<2.f)color=make_float3(0.f,1.f,2.f-level);
+            else if(level<3.f)color=make_float3(level-2.f,1.f,0.f);
+            else color=make_float3(1.f,4.f-level,0.f);
+        } else if(params.cluster_debug_view==zeno_cluster_device::Clusters) {
+            unsigned int hash=optixGetClusterId()*747796405u+2891336453u;
+            hash=((hash>>((hash>>28u)+4u))^hash)*277803737u;hash=(hash>>22u)^hash;
+            color=make_float3(.15f+.85f*(hash&255u)/255.f,.15f+.85f*((hash>>8)&255u)/255.f,.15f+.85f*((hash>>16)&255u)/255.f);
+        } else if(params.cluster_debug_view==zeno_cluster_device::FlatGray) {
+            color=make_float3(1.f);
+        } else {
+#if (_P_TYPE_==0)
+            // Inspect the actual intersected triangle and the same imported
+            // vertex normals used by gray shading. Preserve their signs:
+            // faceforward would conceal flipped normals and back-facing hits.
+            float3 vertices[3];optixGetTriangleVertexData(vertices);
+            const float3 ng=optixTransformNormalFromObjectToWorldSpace(cross(vertices[1]-vertices[0],vertices[2]-vertices[0]));
+            const auto* indices=cluster.indices+optixGetPrimitiveIndex()*3;
+            const auto& a=cluster.normals[indices[0]];
+            const auto& b=cluster.normals[indices[1]];
+            const auto& c=cluster.normals[indices[2]];
+            const float3 ns=optixTransformNormalFromObjectToWorldSpace(interp(optixGetTriangleBarycentrics(),
+                make_float3(a.normal[0],a.normal[1],a.normal[2]),make_float3(b.normal[0],b.normal[1],b.normal[2]),
+                make_float3(c.normal[0],c.normal[1],c.normal[2])));
+            const bool validG=!isBadVector(ng),validS=!isBadVector(ns);
+            color=make_float3(1.f,1.f,0.f); // Invalid or zero normal.
+            if(params.cluster_debug_view==zeno_cluster_device::GeometricNormal && validG)
+                color=.5f+.5f*normalize(ng);
+            else if(params.cluster_debug_view==zeno_cluster_device::ShadingNormal && validS)
+                color=.5f+.5f*normalize(ns);
+            else if(params.cluster_debug_view==zeno_cluster_device::GeometricFacing && validG)
+                color=dot(ng,optixGetWorldRayDirection())<0.f?make_float3(.05f,1.f,.05f):make_float3(1.f,.05f,.05f);
+            else if(params.cluster_debug_view==zeno_cluster_device::NormalAgreement && validG && validS) {
+                const float agreement=clamp(dot(normalize(ng),normalize(ns)),-1.f,1.f);
+                color=agreement>=0?make_float3(1.f-agreement,1.f,0.f):make_float3(1.f,1.f+agreement,0.f);
+            }
+#endif
+        }
+        prd->radiance=color;prd->tmp_albedo=color;prd->hit_type=DIFFUSE_HIT;prd->done=true;return;
+    }
     prd->radiance = make_float3(0,0,0);
     const auto attenuation = prd->attenuation;
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
@@ -368,7 +425,8 @@ extern "C" __global__ void __closesthit__radiance()
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
-    optixGetTriangleVertexData(gas, primIdx, sbtGASIndex, 0, _vertices_);
+    if(clusterHit) optixGetTriangleVertexData(_vertices_);
+    else optixGetTriangleVertexData(gas, primIdx, sbtGASIndex, 0, _vertices_);
 
     const float2 barys = optixGetTriangleBarycentrics();
     SelfIntersectionAvoidance::getSafeTriangleSpawnOffset( objPos, objNorm, objOffset, v0, v1, v2, barys );
@@ -380,18 +438,41 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-    let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    attrs.vertex_idx = idx_ptr[primIdx];
-
-    uint16_t* mat_ptr = reinterpret_cast<uint16_t*>(*(gas_ptr-6) );
-    if ((uint64_t)mat_ptr != 0) {
-        dc_index = mat_ptr[primIdx];
-    }
-
     attrs.barys2 = barys;
-    attrs.N = reinterpret_cast<const TriangleInput&>(attrs).interpNorm();
-    attrs.T = reinterpret_cast<const TriangleInput&>(attrs).interpTang();
+    if(clusterHit) {
+        const auto cluster=params.cluster_data[optixGetClusterId()];
+        const auto* indices=cluster.indices+primIdx*3;
+        attrs.vertex_idx=make_uint3(indices[0],indices[1],indices[2]);
+        const auto& a=cluster.normals[indices[0]];
+        const auto& b=cluster.normals[indices[1]];
+        const auto& c=cluster.normals[indices[2]];
+        const float3 n0=make_float3(a.normal[0],a.normal[1],a.normal[2]);
+        const float3 n1=make_float3(b.normal[0],b.normal[1],b.normal[2]);
+        const float3 n2=make_float3(c.normal[0],c.normal[1],c.normal[2]);
+        const auto n=interp(barys,n0,n1,n2);
+        // Simplifying a thin shell can join corners from opposite sides of
+        // the surface. Interpolating their normals produces false creases
+        // even on a planar triangle. For those coarse triangles, use the
+        // actual surface normal. Finest authored normals remain untouched.
+        const bool coarseNormalConflict = cluster.lod > 0 &&
+            (dot(n0,objNorm)<-1.e-4f || dot(n1,objNorm)<-1.e-4f || dot(n2,objNorm)<-1.e-4f);
+        attrs.N=!coarseNormalConflict && length(n)>0?
+            normalize(optixTransformNormalFromObjectToWorldSpace(n)):wldNorm;
+        // The gray CLAS material is two-sided. Match RTXMG's orientation of
+        // interpolated normals; coarse LODs can retain normals facing away
+        // from the incoming ray even where the triangle itself faces it.
+        if (dot(attrs.N, vec3(ray_dir)) > 0.f)
+            attrs.N = -attrs.N;
+        attrs.T={};
+    } else {
+        let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+        let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+        attrs.vertex_idx = idx_ptr[primIdx];
+        uint16_t* mat_ptr = reinterpret_cast<uint16_t*>(*(gas_ptr-6) );
+        if ((uint64_t)mat_ptr != 0) dc_index = mat_ptr[primIdx];
+        attrs.N = reinterpret_cast<const TriangleInput&>(attrs).interpNorm();
+        attrs.T = reinterpret_cast<const TriangleInput&>(attrs).interpTang();
+    }
 
 #endif
 
@@ -406,7 +487,39 @@ extern "C" __global__ void __closesthit__radiance()
 
     attrs.V = -(ray_dir);
     attrs.isShadowRay = false;
-    MatOutput mats = optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index , rt_data->textures, attrs );
+    MatOutput mats{};
+    if(clusterHit) {
+        // Keep the integrator's default transparency from MatOutput{}.
+        mats.basecolor=vec3(0.5f);mats.roughness=0.7f;
+        mats.ior=1.5f;mats.F0=0.04f;mats.doubleSide=1.f;mats.smoothness=1.f;
+        mats.nrm=attrs.N;mats.metalColor=vec3(1.f);mats.transColor=vec3(1.f);mats.transTint=vec3(1.f);
+        mats.reflectance=attrs.reflectance;
+        if(params.cluster_materials.materials && params.cluster_materials.diagnostics && prd->depth==0) {
+            // Read-only probes along the image center line. These distinguish
+            // absent source attributes and back faces from texture LOD loss.
+            const auto pixel=optixGetLaunchIndex();
+            if(pixel.x==params.width/2 && (pixel.y==params.height*9/10 || pixel.y==params.height*11/20 ||
+                                         pixel.y==params.height/4 || pixel.y==params.height/8)) {
+                clusterMaterial::Surface surface{};
+                const float footprint=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+                if(clusterMaterial::surface(surface,footprint)) {
+                    const auto& texture=surface.material->textures[zeno_cluster_device::BaseColor];
+                    const auto dx=clusterMaterial::uvTransform(texture,surface.dx,true),dy=clusterMaterial::uvTransform(texture,surface.dy,true);
+                    const auto c=params.cluster_data[optixGetClusterId()];
+                    printf("[CLAS surface probe] pixel=%u,%u placement=%u geometry=%u group=%u lod=%u material=%u backface=%d UV=%g,%g dx=%g,%g dy=%g,%g footprint=%g baseTexture=%d size=%u,%u desiredMip=%g hasUV=%d\n",
+                        pixel.x,params.height-1-pixel.y,optixGetInstanceId(),c.geometry,c.group,c.lod,
+                        unsigned(surface.material-params.cluster_materials.materials),int(optixIsBackFaceHit()),surface.uv.x,surface.uv.y,
+                        dx.x,dx.y,dy.x,dy.y,footprint,texture.id,texture.width,texture.height,
+                        getMipLevel(dx,dy,float(texture.width),float(texture.height),1.f/8.f),
+                        int((surface.a[0]->tangent&surface.a[1]->tangent&surface.a[2]->tangent&0x40000000u)!=0));
+                }
+            }
+        }
+        if(params.cluster_materials.materials)
+            mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread);
+    } else {
+        mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
+    }
 
     if(mats.shadowReceiver>0.0f && 1<=prd->depth)
     {   
@@ -460,9 +573,10 @@ extern "C" __global__ void __closesthit__radiance()
 #if (_P_TYPE_!=0)
     mats.smoothness = 0;
 #else
-    if (mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
+    if (!clusterHit && mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
 
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
+        let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
         let nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
         float c = geoNormalFlipped?-1.0f:1.0f;
         float3 n0 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.x ]) );
@@ -906,6 +1020,8 @@ extern "C" __global__ void __closesthit__radiance()
     shadowPRD.seed = prd->seed;
     rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);
     shadowPRD.depth = prd->depth;
+    shadowPRD.textureConeWidth=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
+    shadowPRD.textureConeSpread=prd->textureConeSpread;
     shadowPRD.attanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadowPRD.nonThinTransHit = (mats.thin < 0.5f && mats.specTrans > 0) ? 1 : 0;
 
@@ -1009,6 +1125,8 @@ extern "C" __global__ void __closesthit__radiance()
     prd->radianceCache.materialDemodulation = sharcMaterialDemodulation;
     prd->radianceCache.radianceDirectionWorld = -normalize(ray_dir);
     prd->radianceCache.pathRoughness += isDiff ? 1.0f : mats.roughness;
+    prd->textureConeWidth+=optixGetRayTmax()*prd->textureConeSpread;
+    prd->textureConeSpread=fminf(prd->textureConeSpread+(isDiff?1.f:.5f*mats.roughness*mats.roughness),1.f);
     prd->radianceCache.segmentLength = cacheSegmentLength;
     prd->radianceCache.radianceDirectionWeight = (params.sharc.shEncoding != 0u && !isDiff)
             ? 1.0f - fminf(fmaxf(mats.roughness, 0.0f), 1.0f) : 0.0f;
