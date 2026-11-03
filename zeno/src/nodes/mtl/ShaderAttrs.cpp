@@ -56,14 +56,29 @@ static std::string shaderAttrListString() {
 }
 
 struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
+    std::string resolvedType() {
+        const auto type=get_input2<std::string>("type");
+        if (type!="auto") return type;
+        const auto attr=get_input2<std::string>("attr");
+        if (attr=="priIdx" || attr=="instId" || attr=="instIdx") return "uint";
+        if (attr=="isBackFace" || attr=="isShadowRay") return "bool";
+        if (attr=="rayLength" || attr=="NoL" || attr=="LoV" ||
+            attr=="attrs.area()" || attr=="prd.rndf()") return "float";
+        return "vec3";
+    }
     virtual int determineType(EmissionPass *em) override {
-        auto type = get_input2<std::string>("type");
-        return TypeHint.at(type);
+        const auto alter=get_input2<int>("alter",0);
+        const auto attr=get_input2<std::string>("attr");
+        if (alter<0 || (alter && attr!="uv" && attr!="nrm" && attr!="clr" && attr!="tang"))
+            throw std::runtime_error("Only uv, nrm, clr and tang support a positive alternative index");
+        return TypeHint.at(resolvedType());
     }
 
     virtual void emitCode(EmissionPass *em) override {
         auto attr = get_input2<std::string>("attr");
-        auto type = get_input2<std::string>("type");
+        auto type = resolvedType();
+        const auto alter=get_input2<int>("alter",0);
+        if (alter) return em->emitCode(type+"(attrs."+attr+"("+std::to_string(alter)+"))");
 
         if (attr.back() == ')') {
             return em->emitCode(type + "(" + attr + ")");
@@ -76,7 +91,8 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
 ZENDEFNODE(ShaderInputAttr, {
     {
         {"enum" + shaderAttrListString(), "attr", shaderAttrDefaultString()},
-        {"enum " + ShaderDataTypeNamesString, "type", "float"},
+        {"int", "alter", "0"},
+        {"enum auto " + ShaderDataTypeNamesString, "type", "auto"},
     },
     {
         {"shader", "out"},

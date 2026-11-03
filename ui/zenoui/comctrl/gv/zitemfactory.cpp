@@ -1,4 +1,5 @@
 #include "zitemfactory.h"
+#include "../zattributebindings.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/render/ztfutil.h>
 #include <zenoui/comctrl/gv/zlineedititem.h>
@@ -175,6 +176,13 @@ namespace zenoui
                 });
                 pItemWidget = pPathEditor;
                 break;
+            }
+            case CONTROL_ATTRIBUTE_BINDINGS:
+            {
+                auto proxy=createAttributeBindingsItem<ZenoParamWidget>(value.toString(),[=](const QString &v){cbSet.cbEditFinished(v);},ZenoStyle::dpiScaled(1));
+                proxy->setData(GVKEY_SIZEHINT,proxy->size());
+                proxy->setData(GVKEY_SIZEPOLICY,QSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed));
+                proxy->setData(GVKEY_TYPE,type);pItemWidget=proxy;break;
             }
             case CONTROL_MULTILINE_STRING:
             {

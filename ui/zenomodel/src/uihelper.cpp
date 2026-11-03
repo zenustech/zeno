@@ -430,6 +430,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_GROUP_LINE:             return "group-line";
     case CONTROL_PYTHON_EDITOR: return "PythonEditor";
     case CONTROL_DIRECTORY: return "directory";
+    case CONTROL_ATTRIBUTE_BINDINGS: return "Attribute bindings";
     default:
         return "";
     }
@@ -521,6 +522,7 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     {
         return CONTROL_SPINBOX_SLIDER;
     }
+    else if (descName == "Attribute bindings") { return CONTROL_ATTRIBUTE_BINDINGS; }
     else if (descName == "Dict Panel")
     {
         return CONTROL_DICTPANEL;
@@ -694,6 +696,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
         return "float";
     case CONTROL_BOOL:  return "bool";
     case CONTROL_MULTILINE_STRING:
+    case CONTROL_ATTRIBUTE_BINDINGS:
     case CONTROL_STRING: return "string";
     case CONTROL_VEC2_FLOAT: return "vec2f";
     case CONTROL_VEC2_INT: return "vec2i";

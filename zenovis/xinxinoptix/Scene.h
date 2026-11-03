@@ -945,7 +945,8 @@ public:
     void preload_mesh(const std::string &key, const std::string &mtlid, 
         const std::vector<std::string> &matNames, const int *matIds,
         const float *verts, size_t numverts, const uint *tris, size_t numtris,
-        std::map<std::string, std::pair<float const *, size_t>> const &vtab, const GeoChange change=GeoChange::FullChange);
+        std::map<std::string, std::pair<float const *, size_t>> const &vtab, const GeoChange change=GeoChange::FullChange,
+        const zeno::AlternativeAttributes &alternatives={});
 
     void unload_object(std::string const &key) {
         if (cleanTasks.count(key)==0) return;

@@ -110,10 +110,19 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     }
     m_text->setToolTip(toolTip);
 
+    // Tables need their own full-width row, like the existing dictionary panel.
+    ZGraphicsLayout* socketRow = this;
+    if (m_bInput && m_viewSockIdx.data(ROLE_PARAM_CTRL).toInt() == CONTROL_ATTRIBUTE_BINDINGS)
+    {
+        setHorizontal(false);
+        socketRow = new ZGraphicsLayout(true);
+        socketRow->setSpacing(ZenoStyle::dpiScaled(8));
+        addLayout(socketRow);
+    }
     if (m_bInput)
     {
-        addItem(m_socket, Qt::AlignVCenter);
-        addItem(m_text, Qt::AlignVCenter);
+        socketRow->addItem(m_socket, Qt::AlignVCenter);
+        socketRow->addItem(m_text, Qt::AlignVCenter);
     }
     else
     {
@@ -129,6 +138,13 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
 {
     removeItem(m_control);
     m_control = pControl;
+    if (!m_control)
+        return;
+    if (m_control->data(GVKEY_CONTROL).toInt() == CONTROL_ATTRIBUTE_BINDINGS)
+    {
+        addItem(m_control, Qt::AlignLeft);
+        return;
+    }
 
     Qt::Alignment align = (Qt::Alignment)pControl->data(GVKEY_ALIGNMENT).toInt();
     if (align == Qt::AlignLeft)

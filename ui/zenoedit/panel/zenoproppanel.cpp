@@ -1,4 +1,5 @@
 #include "zenoproppanel.h"
+#include <zenoui/comctrl/zattributebindings.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
@@ -372,9 +373,10 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
 
     ZIconLabel *pIcon = new ZIconLabel;
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(24, 24)), ":/icons/parameter_key-frame_idle.svg", ":/icons/parameter_key-frame_hover.svg");
-    pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignCenter);
+    const auto verticalAlignment = ctrl == CONTROL_ATTRIBUTE_BINDINGS ? Qt::AlignTop : Qt::AlignVCenter;
+    pGroupLayout->addWidget(pIcon, row, 0, Qt::AlignHCenter | verticalAlignment);
 
-    pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | Qt::AlignVCenter);
+    pGroupLayout->addWidget(pLabel, row, 1, Qt::AlignLeft | verticalAlignment);
     if (pControl)
         pGroupLayout->addWidget(pControl, row, 2, Qt::AlignVCenter);
 
@@ -627,7 +629,8 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             _PANEL_CONTROL& ctrl = m_controls[tabName][groupName][paramName];
             BlockSignalScope scope(ctrl.pControl);
 
-            if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
+            if(auto editor=dynamic_cast<ZAttributeBindingsEditor*>(ctrl.pControl)) {editor->setValue(value.toString());}
+            else if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(ctrl.pControl))
             {
                 PARAM_CONTROL paramCtrl = (PARAM_CONTROL)param->data(ROLE_PARAM_CTRL).toInt();
                 QString literalNum;
