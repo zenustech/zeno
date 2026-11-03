@@ -1,4 +1,5 @@
 #include "zenogvhelper.h"
+#include "../zattributebindings.h"
 #include "../../nodesys/nodesys_common.h"
 #include "zlayoutbackground.h"
 #include "zenoparamwidget.h"
@@ -61,6 +62,11 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
 {
     if (!item)
         return;
+    if(ctrl==CONTROL_ATTRIBUTE_BINDINGS) {
+        auto proxy=qgraphicsitem_cast<QGraphicsProxyWidget*>(item);
+        if(proxy)if(auto editor=dynamic_cast<ZAttributeBindingsEditor*>(proxy->widget()))editor->setValue(value.toString());
+        return;
+    }
     int type = item->type();
     switch (type)
     {

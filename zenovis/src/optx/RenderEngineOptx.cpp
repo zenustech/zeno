@@ -41,6 +41,7 @@
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/AttrVector.h>
+#include <zeno/types/AlternativeAttribute.h>
 #include <tinygltf/json.hpp>
 
 #include <map>
@@ -74,7 +75,8 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
                std::vector<zeno::vec3f> &clr,
                std::vector<zeno::vec3f> &tang,
                std::vector<zeno::vec3f> &uv,
-               std::vector<zeno::vec3i> &idxBuffer)
+               std::vector<zeno::vec3i> &idxBuffer,
+               std::vector<unsigned> *originalPoints)
 {
     const bool has_clr = prim->has_attr("clr");
     float tol = 1e-5;
@@ -155,6 +157,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
       auto v  = prim->verts[vid];
       auto n  = prim->verts.attr<zeno::vec3f>("nrm")[vid];
       auto t  = prim->verts.attr<zeno::vec3f>("atang")[vid];
+      if (originalPoints) originalPoints->push_back(vid);
       verts.push_back(v);
       nrm.push_back(n);
         if (has_clr) {
@@ -169,7 +172,8 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
   if(prim->userData().get2<std::string>("subChangeType","") == "ShapeChange" && topo_exist)
   {
       idxBuffer = topoMap[prim_name].idxBuffer;
-  }else
+  }
+  else
   {
       idxBuffer.resize(prim->tris.size());
       //third pass: assemble new idx map
@@ -648,9 +652,18 @@ struct GraphicsManager {
                     return;
                 }
 
-                if (reType == "Mesh") 
+                if (reType == "Mesh")
                 {
-
+                    const bool hasAlterAttr = prim_in->userData().has("AlternativeAttributes"); 
+                    nlohmann::json alternativesInfo;
+                    if (hasAlterAttr) {
+                        alternativesInfo=nlohmann::json::parse(prim_in->userData().get2<std::string>("AlternativeAttributes"));
+                        if (alternativesInfo.at("topology")!=zeno::alternativeTopologyKey(*prim_in)) {
+                            std::fprintf(stderr,"Prepared alternative attributes have stale topology; prepare after topology edits\n");
+                            std::fflush(stderr);
+                            throw std::runtime_error("Prepared alternative attributes have stale topology");
+                        }
+                    }
                     if (prim_in->quads.size() || prim_in->polys.size()) {
                         zeno::log_trace("demoting faces");
                         zeno::primTriangulateQuads(prim_in);
@@ -699,7 +712,66 @@ struct GraphicsManager {
                     std::vector<zeno::vec3f> tang;
                     std::vector<zeno::vec3f> uv;
                     std::vector<zeno::vec3i> idxBuffer;
-                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer);
+                    std::vector<unsigned> originalPoints;
+                    cleanMesh(prim_in, verts, nrm, clr, tang, uv, idxBuffer, hasAlterAttr ? &originalPoints : nullptr);
+                    zeno::AlternativeAttributes alternatives;
+                    auto sourceAttribute = [&](const auto &container,const std::string &name,size_t count) {
+                        zeno::AlternativeAttribute result;
+                        std::visit([&](const auto &values) {
+                            if(values.size()!=count) throw std::runtime_error("Invalid alternative attribute count: "+name);
+                            result.assign(values);
+                        }, container.attrs.at(name));
+                        return result;
+                    };
+                    if (!alternativesInfo.is_null()) {
+                        for (const auto &binding : alternativesInfo.at("bindings")) {
+                            const auto alter=binding.at("alter").get<int>();
+                            const auto attr=binding.at("attr").get<std::string>();
+                            const zeno::AlternativeAttributeKey key{zeno::meshAttributeSemantic(attr),alter};
+                            if (alter<1 || unsigned(alter)>zeno::MeshAttributeAlterCount)
+                                throw std::runtime_error("Prepared alternative Alter must be between 1 and 8: " + attr + "/" + std::to_string(alter));
+                            if (alternatives.count(key)) throw std::runtime_error("Duplicate alternative binding: " + attr + "/" + std::to_string(alter));
+                            const auto name=zeno::alternativeAttributeName(attr,alter);
+                            const auto domain=binding.at("domain").get<std::string>();
+                            auto &attribute=alternatives[key];
+                            if (domain=="point") {
+                                const auto source=sourceAttribute(prim_in->verts,name,prim_in->verts.size());
+                                attribute=source;attribute.values.resize(verts.size()*source.elementSize);
+                                for(size_t i=0;i<verts.size();++i)
+                                    std::memcpy(attribute.values.data()+i*source.elementSize,
+                                        source.values.data()+originalPoints.at(i)*source.elementSize,source.elementSize);
+                                attribute.domain=zeno::MeshAttributeDomain::Point;
+                            } else if (domain=="face") {
+                                attribute=sourceAttribute(prim_in->tris,name,idxBuffer.size());
+                                attribute.domain=zeno::MeshAttributeDomain::Face;
+                            } else if (domain=="corner") {
+                                std::vector<unsigned char> points;
+                                std::vector<bool> seen(verts.size(),false);
+                                bool compatible=true;
+                                for(int k=0;k<3;++k) {
+                                    const auto source=sourceAttribute(prim_in->tris,name+"_corner_"+std::to_string(k),idxBuffer.size());
+                                    if(k==0) {
+                                        attribute=source;attribute.values.resize(idxBuffer.size()*3*source.elementSize);
+                                        points.resize(verts.size()*source.elementSize);
+                                    } else if(source.elementSize!=attribute.elementSize || source.scalar!=attribute.scalar)
+                                        throw std::runtime_error("Mismatched alternative corner types");
+                                    for(size_t t=0;t<idxBuffer.size();++t) {
+                                        const auto point=idxBuffer[t][k];const auto stride=attribute.elementSize;
+                                        const auto value=source.values.data()+t*stride;
+                                        std::memcpy(attribute.values.data()+(3*t+k)*stride,value,stride);
+                                        if(seen[point] && std::memcmp(points.data()+point*stride,value,stride)) compatible=false;
+                                        std::memcpy(points.data()+point*stride,value,stride);seen[point]=true;
+                                    }
+                                }
+                                attribute.domain=zeno::MeshAttributeDomain::Corner;
+                                if(compatible){attribute.values=std::move(points);attribute.domain=zeno::MeshAttributeDomain::Point;}
+                            } else throw std::runtime_error("Invalid prepared alternative domain");
+                            // UV packing is an adapter contract, separate from transport/remapping.
+                            if(key.first==zeno::MeshAttributeSemantic::UV &&
+                                (attribute.scalar!=zeno::MeshAttributeScalar::Float32 || attribute.elementSize!=sizeof(zeno::vec2f)))
+                                throw std::runtime_error("Invalid prepared UV payload type");
+                        }
+                    }
                     auto oPrim = std::make_shared<zeno::PrimitiveObject>();
                     oPrim->verts.resize(verts.size());
                     oPrim->add_attr<zeno::vec3f>("nrm");
@@ -744,7 +816,7 @@ struct GraphicsManager {
                     auto& matids = prim_in->tris.attr<int>("matid");
                     //changeType = userdata->get();
 
-                    defaultScene.preload_mesh(reName, mtlid, matNameList, matids.data(), vs, nvs, ts, nts, vtab);
+                    defaultScene.preload_mesh(reName, mtlid, matNameList, matids.data(), vs, nvs, ts, nts, vtab, GeoChange::FullChange, alternatives);
 
                 } // Mesh
             } // ResourceType

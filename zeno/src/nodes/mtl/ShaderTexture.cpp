@@ -168,6 +168,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         texWrapping[] = "REPEAT MIRRORED_REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER",
         texFiltering[] = "NEAREST LINEAR NEAREST_MIPMAP_NEAREST LINEAR_MIPMAP_NEAREST NEAREST_MIPMAP_LINEAR LINEAR_MIPMAP_LINEAR";
     virtual int determineType(EmissionPass *em) override {
+        if (get_input2<int>("uvAlter", 0) < 0)
+            throw zeno::Exception("SmartTexture2D uvAlter must be non-negative");
         auto uvtiling = em->determineType(get_input("uvtiling").get());
         auto normalScale = em->determineType(get_input("normalScale").get());
         auto h_scale = em->determineType(get_input("heightScale").get());
@@ -334,7 +336,8 @@ struct SmartTexture2D : ShaderNodeClone<SmartTexture2D>
         auto uvtiling = em->determineExpr(get_input("uvtiling").get());
         auto nscale = em->determineExpr(get_input("normalScale").get());
         auto hscale = em->determineExpr(get_input("heightScale").get());
-        std::string coord = "att_uv";
+        const auto uvAlter = get_input2<int>("uvAlter", 0);
+        std::string coord = uvAlter ? zeno::format("attrs.uv({})", uvAlter) : "att_uv";
         if (has_input("coord")) {
             coord = em->determineExpr(get_input("coord").get());
         }
@@ -399,6 +402,7 @@ ZENDEFNODE(SmartTexture2D, {
         {(std::string) "enum " + SmartTexture2D::texFiltering, "minFilter", "LINEAR"},
         {(std::string) "enum " + SmartTexture2D::texFiltering, "magFilter", "LINEAR"},
         {"coord"},
+        {"int", "uvAlter", "0"},
         {"vec2f", "uvtiling", "1,1"},
         {"vec4f", "value", "0,0,0,0"},
         {"float", "normalScale", "1.0"},

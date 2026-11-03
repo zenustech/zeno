@@ -4,6 +4,7 @@
 #include "zxxglslvec.h"
 #include <cuda_fp16.h>
 #include <optix_device.h>
+#include <zeno/types/AlternativeAttribute.h>
 
 struct MatOutput {
     vec3 basecolor;
@@ -124,6 +125,11 @@ struct MatInput {
     vec3 T;
     vec3 B;
 
+    // Non-mesh primitives have no alternative mesh buffers. Default getters
+    // return the same cached world-space directions exposed by ShaderInputAttr.
+    inline vec3 nrm(unsigned alter=0) const { return alter ? vec3{} : N; }
+    inline vec3 tang(unsigned alter=0) const { return alter ? vec3{} : T; }
+
     vec3 V;
     vec3 fresnel;
 };
@@ -180,7 +186,39 @@ struct TriangleInput : MatInput {
         return uv_ptr;
     }
     
-    inline vec3 uv() const {
+    template<class T, zeno::MeshAttributeScalar Scalar=zeno::MeshAttributeScalar::Float32>
+    inline bool attributeValues(zeno::MeshAttributeSemantic semantic, unsigned alter,T &v0,T &v1,T &v2) const {
+        if(!alter || alter>zeno::MeshAttributeAlterCount) return false;
+        const auto gas_ptr=getGasPointer();
+        const auto semanticIndex=unsigned(semantic);
+        if(semanticIndex>=unsigned(zeno::MeshAttributeSemantic::Count)) return false;
+        const auto mask=unsigned(reinterpret_cast<unsigned long long>(*(gas_ptr-8)));
+        const auto views=reinterpret_cast<const zeno::AlternativeAttributeView*>(*(gas_ptr-7));
+        const auto bit=1u<<(semanticIndex*zeno::MeshAttributeAlterCount+alter-1);
+        if(!views || !(mask&bit)) return false;
+        const auto view=views[__popc(mask&(bit-1u))];
+        if(!view.values || view.elementSize!=sizeof(T) || view.scalar!=Scalar) return false;
+        const auto values=reinterpret_cast<const T*>(view.values);
+        if(view.domain==zeno::MeshAttributeDomain::Face) {
+            if(priIdx>=view.count) return false;
+            v0=v1=v2=values[priIdx]; return true;
+        }
+        uint3 ids=vertex_idx;
+        if(view.domain==zeno::MeshAttributeDomain::Corner) {
+            if(priIdx>=view.count/3) return false;
+            ids={3*priIdx,3*priIdx+1,3*priIdx+2};
+        }
+        if(ids.x>=view.count || ids.y>=view.count || ids.z>=view.count) return false;
+        v0=values[ids.x]; v1=values[ids.y]; v2=values[ids.z]; return true;
+    }
+
+    inline vec3 uv(unsigned alter=0) const {
+        if(alter) {
+            float2 a, b, c;
+            if(!attributeValues(zeno::MeshAttributeSemantic::UV, alter, a, b, c)) return {};
+            const auto tmp = interp(barys2, a, b, c); return {tmp.x, tmp.y, 0};
+        }
+
         let gas_ptr = getGasPointer();
         let uv_ptr  = reinterpret_cast<const float2*>( *(gas_ptr-2) );
         if (uv_ptr == nullptr) { return {}; }
@@ -192,7 +230,32 @@ struct TriangleInput : MatInput {
         auto tmp = interp(barys2, uv0, uv1, uv2);
         return {tmp.x, tmp.y, 0.0f};
     }
-    inline vec3 clr() const {
+    inline vec3 nrm(unsigned alter=0) const {
+        if(!alter) return N;
+        float3 a, b, c;
+        if(!attributeValues(zeno::MeshAttributeSemantic::Normal, alter, a, b, c)) return {};
+        auto value=transformNormal(interp(barys2, a, b, c), worldToObject);
+        const auto length2=dot(value, value);
+        if(!(length2>0.0f) || !isfinite(length2)) return {};
+        return normalize(value);
+    }
+    inline vec3 tang(unsigned alter=0) const {
+        if(!alter) return T;
+        float3 a, b, c;
+        if(!attributeValues(zeno::MeshAttributeSemantic::Tangent, alter, a, b, c)) return {};
+        // Tangents are vectors: use the forward transform, including under
+        // nonuniform scale. The legacy default tangent path is unchanged.
+        auto value=transformVector(interp(barys2, a, b, c), objectToWorld);
+        const auto length2=dot(value, value);
+        if(!(length2>0.0f) || !isfinite(length2)) return {};
+        return normalize(value);
+    }
+    inline vec3 clr(unsigned alter=0) const {
+        if(alter) {
+            float3 a, b, c;
+            if(!attributeValues(zeno::MeshAttributeSemantic::Color, alter, a, b, c)) return {};
+            return interp(barys2, a, b, c);
+        }
         let gas_ptr = getGasPointer();
         let clr_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-3) );
         if (clr_ptr == nullptr) { return {}; }
@@ -238,13 +301,14 @@ struct SphereInput : MatInput {
     inline vec3 interpTang() const {
         return {};
     }
-    inline vec3 uv() const {
+    inline vec3 uv(unsigned alter=0) const {
         return sphereUV(objNorm, false);
     }
     __forceinline__ float3 barys() const {
         return uv();
     }
-    inline vec3 clr() const {
+    inline vec3 clr(unsigned alter=0) const {
+        if(alter) return {};
         let gas_ptr = getGasPointer();
         let clr_ptr = (float3*)( *(gas_ptr-1) );
         if (clr_ptr == nullptr) return {0,0,0};
@@ -266,13 +330,13 @@ struct CurveInput : MatInput {
     inline vec3 interpTang() const {
         return T;
     }
-    inline vec3 uv() const {
+    inline vec3 uv(unsigned alter=0) const {
         return {barys2.x, barys2.y, 0.0};
     }
     __forceinline__ float3 barys() const {
         return uv();
     }
-    inline vec3 clr() const {
+    inline vec3 clr(unsigned alter=0) const {
         return {}; 
     }
     inline float area(bool local=false) const {
@@ -296,20 +360,26 @@ inline auto dispatch(const MatInput* input, int16_t ptype, Func&& func) {
 }
 
 struct WrapperInput : MatInput {
+    inline vec3 nrm(unsigned alter=0) const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.nrm(alter); });
+    }
+    inline vec3 tang(unsigned alter=0) const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.tang(alter); });
+    }
     inline vec3 interpNorm(float smooth=0.0f) const {
         return dispatch(this, ptype, [&](const auto& in) { return in.interpNorm(smooth); });
     }
     inline vec3 interpTang() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.interpTang(); });
     }
-    inline vec3 uv() const {
-        return dispatch(this, ptype, [&](const auto& in) { return in.uv(); });
+    inline vec3 uv(unsigned alter=0) const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.uv(alter); });
     }
     __forceinline__ float3 barys() const {
         return dispatch(this, ptype, [&](const auto& in) { return in.barys(); });
     }
-    inline vec3 clr() const {
-        return dispatch(this, ptype, [&](const auto& in) { return in.clr(); });
+    inline vec3 clr(unsigned alter=0) const {
+        return dispatch(this, ptype, [&](const auto& in) { return in.clr(alter); });
     }
     inline float area(bool local=false) const {
         return dispatch(this, ptype, [&](const auto& in) { return in.area(local); });

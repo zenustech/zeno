@@ -361,6 +361,7 @@ void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inS
 
 void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties)
 {
+    if(nodeCls=="PrepareAlternativeAttribute" && inSock=="bindings") control=CONTROL_ATTRIBUTE_BINDINGS;
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
     NODE_DATA &data = m_nodes[inNode];
 

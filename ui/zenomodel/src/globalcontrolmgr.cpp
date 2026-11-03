@@ -7,6 +7,7 @@
 
 
 static CONTROL_INFO _infos[] = {
+    {"PrepareAlternativeAttribute", PARAM_INPUT, "bindings", CONTROL_ATTRIBUTE_BINDINGS,  QVariant()},
     {"SubInput",                    PARAM_PARAM, "type",        CONTROL_ENUM,             QVariant()},
     {"SubOutput", PARAM_PARAM, "type", CONTROL_ENUM, QVariant()},
 };

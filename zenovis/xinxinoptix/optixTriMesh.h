@@ -3,9 +3,11 @@
 #include "optixCommon.h"
 
 #include <map>
+#include <limits>
 #include <vector>
 #include "optiXStuff.h"
 
+#include <zeno/types/AlternativeAttribute.h>
 //#include <OptiXToolkit/CuOmmBaking/CuBuffer.h>
 #include <OptiXToolkit/CuOmmBaking/CuOmmBaking.h>
 
@@ -47,12 +49,18 @@ struct MeshObject {
     std::vector<float2, CudaPinnedAllocator<float2>> g_uv;
     std::vector<ushort3, CudaPinnedAllocator<ushort3>> g_clr, g_nrm, g_tan;
 
+    zeno::AlternativeAttributes alternativeAttributes;
+    std::vector<zeno::AlternativeAttributeView> alternativeViews;
+    unsigned alternativeMask{};
+
 template<class T, class E=uint8_t>
 using raii = xinxinoptix::raii<T, E>;
 
     raii<CUdeviceptr> d_uv, d_clr, d_nrm, d_tan;
     raii<CUdeviceptr> d_idx;
     raii<CUdeviceptr> d_mat;
+    std::vector<raii<CUdeviceptr>> d_alternativeValues;
+    raii<CUdeviceptr> d_alternativeViews;
 
     std::shared_ptr<SceneNode> node = std::make_shared<SceneNode>();
     
@@ -94,14 +102,42 @@ using raii = xinxinoptix::raii<T, E>;
         } else { buffer.reset(); }
     }
 
-    void upload(size_t extra_size) {
+    void upload(size_t extra_size, bool uploadData=true) {
         if (0==node->handle || 0==node->buffer.handle ) return;
 
-        upload(g_uv, d_uv);
-        upload(g_clr, d_clr);
-        upload(g_nrm, d_nrm);
-        upload(g_tan, d_tan);
-        upload(indices, d_idx);
+        if (uploadData) {
+            upload(g_uv, d_uv);
+            upload(g_clr, d_clr);
+            upload(g_nrm, d_nrm);
+            upload(g_tan, d_tan);
+            upload(indices, d_idx);
+
+            // Preparation explicitly requests upload, regardless of material usage.
+            d_alternativeValues.clear();
+            alternativeViews.clear();
+            alternativeMask=0;
+            alternativeViews.reserve(alternativeAttributes.size());
+            d_alternativeValues.reserve(alternativeAttributes.size());
+            // The map's semantic/Alter order matches the 32 presence bits.
+            // Upload every prepared buffer, with no descriptors for holes.
+            for (auto &[key,attribute] : alternativeAttributes) {
+                const auto semantic=unsigned(key.first);
+                if (key.second<1 || unsigned(key.second)>zeno::MeshAttributeAlterCount)
+                    throw std::runtime_error("Alternative attribute Alter must be between 1 and 8");
+                if (semantic>=unsigned(zeno::MeshAttributeSemantic::Count) ||
+                    !attribute.elementSize || attribute.elementSize>0xffffu ||
+                    attribute.values.size()%attribute.elementSize ||
+                    attribute.count()>std::numeric_limits<unsigned>::max())
+                    throw std::runtime_error("Invalid alternative attribute payload");
+                alternativeMask|=1u<<(semantic*zeno::MeshAttributeAlterCount+unsigned(key.second)-1);
+                d_alternativeValues.emplace_back();
+                upload(attribute.values,d_alternativeValues.back());
+                alternativeViews.push_back({d_alternativeValues.back().handle,
+                    unsigned(attribute.count()),static_cast<unsigned short>(attribute.elementSize),
+                    attribute.domain,attribute.scalar});
+            }
+            upload(alternativeViews,d_alternativeViews);
+        }
 
         auto offset = roundUp<size_t>(extra_size, 128u);
         auto gas_ptr = node->buffer.handle + offset;
@@ -117,7 +153,10 @@ using raii = xinxinoptix::raii<T, E>;
 
     std::vector<CUdeviceptr, CudaPinnedAllocator<CUdeviceptr>> aux() {
         //return { d_idx.handle, d_uv.handle, d_clr.handle, d_nrm.handle, d_tan.handle };
-        return { 0, d_tan.handle, d_nrm.handle, d_clr.handle, d_uv.handle, d_idx.handle };
+        // Original slots -1 through -6 stay in their original order and format.
+        // Slots -8/-7 hold the presence mask and compact descriptor pointer.
+        return { CUdeviceptr(alternativeMask), d_alternativeViews.handle,
+                 0, d_tan.handle, d_nrm.handle, d_clr.handle, d_uv.handle, d_idx.handle };
     }
 
     std::map<uint16_t, zeno::OpacityMicroMapConfig> omm_binding_map;
@@ -136,10 +175,9 @@ using raii = xinxinoptix::raii<T, E>;
             check(d_ommIndices.free());
         }
         xinxinoptix::buildMeshGAS(update, context, vertices, indices, mat_idx, sbt_count, node->buffer, node->handle, extra_size, inputOMM.get());
-        
-        if (this->dirty & GeoChange::AttrChange) {
-            upload(extra_size);
-        }
+
+        // GAS relocation also requires refreshing its attribute prefix.
+        upload(extra_size, (this->dirty & GeoChange::AttrChange)!=0);
     }
 
     using ommc = zeno::OpacityMicroMapConfig;

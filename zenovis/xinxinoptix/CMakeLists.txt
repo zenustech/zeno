@@ -6,6 +6,7 @@ endif()
 
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 target_sources(zenovis PRIVATE
+  ${CMAKE_SOURCE_DIR}/zeno/include/zeno/types/AlternativeAttribute.h
   ChiefDesignerEXR.cpp
   ChiefDesignerEXR.h
   optixPathTracer.cpp
@@ -311,7 +312,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     #include <zeno/types/LightObject.h>
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
+    ${CMAKE_SOURCE_DIR}/zeno/include/@zeno/types/LightObject.h
+    ${CMAKE_SOURCE_DIR}/zeno/include/@zeno/types/AlternativeAttribute.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@SharcLaunchParameters.h

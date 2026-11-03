@@ -547,7 +547,14 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
 {
     for (const auto& inObj : inputs.GetObject())
     {
-        const QString& inSock = inObj.name.GetString();
+        QString inSock = inObj.name.GetString();
+        // Preserve the selected UV set in graphs saved before the socket rename.
+        if (nodeName == "SmartTexture2D" && inSock == "uvalter")
+        {
+            if (inputs.HasMember("uvAlter"))
+                continue;
+            inSock = "uvAlter";
+        }
         const auto& inputObj = inObj.value;
         if (inputObj.IsArray())
         {

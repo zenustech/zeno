@@ -1,4 +1,5 @@
 #include "zwidgetfactory.h"
+#include "zattributebindings.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
@@ -90,6 +91,11 @@ namespace zenoui
                     cbSet.cbEditFinished(pathLineEdit->text());
                 });
                 return pathLineEdit;
+            }
+            case CONTROL_ATTRIBUTE_BINDINGS:
+            {
+                auto editor=new ZAttributeBindingsEditor(value.toString(),nullptr,ZenoStyle::dpiScaled(1));
+                editor->valueEdited=[=](const QString &v){cbSet.cbEditFinished(v);};return editor;
             }
             case CONTROL_MULTILINE_STRING:
             {
@@ -446,6 +452,7 @@ namespace zenoui
         case CONTROL_VEC4_FLOAT:
         case CONTROL_VEC4_INT:return qobject_cast<ZVecEditor*>(pControl) != nullptr;
         case CONTROL_ENUM:    return qobject_cast<QComboBox*>(pControl) != nullptr;
+        case CONTROL_ATTRIBUTE_BINDINGS: return dynamic_cast<ZAttributeBindingsEditor*>(pControl)!=nullptr;
         case CONTROL_MULTILINE_STRING:    return qobject_cast<ZTextEdit*>(pControl) != nullptr;
         case CONTROL_CURVE:
         case CONTROL_COLOR:    return qobject_cast<QPushButton*>(pControl) != nullptr;
@@ -454,7 +461,8 @@ namespace zenoui
 
     void updateValue(QWidget* pControl, const QVariant& value)
     {
-        if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl))
+        if (auto editor=dynamic_cast<ZAttributeBindingsEditor*>(pControl)) {editor->setValue(value.toString());}
+        else if (ZLineEdit* pLineEdit = qobject_cast<ZLineEdit*>(pControl))
         {
             pLineEdit->setText(value.toString());
         }

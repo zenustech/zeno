@@ -15,7 +15,8 @@
 void OptixScene::preload_mesh(const std::string &key, const std::string &mtlid, 
     const std::vector<std::string> &matNames, const int *matIndex,
     const float *verts, size_t numverts, const uint *tris, size_t numtris,
-    const std::map<std::string, std::pair<float const *, size_t>> &vtab, GeoChange change)
+    const std::map<std::string, std::pair<float const *, size_t>> &vtab, GeoChange change,
+    const zeno::AlternativeAttributes &alternatives)
 {   
     auto& ptr = _meshes_[key];
     if (nullptr == ptr) {
@@ -24,6 +25,7 @@ void OptixScene::preload_mesh(const std::string &key, const std::string &mtlid,
     auto& mesh = *ptr;
 
     if (change & GeoChange::AttrChange) {
+        mesh.alternativeAttributes=alternatives;
 
         auto get_attr = [&](const char* name) -> const float* {
             auto it = vtab.find(name);
@@ -83,7 +85,6 @@ void OptixScene::preload_mesh(const std::string &key, const std::string &mtlid,
 }
 
 void OptixScene::updateDrawObjects(uint16_t sbt_count) {
-
     for(const auto& name : meshesDirty) {
         auto& mesh = _meshes_[name];
         auto& dat = mesh->dat;
