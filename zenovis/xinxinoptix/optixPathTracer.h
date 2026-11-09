@@ -217,6 +217,7 @@ struct Params
 
     OptixTraversableHandle handle;
     const zeno_cluster_device::Cluster* cluster_data;
+    zeno_cluster_device::ViewFeedback cluster_feedback;
     unsigned int cluster_debug_view;
     zeno_cluster_device::MaterialLaunch cluster_materials;
 

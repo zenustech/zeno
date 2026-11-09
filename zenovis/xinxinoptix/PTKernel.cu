@@ -5,6 +5,7 @@
 
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
+#include "ClusterTextureHistory.h"
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
 #include "proceduralSky.h"
@@ -300,6 +301,7 @@ extern "C" __global__ void __raygen__rg()
     }
     
     float3 result = make_float3( 0.0f );
+    bool primaryTextureMissing=false;
 
 #if __AOV__
     float3 aov[4] {};
@@ -596,6 +598,7 @@ extern "C" __global__ void __raygen__rg()
             zenoApplySharcUpdateAfterTrace(prd, sharcState, sharcParameters);
 #endif
         }
+        primaryTextureMissing=primaryTextureMissing||prd.primaryTextureMissing;
         seed = prd.seed;
 //        seed1 = prd.offset;
 //        eventseed = prd.eventseed;
@@ -637,9 +640,14 @@ extern "C" __global__ void __raygen__rg()
     #endif
     }
 
-    if( params.history_samples > 0 )
+    unsigned int history=params.history_samples;
+    if(params.cluster_materials.primaryCoverage && primaryTextureMissing)
+        params.cluster_materials.primaryCoverage[image_index]|=1u;
+    if(params.cluster_materials.textureHistory)
+        history=clusterMaterial::textureHistory(params.cluster_materials.textureHistory[image_index],history,primaryTextureMissing);
+    if( history > 0 )
     {
-        const float a = 1.0f / (static_cast<float>(params.history_samples) + 1.0f);
+        const float a = 1.0f / (static_cast<float>(history) + 1.0f);
         const float3 accum_color_prev   = params.accum_buffer[ image_index ];
         accum_color = mix( accum_color_prev, accum_color, a );
     #if __AOV__

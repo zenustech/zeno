@@ -2,6 +2,8 @@
 #define __ZOPTIX_VIEWPORT_H__
 
 #include <QtWidgets>
+#include <memory>
+#include <utility>
 #include "recordvideomgr.h"
 #include "zenovis/Camera.h"
 #include <zenomodel/include/modeldata.h>
@@ -11,6 +13,7 @@ using Json = nlohmann::json;
 
 class Zenovis;
 class CameraControl;
+class ViewportFrameMailbox;
 
 typedef std::optional<std::tuple<std::string, std::string, uint32_t>> OPTIX_CLICKID;
 Q_DECLARE_METATYPE(OPTIX_CLICKID)
@@ -36,9 +39,12 @@ public:
     OptixWorker(Zenovis *pzenoVis);
     ~OptixWorker();
     QImage renderImage() const;
+    // Configure once, before starting the worker thread.
+    void setFrameMailbox(std::shared_ptr<ViewportFrameMailbox> mailbox) { m_frameMailbox=std::move(mailbox); }
 
 signals:
     void renderIterate(QImage);
+    void viewportFrameReady();
     void clasLodStatus(QString status);
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
@@ -56,6 +62,7 @@ public slots:
     void stop();
     void work();
     void needUpdateCamera();
+    void onCaptureCameraInput(double timestamp);
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
     void screenShoot(QString path, QString type, int resx, int resy);
@@ -74,6 +81,7 @@ public slots:
     void onSetBackground(bool bShowBg);
     void onSetSampleNumber(int sample_number);
     void onResetSharcCache();
+    void onClearTextureResidency();
     void onSetClasDebugView(int view);
     void onSetClasHistorySettings(bool keep, int samples);
     void onSetClasTwoSidedOpaque(bool enabled);
@@ -96,10 +104,13 @@ public slots:
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
 
 private:
+    void publishViewportImage();
+    std::shared_ptr<ViewportFrameMailbox> m_frameMailbox;
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;           //optix sample timer
     bool m_bRecording;
+    double m_captureCameraInputMs=0;
     VideoRecInfo m_recordInfo;
     int m_slidFeq = 1000 / 24;
     const int m_sampleFeq = 16;
@@ -126,6 +137,7 @@ public:
     void showBackground(bool bShow);
     void setSampleNumber(int sample_number);
     void resetSharcCache();
+    void clearTextureResidency();
     void setClasDebugView(int view);
     void setClasHistorySettings(bool keep, int samples);
     void setClasTwoSidedOpaque(bool enabled);
@@ -165,6 +177,7 @@ public:
 
 signals:
     void cameraAboutToRefresh();
+    void captureCameraInput(double timestamp);
     void stopRenderOptix();
     void resumeWork();
     void sigRecordVideo(VideoRecInfo recInfo);
@@ -186,6 +199,7 @@ signals:
     void sig_setBackground(bool bShowBg);
     void sig_setSampleNumber(int sample_number);
     void sig_resetSharcCache();
+    void sig_clearTextureResidency();
     void sig_setClasDebugView(int view);
     void sig_setClasHistorySettings(bool keep, int samples);
     void sig_setClasTwoSidedOpaque(bool enabled);
@@ -234,6 +248,7 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    void noteCameraInput(int kind);
     CameraControl* m_camera;
     Zenovis* m_zenovis;
     QThread m_thdOptix;
@@ -243,6 +258,7 @@ private:
     std::optional<zeno::vec2f> start_pos;
     std::optional<zeno::vec2f> last_pos;
     QImage m_renderImage;
+    std::shared_ptr<ViewportFrameMailbox> m_frameMailbox;
     OptixWorker* m_worker;
     std::string mode;
     std::string axis;

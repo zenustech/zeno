@@ -2,7 +2,10 @@
 #include "ClusterAdaptiveLod.h"
 #include "ClusterGpu.h"
 #include "ClusterProfiling.h"
+#include "BackgroundEventWait.h"
+#include "DecodedGeometryCache.h"
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -24,6 +27,22 @@ std::recursive_mutex &renderSubmissionMutex() {
 }
 namespace {
 using Clock = std::chrono::steady_clock;
+constexpr uint32_t ReadGroups=128;
+bool primaryFeedbackEnabled() {
+    static const bool enabled=[] {
+        const auto* value=std::getenv("ZENO_CLAS_PRIMARY_FEEDBACK");
+        return !value || *value!='0';
+    }();
+    return enabled;
+}
+uint64_t hostGeometryBytes() {
+    const auto* value=std::getenv("ZENO_CLAS_HOST_GEOMETRY_MIB");
+    if(!value)return 0; // Opt-in until the long replay establishes a benefit.
+    char* end{};const auto mib=std::strtoull(value,&end,10);
+    if(value==end || *end || *value=='-' || mib>65536)
+        throw std::runtime_error("Invalid ZENO_CLAS_HOST_GEOMETRY_MIB (0..65536)");
+    return mib<<20;
+}
 thread_local RuntimeStats *renderStats = nullptr;
 double elapsed(Clock::time_point t) {
     return std::chrono::duration<double, std::milli>(Clock::now() - t).count();
@@ -51,10 +70,18 @@ void check(OptixResult r) {
 }
 template <class T> T *ptr(CUdeviceptr p) { return reinterpret_cast<T *>(p); }
 uint64_t align(uint64_t n, uint64_t a = 128) { return (n + a - 1) & ~(a - 1); }
+bool gpuTimingEnabled() {
+    static const bool enabled=[] {
+        const auto* value=std::getenv("ZENO_CLAS_GPU_TIMING");
+        return !value||*value!='0';
+    }();
+    return enabled;
+}
 struct Event {
     cudaEvent_t value{};
-    explicit Event(bool timing = false) {
-        check(cudaEventCreateWithFlags(&value, timing ? cudaEventDefault : cudaEventDisableTiming));
+    bool measuresTime{};
+    explicit Event(bool timing = false):measuresTime(timing&&gpuTimingEnabled()) {
+        check(cudaEventCreateWithFlags(&value, measuresTime ? cudaEventDefault : cudaEventDisableTiming));
     }
     ~Event() { cudaEventDestroy(value); }
     Event(const Event &) = delete;
@@ -68,7 +95,9 @@ struct Event {
     void record(cudaStream_t s) { check(cudaEventRecord(value, s)); }
     void wait() {
         const auto start = Clock::now();
-        check(cudaEventSynchronize(value));
+        if(backgroundEventQueriesEnabled()) {
+            while(!ready())pauseBackgroundEventQuery();
+        } else check(cudaEventSynchronize(value));
         if (renderStats) {
             ++renderStats->syncCalls;
             renderStats->syncMs += elapsed(start);
@@ -76,6 +105,7 @@ struct Event {
     }
 };
 double milliseconds(const Event &a, const Event &b) {
+    if(!a.measuresTime||!b.measuresTime)return 0.;
     float ms = 0;
     check(cudaEventElapsedTime(&ms, a.value, b.value));
     return ms;
@@ -203,6 +233,21 @@ struct Prepared {
 struct Batch {
     std::vector<Prepared> pages;
     double readMs{};
+    // Recycled batches retain inactive Page capacities when the next read is
+    // smaller. Those pages are storage only and must never enter a GPU cut.
+    uint32_t activePages=~0u;
+    size_t size() const{return std::min<size_t>(activePages,pages.size());}
+};
+bool reuseHostPages() {
+    static const bool enabled=[] {const auto* v=std::getenv("ZENO_CLAS_PAGE_REUSE");return !v||std::strcmp(v,"0")!=0;}();
+    return enabled;
+}
+struct UploadWorkspace {
+    std::vector<OptixClusterAccelBuildInputTrianglesArgs> args;
+    std::vector<gpu::PageBuild> pages;
+    std::vector<gpu::DescriptorPatch> descriptors;
+    std::vector<std::array<float,3>> positions;
+    std::vector<zeno_cluster_device::VertexNormal> normals;
 };
 struct UploadJob {
     CUdeviceptr args{}, pages{}, descriptors{};
@@ -221,7 +266,17 @@ struct UploadJob {
 struct ResidencyHeap {
     cudaMemPool_t memory{};
     uint64_t committed{};
-    void init() {
+    uint64_t cacheBytes{};
+    void init(uint64_t reuseBytes) {
+        // Reuse recently retired backing instead of trimming and remapping
+        // replacement GAS storage at each display synchronization. This is
+        // free allocator cache, separate from live residency budgets.
+        cacheBytes=reuseBytes;
+        if(const auto* value=std::getenv("ZENO_CLAS_RESIDENCY_CACHE_MIB")) {
+            char* end{};
+            const auto mib=std::strtoull(value,&end,10);
+            if(end!=value&&!*end&&mib<=4096)cacheBytes=mib<<20;
+        }
         int device{};check(cudaGetDevice(&device));
         cudaMemPoolProps props{};
         props.allocType=cudaMemAllocationTypePinned;
@@ -231,7 +286,7 @@ struct ResidencyHeap {
     }
     void updateReleaseThreshold() {
         // CUDA's threshold includes live allocations, rather than just cache.
-        uint64_t threshold=committed+(128ull<<20);
+        uint64_t threshold=committed+cacheBytes;
         check(cudaMemPoolSetAttribute(memory,cudaMemPoolAttrReleaseThreshold,&threshold));
     }
     CUdeviceptr allocate(uint64_t bytes,cudaStream_t stream) {
@@ -333,6 +388,8 @@ struct Scene {
     double pageReadMs{}, stagingMs{}, prepareMs{};
     std::vector<uint32_t> residentIDs, removed;
     std::vector<uint32_t> usedTokens;
+    std::vector<gpu::Range> hostRanges;
+    std::vector<uint32_t> hostTokens,hostNewTokens;
     gpu::Result *receipt{};
     gpu::Result *clasReceipt{};
     gpu::Request *requestReceipt{};
@@ -364,7 +421,7 @@ struct Scene {
         // Every resident group owns at least one descriptor slot. Match the
         // receipt capacity to the table instead of imposing a second fixed cap.
         check(cudaMallocHost(reinterpret_cast<void **>(&wantedReceipt), uint64_t(descriptorSlots) * sizeof(uint32_t)));
-        check(cudaMallocHost(reinterpret_cast<void **>(&pageReceipt), 128 * sizeof(gpu::PageBuild)));
+        check(cudaMallocHost(reinterpret_cast<void **>(&pageReceipt), ReadGroups * sizeof(gpu::PageBuild)));
         check(cudaMallocHost(reinterpret_cast<void **>(&canonicalReceipt), placements * sizeof(uint32_t)));
         check(cudaMallocHost(reinterpret_cast<void **>(&reuseReceipt), placements * sizeof(uint32_t)));
     }
@@ -379,10 +436,12 @@ struct Runtime::Impl {
     RuntimeSettings settings;
     RuntimeStats counters, frameStats;
     uint64_t mainUpdates{};
+    std::atomic<uint64_t> feedbackEpoch{0};
     std::future<void> preparing;
     cudaStream_t uploadStream{}, buildStream{};
     ResidencyHeap residencyHeap;
     bool initialized{}, allocationPressure{};
+    bool frozen=false;
     uint32_t sbt{}, stamp{}, totalGroups{}, slotCount = 1u << 20, capacity = 4u << 20;
     int front = -1, candidate = -1;
     bool traversalPending = false;
@@ -410,7 +469,7 @@ struct Runtime::Impl {
     std::vector<GasToken> gasTokens;
     std::vector<uint32_t> freeGasTokens;
     Buffer groups, refined, geometries, placements, placementOrder, residentList, groupSlots, slotHandles,
-        descriptors, stamps;
+        descriptors, stamps, slotRefinement, primaryRequests;
     Buffer clasSizes, clasDest, clasScratch, clasStatus, clasCount;
     Arena upload;
     Scene scenes[2];
@@ -420,9 +479,17 @@ struct Runtime::Impl {
     std::vector<gpu::Placement> placementHost;
     std::vector<uint32_t> order;
     std::vector<std::pair<uint32_t, uint32_t>> slotOwners;
+    OpaqueSlotPolicy opaqueShadowPolicy;
     std::map<uint32_t, Resident> residents;
     std::vector<gpu::Request> requests;
     std::future<Batch> reading;
+    const bool hostPageReuse=reuseHostPages();
+    std::mutex pageReuseMutex;
+    std::vector<Batch> pageBatches;
+    PageReadWorkspace pageReadWorkspace;
+    std::unique_ptr<DecodedGeometryCache> decodedPages;
+    std::atomic<bool> hostCacheFillAllowed{true};
+    UploadWorkspace uploadWorkspace;
     std::vector<uint32_t> readingIDs, pendingRemoval;
     // Only the serialized reader task accesses this bounded file cache.
     std::map<uint32_t, std::pair<std::unique_ptr<std::ifstream>, uint64_t>> pageFiles;
@@ -431,6 +498,13 @@ struct Runtime::Impl {
 
     explicit Impl(const std::filesystem::path &path, RuntimeSettings s)
         : asset(loadAsset(path)), settings(s), error(s.pixelError) {
+        counters.gpuTimingsEnabled=frameStats.gpuTimingsEnabled=gpuTimingEnabled();
+        if(const auto bytes=hostGeometryBytes()) {
+            size_t keys=0;for(const auto& geometry:asset.geometries)keys+=geometry.groups.size();
+            decodedPages=std::make_unique<DecodedGeometryCache>(bytes,keys);
+        }
+        hostCacheFillAllowed.store(!settings.materials);
+        pageBatches.reserve(2);
         requestedError = s.pixelError;
         adaptive.reset(requestedError);
         if(settings.materials)for(const auto& geometry:asset.geometries)
@@ -457,6 +531,13 @@ struct Runtime::Impl {
             preparing.wait();
         if (reading.valid())
             reading.wait();
+        if(decodedPages) {
+            const auto cache=decodedPages->stats();
+            std::cout<<"[CLAS RAM geometry] bytes="<<cache.blocks.bytes<<" peak="<<cache.blocks.peak
+                     <<" hits="<<cache.blocks.hits<<" misses="<<cache.blocks.misses<<" evictions="<<cache.blocks.evictions
+                     <<" bypasses="<<cache.bypasses<<" restoredBytes="<<cache.restoredBytes
+                     <<" restoreMs="<<cache.restoreMs<<" storeMs="<<cache.storeMs<<std::endl;
+        }
         if (uploadStream || initialized)
             cudaStreamSynchronize(buildStream);
         if (uploadStream)
@@ -534,14 +615,14 @@ struct Runtime::Impl {
         // Keep candidate builds off stream 0 so preview rays and readback do
         // not sit behind another scene's sizing/build/receipt work.
         check(cudaStreamCreateWithFlags(&buildStream,cudaStreamNonBlocking));
-        // The renderer's default async allocator retains a large working set.
-        // Keep residency recycling separate so retired chunks can actually
-        // return VRAM after the existing worker completion events, while a
-        // small cache avoids physical allocation churn for replacement GASes.
-        residencyHeap.init();
+        // Retired chunks become reusable after their existing render fences.
+        // Keep one GAS bank warm (at most 2 GiB of free-cache target) so camera
+        // movement does not repeatedly return/reacquire its physical backing.
+        // This is lazy retention, not an eager allocation of that capacity.
+        const uint64_t gasBankBytes=std::max<uint64_t>(1ull<<30,settings.geometryBytes/2);
+        residencyHeap.init(std::min<uint64_t>(gasBankBytes,2ull<<30));
         geometryPool.init(settings.geometryBytes, buildStream,&residencyHeap);
         clasPool.init(settings.clasBytes, buildStream,&residencyHeap);
-        const uint64_t gasBankBytes=std::max<uint64_t>(1ull<<30,settings.geometryBytes/2);
         for (auto &pool : gasPools)
             pool.init(gasBankBytes, buildStream,&residencyHeap);
         gasTokens.resize(asset.placements.size() * 3 + 128);
@@ -550,6 +631,7 @@ struct Runtime::Impl {
             freeGasTokens.push_back(i - 1);
         descriptorPool.insert(0, uint64_t(slotCount) * 128);
         reserve(descriptors, uint64_t(slotCount) * sizeof(zeno_cluster_device::Cluster));
+        reserve(slotRefinement,uint64_t(slotCount)*sizeof(int32_t));
         reserve(slotHandles, uint64_t(slotCount) * sizeof(uint64_t));
         slotOwners.resize(slotCount, {gpu::Invalid, 0});
         upload.init(64ull << 20, buildStream);
@@ -633,7 +715,9 @@ struct Runtime::Impl {
         initialUpload(placementOrder, order);
         reserve(groupSlots, uint64_t(totalGroups) * sizeof(uint32_t));
         check(cudaMemsetAsync(ptr<void>(groupSlots.p), 0xff, groupSlots.bytes, buildStream));
-        reserve(stamps, uint64_t(totalGroups) * sizeof(uint32_t));
+        reserve(stamps, uint64_t(totalGroups) * sizeof(uint64_t));
+        reserve(primaryRequests,uint64_t(totalGroups)*sizeof(uint64_t));
+        check(cudaMemsetAsync(ptr<void>(primaryRequests.p),0,primaryRequests.bytes,buildStream));
         check(cudaMemsetAsync(ptr<void>(stamps.p), 0, stamps.bytes, buildStream));
         reserve(clasStatus, sizeof(gpu::Result));
         reserve(clasCount, sizeof(uint32_t));
@@ -685,7 +769,8 @@ struct Runtime::Impl {
         std::cout << "[CLAS] GPU resident-cut pipeline geometries=" << asset.geometries.size()
                   << " placements=" << asset.placements.size() << " groups=" << totalGroups
                   << " coarsePages=" << residents.size() << " descriptorSlots=" << slotCount
-                  << " gasBankBytes=" << gasBankBytes << std::endl;
+                  << " gasBankBytes=" << gasBankBytes
+                  << " residencyCacheBytes=" << residencyHeap.cacheBytes << std::endl;
     }
     bool parentsResident(uint32_t id) const {
         for (uint32_t i = parentOffsets[id]; i < parentOffsets[id + 1]; ++i) {
@@ -699,10 +784,12 @@ struct Runtime::Impl {
                          std::vector<gpu::GroupPatch> &patches) {
         TimelineRange timeline("CLAS: stage geometry");
         UploadJob job;
-        std::vector<OptixClusterAccelBuildInputTrianglesArgs> args;
-        std::vector<gpu::PageBuild> pages;
-        std::vector<gpu::DescriptorPatch> descriptorPatches;
-        for (const auto &prepared : batch.pages) {
+        UploadWorkspace temporary;
+        auto& workspace=hostPageReuse?uploadWorkspace:temporary;
+        auto& args=workspace.args;auto& pages=workspace.pages;auto& descriptorPatches=workspace.descriptors;
+        args.clear();pages.clear();descriptorPatches.clear();
+        for (size_t pageIndex=0;pageIndex<batch.size();++pageIndex) {
+            const auto& prepared=batch.pages[pageIndex];
             uint32_t id = prepared.id;
             if (residents.count(id))
                 continue;
@@ -727,8 +814,11 @@ struct Runtime::Impl {
             resident.slot = uint32_t(descriptorPool.allocate(resident.count * 128) / 128);
             resident.permanent = permanent;
             const auto base = resident.geometryChunk->storage.buffer.p + resident.geometryOffset;
-            std::vector<std::array<float,3>> positions(page.vertices.size());
-            std::vector<zeno_cluster_device::VertexNormal> normals(page.vertices.size());
+            std::vector<std::array<float,3>> temporaryPositions;
+            std::vector<zeno_cluster_device::VertexNormal> temporaryNormals;
+            auto& positions=hostPageReuse?workspace.positions:temporaryPositions;
+            auto& normals=hostPageReuse?workspace.normals:temporaryNormals;
+            positions.resize(page.vertices.size());normals.resize(page.vertices.size());
             for(size_t i=0;i<page.vertices.size();++i) {
                 std::memcpy(positions[i].data(),page.vertices[i].position,sizeof(positions[i]));
                 std::memcpy(normals[i].normal,page.vertices[i].normal,sizeof(normals[i]));
@@ -758,6 +848,12 @@ struct Runtime::Impl {
                 a.indexFormat = OPTIX_CLUSTER_ACCEL_INDICES_FORMAT_8BIT;
                 a.basePrimitiveInfo.sbtIndex = sbt;
                 a.basePrimitiveInfo.primitiveFlags = settings.materials?0:OPTIX_CLUSTER_ACCEL_PRIMITIVE_FLAG_DISABLE_ANYHIT;
+                if(settings.materials) {
+                    bool opaque=true;
+                    for(uint32_t triangle=0;triangle<cluster.triangleCount && opaque;++triangle)
+                        opaque=opaqueShadowPolicy.opaque(geometry,page.materials[cluster.indexOffset/3+triangle]);
+                    if(opaque)a.basePrimitiveInfo.primitiveFlags=OPTIX_CLUSTER_ACCEL_PRIMITIVE_FLAG_DISABLE_ANYHIT;
+                }
                 a.vertexBuffer = positionData + cluster.vertexOffset * sizeof(positions[0]);
                 a.vertexBufferStrideInBytes = sizeof(positions[0]);
                 a.indexBuffer = base + normalBytes + cluster.indexOffset;
@@ -767,7 +863,8 @@ struct Runtime::Impl {
                                               ptr<const unsigned char>(a.indexBuffer), group(id).depth,
                                               geometry, local, cluster.triangleCount,
                                               settings.materials?ptr<const zeno_cluster_device::ShadingVertex>(attributeBase+cluster.vertexOffset*sizeof(zeno_cluster_device::ShadingVertex)):nullptr,
-                                              settings.materials?ptr<const unsigned short>(materialBase+cluster.indexOffset/3*2):nullptr}});
+                                              settings.materials?ptr<const unsigned short>(materialBase+cluster.indexOffset/3*2):nullptr},
+                                             group(id).refined[c]<0?-1:int32_t(geometryOffsets[geometry]+group(id).refined[c])});
                 slotOwners[slot] = {id, c};
                 job.triangles += cluster.triangleCount;
                 job.vertices += cluster.vertexCount;
@@ -882,6 +979,7 @@ struct Runtime::Impl {
         }
         gpu::patch(ptr<const gpu::DescriptorPatch>(job.descriptors), job.descriptorCount,
                    ptr<zeno_cluster_device::Cluster>(descriptors.p),
+                   ptr<int32_t>(slotRefinement.p),
                    ptr<const gpu::GroupPatch>(pendingGroupPatch), uint32_t(patches.size()),
                    ptr<uint32_t>(groupSlots.p), buildStream);
     }
@@ -953,10 +1051,13 @@ struct Runtime::Impl {
             for (uint32_t i = parentOffsets[id]; i < parentOffsets[id + 1]; ++i)
                 self(self, parentIDs[i]);
         };
-        std::sort(requests.begin(), requests.end(), [](auto a, auto b) { return a.priority > b.priority; });
+        std::sort(requests.begin(), requests.end(), [](auto a, auto b) {
+            return a.primary!=b.primary ? a.primary>b.primary : a.priority>b.priority;
+        });
         readingIDs.clear();
         uint64_t bytes = 0;
-        const uint32_t limit = std::min(settings.loadsPerFrame, 128u);
+        const uint32_t limit = std::min(settings.loadsPerFrame, ReadGroups);
+        const auto byteLimit=std::min<uint64_t>(16ull<<20,std::min(settings.geometryBytes,settings.clasBytes)/8);
         for (const auto &request : requests) {
             needed.clear();
             ancestors(ancestors, request.group);
@@ -968,9 +1069,7 @@ struct Runtime::Impl {
                     std::find(readingIDs.begin(), readingIDs.end(), id) != readingIDs.end())
                     continue;
                 const auto n = geometryBytes(id);
-                if (bytes + n > std::min<uint64_t>(
-                                    16ull << 20, std::min(settings.geometryBytes, settings.clasBytes) / 8) &&
-                    !readingIDs.empty())
+                if (bytes + n > byteLimit && !readingIDs.empty())
                     continue;
                 readingIDs.push_back(id);
                 bytes += n;
@@ -987,24 +1086,42 @@ struct Runtime::Impl {
         reading = std::async(std::launch::async, [this, ids] {
             const auto start = Clock::now();
             Batch batch;
-            for (uint32_t id : ids) {
+            if(hostPageReuse) {
+                std::lock_guard<std::mutex> lock(pageReuseMutex);
+                if(!pageBatches.empty()){batch=std::move(pageBatches.back());pageBatches.pop_back();}
+                if(batch.pages.size()<ids.size())batch.pages.resize(ids.size());
+                batch.activePages=uint32_t(ids.size());
+            }
+            for (size_t pageIndex=0;pageIndex<ids.size();++pageIndex) {
+                const auto id=ids[pageIndex];
                 const auto [g, i] = key(id);
-                auto file = pageFiles.find(g);
-                if (file == pageFiles.end()) {
-                    if (pageFiles.size() >= 64) {
-                        auto oldest = std::min_element(
-                            pageFiles.begin(), pageFiles.end(),
-                            [](const auto &a, const auto &b) { return a.second.second < b.second.second; });
-                        pageFiles.erase(oldest);
+                const auto decode=[this,g,i](Page& page) {
+                    auto file = pageFiles.find(g);
+                    if (file == pageFiles.end()) {
+                        if (pageFiles.size() >= 64) {
+                            auto oldest = std::min_element(
+                                pageFiles.begin(), pageFiles.end(),
+                                [](const auto &a, const auto &b) { return a.second.second < b.second.second; });
+                            pageFiles.erase(oldest);
+                        }
+                        auto stream =
+                            std::make_unique<std::ifstream>(asset.geometries[g].pages, std::ios::binary);
+                        if (!*stream)
+                            throw std::runtime_error("Cannot open CLAS page file");
+                        file = pageFiles.emplace(g, std::make_pair(std::move(stream), uint64_t(0))).first;
                     }
-                    auto stream =
-                        std::make_unique<std::ifstream>(asset.geometries[g].pages, std::ios::binary);
-                    if (!*stream)
-                        throw std::runtime_error("Cannot open CLAS page file");
-                    file = pageFiles.emplace(g, std::make_pair(std::move(stream), uint64_t(0))).first;
-                }
-                file->second.second = ++readTick;
-                batch.pages.push_back({id, readPage(asset.geometries[g], i, *file->second.first)});
+                    file->second.second = ++readTick;
+                    if(hostPageReuse)readPage(asset.geometries[g],i,*file->second.first,page,pageReadWorkspace);
+                    else page=readPage(asset.geometries[g],i,*file->second.first);
+                };
+                const auto load=[&](Page& page) {
+                    if(decodedPages)decodedPages->read(id,group(id),asset.geometries[g].hasAttributes,page,decode,hostCacheFillAllowed.load(std::memory_order_relaxed));
+                    else decode(page);
+                };
+                if(hostPageReuse) {
+                    auto& prepared=batch.pages[pageIndex];prepared.id=id;
+                    load(prepared.page);
+                } else {batch.pages.push_back({id,{}});load(batch.pages.back().page);}
             }
             batch.readMs = elapsed(start);
             return batch;
@@ -1059,7 +1176,8 @@ struct Runtime::Impl {
     void startTraversal(OptixDeviceContext ctx, Scene &scene) {
         auto &job = scene.uploadJob;
         pendingGroupPatch = upload.add(scene.patches);
-        std::vector<gpu::Range> ranges;
+        std::vector<gpu::Range> temporaryRanges;
+        auto& ranges=hostPageReuse?scene.hostRanges:temporaryRanges;
         layout(scene, ranges);
         const auto residentData = upload.add(scene.residentIDs), geometryData = upload.add(geometryHost),
                    rangeData = upload.add(ranges);
@@ -1100,7 +1218,7 @@ struct Runtime::Impl {
         t.groupSlots = ptr<const uint32_t>(groupSlots.p);
         t.handles = ptr<const uint64_t>(slotHandles.p);
         t.descriptors = ptr<const zeno_cluster_device::Cluster>(descriptors.p);
-        t.stamps = ptr<uint32_t>(stamps.p);
+        t.stamps = ptr<uint64_t>(stamps.p);
         t.stamp = stamp;
         t.work = ptr<gpu::Work>(scene.work.p);
         t.workCount = scene.workCount;
@@ -1127,6 +1245,8 @@ struct Runtime::Impl {
         std::copy(scene.camera.begin(), scene.camera.end(), t.eye);
         t.projection = scene.projection;
         t.zoom = scene.zoom;
+        t.primaryFeedback=primaryFeedbackEnabled()?ptr<uint64_t>(primaryRequests.p):nullptr;
+        t.feedbackEpoch=feedbackEpoch.load(std::memory_order_relaxed);
         t.error = error;
         scene.lodBegin.record(buildStream);
         gpu::traverse(t, ptr<void>(scene.scan.p), scene.scan.bytes, buildStream);
@@ -1211,6 +1331,13 @@ struct Runtime::Impl {
         counters.hostStreamingMs += elapsed(start);
         scene.stagingMs = elapsed(start);
         counters.loadingMs = counters.hostStreamingMs;
+        if(hostPageReuse&&batch.size()) {
+            // stagePages has copied every byte into the fenced upload arena.
+            // Retain decoded vectors instead of freeing them under the global
+            // Windows heap lock while another thread submits an OptiX launch.
+            std::lock_guard<std::mutex> lock(pageReuseMutex);
+            if(pageBatches.size()<2)pageBatches.push_back(std::move(batch));
+        }
         return true;
     }
     void releaseSceneGases(Scene &scene) {
@@ -1266,7 +1393,10 @@ struct Runtime::Impl {
             batch->pool = &gasPool;
             reserve(scene.scratch, sizes.tempSizeInBytes);
         }
-        std::vector<uint32_t> tokens(count, gpu::Invalid), newTokens;
+        std::vector<uint32_t> temporaryTokens,temporaryNewTokens;
+        auto& tokens=hostPageReuse?scene.hostTokens:temporaryTokens;
+        auto& newTokens=hostPageReuse?scene.hostNewTokens:temporaryNewTokens;
+        tokens.assign(count,gpu::Invalid);newTokens.clear();
         newTokens.reserve(newCount);
         for (uint32_t p = 0; p < count; ++p)
             if (scene.canonicalReceipt[p] == p) {
@@ -1648,12 +1778,22 @@ struct Runtime::Impl {
 Runtime::Runtime(const std::filesystem::path &path, RuntimeSettings settings)
     : impl(std::make_unique<Impl>(path, settings)) {}
 Runtime::~Runtime() = default;
+void Runtime::setOpaqueShadowPolicy(const OpaqueSlotPolicy& policy) {
+    if(impl->initialized)throw std::runtime_error("CLAS opacity policy must precede the first build");
+    if(policy.slots.size()!=impl->asset.geometries.size())throw std::runtime_error("CLAS opacity policy geometry count mismatch");
+    impl->opaqueShadowPolicy=policy;
+    size_t opaque=0,total=0;
+    for(const auto& geometry:policy.slots)for(auto slot:geometry){++total;opaque+=slot!=0;}
+    std::cout<<"[CLAS shadow policy] opaque slots="<<opaque<<" total slots="<<total<<std::endl;
+}
 bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<float, 3> &camera,
                      float projection, bool interactive, const ZoomView &zoom, LodControl control) {
     TimelineRange timeline("CLAS: render update");
     auto &s = *impl;
     const auto start = Clock::now();
+    if(s.frozen)return false;
     ++s.mainUpdates;
+    s.feedbackEpoch.fetch_add(1,std::memory_order_relaxed);
     if (!(projection > 0) || !std::isfinite(projection) ||
         !std::all_of(camera.begin(), camera.end(), [](float v) { return std::isfinite(v); }))
         throw std::runtime_error("Invalid CLAS view");
@@ -1774,6 +1914,14 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     s.counters.pendingGroups = uint32_t(s.requests.size() + s.readingIDs.size());
     s.counters.residentGroups = uint32_t(s.residents.size());
     s.counters.geometryBytes = s.geometryPool.used;
+    if(s.decodedPages) {
+        const auto cache=s.decodedPages->stats();
+        s.counters.hostGeometryBytes=cache.blocks.bytes;s.counters.hostGeometryPeak=cache.blocks.peak;
+        s.counters.hostGeometryHits=cache.blocks.hits;s.counters.hostGeometryMisses=cache.blocks.misses;
+        s.counters.hostGeometryEvictions=cache.blocks.evictions;
+        s.counters.hostGeometryRestoredBytes=cache.restoredBytes;
+        s.counters.hostGeometryRestoreMs=cache.restoreMs;s.counters.hostGeometryStoreMs=cache.storeMs;
+    }
     s.counters.clasBytes = s.clasPool.used;
     s.counters.gasBytes = s.gasPools[0].used + s.gasPools[1].used;
     s.counters.gasReservedBytes = s.gasPools[0].reserved + s.gasPools[1].reserved;
@@ -1799,7 +1947,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
                   << " smoothedLoad=" << s.counters.smoothedPoolLoad
                   << " qualityLimited=" << s.counters.qualityLimited
                   << " pendingGroups=" << s.counters.pendingGroups << " settled=" << s.counters.settled
-                  << " hostMs=" << s.counters.hostStreamingMs << " gpuLodMs=" << s.counters.gpuLodMs
+                  << " hostMs=" << s.counters.hostStreamingMs << " gpuTiming=" << s.counters.gpuTimingsEnabled << " gpuLodMs=" << s.counters.gpuLodMs
                   << " gpuClasMs=" << s.counters.gpuClasMs << " gpuGasMs=" << s.counters.gpuGasMs
                   << " gpuIasMs=" << s.counters.gpuIasMs << std::endl;
     if (changed && std::getenv("ZENO_CLAS_VERIFY_CUTS"))
@@ -1819,7 +1967,28 @@ OptixTraversableHandle Runtime::handle() const {
 const zeno_cluster_device::Cluster *Runtime::descriptors() const {
     return ptr<const zeno_cluster_device::Cluster>(impl->descriptors.p);
 }
+zeno_cluster_device::ViewFeedback Runtime::viewFeedback() const {
+    const auto& s=*impl;
+    if(!s.initialized || s.frozen || !primaryFeedbackEnabled())return {};
+    return {ptr<const int>(s.slotRefinement.p),ptr<unsigned long long>(s.primaryRequests.p),
+            s.feedbackEpoch.load(std::memory_order_relaxed)};
+}
 RuntimeStats Runtime::stats() const { return impl->frameStats; }
+void Runtime::setHostCacheFillAllowed(bool allowed) {impl->hostCacheFillAllowed.store(allowed,std::memory_order_relaxed);}
+void Runtime::setFrozen(bool frozen) {
+    auto& s=*impl;if(frozen==s.frozen)return;
+    if(frozen) {
+        if(s.front<0)throw std::runtime_error("Initialize CLAS before freezing residency");
+        if(s.preparing.valid())s.preparing.get();
+        if(s.reading.valid())s.reading.wait();
+        check(cudaStreamSynchronize(s.buildStream));check(cudaStreamSynchronize(s.uploadStream));
+        auto& f=s.frameStats;
+        f.updateMs=f.loadingMs=f.planningMs=f.accelerationMs=f.hostStreamingMs=f.pageReadMs=f.backgroundPrepareMs=0;
+        f.gpuSceneMs=f.gpuLodMs=f.gpuClasMs=f.gpuGasMs=f.gpuIasMs=f.gpuUploadMs=0;
+        f.submissionWaitMs=f.backgroundSubmissionWaitMs=f.syncMs=0;f.hostTaskMs=0;
+    }
+    s.frozen=frozen;
+}
 std::array<uint64_t,2> Runtime::residencyMemory() const {
     std::array<uint64_t,2> bytes{};
     if(impl->residencyHeap.memory) {

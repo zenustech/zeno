@@ -31,6 +31,15 @@ void unpackNormal(float* out,const int16_t* n){
     const float length=std::sqrt(x*x+y*y+z*z);out[0]=x/length;out[1]=y/length;out[2]=z/length;
 }
 }
+struct PageReadWorkspace::Decoder {
+    ZSTD_DCtx* context=ZSTD_createDCtx();
+    Decoder(){if(!context)throw std::bad_alloc();}
+    ~Decoder(){ZSTD_freeDCtx(context);}
+};
+PageReadWorkspace::PageReadWorkspace()=default;
+PageReadWorkspace::~PageReadWorkspace()=default;
+PageReadWorkspace::PageReadWorkspace(PageReadWorkspace&&) noexcept=default;
+PageReadWorkspace& PageReadWorkspace::operator=(PageReadWorkspace&&) noexcept=default;
 nlohmann::json readJson(const std::filesystem::path& path) {
     std::ifstream stream(path, std::ios::binary);
     if (!stream) throw std::runtime_error("Cannot open cluster metadata: " + path.string());
@@ -126,7 +135,10 @@ Page readPage(const Geometry& geometry, uint32_t group) {
     return readPage(geometry,group,stream);
 }
 Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
-    if(geometry.rtxmgShard)return readRtxmgPage(geometry,group,stream);
+    Page page;PageReadWorkspace workspace;readPage(geometry,group,stream,page,workspace);return page;
+}
+void readPage(const Geometry& geometry,uint32_t group,std::istream& stream,Page& p,PageReadWorkspace& workspace){
+    if(geometry.rtxmgShard){readRtxmgPage(geometry,group,stream,p,workspace.body);return;}
     const auto& meta = geometry.groups.at(group);
     stream.clear();
     stream.seekg(meta.offset);
@@ -143,19 +155,20 @@ Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
         !h.clusterCount || !h.vertexCount || !h.encodedVertexBytes ||
         h.clusterCount > 256 || h.vertexCount > h.clusterCount * MaxVertices)
         throw std::runtime_error("Invalid cluster page header");
-    Page p; p.clusters.resize(h.clusterCount); p.vertices.resize(h.vertexCount); p.indices.resize(h.indexBytes);
-    std::vector<uint8_t> body(bytes-sizeof(h));
+    p.clusters.resize(h.clusterCount); p.vertices.resize(h.vertexCount); p.indices.resize(h.indexBytes);
+    p.attributes.resize(attributes?h.vertexCount:0);p.materials.resize(attributes?h.indexBytes/3:0);
+    auto& body=workspace.body;body.resize(bytes-sizeof(h));
     if(compressed) {
-        std::vector<uint8_t> compressed(meta.bytes-sizeof(h));
+        auto& compressed=workspace.compressed;compressed.resize(meta.bytes-sizeof(h));
         stream.read(reinterpret_cast<char*>(compressed.data()),compressed.size());
-        const auto decoded=ZSTD_decompress(body.data(),body.size(),compressed.data(),compressed.size());
+        if(!workspace.decoder)workspace.decoder=std::make_unique<PageReadWorkspace::Decoder>();
+        const auto decoded=ZSTD_decompressDCtx(workspace.decoder->context,body.data(),body.size(),compressed.data(),compressed.size());
         if(ZSTD_isError(decoded)||decoded!=body.size())throw std::runtime_error("Cluster page decompression failed");
     }else stream.read(reinterpret_cast<char*>(body.data()),body.size());
     const size_t clusterBytes=p.clusters.size()*sizeof(Cluster);
     std::memcpy(p.clusters.data(),body.data(),clusterBytes);
     std::memcpy(p.indices.data(),body.data()+clusterBytes+h.encodedVertexBytes,p.indices.size());
     if(attributes) {
-        p.attributes.resize(h.vertexCount);p.materials.resize(h.indexBytes/3);
         const auto* data=body.data()+clusterBytes+h.encodedVertexBytes+h.indexBytes;
         std::memcpy(p.attributes.data(),data,attributeBytes);
         std::memcpy(p.materials.data(),data+attributeBytes,materialBytes);
@@ -163,10 +176,10 @@ Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
             if(!std::isfinite(uv)) throw std::runtime_error("Non-finite cluster UV");
     }
     if(h.version>=3){
-        std::vector<PackedVertex> packed(h.vertexCount);
-        if(!stream||meshopt_decodeVertexBuffer(packed.data(),packed.size(),sizeof(PackedVertex),body.data()+clusterBytes,h.encodedVertexBytes))
+        auto& packed=workspace.packed;packed.resize(size_t(h.vertexCount)*sizeof(PackedVertex));
+        if(!stream||meshopt_decodeVertexBuffer(packed.data(),h.vertexCount,sizeof(PackedVertex),body.data()+clusterBytes,h.encodedVertexBytes))
             throw std::runtime_error("Cluster page decode failed");
-        for(size_t i=0;i<packed.size();++i){std::memcpy(p.vertices[i].position,packed[i].position,12);unpackNormal(p.vertices[i].normal,packed[i].normal);}
+        for(size_t i=0;i<h.vertexCount;++i){PackedVertex v;std::memcpy(&v,packed.data()+i*sizeof(v),sizeof(v));std::memcpy(p.vertices[i].position,v.position,12);unpackNormal(p.vertices[i].normal,v.normal);}
     }else if (!stream || meshopt_decodeVertexBuffer(p.vertices.data(), p.vertices.size(), sizeof(Vertex), body.data()+clusterBytes,h.encodedVertexBytes))
         throw std::runtime_error("Cluster page decode failed");
     for (size_t i = 0; i < p.clusters.size(); ++i) {
@@ -181,6 +194,5 @@ Page readPage(const Geometry& geometry,uint32_t group,std::istream& stream){
         for (float x : v.position) if (!std::isfinite(x)) throw std::runtime_error("Non-finite cluster vertex");
         for (float x : v.normal) if (!std::isfinite(x)) throw std::runtime_error("Non-finite cluster normal");
     }
-    return p;
 }
 }

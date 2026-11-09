@@ -797,6 +797,11 @@ void DisplayWidget::setClasDebugView(int view)
     if (!m_bGLView) m_optixView->setClasDebugView(view);
 }
 
+void DisplayWidget::clearTextureResidency()
+{
+    if (!m_bGLView) m_optixView->clearTextureResidency();
+}
+
 void DisplayWidget::setClasHistorySettings(bool keep, int samples)
 {
     if (!m_bGLView) m_optixView->setClasHistorySettings(keep, samples);

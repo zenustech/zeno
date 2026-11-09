@@ -114,6 +114,12 @@ public:
     zeno::cluster::RuntimeSettings clusterSettings;
     bool clusterRootDirty = false;
     bool clusterUnloadPending = false;
+    bool canUseOpaqueClusterShadows() const {
+        // Legacy geometry can require node-graph opacity, custom intersections
+        // or OMM handling. Keep its established enforced-any-hit trace path.
+        return geoTypeMap.empty() && shader_indice_table.count(
+            std::make_tuple(std::string(zeno::cluster::MaterialShaderName),ShaderMark::Mesh));
+    }
     void preloadClusterAsset(const std::string& key,const std::string& path,const std::string& revision,
                              zeno::cluster::RuntimeSettings settings) {
         if(clusterAsset && clusterAssetManifest==path && clusterAssetRevision==revision &&
@@ -140,9 +146,14 @@ public:
     }
     bool updateClusters(const Params& params,bool interactive,zeno::cluster::LodControl control = {}) {
         if(!clusterAsset)return false;
-        if(clusterSettings.materials && !clusterMaterials)
+        if(clusterSettings.materials && !clusterMaterials) {
             clusterMaterials=std::make_unique<zeno::cluster::Materials>(std::filesystem::u8path(clusterAssetManifest),clusterSettings.textureMiB,clusterSettings.hostTextureMiB);
-        const auto index=shader_indice_table.at(std::make_tuple(std::string(""),ShaderMark::Mesh));
+            clusterAsset->setOpaqueShadowPolicy(clusterMaterials->opaqueShadowPolicy());
+        }
+        clusterAsset->setHostCacheFillAllowed(!clusterMaterials||!clusterMaterials->primaryDetailPending());
+        auto shader=shader_indice_table.find(std::make_tuple(std::string(zeno::cluster::MaterialShaderName),ShaderMark::Mesh));
+        const auto index=shader==shader_indice_table.end()?
+            shader_indice_table.at(std::make_tuple(std::string(""),ShaderMark::Mesh)):shader->second;
         const float projection=float(params.height)*params.cam.focal_length/std::max(params.cam.height,0.001f);
         const float right[]{params.cam.right.x,params.cam.right.y,params.cam.right.z};
         const float up[]{params.cam.up.x,params.cam.up.y,params.cam.up.z};
@@ -680,8 +691,12 @@ public:
             CameraSapceMatrix[7] -= cam.y;
             CameraSapceMatrix[11] -= cam.z;
 
-            std::vector<OptixInstance> instanced {};
-            instanced.reserve(3);
+            // Root transforms change with the camera. Keep their pinned upload
+            // alive until its own copy fence, without pageable staging waits.
+            rootNode.hostInstancesUpload.wait();
+            auto& instanced=rootNode.hostInstances;
+            instanced.clear();
+            instanced.reserve(4);
 
             OptixInstance opi {};
             memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
@@ -985,7 +1000,7 @@ public:
     bool collapseDynamicSingleChildIAS{true};
 
     float3 cameraPos;
-    SceneNode rootNode;
+    SceneNodeT<CudaPinnedAllocator> rootNode;
     IASBuildWorkspace iasBuildWorkspace;
     uint64_t rootLightChild {};
     uint64_t rootStaticChild {};

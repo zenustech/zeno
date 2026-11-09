@@ -130,6 +130,11 @@ void ZOptixProcViewport::setClasDebugView(int view)
     m_worker->onSetClasDebugView(view);
 }
 
+void ZOptixProcViewport::clearTextureResidency()
+{
+    m_worker->onClearTextureResidency();
+}
+
 void ZOptixProcViewport::setClasHistorySettings(bool keep, int samples)
 {
     m_worker->onSetClasHistorySettings(keep, samples);

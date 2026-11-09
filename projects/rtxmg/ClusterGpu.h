@@ -28,6 +28,7 @@ struct Range {
 struct Request {
     uint32_t group;
     float priority;
+    uint32_t primary;
 };
 struct Result {
     uint32_t requests, overflow, changed, clusters;
@@ -39,6 +40,7 @@ struct Result {
 struct DescriptorPatch {
     uint32_t slot;
     zeno_cluster_device::Cluster cluster;
+    int32_t refinement;
 };
 struct GroupPatch {
     uint32_t group, slot;
@@ -60,7 +62,8 @@ struct Traversal {
     const uint32_t *groupSlots;
     const uint64_t *handles;
     const zeno_cluster_device::Cluster *descriptors;
-    uint32_t *stamps;
+    // High word: generation; low word: primary flag and positive float rank.
+    uint64_t *stamps;
     uint32_t stamp;
     Work *work;
     uint32_t workCount;
@@ -81,13 +84,15 @@ struct Traversal {
     Result *result;
     float eye[3], projection, error;
     ZoomView zoom;
+    uint64_t *primaryFeedback;
+    uint64_t feedbackEpoch;
 };
 size_t scanBytes(uint32_t count);
 size_t sortBytes(uint32_t count);
 void traverse(const Traversal &, void *scanScratch, size_t bytes, cudaStream_t stream);
 void canonicalize(const Traversal &, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint32_t *, uint32_t *,
                   void *, size_t, cudaStream_t);
-void patch(const DescriptorPatch *, uint32_t, zeno_cluster_device::Cluster *, const GroupPatch *, uint32_t,
+void patch(const DescriptorPatch *, uint32_t, zeno_cluster_device::Cluster *, int32_t *, const GroupPatch *, uint32_t,
            uint32_t *, cudaStream_t);
 void destinations(PageBuild *, uint32_t, const uint32_t *, uint64_t *, Result *, cudaStream_t);
 void scatterHandles(const PageBuild *, uint32_t, const uint64_t *, uint64_t *, cudaStream_t);

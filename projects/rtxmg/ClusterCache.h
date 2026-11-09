@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <iosfwd>
+#include <memory>
 #include <string>
 #include <vector>
 #include <tinygltf/json.hpp>
@@ -32,6 +33,22 @@ struct Page {
     std::vector<zeno_cluster_device::ShadingVertex> attributes;
     std::vector<uint16_t> materials;
 };
+// Reader-owned scratch. Reusing it and Page capacities avoids large process-
+// heap allocation/free bursts on the asynchronous streaming path.
+struct Geometry;
+struct PageReadWorkspace {
+    std::vector<uint8_t> body, compressed, packed;
+    PageReadWorkspace();
+    ~PageReadWorkspace();
+    PageReadWorkspace(PageReadWorkspace&&) noexcept;
+    PageReadWorkspace& operator=(PageReadWorkspace&&) noexcept;
+    PageReadWorkspace(const PageReadWorkspace&) = delete;
+    PageReadWorkspace& operator=(const PageReadWorkspace&) = delete;
+private:
+    struct Decoder;
+    std::unique_ptr<Decoder> decoder;
+    friend void readPage(const Geometry&, uint32_t, std::istream&, Page&, PageReadWorkspace&);
+};
 struct Group {
     uint64_t offset{}, bytes{};
     uint32_t vertices{}, triangles{}, depth{};
@@ -59,6 +76,8 @@ void writeJson(const std::filesystem::path& path, const nlohmann::json& value);
 Asset loadAsset(const std::filesystem::path& manifest);
 Page readPage(const Geometry& geometry, uint32_t group);
 Page readPage(const Geometry& geometry, uint32_t group, std::istream& stream);
+void readPage(const Geometry& geometry, uint32_t group, std::istream& stream, Page& page, PageReadWorkspace& workspace);
 Page readRtxmgPage(const Geometry& geometry, uint32_t group, std::istream& stream);
+void readRtxmgPage(const Geometry& geometry, uint32_t group, std::istream& stream, Page& page, std::vector<uint8_t>& bytes);
 uint64_t writePage(std::ostream& stream, const Page& page);
 }

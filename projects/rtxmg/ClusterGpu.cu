@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_scan.cuh>
+#include <cuda/atomic>
 #include <stdexcept>
 
 namespace zeno::cluster::gpu {
@@ -61,13 +62,25 @@ __global__ void countWork(Traversal t) {
                 const bool available = t.groupSlots[child] != Invalid;
                 selected = !refine || !available;
                 const uint32_t peers = __match_any_sync(__activemask(), child);
-                if (refine && !available && lane == uint32_t(__ffs(peers) - 1) &&
-                    atomicExch(t.stamps + child, t.stamp) != t.stamp) {
-                    uint32_t offset = atomicAdd(&t.result->requests, 1u);
-                    if (offset < MaxRequests)
-                        t.requests[offset] = {uint32_t(child), error};
-                    else
-                        atomicOr(&t.result->overflow, 2u);
+                if (refine && !available && lane == uint32_t(__ffs(peers) - 1)) {
+                    const auto seen=t.primaryFeedback?
+                        cuda::atomic_ref<unsigned long long,cuda::thread_scope_device>(
+                            *reinterpret_cast<unsigned long long*>(t.primaryFeedback+child)).load(cuda::std::memory_order_relaxed):0ull;
+                    // Hints may arrive from a concurrent, newer render. Keep
+                    // a short recent-view neighborhood without a CPU readback.
+                    const bool primary=seen && (seen>t.feedbackEpoch || t.feedbackEpoch-seen<=32);
+                    const uint32_t rank=__float_as_uint(error)|(primary?0x80000000u:0u);
+                    const uint64_t ranked=(uint64_t(t.stamp)<<32)|rank;
+                    const uint64_t previous=atomicMax(reinterpret_cast<unsigned long long*>(t.stamps+child),ranked);
+                    // Keep the most urgent instance's demand, regardless of
+                    // which placement first appends this shared page request.
+                    if (uint32_t(previous>>32)!=t.stamp) {
+                        uint32_t offset = atomicAdd(&t.result->requests, 1u);
+                        if (offset < MaxRequests)
+                            t.requests[offset] = {uint32_t(child), 0.f};
+                        else
+                            atomicOr(&t.result->overflow, 2u);
+                    }
                 }
             }
         }
@@ -80,6 +93,14 @@ __global__ void countWork(Traversal t) {
         t.counts[w] = total;
         if (total)
             atomicOr(t.wanted + residentIndex, 2u);
+    }
+}
+__global__ void finalizeRequests(Traversal t) {
+    const uint32_t i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i<MaxRequests && i<t.result->requests) {
+        const uint32_t rank=uint32_t(t.stamps[t.requests[i].group]);
+        t.requests[i].priority=__uint_as_float(rank&0x7fffffffu);
+        t.requests[i].primary=rank>>31;
     }
 }
 __global__ void scatterWork(Traversal t) {
@@ -192,6 +213,7 @@ void traverse(const Traversal &t, void *scratch, size_t bytes, cudaStream_t stre
     check(cudaMemsetAsync(&t.result->minLod, 0xff, sizeof(uint32_t), stream));
     initializeWork<<<t.placementCount, 128, 0, stream>>>(t);
     countWork<<<(t.workCount * 32 + 127) / 128, 128, 0, stream>>>(t);
+    finalizeRequests<<<(MaxRequests+127)/128,128,0,stream>>>(t);
     stage("count");
     check(cudaMemsetAsync(t.counts + t.workCount, 0, sizeof(uint32_t), stream));
     check(cub::DeviceScan::ExclusiveSum(scratch, bytes, t.counts, t.offsets, t.workCount + 1, stream));
@@ -204,20 +226,22 @@ void traverse(const Traversal &t, void *scratch, size_t bytes, cudaStream_t stre
     check(cudaGetLastError());
     stage("compare");
 }
-__global__ void patchDescriptors(const DescriptorPatch *p, uint32_t n, zeno_cluster_device::Cluster *d) {
+__global__ void patchDescriptors(const DescriptorPatch *p, uint32_t n, zeno_cluster_device::Cluster *d, int32_t* refinement) {
     uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n)
+    if (i < n) {
         d[p[i].slot] = p[i].cluster;
+        refinement[p[i].slot]=p[i].refinement;
+    }
 }
 __global__ void patchGroups(const GroupPatch *p, uint32_t n, uint32_t *d) {
     uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n)
         d[p[i].group] = p[i].slot;
 }
-void patch(const DescriptorPatch *p, uint32_t n, zeno_cluster_device::Cluster *d, const GroupPatch *g,
+void patch(const DescriptorPatch *p, uint32_t n, zeno_cluster_device::Cluster *d, int32_t* refinement, const GroupPatch *g,
            uint32_t m, uint32_t *slots, cudaStream_t s) {
     if (n)
-        patchDescriptors<<<(n + 127) / 128, 128, 0, s>>>(p, n, d);
+        patchDescriptors<<<(n + 127) / 128, 128, 0, s>>>(p, n, d, refinement);
     if (m)
         patchGroups<<<(m + 127) / 128, 128, 0, s>>>(g, m, slots);
     check(cudaGetLastError());

@@ -669,6 +669,10 @@ inline bool createModule(
     }
 
     std::string flat_macros = "";
+    if(const auto* prediction=std::getenv("ZENO_CLAS_TEXTURE_LOOKAHEAD");prediction&&*prediction=='1') {
+        const char* option="--define-macro=ZENO_CLAS_TEXTURE_LOOKAHEAD=1";
+        compilerOptions.push_back(option);flat_macros+=std::string(option)+"\n";
+    }
 
     for (auto &ele : macros) {
         compilerOptions.push_back(ele.c_str());
@@ -854,7 +858,7 @@ inline void createSharcUpdateRaygenGroup(
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
                 std::string kind, std::string entry, std::string nameIS, OptixModule* moduleIS,
-                raii<OptixProgramGroup>& oGroup)
+                raii<OptixProgramGroup>& oGroup, const char* occlusionClosestHit=nullptr)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
@@ -878,6 +882,10 @@ if (entryName != nullptr) {
     {
         desc.hitgroup.moduleAH            = _module;
         desc.hitgroup.entryFunctionNameAH = entryName;
+        if(occlusionClosestHit) {
+            desc.hitgroup.moduleCH=_module;
+            desc.hitgroup.entryFunctionNameCH=occlusionClosestHit;
+        }
     }
 }
 
@@ -1694,6 +1702,7 @@ struct OptixShaderCore {
     std::string _hittingEntry;
     std::string _shadingEntry;
     std::string _occlusionEntry;
+    bool opaqueOcclusionClosestHit=false;
 
     OptixShaderCore() {}
     ~OptixShaderCore() {
@@ -1739,7 +1748,8 @@ struct OptixShaderCore {
 
             createRTProgramGroups(context, module, 
                 "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-                _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group);
+                _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group,
+                opaqueOcclusionClosestHit?"__closesthit__shadow_opaque":nullptr);
 
             markPipelineProgramGroupsDirty();
             //_c_group.wait();

@@ -134,6 +134,7 @@ struct RadiancePRD : CommonPRD {
 
     float        pixel_area;
     float        textureConeWidth=0.f,textureConeSpread=0.f;
+    bool         primaryTextureMissing=false;
 
     float        samplePdf;
     vec3         mask_value;
@@ -316,12 +317,19 @@ static __forceinline__ __device__ void traceOcclusion(
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
 
+    // Proven opaque CLAS primitives can terminate in traversal hardware.
+    // Alpha / graph materials still execute their existing any-hit programs.
+    // Enforce any-hit again when authored one-sided opaque rendering is used.
+    const auto& materials=params.cluster_materials;
+    const unsigned int flags=materials.materials && materials.opaqueShadowFastPath && materials.twoSidedOpaque ?
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT : OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
+
     optixTrace( handle,
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,  // rayTime
             (mask),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
+            flags,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,      // missSBTIndex

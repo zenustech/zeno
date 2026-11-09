@@ -193,10 +193,13 @@ nlohmann::json indexRtxmgShard(const std::filesystem::path &path, uint64_t sourc
 }
 
 Page readRtxmgPage(const Geometry &geometry, uint32_t id, std::istream &stream) {
+    Page page;std::vector<uint8_t> bytes;readRtxmgPage(geometry,id,stream,page,bytes);return page;
+}
+void readRtxmgPage(const Geometry &geometry,uint32_t id,std::istream &stream,Page& page,std::vector<uint8_t>& data) {
     const auto &meta = geometry.groups.at(id);
     if (meta.bytes > 4u * 1024u * 1024u)
         throw std::runtime_error("RTXMG group exceeds size limit");
-    std::vector<uint8_t> data(meta.bytes);
+    data.resize(meta.bytes);
     stream.clear();
     stream.seekg(meta.offset);
     stream.read(reinterpret_cast<char *>(data.data()), data.size());
@@ -206,7 +209,8 @@ Page readRtxmgPage(const Geometry &geometry, uint32_t id, std::istream &stream) 
     const uint32_t count = b.at<uint32_t>(8) >> 16;
     if (!count || count > 256 || count != meta.refined.size())
         throw std::runtime_error("RTXMG group cluster count changed");
-    Page page;
+    page.clusters.clear();page.vertices.clear();page.indices.clear();page.attributes.clear();page.materials.clear();
+    page.clusters.reserve(count);page.attributes.reserve(meta.vertices);page.materials.reserve(meta.triangles);
     page.vertices.reserve(meta.vertices);
     page.indices.reserve(meta.triangles * 3);
     for (uint32_t i = 0; i < count; ++i) {
@@ -296,6 +300,5 @@ Page readRtxmgPage(const Geometry &geometry, uint32_t id, std::istream &stream) 
     }
     if (page.vertices.size() != meta.vertices || page.indices.size() != meta.triangles * 3)
         throw std::runtime_error("RTXMG group geometry totals changed");
-    return page;
 }
 } // namespace zeno::cluster

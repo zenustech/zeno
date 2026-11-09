@@ -2075,6 +2075,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
 
     void update() override {
+        xinxinoptix::optixBeginFrame();
 //        zeno::log_error("update");
         update_json(scene->objectsMan->pairs());
 
@@ -2193,6 +2194,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void draw(bool _) override {
+        xinxinoptix::optixBeginFrame();
         //std::cout<<"in draw()"<<std::endl;
 #ifdef OPTIX_BASE_GL
         auto guard = setupState();
@@ -2576,6 +2578,19 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 prepareLightShader(ShaderMark::Mesh);
             if (requireSphereLight)
                 prepareLightShader(ShaderMark::Sphere);
+
+            const auto* specialized=std::getenv("ZENO_CLAS_SHADER_SPECIALIZATION");
+            if(defaultScene.clusterAsset && !(specialized && std::string(specialized)=="0")) {
+                const auto key=std::make_tuple(std::string(zeno::cluster::MaterialShaderName),ShaderMark::Mesh);
+                if(!cached_shaders.count(key)) {
+                    auto shader=make_default_shader(ShaderMark::Mesh);
+                    shader->matid=zeno::cluster::MaterialShaderName;
+                    shader->filename="ClusterMatShader.cu";
+                    cached_shaders[key]=std::move(shader);
+                    ShaderDirty=true;
+                }
+                requireTriangObj=true;
+            }
 
             ShaderDirty |= cached_shaders.size() != shaderCount;
 

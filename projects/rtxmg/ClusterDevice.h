@@ -19,6 +19,13 @@ struct Cluster {
     const ShadingVertex* attributes;
     const unsigned short* materials; // Source primitive slot, per triangle.
 };
+// Optional, sampled primary-hit hints. These only order missing-page requests;
+// they never change the selected LOD or remove off-screen geometry.
+struct ViewFeedback {
+    const int* refinement; // Global child group per descriptor slot, or -1.
+    unsigned long long* requested; // Last primary-hit epoch per group.
+    unsigned long long epoch;
+};
 enum DebugView {
     Shaded = 0, Lod = 1, Clusters = 2, FlatGray = 3,
     GeometricNormal = 4, ShadingNormal = 5, GeometricFacing = 6, NormalAgreement = 7

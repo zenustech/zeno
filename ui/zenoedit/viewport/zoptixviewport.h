@@ -25,6 +25,7 @@ public:
     void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     void resetSharcCache();
+    void clearTextureResidency();
     void setClasDebugView(int view);
     void setClasHistorySettings(bool keep, int samples);
     void setClasTwoSidedOpaque(bool enabled);

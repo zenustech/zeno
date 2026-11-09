@@ -56,6 +56,13 @@ __inline__ __device__ float3 zenoSharcMaterialDemodulation(const MatOutput& mate
     return make_float3(demodulation.x, demodulation.y, demodulation.z);
 }
 
+extern "C" __global__ void __closesthit__shadow_opaque()
+{
+    auto prd=getPRD<ShadowPRD>();
+    prd->radiance=make_float3(0.f);
+    prd->attanuation=make_float3(0.f);
+}
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
     auto rt_data = (HitGroupData*)optixGetSbtDataPointer();
@@ -63,7 +70,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     auto prd = getPRD<ShadowPRD>();
     prd->radiance = make_float3(0,0,0);
+#if defined(ZENO_CLAS_ONLY)
+    if(true) {
+#else
     if(params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID) {
+#endif
         if(params.cluster_materials.materials) {
             const float footprint=prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread;
             const float coverage=clusterMaterial::shadowCoverage(footprint);
@@ -256,8 +267,23 @@ vec3 FMA(vec3 a, vec3 b, vec3 c) {
 
 extern "C" __global__ void __closesthit__radiance()
 {
+#if defined(ZENO_CLAS_ONLY)
+    constexpr bool clusterHit=true;
+#else
     const bool clusterHit=params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID;
+#endif
     RadiancePRD* prd = getPRD();
+    const auto feedback=params.cluster_feedback;
+    if(clusterHit && prd->depth==0 && !prd->test_distance && feedback.requested) {
+        const auto pixel=optixGetLaunchIndex();
+        // Rotate one sample per 4x4 block over 16 frames. A page covers
+        // many triangles; this keeps feedback cheap even at large sizes.
+        if((pixel.x&3u)==(feedback.epoch&3u) &&
+           (pixel.y&3u)==((feedback.epoch>>2)&3u)) {
+            const int child=feedback.refinement[optixGetClusterId()];
+            if(child>=0)atomicMax(feedback.requested+child,feedback.epoch);
+        }
+    }
     if(clusterHit && params.cluster_debug_view && !prd->test_distance) {
         const auto cluster=params.cluster_data[optixGetClusterId()];
         float3 color=make_float3(0.5f);
@@ -516,7 +542,8 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }
         if(params.cluster_materials.materials)
-            mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread);
+            mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread,
+                prd->depth==0?&prd->primaryTextureMissing:nullptr);
     } else {
         mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
     }

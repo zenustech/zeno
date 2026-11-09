@@ -7,6 +7,9 @@ endif()
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/rtxmg rtxmg)
 target_link_libraries(zenovis PRIVATE zeno_cluster_runtime)
+target_link_libraries(zenovis PRIVATE zeno_texture_cache)
+target_link_libraries(zenovis PRIVATE zeno_host_texture_cache)
+target_link_libraries(zenovis PRIVATE zeno_texture_feedback)
 target_sources(zenovis PRIVATE
   ChiefDesignerEXR.cpp
   ChiefDesignerEXR.h
@@ -211,10 +214,19 @@ if (DEFINED CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit)
     set(_zeno_had_disable_find_cudatoolkit TRUE)
 endif()
 set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit FALSE)
+# Zeno configures its bundled OpenEXR later through Alembic. Provide a
+# local forwarding target now, so OTK needs no package from a previous build.
+# Keep this imported target local; Alembic defines the real global alias later.
+if(ZENO_WITH_Alembic AND NOT ZENO_SYSTEM_ALEMBIC AND NOT TARGET OpenEXR::OpenEXR)
+    add_library(OpenEXR::OpenEXR INTERFACE IMPORTED)
+    set_target_properties(OpenEXR::OpenEXR PROPERTIES INTERFACE_LINK_LIBRARIES OpenEXR)
+endif()
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/optix-toolkit otk EXCLUDE_FROM_ALL)
+target_link_libraries(zeno_texture_feedback PUBLIC OptiXToolkit::DemandLoading)
 include(cmake/OtkBlockMipCompat.cmake)
 zeno_otk_block_mip_compat()
 zeno_otk_request_dispatch_compat()
+zeno_otk_sync_events_compat()
 # TextureInfo.cpp in this SDK includes EXRReader.h even with its EXR reader
 # disabled. Use the existing OpenEXR target for that header dependency.
 target_link_libraries(ImageSource PRIVATE OpenEXR::OpenEXR)
@@ -288,8 +300,12 @@ endif()
 set(FILE_LIST
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterMaterialDevice.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureDelivery.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureResidency.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterMaterialShader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterTextureFallback.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterTextureHistory.h
     ${OPTIX_PATH}/include/@optix.h
     ${OPTIX_PATH}/include/@optix_types.h
     ${OPTIX_PATH}/include/@optix_host.h
