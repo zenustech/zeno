@@ -3,6 +3,9 @@
 
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
+#include "ClusterProfiling.h"
+#include <zeno/utils/FrameCapture.h>
+#include <zenovis/CameraSession.h>
 
 #include <memory>
 #include <optix.h>
@@ -153,6 +156,11 @@ struct PathTracerState
     raii<CUdeviceptr> denoised_buffer;
     
     raii<CUdeviceptr> pick_buffer;
+    // Queued before display DMA, so the existing display completion also
+    // makes this tiny result available. The fence protects pinned storage
+    // if rendering unwinds before reaching display completion.
+    std::vector<PickInfo,CudaPinnedAllocator<PickInfo>> viewport_pick;
+    CudaUploadFence viewport_pick_ready;
 
     raii<CUdeviceptr> finite_lights_ptr;
 
@@ -168,8 +176,22 @@ struct PathTracerState
 
     Params                         params;
     raii<CUdeviceptr>            d_params;
+    raii<CUdeviceptr> cluster_view_transform;
+    std::vector<OptixStaticTransform,CudaPinnedAllocator<OptixStaticTransform>> cluster_view_host;
+    CudaUploadFence cluster_view_upload;
+    OptixTraversableHandle cluster_view_handle{};
+    CudaUploadFence render_resources_ready,render_complete;
 
     OptixShaderBindingTable sbt {};
+    bool keep_cluster_history = false;
+    bool cluster_two_sided_opaque = true;
+    uint32_t cluster_history_limit = 16;
+    uint32_t cluster_history_recovery = 0;
+    bool cluster_history_bounded = false;
+    void* viewport_pixels = nullptr;
+    int viewport_width = 0, viewport_height = 0;
+    cudaEvent_t frame_trace_begin=nullptr,frame_trace_end=nullptr;
+    uint64_t sharc_clear_count = 0;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     OptixShaderBindingTable sharc_update_sbt {};
     std::unique_ptr<SharcResources> sharc;
@@ -187,6 +209,7 @@ struct PathTracerState
 
 
 PathTracerState state;
+static std::unique_ptr<zeno::framecapture::Recorder> queryTimingRecorder;
 
 static void compact_triangle_vertex_attribute(const std::vector<Vertex>& attrib, std::vector<Vertex>& compactAttrib, std::vector<unsigned int>& vertIdsPerTri) {
     using id_t = unsigned int;
@@ -266,6 +289,7 @@ static void initLaunchParams( PathTracerState& state )
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
     //state.params.samples_per_launch = samples_per_launch;
     state.params.subframe_index     = 0u;
+    state.params.history_samples = 0u;
 }
 
 static void handleCameraUpdate( Params& params )
@@ -273,7 +297,6 @@ static void handleCameraUpdate( Params& params )
     if( !camera_changed )
         return;
     camera_changed = false;
-    updateRootIAS();
     camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
 
     //params.eye = camera.eye();
@@ -303,6 +326,10 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     state.accum_buffer_b.resize( sizeof(ushort1) * count );
 
     state.pick_buffer.resize(sizeof(PickInfo));
+    if(state.viewport_pick.empty()) {
+        state.viewport_pick.resize(1);
+        state.viewport_pick_ready.record(0);
+    }
 
     state.params.accum_buffer = (float3*)(CUdeviceptr)state.accum_buffer_p;
     state.params.accum_buffer_D = (float3*)(CUdeviceptr)state.accum_buffer_d;
@@ -317,6 +344,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
 
 static void updateState(sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params& params, bool enable_aov)
 {
+    zeno::cluster::TimelineRange timeline("OptiX: camera and resize");
     // Update params on device
     if( camera_changed || resize_dirty )
         params.subframe_index = 0;
@@ -419,6 +447,8 @@ static bool prepareSharc(PathTracerState& state)
         state.params.sharc = {};
         return false;
     }
+    if (state.sharc_reset_pending)
+        ++state.sharc_clear_count;
     if (state.sharc_reset_pending || previous_entry_count != entry_count) {
         state.sharc_frame_index = 0u;
         state.sharc_has_previous_camera = false;
@@ -503,6 +533,14 @@ static bool launchSharcUpdate(PathTracerState& state)
         user_data.get2<int>("optix-sharc-accumulation-frames", 20), 1, 1024));
     settings.stale_frame_num_max = static_cast<uint32_t>(std::clamp(
         user_data.get2<int>("optix-sharc-stale-frames", 60), 1, 1024));
+    // Refinement changes visibility, but the underlying scene and world-space
+    // cache remain the same. In the opt-in preview mode, shorten adaptation
+    // instead of discarding all cached lighting at every geometry publication.
+    if (state.cluster_history_bounded) {
+        settings.accumulation_frame_num = std::min(settings.accumulation_frame_num, state.cluster_history_limit);
+        // Keep the configured eviction lifetime: sparse update pixels can
+        // revisit a cell less frequently than this short adaptation window.
+    }
     settings.frame_index = state.sharc_frame_index;
 
     std::string error;
@@ -525,25 +563,57 @@ static bool launchSharcUpdate(PathTracerState& state)
 }
 #endif
 
-static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise)
+static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, bool denoise,
+                            double* uploadMs=nullptr,double* launchMs=nullptr,double* fenceMs=nullptr,
+                            cudaStream_t launchStream=nullptr,cudaEvent_t traceBegin=nullptr,double* launchThreadMs=nullptr)
 {
+    const auto begin=std::chrono::steady_clock::now();
     // All samples in this render reuse the finalized light selection.
     assert(!state.lightSelectionDirty);
     state.params.frame_buffer  = result_buffer_data;
     state.params.denoise = denoise;
     if(denoise == true) state.params.outside_random_number = 0;
     
-        CUDA_CHECK( cudaMemcpyAsync((void*)state.d_params.handle, &state.params, sizeof( Params ), cudaMemcpyHostToDevice, 0) );
+        {
+            CUDA_CHECK( cudaMemcpyAsync((void*)state.d_params.handle, &state.params, sizeof( Params ), cudaMemcpyHostToDevice, 0) );
+        }
+        const auto uploaded=std::chrono::steady_clock::now();
+        if(uploadMs)*uploadMs+=std::chrono::duration<double,std::milli>(uploaded-begin).count();
+        if(launchStream) {
+            // Scene/SBT/texture publication and parameters remain on stream 0.
+            // The nonblocking ray stream waits only for this recorded prefix;
+            // future feedback work on stream 0 cannot delay its display copy.
+            state.render_resources_ready.record(0);
+            CUDA_CHECK(cudaStreamWaitEvent(launchStream,state.render_resources_ready.event,0));
+            if(traceBegin)CUDA_CHECK(cudaEventRecord(traceBegin,launchStream));
+        }
+        const auto launched=std::chrono::steady_clock::now();
+        if(fenceMs)*fenceMs+=std::chrono::duration<double,std::milli>(launched-uploaded).count();
 
+        const double launchThreadStart=launchThreadMs?zeno::framecapture::threadMs():0;
+        {
                 OPTIX_CHECK( optixLaunch(
                     OptixUtil::pipeline,
-                    0,
+                    launchStream,
                     (CUdeviceptr)state.d_params.handle,
                     sizeof( Params ),
                     &state.sbt,
                     state.params.width,
                     state.params.height,
                     1) );
+        }
+        if(launchThreadMs)*launchThreadMs+=zeno::framecapture::threadMs()-launchThreadStart;
+        if(launchMs)*launchMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-launched).count();
+}
+
+static void advanceAccumulation(Params& params) {
+    if (++params.subframe_index == 0) {
+        // Preserve the image weight even if a multi-year sequence wraps.
+        params.subframe_index = 1;
+        params.outside_random_number += 0x9e3779b9u;
+    }
+    if (params.history_samples < UINT32_MAX - 1)
+        ++params.history_samples;
 }
 
 
@@ -584,8 +654,49 @@ static void initCameraState()
     trackball.setGimbalLock( true );
 }
 
+static bool useClusterViewTransform()
+{
+    static const bool enabled=[] {
+        const auto* v=std::getenv("ZENO_CLAS_CAMERA_TRANSFORM");
+        return !(v && std::strcmp(v,"0")==0);
+    }();
+    return enabled && defaultScene.clusterAsset && defaultScene.clusterAsset->handle() &&
+        !defaultScene.hasDirtyLightIAS() && !defaultScene.lightsWrapper.lightIasHandle &&
+        !defaultScene.staticRenderGroup && !defaultScene.dynamicRenderGroup &&
+        defaultScene.nodeCache.empty() && defaultScene.nodeCacheStatic.empty();
+}
+
 void updateRootIAS()
 {
+    zeno::cluster::TimelineRange timeline("OptiX: root IAS");
+    if(useClusterViewTransform()) {
+        // With one world-space CLAS child, a top-level transform needs no BVH
+        // bounds refit when the camera moves. Its child is published only after
+        // CLAS completion; stream 0 orders the upload after previous readers.
+        OptixStaticTransform transform{};
+        transform.child=defaultScene.clusterAsset->handle();
+        transform.transform[0]=transform.transform[5]=transform.transform[10]=1.f;
+        transform.invTransform[0]=transform.invTransform[5]=transform.invTransform[10]=1.f;
+        const auto eye=state.params.cam.eye;
+        transform.transform[3]=-eye.x;transform.transform[7]=-eye.y;transform.transform[11]=-eye.z;
+        transform.invTransform[3]=eye.x;transform.invTransform[7]=eye.y;transform.invTransform[11]=eye.z;
+        if(state.cluster_view_host.empty() || std::memcmp(&state.cluster_view_host.front(),&transform,sizeof(transform))) {
+            state.cluster_view_upload.wait();
+            if(state.cluster_view_host.empty())state.cluster_view_host.resize(1);
+            state.cluster_view_host.front()=transform;
+            if(!state.cluster_view_transform.handle) {
+                state.cluster_view_transform.resize(sizeof(transform));
+                OPTIX_CHECK(optixConvertPointerToTraversableHandle(OptixUtil::context,state.cluster_view_transform.handle,
+                    OPTIX_TRAVERSABLE_TYPE_STATIC_TRANSFORM,&state.cluster_view_handle));
+                zeno::log_info("CLAS camera transform enabled: camera motion uses an upload without a root IAS build");
+            }
+            CUDA_CHECK(cudaMemcpyAsync((void*)state.cluster_view_transform.handle,state.cluster_view_host.data(),sizeof(transform),cudaMemcpyHostToDevice,0));
+            state.cluster_view_upload.record(0);
+        }
+        defaultScene.cameraPos=eye;
+        state.params.handle=state.cluster_view_handle;
+        return;
+    }
     defaultScene.make_scene(OptixUtil::context, state.params.cam.eye, true);
     state.params.handle = defaultScene.rootNode.handle;
     return;
@@ -877,7 +988,7 @@ void optixinit( int argc, char* argv[] )
         OptixUtil::createContext();
         OptixUtil::configureAsyncMemoryPool();
 
-    //CUDA_CHECK( cudaStreamCreate( &state.stream.reset() ) );
+    if(!state.stream.handle)CUDA_CHECK(cudaStreamCreateWithFlags(&state.stream.reset(),cudaStreamNonBlocking));
     state.d_params.resize( sizeof( Params ) );
 
     if (!output_buffer_o) {
@@ -1610,6 +1721,8 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
                    bool requireSphereObj, bool requireSphereLight, 
                    bool requireVolumeObj, uint usesCurveTypeFlags, bool refresh)
 {
+    const auto* opaqueShadowSetting=std::getenv("ZENO_CLAS_OPAQUE_SHADOWS");
+    const bool opaqueShadowProgram=!(opaqueShadowSetting && std::string(opaqueShadowSetting)=="0");
     camera_changed = true;
 
     OptixUtil::resetShaderModuleBuildStats();
@@ -1735,6 +1848,16 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
         
     } // refresh
 
+    const auto clusterKey=ShaderCoreKey{"ClusterMatShader.cu",ShaderMark::Mesh};
+    const bool requireClusterShader=std::any_of(shaders.begin(),shaders.end(),[](const auto& shader){return shader->filename=="ClusterMatShader.cu";});
+    if(requireClusterShader && (refresh || !findShaderCore(clusterKey))) {
+        OptixUtil::_compile_group.run([clusterKey,opaqueShadowProgram] {
+            auto core=std::make_shared<OptixUtil::OptixShaderCore>(sutil::lookupIncFile("ClusterMatShader.cu"),"__closesthit__radiance","__anyhit__shadow_cutout");
+            core->opaqueOcclusionClosestHit=opaqueShadowProgram;
+            core->loadProgram(5,{"--undefine-macro=_P_TYPE_","--define-macro=_P_TYPE_=0"});
+            storeShaderCore(clusterKey,core);
+        });
+    }
     if (requireTriangLight && (refresh || !findShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Mesh}))) {
         OptixUtil::_compile_group.run([&] () {
             auto shader_string = sutil::lookupIncFile("Light.cu");
@@ -1848,6 +1971,9 @@ OptixUtil::_compile_group.wait();
 
             auto fallback = shaders[i]->matid == "";
             fallback |= shaders[i]->matid == "Light";
+            // Imported materials are evaluated inline by the CLAS hit program.
+            // Its unused callable slot shares the normal default callable.
+            fallback |= shaders[i]->matid == zeno::cluster::MaterialShaderName;
             
             //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
@@ -2294,8 +2420,64 @@ static void updateRayGen(bool aov, bool denoise) {
     createPipeline(defaultScene.maxNodeDepth, true);
 }
 
-void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+void optixBeginFrame() {
+    if(!defaultScene.clusterMaterials)return;
+    zeno::cluster::TimelineRange timeline("CLAS textures: close submission window");
+    const auto start=std::chrono::steady_clock::now();
+    {
+        defaultScene.clusterMaterials->beginFrame();
+    }
+    if(zenovis::camera_session::active()) {
+        const auto ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+        if(ms>=20.)zeno::log_info("OptiX recorded texture pause hitch: phase={}, wall={} ms",
+            zeno::getSession().userData().get2<int>("optix-test-phase",-1),ms);
+    }
+}
 
+void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+    namespace cr=zenovis::camera_session;
+    cr::Frame replayCamera;
+    const bool cameraReplay=cr::replay(replayCamera);
+    if(cameraReplay) {
+        auto& c=state.params.cam;
+        auto vector=[&](cr::Field first){return make_float3(float(replayCamera.values[first]),float(replayCamera.values[first+1]),float(replayCamera.values[first+2]));};
+        c.eye=vector(cr::eye_x);c.right=vector(cr::right_x);c.up=vector(cr::up_x);c.front=vector(cr::front_x);
+#define RESTORE_LENS(member,field) c.member=float(replayCamera[cr::field]);
+        RESTORE_LENS(horizontal_shift,horizontal_shift) RESTORE_LENS(vertical_shift,vertical_shift)
+        RESTORE_LENS(pitch,pitch) RESTORE_LENS(yaw,yaw) RESTORE_LENS(focal_length,focal_length)
+        RESTORE_LENS(aperture,aperture) RESTORE_LENS(focal_distance,focal_distance)
+        RESTORE_LENS(width,sensor_width) RESTORE_LENS(height,sensor_height)
+#undef RESTORE_LENS
+        camera_changed=replayCamera[cr::moving]!=0;
+        if(replayCamera[cr::picking]!=0)state.params.click_coord=make_uint2(unsigned(replayCamera[cr::click_x]),unsigned(replayCamera[cr::click_y]));
+        state.params.physical_camera_aperture=float(replayCamera[cr::physical_aperture]);
+        state.params.physical_camera_shutter_speed=float(replayCamera[cr::shutter_speed]);state.params.physical_camera_iso=float(replayCamera[cr::iso]);
+        state.params.physical_camera_aces=replayCamera[cr::aces]!=0;state.params.physical_camera_exposure=replayCamera[cr::exposure]!=0;
+        state.params.physical_camera_panorama_camera=replayCamera[cr::panorama]!=0;state.params.physical_camera_panorama_vr180=replayCamera[cr::vr180]!=0;
+        state.params.physical_camera_pupillary_distance=float(replayCamera[cr::pupil_distance]);
+    }
+    zeno::cluster::TimelineRange timeline("OptiX: render frame");
+    state.viewport_pixels=nullptr;
+
+    const auto renderStart=std::chrono::steady_clock::now();
+    const char* timingEnv=std::getenv("ZENO_OPTIX_RENDER_TIMING");
+    const bool verbose=timingEnv && timingEnv[0]=='1';
+    const bool capture=zeno::framecapture::enabled();
+    const char* queryTimingDirectory=std::getenv("ZENO_OPTIX_QUERY_TIMING");
+    const bool queryTiming=queryTimingDirectory&&*queryTimingDirectory;
+    const double queryTimingStart=queryTiming?zeno::framecapture::nowMs():0.;
+    const bool recordCamera=cr::active()&&defaultScene.clusterAsset;
+    const bool profile=verbose||capture||queryTiming;
+    const bool hostTimings=profile||recordCamera;
+    const double captureStart=capture?zeno::framecapture::nowMs():0;
+    const double captureThreadStart=capture?zeno::framecapture::threadMs():0;
+    auto setupTick=renderStart;
+    const auto setupCheckpoint=[&] {
+        if(!hostTimings)return 0.;
+        const auto now=std::chrono::steady_clock::now();
+        const double ms=std::chrono::duration<double,std::milli>(now-setupTick).count();
+        setupTick=now;return ms;
+    };
     bool imageRendered = false;
 
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
@@ -2308,11 +2490,142 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         resize_dirty = true;
     }
     state.params.needAOV = enable_output_aov;
+    const auto& runtimeOptions=zeno::getSession().userData();
+    const unsigned int debugView=defaultScene.clusterAsset?std::clamp(runtimeOptions.get2<int>("optix-clas-debug-view",0),0,7):0;
+    // Denoising mixes cluster IDs, coverage and signed normal colors.
+    if(debugView)denoise=false;
     updateRayGen(enable_output_aov, denoise);
+    const bool viewMoving=camera_changed||resize_dirty;
+    const bool pickingForFrame=state.params.click_dirty;
     updateState( *output_buffer_o, state.params, enable_output_aov );
+    const double cameraSetupMs=setupCheckpoint();
+    const bool interactive = !runtimeOptions.has("optix_image_path");
+    if(defaultScene.clusterAsset)
+        defaultScene.clusterAsset->setFrozen(interactive&&runtimeOptions.get2<bool>("optix-test-freeze-geometry",false));
+    static const bool asyncClusterRays=[] {
+        const auto* v=std::getenv("ZENO_CLAS_ASYNC_RAYS");
+        return !(v && std::strcmp(v,"0")==0);
+    }();
+    static const bool asyncSharcRays=[] {
+        const auto* v=std::getenv("ZENO_CLAS_ASYNC_SHARC");
+        return !(v && std::strcmp(v,"0")==0);
+    }();
+    static const bool asyncClusterPicking=[] {
+        const auto* v=std::getenv("ZENO_CLAS_ASYNC_PICK");return !(v&&std::strcmp(v,"0")==0);
+    }();
+    static const bool batchPickReadback=[] {
+        const auto* v=std::getenv("ZENO_CLAS_BATCH_PICK_READBACK");return !(v&&std::strcmp(v,"0")==0);
+    }();
+    // Keep multi-sample, offline, denoising and legacy picking on their
+    // established stream; those paths can reuse d_params within one frame.
+    // For a single-sample SHARC preview, update, resolve and the query-params
+    // copy stay ordered on stream 0. launchSubframe's resource event fences
+    // that complete prefix before the nonblocking query and display copy.
+    // Interactive display completion fences every previous ray launch before
+    // Runtime::update can retire its CLAS scene at the start of the next frame.
+    const auto renderStream=asyncClusterRays && interactive && samples==1 && !denoise &&
+        output_buffer_type==sutil::CUDAOutputBufferType::CUDA_DEVICE &&
+        (!state.params.click_dirty||(asyncClusterPicking&&!runtimeOptions.get2<bool>("optix-sharc",true))) &&
+        (!runtimeOptions.get2<bool>("optix-sharc",true)||asyncSharcRays) &&
+        useClusterViewTransform()?state.stream.handle:nullptr;
+    output_buffer_o->setStream(renderStream);
+    if(renderStream) {
+        static bool announced=false;
+        if(!announced){zeno::log_info("CLAS nonblocking ray stream enabled: explicit resource and feedback fences");announced=true;}
+    }
+    const bool keepHistory = interactive && defaultScene.clusterAsset && debugView == 0 &&
+        runtimeOptions.get2<bool>("optix-clas-keep-history", false);
+    const uint32_t historyLimit = uint32_t(std::clamp(runtimeOptions.get2<int>("optix-clas-history-limit", 16), 4, 256));
+    if (keepHistory != state.keep_cluster_history || historyLimit != state.cluster_history_limit) {
+        state.params.subframe_index = 0;
+        state.cluster_history_recovery = 0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending = true;
+#endif
+    }
+    state.keep_cluster_history = keepHistory;
+    state.cluster_history_limit = historyLimit;
+    const uint64_t previousCut = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats().cutVersion : 0;
+    const bool clusterChanged=defaultScene.updateClusters(state.params,interactive,
+        {runtimeOptions.get2<bool>("optix-clas-adaptive-lod",true),runtimeOptions.get2<float>("optix-clas-pixel-error",0.f)});
+    const auto clusterStats = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats() : zeno::cluster::RuntimeStats{};
+    zeno::getSession().userData().set2("optix-clas-lod-status",defaultScene.clusterAsset ? zeno::format(
+        "Requested {} px | Effective {} px | Pool {}% | {}",
+        std::round(clusterStats.requestedPixelError*100.f)/100.f,std::round(clusterStats.effectivePixelError*100.f)/100.f,int(100.f*clusterStats.poolLoad+.5f),
+        clusterStats.qualityLimited ? (clusterStats.adaptiveLod ? "Budget limited" : "Requested quality cannot fit") :
+            clusterStats.settled ? "Settled" : "Streaming") : std::string("No CLAS asset"));
+    const bool cutChanged = clusterChanged && clusterStats.cutVersion != previousCut;
+    const double clusterSetupMs=setupCheckpoint();
+    std::unique_lock<std::recursive_mutex> clusterSubmission;
+    const auto clusterSubmitStart=std::chrono::steady_clock::now();
+    if(defaultScene.clusterAsset)clusterSubmission=std::unique_lock<std::recursive_mutex>(zeno::cluster::renderSubmissionMutex());
+    const double clusterSubmitWaitMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-clusterSubmitStart).count();
+    // Select the completed CLAS scene before uploading camera-relative root
+    // transforms. A moving frame needs one root update, even when both change.
+    if(viewMoving || clusterChanged || useClusterViewTransform())updateRootIAS();
+    if(clusterChanged) {
+        OptixUtil::createPipeline(defaultScene.maxNodeDepth,false);
+    }
+    const double rootSetupMs=setupCheckpoint();
+    auto* materials=debugView==0?defaultScene.clusterMaterials.get():nullptr;
+    if(materials)materials->setFrozen(interactive&&runtimeOptions.get2<bool>("optix-test-freeze-textures",false));
+    const bool clearTexturesForFrame=runtimeOptions.get2<bool>("optix-clas-clear-textures",false);
+    if(clearTexturesForFrame) {
+        zeno::getSession().userData().set2("optix-clas-clear-textures",false);
+        if(defaultScene.clusterMaterials)defaultScene.clusterMaterials->clearResidency();
+        state.params.subframe_index=0;state.params.history_samples=0;state.cluster_history_recovery=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+    }
+    const bool twoSidedOpaque=runtimeOptions.get2<bool>("optix-clas-two-sided-opaque",true);
+    const bool opaqueShadowAllowed=defaultScene.canUseOpaqueClusterShadows();
+    if(twoSidedOpaque!=state.cluster_two_sided_opaque) {
+        state.cluster_two_sided_opaque=twoSidedOpaque;
+        state.params.subframe_index=0;state.params.history_samples=0;state.cluster_history_recovery=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+        if(profile)zeno::log_info("CLAS material sidedness: twoSidedOpaque={}, history reset=1",twoSidedOpaque);
+    }
+    if(materials) {
+        const auto v=[](float3 a){return std::array<float,3>{a.x,a.y,a.z};};
+        const auto& cam=state.params.cam;
+        materials->setView({v(cam.eye),v(cam.right),v(cam.up),v(cam.front),
+            cam.width/(2.f*cam.focal_length),cam.height/(2.f*cam.focal_length)},interactive&&!state.params.physical_camera_panorama_camera);
+        materials->prepare(interactive,uint32_t(state.params.width)*uint32_t(state.params.height),viewMoving,clusterStats.planningPending);
+    }
+    state.params.cluster_materials=materials?materials->launch(twoSidedOpaque,opaqueShadowAllowed):zeno_cluster_device::MaterialLaunch{};
+    const double materialSetupMs=setupCheckpoint();
+    // Primary texture fallbacks shorten history only at affected pixels.
+    // Stochastic secondary misses never restart the whole image. Offline
+    // output still retries every incomplete texture pass below.
+    if (cutChanged) {
+        if (keepHistory)
+            state.cluster_history_recovery = historyLimit;
+        else {
+            state.params.subframe_index = 0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+            state.sharc_reset_pending = true;
+#endif
+        }
+    }
+    state.cluster_history_bounded = keepHistory && state.cluster_history_recovery > 0;
+    state.params.cluster_data=defaultScene.clusterAsset?defaultScene.clusterAsset->descriptors():nullptr;
+    state.params.cluster_feedback=interactive && defaultScene.clusterAsset?
+        defaultScene.clusterAsset->viewFeedback():zeno_cluster_device::ViewFeedback{};
+    if(state.params.cluster_debug_view!=debugView) {
+        state.params.subframe_index=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+    }
+    state.params.cluster_debug_view=debugView;
     finalizeLightSelectionWeights(state);
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
-    bool sharc_enabled = prepareSharc(state);
+    // Primary-hit diagnostic colors do not consume or update radiance caches.
+    bool sharc_enabled = debugView==0 && prepareSharc(state);
+    if(debugView)state.params.sharc={};
 #endif
 
     if (denoise) {
@@ -2334,7 +2647,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     auto pause = ud.get2<bool>("viewport-optix-pause", false);
 
     const int max_samples_once = 1;
+    const double stateSetupMs=setupCheckpoint();
     uchar4* result_buffer_data = output_buffer_o->map();
+    const double mapSetupMs=setupCheckpoint();
 
     if (pause) {
         return;
@@ -2372,10 +2687,145 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.denoiser = {};
         state.params.denoised_buffer = 0;
     }
+    const double denoiserSetupMs=setupCheckpoint();
+    auto& traceBegin=state.frame_trace_begin;
+    auto& traceEnd=state.frame_trace_end;
+    bool traceEndRecorded=false;
+    bool queuedViewportReadback=false,queuedViewportPick=false;
+    if(profile){
+        if(!traceBegin)CUDA_CHECK(cudaEventCreate(&traceBegin));
+        if(!traceEnd)CUDA_CHECK(cudaEventCreate(&traceEnd));
+        if(!interactive)CUDA_CHECK(cudaEventRecord(traceBegin,0));
+    }
+    const double setupMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count();
+    const double eventSetupMs=setupCheckpoint();
+    double submitCpuMs=0,requestCpuMs=0,traceWaitMs=0,outputUnmapMs=0,textureAdvanceMs=0;
+    double materialBeginMs=0,uploadParamsMs=0,launchCallMs=0,streamFenceMs=0,displaySubmitMs=0,traceEventMs=0;
+    double launchThreadMs=0;
+    if (state.params.subframe_index == 0)
+        state.params.history_samples = 0;
+    // Integration-only sequence-boundary check; does not alter history weight.
+    if (interactive) {
+        static bool testedSequenceStart = false;
+        if (!testedSequenceStart) {
+            if (const char* start = std::getenv("ZENO_OPTIX_TEST_SAMPLE_SEQUENCE_START")) {
+                state.params.subframe_index = uint32_t(std::strtoul(start, nullptr, 10));
+                testedSequenceStart = true;
+            }
+        }
+    }
+    const uint32_t sampleStart = state.params.subframe_index;
+    // Matched-random-number integration comparisons across LOD cuts. Normal
+    // rendering retains the existing camera/material randomization.
+    if (sampleStart == 0) {
+        if (const char* seed = std::getenv("ZENO_OPTIX_TEST_RANDOM_SEED"))
+            state.params.outside_random_number = uint32_t(std::strtoul(seed, nullptr, 10));
+    }
+    const uint32_t historyStart = state.params.history_samples;
+    if(cameraReplay) {
+        state.params.outside_random_number=uint32_t(replayCamera[cr::seed]);
+        state.params.subframe_index=uint32_t(replayCamera[cr::sample_start]);
+        state.params.history_samples=uint32_t(replayCamera[cr::history_start]);
+    }
+    cr::Frame cameraFrame;
+    if(recordCamera) {
+        static uint64_t epoch=0;static const void* asset=nullptr;static uint32_t sceneId=0;
+        if(epoch!=cr::generation()||asset!=defaultScene.clusterAsset.get()) {
+            epoch=cr::generation();asset=defaultScene.clusterAsset.get();
+            const auto& s=defaultScene.clusterSettings;
+            nlohmann::json meta={{"manifest",defaultScene.clusterAssetManifest},{"revision",defaultScene.clusterAssetRevision},
+                {"geometry_budget_bytes",s.geometryBytes},{"clas_budget_bytes",s.clasBytes},{"texture_budget_mib",s.textureMiB},
+                {"host_budget_mib",s.hostTextureMiB},{"loads_per_frame",s.loadsPerFrame},{"pixel_error",s.pixelError},
+                {"started_with_resident_scene",previousCut!=0}};
+            for(const char* key:{"ZENO_CLAS_TEXTURE_BATCH_MAP","ZENO_CLAS_TEXTURE_STANDBY","ZENO_CLAS_TEXTURE_COMPLETION_RECYCLE",
+                "ZENO_CLAS_HOST_GEOMETRY_MIB","ZENO_CLAS_TEXTURE_INLINE_BATCH","ZENO_CLAS_TEXTURE_UPLOAD_PRIORITY","ZENO_CLAS_TEXTURE_RECLAIM_CREDITS",
+                "ZENO_CLAS_TEXTURE_MAP_BATCH_SIZE","ZENO_CLAS_TEXTURE_SCHEDULER","ZENO_CLAS_TEXTURE_CACHE","ZENO_CLAS_TEXTURE_PRIMARY_PRIORITY",
+                "ZENO_CLAS_TEXTURE_LOOKAHEAD","ZENO_CLAS_TEXTURE_RETENTION","ZENO_CLAS_ASYNC_RAYS","ZENO_CLAS_ASYNC_SHARC",
+                "ZENO_CLAS_TEXTURE_DELIVERY","ZENO_CLAS_TEXTURE_MIN_MIP","ZENO_CLAS_TEXTURE_MATERIAL_SETS","ZENO_CLAS_TEXTURE_BUDGET_GOVERNOR",
+                "ZENO_CLAS_HOST_TILES","ZENO_CLAS_TEXTURE_DENSE_COARSE","ZENO_CLAS_OPAQUE_SHADOWS","ZENO_CLAS_TEXTURE_REUSE_VERTICES",
+                "ZENO_CLAS_TEXTURE_EVENT_REUSE","ZENO_CLAS_TEXTURE_COARSE_SIDE","ZENO_CLAS_TEXTURE_MISSING_BUCKETS","ZENO_CLAS_ASYNC_PICK","ZENO_OPTIX_VALIDATE",
+                "ZENO_CLAS_TEXTURE_GPU_INFLIGHT","ZENO_CLAS_TEXTURE_SUBMIT_WINDOW_MS","ZENO_OPTIX_READBACK_STREAM_FENCE",
+                "ZENO_CLAS_TEXTURE_SYNC_EVENT_TIMING","ZENO_CLAS_GPU_TIMING","CUDA_MODULE_LOADING","CUDA_MODULE_DATA_LOADING","ZENO_CLAS_PAGE_REUSE","ZENO_CLAS_BACKGROUND_EVENT_QUERY","ZENO_OPTIX_READBACK_QUERY","ZENO_CLAS_BATCH_PICK_READBACK","ZENO_CLAS_TEXTURE_NONBLOCKING_MAP_CREDITS","ZENO_CLAS_RESIDENCY_CACHE_MIB"}) {
+                const char* value=std::getenv(key);meta["environment"][key]=value?nlohmann::json(value):nlohmann::json(nullptr);
+            }
+            CUmoduleLoadingMode loadingMode{};
+            const auto loadingStatus=cuModuleGetLoadingMode(&loadingMode);
+            meta["cuda_module_loading_mode"]=loadingStatus==CUDA_SUCCESS?
+                (loadingMode==CU_MODULE_LAZY_LOADING?"lazy":"eager"):"query failed";
+            meta["sharc_settings"]={{"sharcDownscaleFactor",runtimeOptions.get2<int>("optix-sharc-update-spacing",4)},
+                {"sharcSceneScale",runtimeOptions.get2<float>("optix-sharc-scene-scale",1.f)},
+                {"sharcAccumulationFrameNum",runtimeOptions.get2<int>("optix-sharc-accumulation-frames",20)},
+                {"sharcStaleFrameNum",runtimeOptions.get2<int>("optix-sharc-stale-frames",60)},
+                {"sharcRoughnessMin",runtimeOptions.get2<float>("optix-sharc-roughness-min",.2f)},
+                {"sharcMaterialDemodulation",runtimeOptions.get2<bool>("optix-sharc-material-demodulation",false)},
+                {"sharcSHEncoding",runtimeOptions.get2<bool>("optix-sharc-sh-encoding",false)}};
+            sceneId=cr::scene(meta.dump());
+        }
+        const auto& c=state.params.cam;
+        auto vector=[&](cr::Field first,float3 value){cameraFrame.values[first]=value.x;cameraFrame.values[first+1]=value.y;cameraFrame.values[first+2]=value.z;};
+        vector(cr::eye_x,c.eye);vector(cr::right_x,c.right);vector(cr::up_x,c.up);vector(cr::front_x,c.front);
+#define SAVE_LENS(member,field) cameraFrame[cr::field]=c.member;
+        SAVE_LENS(horizontal_shift,horizontal_shift) SAVE_LENS(vertical_shift,vertical_shift)
+        SAVE_LENS(pitch,pitch) SAVE_LENS(yaw,yaw) SAVE_LENS(focal_length,focal_length)
+        SAVE_LENS(aperture,aperture) SAVE_LENS(focal_distance,focal_distance) SAVE_LENS(width,sensor_width) SAVE_LENS(height,sensor_height)
+#undef SAVE_LENS
+        cameraFrame[cr::render_start_ms]=std::chrono::duration<double,std::milli>(renderStart.time_since_epoch()).count();
+        cameraFrame[cr::width]=state.params.width;cameraFrame[cr::height]=state.params.height;
+        cameraFrame[cr::samples]=samples;cameraFrame[cr::simple_render]=simpleRender;cameraFrame[cr::denoise]=denoise;
+        cameraFrame[cr::max_bounce]=state.params.max_bounce;cameraFrame[cr::sharc]=runtimeOptions.get2<bool>("optix-sharc",true);
+        cameraFrame[cr::debug_view]=debugView;cameraFrame[cr::adaptive_lod]=runtimeOptions.get2<bool>("optix-clas-adaptive-lod",true);
+        cameraFrame[cr::lod_pixel_error]=runtimeOptions.get2<float>("optix-clas-pixel-error",0.f);
+        cameraFrame[cr::keep_history]=keepHistory;cameraFrame[cr::history_limit]=historyLimit;cameraFrame[cr::two_sided]=twoSidedOpaque;
+        cameraFrame[cr::seed]=state.params.outside_random_number;cameraFrame[cr::sample_start]=state.params.subframe_index;cameraFrame[cr::history_start]=state.params.history_samples;
+        cameraFrame[cr::moving]=viewMoving;cameraFrame[cr::picking]=state.params.click_dirty?(isPosClick?1:2):0;
+        cameraFrame[cr::click_x]=state.params.click_coord.x;cameraFrame[cr::click_y]=state.params.click_coord.y;
+        cameraFrame[cr::scene_id]=sceneId;cameraFrame[cr::geometry_version]=clusterStats.sceneVersion;
+        cameraFrame[cr::clear_textures]=clearTexturesForFrame;
+        cameraFrame[cr::effective_lod]=clusterStats.effectivePixelError;cameraFrame[cr::geometry_pending]=clusterStats.pendingGroups;
+        cameraFrame[cr::physical_aperture]=state.params.physical_camera_aperture;cameraFrame[cr::shutter_speed]=state.params.physical_camera_shutter_speed;
+        cameraFrame[cr::iso]=state.params.physical_camera_iso;cameraFrame[cr::aces]=state.params.physical_camera_aces;cameraFrame[cr::exposure]=state.params.physical_camera_exposure;
+        cameraFrame[cr::panorama]=state.params.physical_camera_panorama_camera;cameraFrame[cr::vr180]=state.params.physical_camera_panorama_vr180;
+        cameraFrame[cr::pupil_distance]=state.params.physical_camera_pupillary_distance;cameraFrame[cr::show_background]=state.params.show_background;
+        cameraFrame[cr::freeze_textures]=runtimeOptions.get2<bool>("optix-test-freeze-textures",false);cameraFrame[cr::freeze_geometry]=runtimeOptions.get2<bool>("optix-test-freeze-geometry",false);
+        cameraFrame[cr::sharc_spacing]=runtimeOptions.get2<int>("optix-sharc-update-spacing",5);cameraFrame[cr::sharc_scale]=runtimeOptions.get2<float>("optix-sharc-scene-scale",50.f);
+        cameraFrame[cr::sharc_accumulation]=runtimeOptions.get2<int>("optix-sharc-accumulation-frames",20);cameraFrame[cr::sharc_stale]=runtimeOptions.get2<int>("optix-sharc-stale-frames",60);
+        cameraFrame[cr::sharc_roughness]=runtimeOptions.get2<float>("optix-sharc-roughness-min",.4f);cameraFrame[cr::sharc_debug]=runtimeOptions.get2<bool>("optix-sharc-debug",false);
+        cameraFrame[cr::sharc_demodulation]=runtimeOptions.get2<bool>("optix-sharc-material-demodulation",false);cameraFrame[cr::sharc_sh]=runtimeOptions.get2<bool>("optix-sharc-sh-encoding",false);
+        cameraFrame[cr::need_aov]=state.params.needAOV;
+    }
+    const bool boundedThisRender = state.cluster_history_bounded;
     timer.tick();
-    for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+    const uint32_t textureRandomSeed=state.params.outside_random_number;
+    for(unsigned int texturePass=0;;++texturePass) {
+    // Probe one sample while cold, then replay the full requested sample set.
+    // Failed texture passes never become offline output. Interactive passes
+    // keep bounded history while the demand loader processes requests.
+    const bool textureProbe=materials&&!interactive&&!materials->settled();
+    const int passSamples=textureProbe?1:samples;
+    const auto submitStart=std::chrono::steady_clock::now();
+    if(materials) {
+        if(!interactive)materials->wait();
+        materials->prepare(interactive);materials->beginPass();
+        state.params.cluster_materials=materials->launch(twoSidedOpaque,opaqueShadowAllowed);
+    }
+    if(hostTimings)materialBeginMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-submitStart).count();
+    const auto beginEventStart=std::chrono::steady_clock::now();
+    bool traceDefaultPrefix=profile && interactive && !renderStream;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    // Include SHARC update/resolve in the timer even when the query moves
+    // to another stream. The resource-ready dependency orders these events.
+    traceDefaultPrefix|=profile && interactive && sharc_enabled;
+#endif
+    if(traceDefaultPrefix)CUDA_CHECK(cudaEventRecord(traceBegin,0));
+    if(profile)traceEventMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-beginEventStart).count();
+    for (int f = 0; f < passSamples; f += max_samples_once) { // 张心欣不要改这里
 
-        state.params.samples_per_launch = std::min(samples - f, max_samples_once);
+        if (state.params.subframe_index == 0)
+            state.params.history_samples = 0;
+        state.cluster_history_bounded = keepHistory && state.cluster_history_recovery > 0;
+        if (state.cluster_history_bounded)
+            state.params.history_samples = std::min(state.params.history_samples, historyLimit - 1);
+        state.params.samples_per_launch = std::min(passSamples - f, max_samples_once);
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
         if (sharc_enabled) {
             sharc_enabled = launchSharcUpdate(state);
@@ -2384,33 +2834,158 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             }
         }
 #endif
-        launchSubframe( result_buffer_data, state, denoise);
-        state.params.subframe_index++;
+        launchSubframe( result_buffer_data, state, denoise,hostTimings?&uploadParamsMs:nullptr,hostTimings?&launchCallMs:nullptr,
+                       hostTimings?&streamFenceMs:nullptr,renderStream,profile&&interactive&&renderStream&&!traceDefaultPrefix?traceBegin:nullptr,(capture||recordCamera)?&launchThreadMs:nullptr);
+        advanceAccumulation(state.params);
+        if (state.cluster_history_recovery && clusterStats.settled)
+            --state.cluster_history_recovery;
+    }
+    // Interactive endPass submits CPU-side texture requests and can block on
+    // loader locks. Exclude that host wait from the GPU trace interval.
+    const auto endEventStart=std::chrono::steady_clock::now();
+    if(profile && interactive){CUDA_CHECK(cudaEventRecord(traceEnd,renderStream));traceEndRecorded=true;}
+    if(profile)traceEventMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-endEventStart).count();
+    // Queue display DMA before releasing CLAS submission and before texture
+    // request processing. The host waits only for this frame's copy fence.
+    const auto displaySubmitStart=std::chrono::steady_clock::now();
+    {
+    if(batchPickReadback&&asyncClusterPicking&&state.params.click_dirty&&interactive&&defaultScene.clusterAsset&&
+        !denoise&&output_buffer_type==sutil::CUDAOutputBufferType::CUDA_DEVICE) {
+        const size_t offset=isPosClick?offsetof(PickInfo,pos):offsetof(PickInfo,meta);
+        const size_t bytes=isPosClick?sizeof(float3):sizeof(uint4);
+        CUDA_CHECK(cudaMemcpyAsync(reinterpret_cast<char*>(state.viewport_pick.data())+offset,
+            reinterpret_cast<const char*>(state.params.pick_buffer)+offset,bytes,cudaMemcpyDeviceToHost,renderStream));
+        try {state.viewport_pick_ready.record(renderStream);}
+        catch(...) {
+            // An unrecorded fence cannot protect the pinned destination.
+            cudaStreamSynchronize(renderStream);
+            throw;
+        }
+        queuedViewportPick=true;
+    }
+    if(interactive && defaultScene.clusterAsset && !denoise)
+        queuedViewportReadback=output_buffer_o->enqueueHostReadback();
+    if(renderStream) {
+        // endPass reduces/readbacks the feedback on stream 0. It must not
+        // inspect or recycle the launch context before these rays finish.
+        state.render_complete.record(renderStream);
+        CUDA_CHECK(cudaStreamWaitEvent(nullptr,state.render_complete.event,0));
+    }
+    }
+    if(hostTimings)displaySubmitMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-displaySubmitStart).count();
+    if(profile)submitCpuMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-submitStart).count();
+    if(!materials)break;
+    const auto requestStart=std::chrono::steady_clock::now();
+    materials->endPass(interactive,viewMoving);
+    if(hostTimings)requestCpuMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-requestStart).count();
+    if(interactive)break;
+    const bool textureMiss=materials->missed();materials->wait();
+    if(!textureMiss && (!textureProbe||samples==1))break;
+    if(texturePass>=127)throw std::runtime_error("Demand textures did not settle within 128 passes; the working set may exceed the texture budget");
+    const auto textureStats=materials->stats(true);
+    zeno::log_info("CLAS texture retry: pass={}, missing={}, probe={}, tiles={}, GPU bytes={}, host mip bytes={}",
+        texturePass,textureMiss,textureProbe,textureStats.tilesRead,textureStats.deviceBytes,textureStats.hostMipBytes);
+    state.params.subframe_index=0;state.params.history_samples=0;state.params.outside_random_number=textureRandomSeed;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+    state.sharc_reset_pending=true;
+    if(sharc_enabled)sharc_enabled=prepareSharc(state);
+#endif
+    }
+    // Serialize CPU submission, not GPU completion. Candidate builds own
+    // another stream and disjoint back-scene storage, so the preparation
+    // worker can submit its next phase while this frame is tracing.
+    if(clusterSubmission.owns_lock())clusterSubmission.unlock();
+    float traceMs=0;
+    if(profile){
+        if(!traceEndRecorded)CUDA_CHECK(cudaEventRecord(traceEnd,renderStream));
     }
     if (denoise) {
         state.denoiser.exec();
     }
-    output_buffer_o->unmap();
-    timer.tock();
-    state.params.frame_time = timer.elapsed();
-    if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1') {
-        zeno::log_info("OptiX render: {} samples, {}x{}, {} ms",
-                       samples, state.params.width, state.params.height, timer.elapsed());
+    const auto unmapStart=std::chrono::steady_clock::now();
+    if(!queuedViewportReadback)output_buffer_o->unmap();
+    if(profile)outputUnmapMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-unmapStart).count();
+    double viewportReadbackMs=0;
+    sutil::CUDAOutputBuffer<uchar4>::ReadbackWaitStats readbackStats{};
+    if(interactive && defaultScene.clusterAsset) {
+        zeno::cluster::TimelineRange readback("OptiX: display readback");
+        const double readbackCpuStart=recordCamera?zeno::framecapture::threadMs():0.;
+        const auto start=std::chrono::steady_clock::now();
+        // Snapshot the completed frame once. getOptixImg() can then serve
+        // the host pixels without another CUDA synchronization/readback.
+        {
+            state.viewport_pixels=queuedViewportReadback?output_buffer_o->finishHostReadback(recordCamera?&readbackStats:nullptr):output_buffer_o->getHostPointer();
+        }
+        state.viewport_width=output_buffer_o->width();
+        state.viewport_height=output_buffer_o->height();
+        viewportReadbackMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+        if(recordCamera&&viewportReadbackMs>=60.)zeno::log_info(
+            "OptiX recorded readback hitch: phase={}, wall={} ms, render-thread CPU={} ms",
+            runtimeOptions.get2<int>("optix-test-phase",-1),viewportReadbackMs,zeno::framecapture::threadMs()-readbackCpuStart);
+        if(recordCamera&&viewportReadbackMs>=60.&&readbackStats.queries)zeno::log_info(
+            "OptiX readback query details: phase={}, queries={}, longest query={} ms, longest pause={} ms",
+            runtimeOptions.get2<int>("optix-test-phase",-1),readbackStats.queries,readbackStats.maxQueryMs,readbackStats.maxPauseMs);
     }
-
+    if(profile) {
+        // Output completion already fences tracing. Reuse timer events and
+        // avoid an extra CPU wait or create/destroy pair in every frame.
+        const auto waitStart=std::chrono::steady_clock::now();
+        // Queued display DMA follows traceEnd on this same stream. Its
+        // completed fence already covers the timer; another host sync can
+        // additionally trim async allocator backing and skew diagnostics.
+        if(!queuedViewportReadback)CUDA_CHECK(cudaEventSynchronize(traceEnd));
+        CUDA_CHECK(cudaEventElapsedTime(&traceMs,traceBegin,traceEnd));
+        traceWaitMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-waitStart).count();
+    }
     if (state.params.click_dirty)
     {
+        zeno::cluster::TimelineRange pickReadback("OptiX: pick readback");
+        const auto pickStart=std::chrono::steady_clock::now();
+        double pickCopyMs=0.;
+        const auto copyPick=[&](void* destination,const void* source,size_t bytes) {
+            const auto copyStart=std::chrono::steady_clock::now();
+            if(queuedViewportPick) {
+                // finishHostReadback fenced this earlier copy on the same
+                // stream; consuming it needs no second driver round trip.
+                const size_t offset=isPosClick?offsetof(PickInfo,pos):offsetof(PickInfo,meta);
+                const auto* ready=reinterpret_cast<const char*>(state.viewport_pick.data())+offset;
+                std::memcpy(destination,ready,bytes);
+                if(std::getenv("ZENO_OPTIX_VERIFY_BATCH_PICK")) {
+                    PickInfo reference{};
+                    CUDA_CHECK(cudaMemcpy(&reference,source,bytes,cudaMemcpyDeviceToHost));
+                    if(std::memcmp(&reference,ready,bytes))throw std::runtime_error("Batched pick readback differs from completed device result");
+                    zeno::log_info("OptiX batched pick verified: phase={}, position={}, bytes={}",
+                        runtimeOptions.get2<int>("optix-test-phase",-1),isPosClick,bytes);
+                }
+            } else if(asyncClusterPicking&&renderStream) {
+                // Display completion already fenced this frame's ray writes.
+                // Keep the small pick copy off the legacy default stream;
+                // wait for this result only before invoking its CPU callback.
+                CUDA_CHECK(cudaMemcpyAsync(destination,source,bytes,cudaMemcpyDeviceToHost,renderStream));
+                const auto enqueued=std::chrono::steady_clock::now();
+                CUDA_CHECK(cudaStreamSynchronize(renderStream));
+                if(hostTimings) {
+                    const auto finished=std::chrono::steady_clock::now();
+                    if(std::chrono::duration<double,std::milli>(finished-copyStart).count()>=20.)
+                        zeno::log_info("OptiX legacy pick copy detail: phase={}, enqueue={} ms, sync={} ms",
+                            runtimeOptions.get2<int>("optix-test-phase",-1),
+                            std::chrono::duration<double,std::milli>(enqueued-copyStart).count(),
+                            std::chrono::duration<double,std::milli>(finished-enqueued).count());
+                }
+            } else CUDA_CHECK(cudaMemcpy(destination,source,bytes,cudaMemcpyDeviceToHost));
+            if(hostTimings)pickCopyMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-copyStart).count();
+        };
         if (isPosClick)
         {
             float3 click_result;
             auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, pos);
-            cudaMemcpy(&click_result, (void*)ptr, sizeof(float3), cudaMemcpyDeviceToHost);
+            copyPick(&click_result,ptr,sizeof(float3));
             auto posWS = glm::vec3(click_result.x, click_result.y, click_result.z);
             clickPosCallback(posWS);
         } else {
             uint4 click_meta;
             auto ptr = (char*)state.params.pick_buffer + offsetof(PickInfo, meta);
-            cudaMemcpy(&click_meta, (void*)ptr, sizeof(uint4), cudaMemcpyDeviceToHost);
+            copyPick(&click_meta,ptr,sizeof(uint4));
 
             auto ids = glm::uvec4(click_meta.x, click_meta.y, click_meta.z, click_meta.w);
             if (ids != glm::uvec4())
@@ -2427,6 +3002,200 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             }
         }
         state.params.click_dirty = false;
+        if(hostTimings) {
+            const auto pickMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-pickStart).count();
+            if(pickMs>=20.)zeno::log_info("OptiX recorded picking hitch: phase={}, total={} ms, copy={} ms, callback={} ms",
+                runtimeOptions.get2<int>("optix-test-phase",-1),pickMs,pickCopyMs,std::max(0.,pickMs-pickCopyMs));
+        }
+    }
+
+    timer.tock();
+    state.params.frame_time = timer.elapsed();
+    if(queryTiming&&interactive) {
+        if(!queryTimingRecorder)queryTimingRecorder=std::make_unique<zeno::framecapture::Recorder>(
+            std::filesystem::u8path(queryTimingDirectory),"query-span",
+            "phase,gpu_span_ms,launch_ms,readback_ms,setup_ms,geometry_wait_ms,event_wait_ms,picking",true);
+        queryTimingRecorder->record(queryTimingStart,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count(),{
+            double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(traceMs),launchCallMs,viewportReadbackMs,setupMs,
+            clusterStats.submissionWaitMs+clusterSubmitWaitMs,traceWaitMs,double(pickingForFrame)});
+    }
+    const auto textureAdvanceStart=std::chrono::steady_clock::now();
+    if(materials && interactive) {
+        materials->frameComplete(std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count(),
+            clusterStats.planningPending,std::max(uint64_t(128)<<20,clusterStats.gasBytes/4));
+        if(hostTimings) {
+            const auto ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-textureAdvanceStart).count();
+            if(ms>=20.)zeno::log_info("OptiX recorded texture advance hitch: phase={}, wall={} ms",runtimeOptions.get2<int>("optix-test-phase",-1),ms);
+        }
+    }
+    if(profile)textureAdvanceMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-textureAdvanceStart).count();
+    // Integration capture: read the existing linear accumulation without an
+    // extra render, a display transform, or a change of history policy.
+    if (runtimeOptions.has("optix-test-linear-output")) {
+        const auto path = runtimeOptions.get2<std::string>("optix-test-linear-output");
+        const auto writeCheckpoint = [&](const char* component,const std::string& filename) {
+            const auto pixels=optixgetimg_extra2(component,state.params.width,state.params.height);
+            std::ofstream output(filename,std::ios::binary);
+            output << "PF\n" << state.params.width << ' ' << state.params.height << "\n-1.0\n";
+            output.write(reinterpret_cast<const char*>(pixels.data()),pixels.size()*sizeof(float));
+            if (!output) throw std::runtime_error("Cannot write linear integration checkpoint: "+filename);
+        };
+        writeCheckpoint("color",path);
+        if(interactive && state.params.cluster_materials.textureHistory) {
+            std::vector<unsigned int> history(size_t(state.params.width)*state.params.height);
+            CUDA_CHECK(cudaMemcpy(history.data(),state.params.cluster_materials.textureHistory,history.size()*sizeof(unsigned int),cudaMemcpyDeviceToHost));
+            size_t missing=0,recovering=0;
+            for(const auto pixel:history){missing+=(pixel>>24)==64;recovering+=(pixel>>24)!=0;}
+            zeno::log_info("[texture checkpoint] primaryMissing={}, recovering={}, pixels={}",missing,recovering,history.size());
+        }
+        if (enable_output_aov) writeCheckpoint("mask",path+".mask.pfm");
+        zeno::getSession().userData().erase("optix-test-linear-output");
+    }
+    if (runtimeOptions.has("optix-test-resource-checkpoint")) {
+        size_t freeBytes{}, totalBytes{};
+        CUDA_CHECK(cudaMemGetInfo(&freeBytes, &totalBytes));
+        zeno::log_info("[viewport resources] label={}, gpuUsed={}, gpuTotal={}",
+            runtimeOptions.get2<std::string>("optix-test-resource-checkpoint"), totalBytes-freeBytes, totalBytes);
+        int device{};cudaMemPool_t pool{};uint64_t reserved{},used{},threshold{};
+        CUDA_CHECK(cudaGetDevice(&device));CUDA_CHECK(cudaDeviceGetDefaultMemPool(&pool,device));
+        CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrReservedMemCurrent,&reserved));
+        CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrUsedMemCurrent,&used));
+        CUDA_CHECK(cudaMemPoolGetAttribute(pool,cudaMemPoolAttrReleaseThreshold,&threshold));
+        zeno::log_info("[viewport allocator] asyncReserved={}, asyncUsed={}, asyncCached={}, releaseThreshold={}",reserved,used,reserved>used?reserved-used:0,threshold);
+        if(defaultScene.clusterAsset) {
+            const auto residency=defaultScene.clusterAsset->residencyMemory();
+            zeno::log_info("[viewport residency allocator] reserved={}, used={}, cached={}",
+                residency[0],residency[1],residency[0]>residency[1]?residency[0]-residency[1]:0);
+        }
+        zeno::getSession().userData().erase("optix-test-resource-checkpoint");
+    }
+    if(recordCamera) {
+        if(launchCallMs>=60.)zeno::log_info("OptiX recorded launch hitch: wall={} ms, render-thread CPU={} ms",launchCallMs,launchThreadMs);
+        if(materialBeginMs>=20. || uploadParamsMs>=20. || streamFenceMs>=20. || displaySubmitMs>=20.)
+            zeno::log_info("OptiX recorded submission hitch: phase={}, material={} ms, params={} ms, fences={} ms, display={} ms",
+                runtimeOptions.get2<int>("optix-test-phase",-1),materialBeginMs,uploadParamsMs,streamFenceMs,displaySubmitMs);
+        // CPU counters only: no loader-wide statistics scan or CUDA query.
+        zeno::cluster::MaterialQueueStats q{};
+        {
+            const auto start=std::chrono::steady_clock::now();
+            if(materials)q=materials->queueStats();
+            const auto ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+            if(ms>=20.)zeno::log_info("OptiX recorded queue stats hitch: phase={}, wall={} ms",runtimeOptions.get2<int>("optix-test-phase",-1),ms);
+        }
+        cameraFrame[cr::texture_ticket_slots]=q.ticketSlots;cameraFrame[cr::texture_batches]=q.batches;
+        cameraFrame[cr::texture_cpu_tasks]=q.cpuTasks;cameraFrame[cr::texture_uploads]=q.uploads;
+        cameraFrame[cr::texture_prepared]=q.prepared;cameraFrame[cr::texture_feedback_contexts]=q.feedbackContexts;
+        cameraFrame[cr::texture_callbacks_queued]=q.callbacksQueued;cameraFrame[cr::texture_callbacks_active]=q.callbacksActive;
+        cameraFrame[cr::texture_oldest_batch_ms]=q.oldestBatchMs;cameraFrame[cr::texture_oldest_callback_ms]=q.oldestCallbackMs;
+        cameraFrame[cr::renderer_ms]=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count();
+        cameraFrame[cr::geometry_ms]=clusterSetupMs;cameraFrame[cr::setup_ms]=setupMs;
+        cameraFrame[cr::launch_ms]=launchCallMs;cameraFrame[cr::request_ms]=requestCpuMs;cameraFrame[cr::readback_ms]=viewportReadbackMs;
+        cameraFrame[cr::geometry_wait_ms]=clusterStats.submissionWaitMs+clusterSubmitWaitMs;
+        cr::publishRender(cameraFrame);
+    }
+    if(capture) {
+        unsigned int capturedSharcPass=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        capturedSharcPass=state.params.sharc.pass;
+#endif
+        static thread_local zeno::framecapture::Recorder recorder("renderer",
+            "thread_ms,phase,moving,width,height,setup_ms,cluster_ms,root_ms,material_ms,map_ms,submit_ms,launch_wall_ms,launch_thread_ms,params_ms,fences_ms,request_ms,readback_ms,gpu_span_ms,texture_advance_ms,geometry_loads,geometry_evictions,geometry_pending,geometry_version,geometry_frozen,textures_frozen,allowed,pending,ready_tiles,ready_samplers,mip_loads,source_bytes,read_ms,decode_ms,decoded_bytes,delivered_bytes,host_bytes,host_hits,host_misses,host_reloads,primary_pixels,primary_missing,geometry_wait_ms,background_wait_ms,geometry_gpu_ms,picking,async_rays,events_created,events_reused,events_cached,retained_pages,prefetch_issued,prefetch_useful,prefetch_unused,resident_pages,prefetch_candidates,primary_missing_pages,active_resident_pages,prefetch_late,sharc_requested,sharc_pass,sharc_clears,texture_evictions,texture_evict_ms,texture_evict_max_ms");
+        if(materials)materials->missed(false);
+        const auto t=materials?materials->stats(false):zeno::cluster::MaterialStats{};
+        const auto g=defaultScene.clusterAsset?defaultScene.clusterAsset->stats():zeno::cluster::RuntimeStats{};
+        recorder.record(captureStart,zeno::framecapture::nowMs()-captureStart,{
+            zeno::framecapture::threadMs()-captureThreadStart,double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(viewMoving),
+            double(state.params.width),double(state.params.height),setupMs,clusterSetupMs,rootSetupMs,materialSetupMs,mapSetupMs,
+            submitCpuMs,launchCallMs,launchThreadMs,uploadParamsMs,streamFenceMs,requestCpuMs,viewportReadbackMs,double(traceMs),textureAdvanceMs,
+            double(g.loads),double(g.evictions),double(g.pendingGroups),double(g.sceneVersion),double(runtimeOptions.get2<bool>("optix-test-freeze-geometry",false)),
+            double(runtimeOptions.get2<bool>("optix-test-freeze-textures",false)),double(t.requestsAllowed),double(t.pendingRequests),double(t.readyTileMappings),double(t.readySamplerMappings),
+            double(t.mipLoads),double(t.sourceBytes),t.sourceReadMs,t.decodeMs,double(t.decodedBytes),double(t.deliveredBytes),double(t.hostMipBytes),
+            double(t.cacheHits),double(t.cacheMisses),double(t.cacheReloads),double(t.primaryPixels),double(t.primaryMissingPixels),
+            g.submissionWaitMs+clusterSubmitWaitMs,g.backgroundSubmissionWaitMs,g.gpuSceneMs,double(pickingForFrame),double(renderStream!=nullptr),
+            double(t.uploadEventsCreated),double(t.uploadEventsReused),double(t.uploadEventsCached),double(t.retainedPages),double(t.prefetchIssued),
+            double(t.prefetchUseful),double(t.prefetchUnused),double(t.residentPages),double(t.prefetchCandidates),double(t.primaryMissingPages),
+            double(t.activeResidentPages),double(t.prefetchLate),double(runtimeOptions.get2<bool>("optix-sharc",true)),double(capturedSharcPass),
+            double(state.sharc_clear_count),double(t.liveTextureEvictions),t.evictionSubmitMs,t.maxEvictionSubmitMs});
+        static thread_local zeno::framecapture::Recorder optionsRecorder("render-options","phase,samples,simple_render,denoise,sharc_requested,sharc_pass,width,height");
+        optionsRecorder.record(captureStart,zeno::framecapture::nowMs()-captureStart,
+            {double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(samples),double(simpleRender),double(denoise),
+             double(runtimeOptions.get2<bool>("optix-sharc",true)),double(capturedSharcPass),double(state.params.width),double(state.params.height)});
+        static thread_local zeno::framecapture::Recorder hostRecorder("host-cache","phase,ram_tiles,total_bytes,peak_bytes,workspace_bytes,workspace_budget,tile_bytes,tile_budget,tile_hits,tile_misses,demand_fills,prefetched,prefetch_hits,neighbor_bytes,tile_evictions,neighbor_evictions,prefetch_skipped,shared_waits,space_waits,workspace_evictions,tile_retention_active");
+        hostRecorder.record(captureStart,zeno::framecapture::nowMs()-captureStart,
+            {double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(t.ramTiles),double(t.hostMipBytes),double(t.hostPeakBytes),
+             double(t.hostWorkspace.bytes),double(t.hostWorkspaceBudget),double(t.hostTiles.bytes),double(t.hostTileBudget),
+             double(t.hostTiles.hits),double(t.hostTiles.misses),double(t.hostTiles.demandFills),double(t.hostTiles.prefetched),
+             double(t.hostTiles.prefetchHits),double(t.hostTiles.neighborBytes),double(t.hostTiles.evictions),double(t.hostTiles.prefetchEvictions),
+             double(t.hostTiles.prefetchSkipped),double(t.hostWorkspace.sharedWaits),double(t.hostWorkspace.spaceWaits),double(t.hostWorkspace.evictions),
+             double(t.hostTileRetentionActive)});
+        const auto queues=materials?materials->queueStats():zeno::cluster::MaterialQueueStats{};
+        static thread_local zeno::framecapture::Recorder queueRecorder("texture-queues","phase,batches,unknown_batches,cpu_tasks,uploads,prepared,feedback_contexts,callbacks_queued,callbacks_active,callbacks_peak,callbacks_completed,oldest_batch_ms,oldest_callback_ms,active_callback_ms,admission_limit,admission_pending,admission_unknown,admission_allowed,ticket_slots,completed_tickets");
+        queueRecorder.record(captureStart,zeno::framecapture::nowMs()-captureStart,
+            {double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(queues.batches),double(queues.unknownBatches),
+             double(queues.cpuTasks),double(queues.uploads),double(queues.prepared),double(queues.feedbackContexts),
+             double(queues.callbacksQueued),double(queues.callbacksActive),double(queues.callbacksPeak),double(queues.callbacksCompleted),
+             queues.oldestBatchMs,queues.oldestCallbackMs,queues.activeCallbackMs,double(queues.admissionLimit),
+             double(queues.admissionPending),double(queues.admissionUnknown),double(queues.admissionAllowed),
+             double(queues.ticketSlots),double(queues.completedTickets)});
+        // Read the published snapshot, never the preparation worker's pools.
+        // This separates resident storage/AS churn from a growing job queue
+        // without adding CUDA queries or synchronization to the capture.
+        static thread_local zeno::framecapture::Recorder geometryRecorder("geometry-runtime",
+            "phase,resident_groups,pending_groups,geometry_bytes,geometry_reserved,clas_bytes,clas_reserved,gas_bytes,gas_reserved,gas_compactions,rebuilt_gases,reused_gases,deferred_updates,allocation_calls,free_calls,sync_calls,sync_ms,host_task_ms,background_prepare_ms,scene_latency_ms,settled,host_geometry_bytes,host_geometry_peak,host_geometry_hits,host_geometry_misses,host_geometry_evictions,host_geometry_restored_bytes,host_geometry_restore_ms,host_geometry_store_ms");
+        geometryRecorder.record(captureStart,zeno::framecapture::nowMs()-captureStart,{
+            double(runtimeOptions.get2<int>("optix-test-phase",-1)),double(g.residentGroups),double(g.pendingGroups),
+            double(g.geometryBytes),double(g.geometryReservedBytes),double(g.clasBytes),double(g.clasReservedBytes),
+            double(g.gasBytes),double(g.gasReservedBytes),double(g.gasCompactions),double(g.rebuiltGases),double(g.reusedGases),
+            double(g.deferredUpdates),double(g.allocationCalls),double(g.freeCalls),double(g.syncCalls),g.syncMs,
+            g.hostTaskMs,g.backgroundPrepareMs,g.sceneLatencyMs,double(g.settled),double(g.hostGeometryBytes),
+            double(g.hostGeometryPeak),double(g.hostGeometryHits),double(g.hostGeometryMisses),double(g.hostGeometryEvictions),
+            double(g.hostGeometryRestoredBytes),g.hostGeometryRestoreMs,g.hostGeometryStoreMs});
+    }
+    if (verbose) {
+        const double totalMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderStart).count();
+        if(interactive && defaultScene.clusterAsset)
+            zeno::log_info("OptiX viewport snapshot: readback={} ms",viewportReadbackMs);
+        zeno::log_info("OptiX render: {} samples, {}x{}, setup={} ms, GPU={} ms ({} ms/sample), total={} ms, debugView={}, subframe={}, historySamples={}",
+                       samples,state.params.width,state.params.height,setupMs,traceMs,traceMs/std::max(samples,1),totalMs,
+                       debugView,state.params.subframe_index,state.params.history_samples);
+        if(setupMs>10.)zeno::log_info("OptiX setup hitch: camera={} ms, cluster={} ms, root={} ms, materials={} ms, state={} ms, map={} ms, denoiser={} ms, event={} ms",
+            cameraSetupMs,clusterSetupMs,rootSetupMs,materialSetupMs,stateSetupMs,mapSetupMs,denoiserSetupMs,eventSetupMs);
+        if(submitCpuMs>10.)zeno::log_info("OptiX submit hitch: material begin={} ms, parameters={} ms, launch={} ms, stream fence={} ms, events={} ms, display submit={} ms",
+            materialBeginMs,uploadParamsMs,launchCallMs,streamFenceMs,traceEventMs,displaySubmitMs);
+        zeno::log_info("OptiX host stages: submit={} ms, texture requests={} ms, trace wait={} ms, output unmap={} ms, readback={} ms, texture advance={} ms",
+                       submitCpuMs,requestCpuMs,traceWaitMs,outputUnmapMs,viewportReadbackMs,textureAdvanceMs);
+        if (defaultScene.clusterAsset)
+            zeno::log_info("CLAS history: sceneChanged={}, cutChanged={}, sceneVersion={}, cutVersion={}, keep={}, bounded={}, sampleStart={}, historyStart={}, historySamples={}, recovery={}, settled={}, sharcClears={}",
+                clusterChanged,cutChanged,clusterStats.sceneVersion,clusterStats.cutVersion,keepHistory,boundedThisRender,
+                sampleStart,historyStart,state.params.history_samples,state.cluster_history_recovery,clusterStats.settled,state.sharc_clear_count);
+        if(defaultScene.clusterAsset){
+            const auto s=defaultScene.clusterAsset->stats();
+            zeno::log_info("CLAS update: {} ms, planning={} ms, loading={} ms, AS={} ms, settled={}, pending={}, plans={}, staticSkips={}, loads={}, evictions={}, GAS builds={}, IAS builds={}",
+                s.updateMs,s.planningMs,s.loadingMs,s.accelerationMs,s.settled,s.pendingGroups,s.plans,s.staticSkips,s.loads,s.evictions,s.gasBuilds,s.iasBuilds);
+            zeno::log_info("CLAS GPU: LOD={} ms, CLAS={} ms, GAS={} ms, IAS={} ms, scene={} ms, upload={} ms; host staging={} ms, background prepare={} ms, background IO={} ms, version={}",
+                s.gpuLodMs,s.gpuClasMs,s.gpuGasMs,s.gpuIasMs,s.gpuSceneMs,s.gpuUploadMs,s.hostStreamingMs,s.backgroundPrepareMs,s.pageReadMs,s.sceneVersion);
+            zeno::log_info("CLAS residency: AS pool={} bytes, reserved={} bytes, new GAS={}, reused GAS={}, ready latency={} ms, preparation pending={}",
+                s.gasBytes,s.gasReservedBytes,s.rebuiltGases,s.reusedGases,s.sceneLatencyMs,s.planningPending);
+            zeno::log_info("CLAS memory: geometry used={} reserved={}, CLAS used={} reserved={}, GAS used={} reserved={} bytes",
+                s.geometryBytes,s.geometryReservedBytes,s.clasBytes,s.clasReservedBytes,s.gasBytes,s.gasReservedBytes);
+            zeno::log_info("CLAS scheduling: render submission wait={} ms, background submission wait={} ms, render event wait={} ms",
+                s.submissionWaitMs+clusterSubmitWaitMs,s.backgroundSubmissionWaitMs,s.syncMs);
+            zeno::log_info("CLAS completed task: active host work={} ms",s.hostTaskMs);
+        }
+        if(materials) {
+            const auto s=materials->stats(!interactive);
+            if(!interactive)
+                zeno::log_info("CLAS textures: settled={}, textures={}, virtual={} bytes, GPU={} bytes, transferred={} bytes, tiles={}, evictions={}, host mip={} bytes, host peak={} bytes",
+                    materials->settled(),s.textures,s.virtualBytes,s.deviceBytes,s.transferredBytes,s.tilesRead,s.evictions,s.hostMipBytes,s.hostPeakBytes);
+            else
+                zeno::log_info("CLAS texture preview: settled={}, host mip={} bytes, host peak={} bytes",materials->settled(),s.hostMipBytes,s.hostPeakBytes);
+            zeno::log_info("CLAS texture CPU: prepare={} ms, request={} ms, statistics={} ms; cumulative mip loads={}, source={} bytes, read={} ms, decode={} ms; admitted={}, pending={}",
+                s.prepareMs,s.requestMs,s.statisticsMs,s.mipLoads,s.sourceBytes,s.sourceReadMs,s.decodeMs,s.requestsAllowed,s.pendingRequests);
+            zeno::log_info("CLAS texture cache: tiles={}, bytes={}, fallbackTiles={}, errors={}",s.cacheTileLoads,s.cacheTileBytes,s.cacheFallbackTiles,s.cacheTileErrors);
+            zeno::log_info("CLAS texture pipeline: queued={} ({} bytes), inFlight={}, prepared={}, submitted={} ({} bytes), cumulative submit={} ms, max job={} ms, mean ready-to-submit={} ms",s.preparedQueued,s.preparedBytes,s.uploadsInFlight,s.preparedTiles,s.submittedTiles,s.submittedBytes,s.submitCpuMs,s.maxSubmitCpuMs,s.readyToSubmitMs);
+            zeno::log_info("CLAS texture upload stream: cumulative span={} ms, max job span={} ms",s.uploadGpuMs,s.maxUploadGpuMs);
+            zeno::log_info("CLAS texture ready: tiles={}, samplers={}",s.readyTileMappings,s.readySamplerMappings);
+        }
     }
 
 #ifdef OPTIX_BASE_GL
@@ -2510,6 +3279,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 void *optixgetimg(int &w, int &h) {
     w = output_buffer_o->width();
     h = output_buffer_o->height();
+    if(state.viewport_pixels && w==state.viewport_width && h==state.viewport_height)
+        return state.viewport_pixels;
     return output_buffer_o->getHostPointer();
 }
 
@@ -2525,7 +3296,15 @@ void *optixgetimg(int &w, int &h) {
 
 void optixCleanup() {
 
+    queryTimingRecorder.reset();
     CUDA_SYNC_CHECK();
+    state.viewport_pixels=nullptr;
+    state.cluster_view_upload={};
+    state.render_resources_ready={};state.render_complete={};
+    decltype(state.cluster_view_host){}.swap(state.cluster_view_host);
+    state.cluster_view_transform.reset();state.cluster_view_handle=0;
+    if(state.frame_trace_begin){CUDA_CHECK(cudaEventDestroy(state.frame_trace_begin));state.frame_trace_begin=nullptr;}
+    if(state.frame_trace_end){CUDA_CHECK(cudaEventDestroy(state.frame_trace_end));state.frame_trace_end=nullptr;}
     state.lightSelectionDirty = true;
     OptixUtil::pipeline.reset();
     OptixUtil::pipelineMark = {};
@@ -2586,13 +3365,17 @@ void optixDestroy() {
         // context; release them before OptixUtil destroys that context.
         state.sharc.reset();
 #endif
+        state.viewport_pick_ready=CudaUploadFence{};
+        decltype(state.viewport_pick){}.swap(state.viewport_pick);
+        defaultScene.clusterMaterials.reset();defaultScene.clusterAsset.reset();
         optixCleanup();
 
         // Program groups must be released before the modules they reference.
         rtMaterialShaders.clear();
         clearShaderCoreLUT();
-        OptixUtil::resetAll();
         output_buffer_o.reset();
+        state.stream.reset();
+        OptixUtil::resetAll();
     }
     catch (std::exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
@@ -2673,7 +3456,7 @@ void optixDestroy() {
 
                     glfwSwapBuffers( window );
 
-                    ++state.params.subframe_index;
+                    advanceAccumulation(state.params);
                 } while( !glfwWindowShouldClose( window ) );
                 CUDA_SYNC_CHECK();
             }

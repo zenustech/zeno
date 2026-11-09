@@ -46,3 +46,9 @@
 [submodule "projects/SHARC"]
 	path = projects/SHARC
 	url = https://github.com/NVIDIA-RTX/SHARC.git
+[submodule "projects/meshoptimizer"]
+	path = projects/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
+[submodule "projects/zstd"]
+	path = projects/zstd
+	url = https://github.com/facebook/zstd.git

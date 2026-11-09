@@ -9,6 +9,8 @@
 #include <cuda/random.h>
 #include <cuda/climits.h>
 
+extern "C" { extern __constant__ Params params; }
+
 #define _FLT_MAX_ __FLT_MAX__
 #define _FLT_MIN_ __FLT_MIN__
 #define _FLT_EPL_ __FLT_EPSILON__
@@ -77,6 +79,7 @@ struct ShadowPRD : CommonPRD {
     uint8_t nonThinTransHit;
 
     float3 ShadowNormal;
+    float textureConeWidth=0.f,textureConeSpread=0.f;
 };
 
 enum class RadianceCacheEvent : uint8_t {
@@ -130,6 +133,8 @@ struct RadiancePRD : CommonPRD {
     float        scatterStep;
 
     float        pixel_area;
+    float        textureConeWidth=0.f,textureConeSpread=0.f;
+    bool         primaryTextureMissing=false;
 
     float        samplePdf;
     vec3         mask_value;
@@ -312,12 +317,19 @@ static __forceinline__ __device__ void traceOcclusion(
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
 
+    // Proven opaque CLAS primitives can terminate in traversal hardware.
+    // Alpha / graph materials still execute their existing any-hit programs.
+    // Enforce any-hit again when authored one-sided opaque rendering is used.
+    const auto& materials=params.cluster_materials;
+    const unsigned int flags=materials.materials && materials.opaqueShadowFastPath && materials.twoSidedOpaque ?
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT : OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
+
     optixTrace( handle,
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,  // rayTime
             (mask),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
+            flags,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,      // missSBTIndex

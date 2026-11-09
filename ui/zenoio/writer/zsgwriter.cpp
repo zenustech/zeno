@@ -618,7 +618,12 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
         writer.EndObject();
 
         writer.Key("layoutinfo");
-        _writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer, settings.layoutInfo.cbDumpTabsToZsg);
+        // Graph-only snapshots do not carry a window layout. The reader
+        // already accepts null here and keeps the editor's default layout.
+        if(settings.layoutInfo.layerOutNode)
+            _writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer, settings.layoutInfo.cbDumpTabsToZsg);
+        else
+            writer.Null();
 
         writer.Key("userdatainfo");
         writer.StartObject();

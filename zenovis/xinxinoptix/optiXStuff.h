@@ -202,7 +202,9 @@ inline void createContext()
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
     options.logCallbackLevel          = optixLogCallbackLevel();
-    options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
+    const char* validate = std::getenv("ZENO_OPTIX_VALIDATE");
+    options.validationMode            = validate && std::strcmp(validate,"1")==0
+        ? OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL : OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_OFF;
     OPTIX_CHECK_LOG( optixDeviceContextCreate( cu_ctx, &options, &context ) );
 }
 
@@ -228,11 +230,13 @@ inline void configureAsyncMemoryPool()
         static_cast<double>(free_bytes) / (1024.0 * 1024.0 * 1024.0));
 }
 
-inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
+inline bool CachedClusteredGeometry = false;
+inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags, bool clusteredGeometry=false) {
 
     auto enough = (usesPrimitiveTypeFlags&CachedPrimitiveTypeFlags) == usesPrimitiveTypeFlags;
-    if (CachedPrimitiveTypeFlags != UINT_MAX && enough) { return false; }
+    if (CachedPrimitiveTypeFlags != UINT_MAX && enough && CachedClusteredGeometry==clusteredGeometry) { return false; }
     CachedPrimitiveTypeFlags = usesPrimitiveTypeFlags;
+    CachedClusteredGeometry=clusteredGeometry;
 
     pipeline_compile_options = {};
     pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -245,6 +249,7 @@ inline bool configPipeline(OptixPrimitiveTypeFlags usesPrimitiveTypeFlags) {
     //pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM | usesPrimitiveTypeFlags;
     pipeline_compile_options.usesPrimitiveTypeFlags = usesPrimitiveTypeFlags;
     pipeline_compile_options.allowOpacityMicromaps = true;
+    pipeline_compile_options.allowClusteredGeometry = clusteredGeometry;
 
     OptixModuleCompileOptions module_compile_options = DefaultCompileOptions();
 
@@ -633,15 +638,16 @@ inline bool createModule(
         "-lineinfo" //"-G"//"--dopt=on",
     #endif
     };
+    if (const char* lineinfo = std::getenv("ZENO_OPTIX_SHADER_LINEINFO"); lineinfo && lineinfo[0] == '1')
+        compilerOptions.push_back("--generate-line-info");
     if (compiled_ptx == nullptr) {
         compilerOptions.push_back("--optix-ir");
     }
-    std::string architecture_option;
-    if (compiled_ptx != nullptr) {
-        architecture_option = currentComputeArchitectureOption();
-        if (!architecture_option.empty()) {
-            compilerOptions.push_back(architecture_option.c_str());
-        }
+    // OptiX IR also needs the device target: NVRTC otherwise defaults to sm_52,
+    // silently compiling out device features such as demand-loaded sparse textures.
+    std::string architecture_option = currentComputeArchitectureOption();
+    if (!architecture_option.empty()) {
+        compilerOptions.push_back(architecture_option.c_str());
     }
     std::string split_compile_option;
     std::string worker_compile_option;
@@ -663,6 +669,10 @@ inline bool createModule(
     }
 
     std::string flat_macros = "";
+    if(const auto* prediction=std::getenv("ZENO_CLAS_TEXTURE_LOOKAHEAD");prediction&&*prediction=='1') {
+        const char* option="--define-macro=ZENO_CLAS_TEXTURE_LOOKAHEAD=1";
+        compilerOptions.push_back(option);flat_macros+=std::string(option)+"\n";
+    }
 
     for (auto &ele : macros) {
         compilerOptions.push_back(ele.c_str());
@@ -848,7 +858,7 @@ inline void createSharcUpdateRaygenGroup(
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
                 std::string kind, std::string entry, std::string nameIS, OptixModule* moduleIS,
-                raii<OptixProgramGroup>& oGroup)
+                raii<OptixProgramGroup>& oGroup, const char* occlusionClosestHit=nullptr)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
@@ -872,6 +882,10 @@ if (entryName != nullptr) {
     {
         desc.hitgroup.moduleAH            = _module;
         desc.hitgroup.entryFunctionNameAH = entryName;
+        if(occlusionClosestHit) {
+            desc.hitgroup.moduleCH=_module;
+            desc.hitgroup.entryFunctionNameCH=occlusionClosestHit;
+        }
     }
 }
 
@@ -1688,6 +1702,7 @@ struct OptixShaderCore {
     std::string _hittingEntry;
     std::string _shadingEntry;
     std::string _occlusionEntry;
+    bool opaqueOcclusionClosestHit=false;
 
     OptixShaderCore() {}
     ~OptixShaderCore() {
@@ -1733,7 +1748,8 @@ struct OptixShaderCore {
 
             createRTProgramGroups(context, module, 
                 "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-                _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group);
+                _occlusionEntry, _hittingEntry, moduleIS, m_occlusion_hit_group,
+                opaqueOcclusionClosestHit?"__closesthit__shadow_opaque":nullptr);
 
             markPipelineProgramGroupsDirty();
             //_c_group.wait();
@@ -1864,9 +1880,7 @@ struct OptixShaderWrapper
 
         const bool compile_shared_volume_artifacts = isVol();
         std::string cache_key = callableProgramCacheKey(callable_src, _macros_);
-        if (compile_shared_volume_artifacts) {
-            cache_key += ':' + currentComputeArchitectureOption();
-        }
+        cache_key += ':' + currentComputeArchitectureOption();
         {
             std::unique_lock<std::mutex> lock(callable_program_cache_mutex);
             while (true) {

@@ -9,6 +9,17 @@
 #include <zenoui/comctrl/zlabel.h>
 #include "viewport/displaywidget.h"
 #include <zenovis/DrawOptions.h>
+#include <zenovis/CameraSession.h>
+#include <zenoio/writer/zsgwriter.h>
+#include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/zenomodel.h>
+#include <QSaveFile>
+#include <QStandardPaths>
+#include <QDesktopServices>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDateTime>
+#include <algorithm>
 
 //Language Pane
 ZLanguagePane::ZLanguagePane(QWidget* parent)
@@ -250,6 +261,83 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     m_pSharcSHEncoding->setToolTip(
         tr("Preserve directional glossy/specular radiance in SHARC; increases cache memory and update cost"));
 
+    m_pClasDebugView = new QComboBox;
+    m_pClasDebugView->addItems({tr("Shaded"), tr("LOD depth"), tr("Cluster IDs"), tr("Coverage"),
+        tr("Geometric normals"), tr("Shading normals (raw)"), tr("Front / back facing"), tr("Normal agreement")});
+    m_pClasDebugView->setToolTip(tr("Normal diagnostics show raw baked normals before the gray material's orientation and coarse-LOD normal fallback."));
+    m_pClasDebugView->setCurrentIndex(std::clamp(settingOr(zsClasDebugView, 0).toInt(), 0, 7));
+    auto applyClas = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasDebugView, m_pClasDebugView->currentIndex());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasDebugView(m_pClasDebugView->currentIndex());
+    };
+    connect(m_pClasDebugView, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [applyClas](int) { applyClas(); });
+    m_pClasKeepHistory = new QCheckBox;
+    m_pClasKeepHistory->setChecked(settingOr(zsClasKeepHistory, false).toBool());
+    m_pClasKeepHistory->setToolTip(tr("Only affects accumulated samples. CLAS LOD selection and streaming always run. Experimental viewport mode: fade older LOD samples and adapt SHARC while refinement settles. Offline rendering remains strict."));
+    m_pClasHistoryLimit = new QSpinBox;
+    m_pClasHistoryLimit->setRange(4, 256);
+    m_pClasHistoryLimit->setValue(std::clamp(settingOr(zsClasHistoryLimit, 16).toInt(), 4, 256));
+    m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+    m_pClasHistoryLimit->setToolTip(tr("Maximum effective sample history during refinement; normal progressive averaging resumes after this many settled samples."));
+    auto applyHistory = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasKeepHistory, m_pClasKeepHistory->isChecked());
+        settings.setValue(zsClasHistoryLimit, m_pClasHistoryLimit->value());
+        m_pClasHistoryLimit->setEnabled(m_pClasKeepHistory->isChecked());
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasHistorySettings(m_pClasKeepHistory->isChecked(), m_pClasHistoryLimit->value());
+    };
+    connect(m_pClasKeepHistory, &QCheckBox::toggled, this, [applyHistory](bool) { applyHistory(); });
+    connect(m_pClasHistoryLimit, QOverload<int>::of(&QSpinBox::valueChanged), this, [applyHistory](int) { applyHistory(); });
+    m_pClasTwoSidedOpaque = new QCheckBox;
+    m_pClasTwoSidedOpaque->setChecked(settingOr(zsClasTwoSidedOpaque, true).toBool());
+    m_pClasTwoSidedOpaque->setToolTip(tr("Render imported opaque materials from both sides, including their shadows. Alpha cutouts, blended materials and transmission retain their authored sidedness."));
+    connect(m_pClasTwoSidedOpaque, &QCheckBox::toggled, this, [this](bool enabled) {
+        ZenoSettingsManager::GetInstance().setValue(zsClasTwoSidedOpaque, enabled);
+        if (auto main = zenoApp->getMainWindow())
+            for (auto viewport : main->viewports())
+                if (viewport) viewport->setClasTwoSidedOpaque(enabled);
+    });
+
+    m_pClasAdaptiveLod = new QCheckBox;
+    m_pClasAdaptiveLod->setChecked(settingOr(zsClasAdaptiveLod,true).toBool());
+    m_pClasAdaptiveLod->setToolTip(tr("Adapt geometry quality to streaming pressure. Coarsen above 85% pool occupancy and recover below 70%. Off holds the requested error; insufficient budgets are reported in the status below."));
+    m_pClasPixelError = new QDoubleSpinBox;
+    m_pClasPixelError->setDecimals(2);
+    m_pClasPixelError->setRange(0.,1024.);
+    m_pClasPixelError->setSingleStep(.25);
+    m_pClasPixelError->setSpecialValueText(tr("Use asset setting"));
+    m_pClasPixelError->setValue(settingOr(zsClasPixelError,0.).toDouble());
+    m_pClasPixelError->setToolTip(tr("Requested geometric error in pixels. Smaller values request more detail. Zero uses the asset node's value. Changes apply without reloading the graph or cache."));
+    auto applyLod = [this]() {
+        auto& settings = ZenoSettingsManager::GetInstance();
+        settings.setValue(zsClasAdaptiveLod,m_pClasAdaptiveLod->isChecked());
+        settings.setValue(zsClasPixelError,m_pClasPixelError->value());
+        if (auto main=zenoApp->getMainWindow())
+            for (auto viewport:main->viewports())
+                if(viewport)viewport->setClasLodSettings(m_pClasAdaptiveLod->isChecked(),m_pClasPixelError->value());
+    };
+    connect(m_pClasAdaptiveLod,&QCheckBox::toggled,this,[applyLod](bool){applyLod();});
+    connect(m_pClasPixelError,QOverload<double>::of(&QDoubleSpinBox::valueChanged),this,[applyLod](double){applyLod();});
+    m_pClasLodStatus = new QLabel(tr("No CLAS asset"));
+    m_pClasLodStatus->setWordWrap(true);
+    auto refreshLod = [this]() {
+        QString status;
+        if(auto main=zenoApp->getMainWindow())
+            for(auto viewport:main->viewports())
+                if(viewport && viewport->isVisible() && !viewport->clasLodStatus().isEmpty()) {
+                    status=viewport->clasLodStatus();break;
+                }
+        m_pClasLodStatus->setText(status.isEmpty()?tr("No CLAS asset"):status);
+    };
+    auto lodTimer=new QTimer(this);
+    connect(lodTimer,&QTimer::timeout,this,refreshLod);
+    lodTimer->start(500);
+    refreshLod();
     QGridLayout* pLayout = new QGridLayout(this);
     pLayout->addWidget(new QLabel(tr("Enable Shift change FOV")), 0, 0);
     pLayout->addWidget(m_pEnableShiftChangeFOV, 0, 1);
@@ -281,8 +369,68 @@ ZRayTracingPane::ZRayTracingPane(QWidget* parent) : QWidget(parent)
     pLayout->addWidget(m_pSharcMaterialDemodulation, 13, 1);
     pLayout->addWidget(new QLabel(tr("SHARC Directional SH Encoding")), 14, 0);
     pLayout->addWidget(m_pSharcSHEncoding, 14, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS debug view")), 15, 0);
+    pLayout->addWidget(m_pClasDebugView, 15, 1);
+    pLayout->addWidget(new QLabel(tr("Keep accumulation during CLAS LOD updates")), 16, 0);
+    pLayout->addWidget(m_pClasKeepHistory, 16, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS refinement history samples")), 17, 0);
+    pLayout->addWidget(m_pClasHistoryLimit, 17, 1);
+    pLayout->addWidget(new QLabel(tr("Two-sided imported opaque materials")), 18, 0);
+    pLayout->addWidget(m_pClasTwoSidedOpaque, 18, 1);
+    pLayout->addWidget(new QLabel(tr("CLAS requested pixel error")),19,0);
+    pLayout->addWidget(m_pClasPixelError,19,1);
+    pLayout->addWidget(new QLabel(tr("Adaptive CLAS LOD")),20,0);
+    pLayout->addWidget(m_pClasAdaptiveLod,20,1);
+    pLayout->addWidget(m_pClasLodStatus,21,0,1,2);
+    auto clearTextures=new QPushButton(tr("Clear Texture Residency"),this);
+    clearTextures->setObjectName("clearTextureResidency");
+    clearTextures->setAutoDefault(false);
+    clearTextures->setToolTip(tr("Discard streamed GPU texture tiles and decoded host texture data, keep coarse fallback mips, and restart accumulation. Camera and geometry stay in place. Disk caches are preserved."));
+    connect(clearTextures,&QPushButton::clicked,this,[] {
+        if(auto main=zenoApp->getMainWindow())
+            for(auto viewport:main->viewports())if(viewport)viewport->clearTextureResidency();
+    });
+    pLayout->addWidget(clearTextures,22,0,1,2);
+    auto cameraRecord=new QPushButton(this);cameraRecord->setObjectName("recordCameraSession");cameraRecord->setAutoDefault(false);
+    cameraRecord->setToolTip(tr("Start before running the graph. Records the rendered camera, idle timing and frame settings so the complete streaming workload can be replayed. No screenshots or texture payloads are saved."));
+    auto cameraMark=new QPushButton(tr("Mark hitch"),this);cameraMark->setObjectName("markCameraHitch");cameraMark->setAutoDefault(false);
+    cameraMark->setToolTip(tr("Marks this point in the recording. Slow frames are saved automatically, even without a marker."));
+    auto cameraFolder=new QPushButton(tr("Open recording folder"),this);cameraFolder->setObjectName("openCameraRecording");cameraFolder->setAutoDefault(false);
+    auto cameraStatus=new QLabel(this);cameraStatus->setWordWrap(true);cameraStatus->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    cameraStatus->setObjectName("cameraRecordingStatus");
+    auto refreshRecording=[=] {
+        const auto s=zenovis::camera_session::status();
+        cameraRecord->setText(s.active?tr("Stop camera recording"):tr("Start camera recording"));
+        cameraMark->setEnabled(s.active);cameraFolder->setEnabled(!s.directory.empty());
+        cameraMark->setText(s.markers?tr("Mark hitch (%1)").arg(qulonglong(s.markers)):tr("Mark hitch"));
+        cameraStatus->setText(!s.error.empty()?QString::fromStdString(s.error):
+            s.directory.empty()?tr("Camera recording is off."):
+            tr("%1 | %2 frames | %3 dropped batches | %4 hitch markers\n%5").arg(s.active?tr("Recording"):tr("Saved")).arg(qulonglong(s.frames)).arg(qulonglong(s.droppedBatches)).arg(qulonglong(s.markers)).arg(QString::fromStdString(s.directory)));
+    };
+    connect(cameraRecord,&QPushButton::clicked,this,[=] {
+        if(zenovis::camera_session::active()){zenovis::camera_session::stop();refreshRecording();return;}
+        auto model=zenoApp->graphsManagment()->currentModel();
+        if(!model){QMessageBox::warning(this,tr("Camera recording"),tr("Open the scene graph before starting a recording."));return;}
+        auto base=qEnvironmentVariable("ZENO_CAMERA_CAPTURE_ROOT");
+        if(base.isEmpty())base=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/camera-recordings";
+        const auto dir=base+"/session-"+QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss-zzz");
+        APP_SETTINGS settings{};settings.timeline=zenoApp->getMainWindow()->timelineInfo();
+        const auto graph=ZsgWriter::getInstance().dumpProgramStr(model,settings).toUtf8();
+        const auto source=model->filePath();
+        const QJsonObject info{{"original_graph",source},{"project_directory",source.isEmpty()?QDir::currentPath():QFileInfo(source).absolutePath()},{"snapshot_kind","live_graph"}};
+        auto save=[&](const QString& name,const QByteArray& bytes){QSaveFile file(dir+"/"+name);return file.open(QIODevice::WriteOnly)&&file.write(bytes)==bytes.size()&&file.commit();};
+        if(!QDir().mkpath(dir)||!save("graph.zsg",graph)||!save("graph-info.json",QJsonDocument(info).toJson())) {
+            QMessageBox::warning(this,tr("Camera recording"),tr("Could not save the graph snapshot in %1").arg(dir));return;
+        }
+        zenovis::camera_session::start(dir.toStdString());refreshRecording();
+    });
+    connect(cameraMark,&QPushButton::clicked,this,[=]{zenovis::camera_session::mark();refreshRecording();});
+    connect(cameraFolder,&QPushButton::clicked,this,[]{const auto s=zenovis::camera_session::status();if(!s.directory.empty())QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(s.directory)));});
+    auto recordTimer=new QTimer(this);connect(recordTimer,&QTimer::timeout,this,refreshRecording);recordTimer->start(1000);refreshRecording();
+    pLayout->addWidget(cameraRecord,23,0);pLayout->addWidget(cameraMark,23,1);
+    pLayout->addWidget(cameraFolder,24,0,1,2);pLayout->addWidget(cameraStatus,25,0,1,2);
     QSpacerItem* pSpacerItem = new QSpacerItem(10, 10, QSizePolicy::Expanding);
-    pLayout->addItem(pSpacerItem, 0, 2, 15);
+    pLayout->addItem(pSpacerItem, 0, 2, 19);
     pLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 
@@ -304,6 +452,7 @@ void ZRayTracingPane::saveValue()
     inst.setValue(zsViewportPointSizeScale, m_pViewportPointSizeScaleSpinBox->value());
     inst.setValue(zsRayTracingDenoise, m_pDenoise->isChecked());
     inst.setValue(zsRayTracingMaxBounce, m_pMaxBounce->value());
+    inst.setValue(zsClasTwoSidedOpaque, m_pClasTwoSidedOpaque->isChecked());
     inst.setValue(zsEnableSharc, m_pEnableSharc->isChecked());
     inst.setValue(zsSharcDownscaleFactor, m_pSharcDownscaleFactor->value());
     inst.setValue(zsSharcSceneScale, m_pSharcSceneScale->value());

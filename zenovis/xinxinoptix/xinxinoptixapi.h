@@ -242,6 +242,7 @@ void optixCleanup();
 void optixDestroy();
 
 void optixrender(int fbo = 0, int samples = 1, bool denoise = false, bool simpleRender = false);
+void optixBeginFrame();
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();

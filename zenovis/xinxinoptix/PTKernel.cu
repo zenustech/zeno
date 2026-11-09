@@ -5,6 +5,7 @@
 
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
+#include "ClusterTextureHistory.h"
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
 #include "proceduralSky.h"
@@ -171,6 +172,7 @@ void homoVolumeLight(const RadiancePRD& prd, float _tmax_, float3 ray_origin, fl
     shadowPRD.fog_tmax = tmax;
     shadowPRD.ShadowNormal = ray_dir;
     shadowPRD.depth = prd.depth;
+    shadowPRD.textureConeWidth=prd.textureConeWidth;shadowPRD.textureConeSpread=prd.textureConeSpread;
     shadowPRD.origin = new_orig;
     shadowPRD.attanuation = vec3(1.0f);
 
@@ -255,7 +257,7 @@ extern "C" __global__ void __raygen__rg()
 #endif
 
     const unsigned int image_index  = idx.y * w + idx.x;
-    const int    subframe_index = params.subframe_index;
+    const unsigned int subframe_index = params.subframe_index;
     const CameraInfo cam = params.cam;
 
     int seedy = idx.y/4, seedx = idx.x/8;
@@ -299,6 +301,7 @@ extern "C" __global__ void __raygen__rg()
     }
     
     float3 result = make_float3( 0.0f );
+    bool primaryTextureMissing=false;
 
 #if __AOV__
     float3 aov[4] {};
@@ -419,6 +422,7 @@ extern "C" __global__ void __raygen__rg()
         prd.offset2 = seed1;
         prd.offset3 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
+        prd.textureConeWidth=0.f;prd.textureConeSpread=prd.pixel_area;
 
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
@@ -594,6 +598,7 @@ extern "C" __global__ void __raygen__rg()
             zenoApplySharcUpdateAfterTrace(prd, sharcState, sharcParameters);
 #endif
         }
+        primaryTextureMissing=primaryTextureMissing||prd.primaryTextureMissing;
         seed = prd.seed;
 //        seed1 = prd.offset;
 //        eventseed = prd.eventseed;
@@ -607,8 +612,8 @@ extern "C" __global__ void __raygen__rg()
     float iso           = params.physical_camera_iso;
     float midGray       = 0.18f;
 
-    bool need_manual_exposure = params.physical_camera_exposure;
-    bool need_tone_mapping = params.physical_camera_aces;
+    bool need_manual_exposure = params.physical_camera_exposure && !params.cluster_debug_view;
+    bool need_tone_mapping = params.physical_camera_aces && !params.cluster_debug_view;
 
     auto samples_per_launch = static_cast<float>( params.samples_per_launch );
 
@@ -635,9 +640,14 @@ extern "C" __global__ void __raygen__rg()
     #endif
     }
 
-    if( subframe_index > 0 )
+    unsigned int history=params.history_samples;
+    if(params.cluster_materials.primaryCoverage && primaryTextureMissing)
+        params.cluster_materials.primaryCoverage[image_index]|=1u;
+    if(params.cluster_materials.textureHistory)
+        history=clusterMaterial::textureHistory(params.cluster_materials.textureHistory[image_index],history,primaryTextureMissing);
+    if( history > 0 )
     {
-        const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
+        const float a = 1.0f / (static_cast<float>(history) + 1.0f);
         const float3 accum_color_prev   = params.accum_buffer[ image_index ];
         accum_color = mix( accum_color_prev, accum_color, a );
     #if __AOV__
@@ -706,6 +716,12 @@ extern "C" __global__ void __miss__radiance()
             );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
+    if(params.cluster_data && params.cluster_debug_view && !prd->test_distance) {
+        // A diagnostic miss must not resemble a dark surface or depend on the
+        // user's background/lighting setting.
+        prd->radiance=make_float3(1.f,0.f,1.f);prd->tmp_albedo=prd->radiance;
+        prd->done=true;prd->hit_type=MISS_HIT;return;
+    }
     prd->radiance *= 0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
