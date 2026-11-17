@@ -38,6 +38,30 @@ void CameraControl::setScale(int scale) {
     m_scale = scale;
 }
 
+QPointF CameraControl::normalizedPosition(QPointF position) const
+{
+    if (auto viewport = qobject_cast<ZOptixViewport*>(parent()))
+        return viewport->imageMapping().normalized(position);
+    return QPointF(position.x() / m_res.x(), position.y() / m_res.y());
+}
+
+QPointF CameraControl::normalizedDragDelta(QPointF delta) const
+{
+    if (auto viewport = qobject_cast<ZOptixViewport*>(parent()))
+        return viewport->imageMapping().normalizedDelta(delta);
+    const auto ratio = QApplication::desktop()->devicePixelRatio();
+    return QPointF(delta.x() * ratio / m_res.x(), delta.y() * ratio / m_res.y());
+}
+
+float CameraControl::interactionAspect() const
+{
+    if (auto viewport = qobject_cast<ZOptixViewport*>(parent())) {
+        const auto image = viewport->imageMapping().imageRect();
+        if (!image.isEmpty()) return float(image.width() / image.height());
+    }
+    return m_res.x() / m_res.y();
+}
+
 glm::vec3 CameraControl::getPos() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->getPos();
@@ -241,10 +265,11 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event, ZOptixViewport* view
     auto scene = m_zenovis->getSession()->get_scene();
     auto& cam = scene->camera;
     ClickPosInfo clickInfo;
-    clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
-    clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
-    clickInfo.eventResx = event->x() / res().x();
-    clickInfo.eventResy = event->y() / res().y();
+    const auto uv = normalizedPosition(event->localPos());
+    clickInfo.eventCamx = viewport ? uv.x() : (float)event->x() / (float)cam->m_nx;
+    clickInfo.eventCamy = viewport ? uv.y() : (float)event->y() / (float)cam->m_ny;
+    clickInfo.eventResx = uv.x();
+    clickInfo.eventResy = uv.y();
     clickInfo.eventType = event->type();
     clickInfo.eventButtons = event->buttons();
     clickInfo.eventPos = event->pos();
@@ -295,7 +320,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event, ZOptixViewport* view
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
     auto front = scene->camera->get_lodfront();
-    auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+    auto dir = screenPosToRayWS(uv.x(), uv.y());
     if (m_transformer)
     {
         if (event->buttons() & Qt::LeftButton && !scene->selected.empty() && m_transformer->isTransformMode() &&
@@ -417,6 +442,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
+    const auto uv = normalizedPosition(event->localPos());
 
     int moveButton = Qt::NoButton;
     int rotateButton = Qt::NoButton;
@@ -429,7 +455,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         bTransform = m_transformer->isTransforming();
         // check if hover a handler
         auto front = scene->camera->get_lodfront();
-        auto dir = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+        auto dir = screenPosToRayWS(uv.x(), uv.y());
         if (!scene->selected.empty() && !(event->buttons() & Qt::LeftButton)) {
             m_transformer->hoveredAnyHandler(getPos(), dir, front);
         }
@@ -453,9 +479,8 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     else if (!bTransform && ctrl_pressed && (event->buttons() & Qt::MiddleButton)) {
         // rot roll
         float step = 1.0f;
-        float ratio = QApplication::desktop()->devicePixelRatio();
         float dy = ypos - m_lastMidButtonPos.y();
-        dy *= ratio / m_res[1] * step;
+        dy = normalizedDragDelta(QPointF(0, dy)).y() * step;
         {
             auto rot = getRotation();
             rot = rot * glm::angleAxis(dy, glm::vec3(0, 0, 1));
@@ -464,16 +489,14 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         m_lastMidButtonPos = QPointF(xpos, ypos);
     }
     else if (!bTransform && ((event->buttons() & (rotateButton | moveButton)) || use_right_button)) {
-        float ratio = QApplication::desktop()->devicePixelRatio();
-        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
-        dx *= ratio / m_res[0];
-        dy *= ratio / m_res[1];
+        const auto movement = normalizedDragDelta(QPointF(xpos - m_lastMidButtonPos.x(), ypos - m_lastMidButtonPos.y()));
+        float dx = movement.x(), dy = movement.y();
         //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         Qt::KeyboardModifiers modifiers = event->modifiers();
         if (((moveKey == modifiers) && (event->buttons() & moveButton)) || use_right_button) {
             // translate
             if (!use_right_button && zeno::getSession().userData().get2<bool>("viewport-depth-aware-navigation", true) && m_hit_posWS.has_value()) {
-                auto ray = screenPosToRayWS(event->x() / res().x(), event->y() / res().y());
+                auto ray = screenPosToRayWS(uv.x(), uv.y());
                 auto new_pos = intersectRayPlane(m_hit_posWS.value(), ray * (-1.0f), getPos(), getViewDir());
                 if (new_pos.has_value() && enable_move) {
                     auto diff = new_pos.value() - getPos();
@@ -486,7 +509,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
                 auto up = getUpDir();
                 auto delta = left * dx + up * dy;
                 if (getOrthoMode()) {
-                    delta = (left * dx * float(m_res[0]) / float(m_res[1]) + up * dy) * 2.0f;
+                    delta = (left * dx * interactionAspect() + up * dy) * 2.0f;
                 }
                 auto diff = delta * getRadius();
                 setPivot(getPivot() + diff);
@@ -544,25 +567,27 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
-                auto dir = screenPosToRayWS(event->pos().x() / res().x(), event->pos().y() / res().y());
+                auto dir = screenPosToRayWS(uv.x(), uv.y());
 
                 // mouse pos
                 auto mouse_pos = glm::vec2(xpos, ypos);
-                mouse_pos[0] = (2 * mouse_pos[0] / res().x()) - 1;
-                mouse_pos[1] = 1 - (2 * mouse_pos[1] / res().y());
+                mouse_pos[0] = (2 * uv.x()) - 1;
+                mouse_pos[1] = 1 - (2 * uv.y());
                 // mouse start
                 auto mouse_start = glm::vec2(m_boundRectStartPos.x(), m_boundRectStartPos.y());
-                mouse_start[0] = (2 * mouse_start[0] / res().x()) - 1;
-                mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
+                const auto startUV = normalizedPosition(m_boundRectStartPos);
+                mouse_start[0] = (2 * startUV.x()) - 1;
+                mouse_start[1] = 1 - (2 * startUV.y());
 
                 auto vp = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
                 m_transformer->transform(getPos(), dir, mouse_start, mouse_pos, scene->camera->get_lodfront(), vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+                const auto startUV = normalizedPosition(m_boundRectStartPos);
+                float min_x = std::min(startUV.x(), uv.x());
+                float max_x = std::max(startUV.x(), uv.x());
+                float min_y = std::min(startUV.y(), uv.y());
+                float max_y = std::max(startUV.y(), uv.y());
                 scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
             }
         }
@@ -662,10 +687,11 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event, ZOptixViewport* viewport)
                 else {
                     if (viewport) {
                         ClickPosInfo clickInfo;
-                        clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
-                        clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
-                        clickInfo.eventResx = event->x() / res().x();
-                        clickInfo.eventResy = event->y() / res().y();
+                        const auto uv = normalizedPosition(event->posF());
+                        clickInfo.eventCamx = uv.x();
+                        clickInfo.eventCamy = uv.y();
+                        clickInfo.eventResx = uv.x();
+                        clickInfo.eventResy = uv.y();
                         clickInfo.scale = scale;
                         clickInfo.eventType = event->type();
                         viewport->sig_send_clickinfo_to_optix(clickInfo);
@@ -744,8 +770,9 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event, ZOptixViewport
 
         if (viewport) {
             ClickPosInfo clickInfo;
-            clickInfo.eventCamx = (float)event->x() / (float)cam->m_nx;
-            clickInfo.eventCamy = (float)event->y() / (float)cam->m_ny;
+            const auto uv = normalizedPosition(event->localPos());
+            clickInfo.eventCamx = uv.x();
+            clickInfo.eventCamy = uv.y();
             clickInfo.eventType = event->type();
             viewport->sig_send_clickinfo_to_optix(clickInfo);
         }
@@ -807,7 +834,7 @@ glm::vec3 CameraControl::screenPosToRayWS(float x, float y)  {
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
     float v = std::tan(glm::radians(getFOV()) * 0.5f);
-    float aspect = res().x() / res().y();
+    float aspect = interactionAspect();
     auto dir = glm::normalize(glm::vec3(v * x * aspect, v * y, -1));
     return getRotation() * dir;
 }

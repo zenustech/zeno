@@ -78,6 +78,9 @@ public:
     void click_pos_wheel(std::optional<glm::vec3> hit_posWS, ClickPosInfo posinfo);
 
 private:
+    QPointF normalizedPosition(QPointF position) const;
+    QPointF normalizedDragDelta(QPointF delta) const;
+    float interactionAspect() const;
     QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
     QVector2D m_res;

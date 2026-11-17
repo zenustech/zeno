@@ -1,5 +1,6 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "optixviewport.h"
 #include "cameracontrol.h"
 #include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
@@ -85,6 +86,11 @@ int Zenovis::getCurrentFrameId()
 
 void Zenovis::updatePerspective(QVector2D const &resolution)
 {
+    if (auto viewport = qobject_cast<ZOptixViewport*>(parent())) {
+        // Resize the renderer on its worker, never while a frame is in flight.
+        QMetaObject::invokeMethod(viewport, [viewport]() { viewport->requestRenderSize(); }, Qt::AutoConnection);
+        return;
+    }
     if (session) {
         if (session->is_lock_window())
         {

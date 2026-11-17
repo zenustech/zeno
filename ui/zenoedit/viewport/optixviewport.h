@@ -9,6 +9,7 @@
 #include <zenomodel/include/modeldata.h>
 #include "launch/corelaunch.h"
 #include "tinygltf/json.hpp"
+#include "viewportimagemapping.h"
 using Json = nlohmann::json;
 
 class Zenovis;
@@ -43,7 +44,7 @@ public:
     void setFrameMailbox(std::shared_ptr<ViewportFrameMailbox> mailbox) { m_frameMailbox=std::move(mailbox); }
 
 signals:
-    void renderIterate(QImage);
+    void renderIterate(QImage, QSize renderResolution, bool recording = false);
     void viewportFrameReady();
     void clasLodStatus(QString status);
     void sig_recordFinished();
@@ -71,6 +72,7 @@ public slots:
     void cancelRecording();
     void setRenderSeparately(int runtype);
     void onSetSafeFrames(bool bLock, int nx, int ny);
+    void onSetViewportResolution(QSize resolution);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
     void onSetSlidFeq(int feq);
@@ -104,7 +106,7 @@ public slots:
     void onSetData(float, float, float, int, bool, bool, bool, bool, float);
 
 private:
-    void publishViewportImage();
+    void publishViewportImage(QSize renderResolution, bool recording = false);
     std::shared_ptr<ViewportFrameMailbox> m_frameMailbox;
     Zenovis *m_zenoVis;
     QImage m_renderImg;
@@ -133,6 +135,9 @@ public:
     void setCameraRes(const QVector2D& res);
     void setCameraScale(const int scale);
     void setSafeFrames(bool bLock, int nx, int ny);
+    void requestRenderSize();
+    ViewportImageMapping imageMapping() const;
+    bool imageReady() const;
     void setNumSamples(int samples);
     void showBackground(bool bShow);
     void setSampleNumber(int sample_number);
@@ -187,6 +192,7 @@ signals:
     void sig_togglePlayButton(bool bToggled);
     void sig_switchTimeFrame(int frame);
     void sig_setSafeFrames(bool bLock, int nx, int ny);
+    void sig_setViewportResolution(QSize resolution);
     void sig_cancelRecording();
     void sig_setRunType(int runtype);
     void sig_setLoopPlaying(bool enable);
@@ -259,6 +265,11 @@ private:
     std::optional<zeno::vec2f> last_pos;
     QImage m_renderImage;
     std::shared_ptr<ViewportFrameMailbox> m_frameMailbox;
+    QImage m_overlayImage;
+    QSize m_fixedRenderResolution;
+    QSize m_targetRenderResolution;
+    QSize m_frameRenderResolution;
+    bool m_recordingFrame = false;
     OptixWorker* m_worker;
     std::string mode;
     std::string axis;
@@ -267,6 +278,7 @@ private:
     QImage gizmo_id_buffer;
     std::optional<glm::mat4> axis_coord;
     void drawAxis(QImage &img);
+    QColor gizmoAt(QPointF position) const;
     const std::map<int, std::string> gizmo_type_to_axis =  {
         {0, ""},
         {1, "X"},

@@ -1,5 +1,6 @@
 #pragma once
 #include <QImage>
+#include <QSize>
 #include <atomic>
 #include <cstdint>
 #include <mutex>
@@ -12,12 +13,18 @@
 // obsolete camera views. Recorded files do not pass through this mailbox.
 class ViewportFrameMailbox {
 public:
-    struct Frame { QImage image; uint64_t sequence{}; QString lodStatus; };
+    struct Frame {
+        QImage image;
+        uint64_t sequence{};
+        QString lodStatus;
+        QSize renderResolution;
+        bool recording=false;
+    };
     struct Stats { uint64_t published{},delivered{},replaced{},notifications{}; bool pending{}; };
-    bool publish(const QImage& image,const QString& lodStatus={}) {
+    bool publish(const QImage& image,const QString& lodStatus={},QSize renderResolution={},bool recording=false) {
         std::lock_guard<std::mutex> lock(mutex);
         if(counts.pending)++counts.replaced;
-        latest={image,++counts.published,lodStatus};counts.pending=true;
+        latest={image,++counts.published,lodStatus,renderResolution,recording};counts.pending=true;
         if(notified)return false;
         notified=true;++counts.notifications;return true;
     }

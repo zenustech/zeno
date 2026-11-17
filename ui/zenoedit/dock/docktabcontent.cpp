@@ -30,6 +30,7 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenoui/comctrl/ztoolmenubutton.h>
+#include <limits>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -863,17 +864,26 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         }
         else if (newValue == tr("Customize Size"))
         {
-            //todo
             QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
             QDialog dlg(this);
             QGridLayout* pLayout = new QGridLayout;
 
             QLineEdit* pWidthEdit = new QLineEdit;
-            pWidthEdit->setValidator(new QIntValidator);
+            pWidthEdit->setValidator(new QIntValidator(1, std::numeric_limits<int>::max(), pWidthEdit));
 
             QLineEdit* pHeightEdit = new QLineEdit;
-            pHeightEdit->setValidator(new QIntValidator);
+            pHeightEdit->setValidator(new QIntValidator(1, std::numeric_limits<int>::max(), pHeightEdit));
+            const auto previous = m_pDisplay->getOriginWindowSizeInfo();
+            const auto current = std::get<2>(previous) ? QSize(std::get<0>(previous), std::get<1>(previous)) : m_pDisplay->viewportSize();
+            pWidthEdit->setText(QString::number(qMax(1, current.width())));
+            pHeightEdit->setText(QString::number(qMax(1, current.height())));
+            const auto validate = [=]() {
+                pButtonBox->button(QDialogButtonBox::Ok)->setEnabled(pWidthEdit->hasAcceptableInput() && pHeightEdit->hasAcceptableInput());
+            };
+            connect(pWidthEdit, &QLineEdit::textChanged, &dlg, validate);
+            connect(pHeightEdit, &QLineEdit::textChanged, &dlg, validate);
+            validate();
 
             pLayout->addWidget(new QLabel(tr("width")), 0, 0);
             pLayout->addWidget(pWidthEdit, 0, 1);
@@ -892,9 +902,10 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
                 bLock = (nx > 0 && ny > 0);
             }
             else {
-                bLock = false;
-                nx = 100;
-                ny = 100;
+                QSignalBlocker block(m_cbRes);
+                m_cbRes->setCurrentIndex(m_cbRes->property("previousResolutionIndex").toInt());
+                m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(m_cbRes->currentText()) + ZenoStyle::dpiScaled(28));
+                return;
             }
         }
         else
@@ -909,6 +920,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
             ZASSERT_EXIT(ny);
         }
         m_pDisplay->setSafeFrames(bLock, nx, ny);
+        m_cbRes->setProperty("previousResolutionIndex", m_cbRes->currentIndex());
         m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
 
@@ -917,6 +929,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", CONTROL_ENUM, "string", cbSet, props));
     m_cbRes->setProperty("focusBorder", "none");
     m_cbRes->setEditable(false);
+    m_cbRes->setToolTip(m_bGLView ? tr("Camera aspect ratio") : tr("Render resolution in pixels. The image fits inside the viewport without resizing the panel."));
     m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
     m_cbRes->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
 
@@ -1176,6 +1189,7 @@ void DockContent_View::setResComboBoxIndex(int index)
     QFont fnt = QApplication::font();
     QFontMetrics fontMetrics(fnt);
     m_cbRes->setCurrentIndex(index);
+    m_cbRes->setProperty("previousResolutionIndex", index);
     m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(m_cbRes->currentText()) + ZenoStyle::dpiScaled(28));
 }
 

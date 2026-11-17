@@ -1,7 +1,9 @@
 #pragma once 
 #include <Sampling.h>
 #include <LightBounds.h>
+#include <EllipseShape.h>
 #include <sutil/vec_math.h>
+
 
 #ifdef __CUDACC_RTC__
 #include "zxxglslvec.h"
@@ -627,6 +629,10 @@ struct RectShape {
         return v + axisX * 0.5f * lenX + axisY * 0.5f * lenY;
     }
 
+    EllipseShape ellipse() const {
+        return {v, axisX, lenX, axisY, lenY, normal};
+    }
+
     inline bool EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
 
         float lightNoL = dot(-dir, normal);
@@ -648,13 +654,18 @@ struct RectShape {
             if (length(uvd) > 0.5f) { return false; }
         }
 
-        lsr->PDF = lightPDF;
+        lsr->PDF = isEllipse ? ellipse().PdfAsLight(shadingP, dist) : lightPDF;
         lsr->NoL = lightNoL;
 
         return true;
     }  
 
     inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {  
+
+        if (isEllipse) {
+            ellipse().SampleAsLight(lsr, uu, shadingP);
+            return;
+        }
 
         auto uv = uu;
         auto solidAngle = 0.0f;

@@ -43,8 +43,8 @@ ZOptixProcViewport::ZOptixProcViewport(QWidget* parent)
 
     m_worker = new OptixWorker(m_zenovis);
 
-    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
-        m_renderImage = img;
+    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img, QSize renderResolution) {
+        m_renderImage = img.scaled(renderResolution, Qt::IgnoreAspectRatio, Qt::FastTransformation);
         update();
     });
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixProcViewport::sig_frameRecordFinished);

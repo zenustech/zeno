@@ -2211,8 +2211,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
 
+        // Fixed viewport presets specify actual render pixels during interaction.
         const int renderRatio = zeno::getSession().userData().has("optix_image_path") ? 1 :
-            (opt.simpleRender ? std::max(cam.zOptixCameraSettingInfo.renderRatio, 1) : 1);
+            (opt.simpleRender && !cam.is_locked_window() ? std::max(cam.zOptixCameraSettingInfo.renderRatio, 1) : 1);
         const int renderWidth = std::max(cam.m_nx / renderRatio, 1);
         const int renderHeight = std::max(cam.m_ny / renderRatio, 1);
         bool sizeNeedUpdate = false;
