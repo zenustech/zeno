@@ -302,6 +302,8 @@ set(FILE_LIST
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterMaterialDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureDelivery.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureResidency.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureFootprint.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureSampling.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterMaterialShader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@ClusterTextureFallback.h
@@ -394,7 +396,7 @@ list(APPEND FILE_LIST ${SHARC_NVRTC_FILES})
 zeno_otk_nvrtc_headers(_otk_nvrtc_include)
 foreach(_otk_header DeviceContext.h LRU.h Paging.h Texture2D.h Texture2DFootprint.h
                     TextureCascade.h TextureSampler.h TileIndexing.h)
-    if(_otk_header STREQUAL "Paging.h" OR _otk_header STREQUAL "TextureSampler.h" OR _otk_header STREQUAL "Texture2D.h")
+    if(_otk_header STREQUAL "Paging.h" OR _otk_header STREQUAL "TextureSampler.h" OR _otk_header STREQUAL "Texture2D.h" OR _otk_header STREQUAL "TileIndexing.h")
         list(APPEND FILE_LIST "${_otk_nvrtc_include}@OptiXToolkit/DemandLoading/${_otk_header}")
     else()
         list(APPEND FILE_LIST "${CMAKE_SOURCE_DIR}/projects/optix-toolkit/DemandLoading/DemandLoading/include/@OptiXToolkit/DemandLoading/${_otk_header}")

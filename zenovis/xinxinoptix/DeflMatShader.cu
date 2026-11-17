@@ -273,6 +273,7 @@ extern "C" __global__ void __closesthit__radiance()
     const bool clusterHit=params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID;
 #endif
     RadiancePRD* prd = getPRD();
+    float clusterNormalOrientation=1.f;
     const auto feedback=params.cluster_feedback;
     if(clusterHit && prd->depth==0 && !prd->test_distance && feedback.requested) {
         const auto pixel=optixGetLaunchIndex();
@@ -487,8 +488,10 @@ extern "C" __global__ void __closesthit__radiance()
         // The gray CLAS material is two-sided. Match RTXMG's orientation of
         // interpolated normals; coarse LODs can retain normals facing away
         // from the incoming ray even where the triangle itself faces it.
-        if (dot(attrs.N, vec3(ray_dir)) > 0.f)
+        if (dot(attrs.N, vec3(ray_dir)) > 0.f) {
+            clusterNormalOrientation=-1.f;
             attrs.N = -attrs.N;
+        }
         attrs.T={};
     } else {
         let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
@@ -543,7 +546,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         if(params.cluster_materials.materials)
             mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread,
-                prd->depth==0?&prd->primaryTextureMissing:nullptr);
+                prd->depth==0?&prd->primaryTextureMissing:nullptr,clusterNormalOrientation);
     } else {
         mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
     }

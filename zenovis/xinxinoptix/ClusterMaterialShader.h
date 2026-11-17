@@ -6,6 +6,23 @@
 
 namespace clusterMaterial {
 using namespace zeno_cluster_device;
+static __noinline__ __device__ float4 sampleAuthoredFilter(const demandLoading::TextureSampler& sampler,
+        const demandLoading::DeviceContext& context,float2 uv,float2 dx,float2 dy,unsigned int sampling,bool& resident) {
+    const float desired=getMipLevel(dx,dy,float(sampler.width),float(sampler.height),1.f);
+    const auto levels=textureSampleLevels(sampling,desired,sampler.desc.numMipLevels-1u);
+    resident=true;
+    auto fetch=[&](unsigned int level) {
+        const auto width=max(sampler.width>>level,1u),height=max(sampler.height>>level,1u);
+        const float u=textureSampleCoordinate(uv.x,width,levels.point),v=textureSampleCoordinate(uv.y,height,levels.point);
+        const bool published=!sampler.desc.isSparseTexture||visitTextureRect(sampler,u,v,levels.point?0.f:.5f/float(width),levels.point?0.f:.5f/float(height),level,true,
+            [&](unsigned int page){return demandLoading::requestAndCheckResidency(context.referenceBits,context.residenceBits,page);});
+        bool mapped=false;const auto value=::tex2DLod<float4>(sampler.texture,u,v,float(level),&mapped);
+        resident=resident&&published&&mapped;return value;
+    };
+    auto value=fetch(levels.first);
+    if(levels.blend>0.f)value=(1.f-levels.blend)*value+levels.blend*fetch(levels.second);
+    return value;
+}
 __forceinline__ __device__ void recordTextureImportance(unsigned int page,unsigned int weight,bool parent) {
     auto* table=params.cluster_materials.demandImportance;
     if(!table || page==InvalidTexturePage || page>=params.cluster_materials.textures.maxNumPages ||
@@ -138,7 +155,7 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
     // Wide secondary/shadow footprints often need only original mip levels
     // already resident in the dense arrays. Skip sparse paging for those
     // exact same levels. Primary requests keep their existing priority path.
-    if(!s.textureMissing && params.cluster_materials.denseCoarseSampling && params.cluster_materials.coarseTextures) {
+    if(!b.sampling && !s.textureMissing && params.cluster_materials.denseCoarseSampling && params.cluster_materials.coarseTextures) {
         const auto coarse=params.cluster_materials.coarseTextures[b.id];
         const auto scale=1u<<coarse.firstLevel;
         // Cropping odd dimensions or clamping a thin axis changes gradient
@@ -148,7 +165,7 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
             // Leave one full mip of margin for the hardware LOD estimate and
             // trilinear neighbors; this never forces a coarser requested mip.
             if(level>=float(coarse.firstLevel)+1.f)
-                permanent=coarseFallback(params.cluster_materials,unsigned(b.id),uv,dx,dy,value);
+                permanent=coarseFallback(params.cluster_materials,unsigned(b.id),uv,dx,dy,value,b.sampling,b.width,b.height);
         }
     }
     if(!permanent) {
@@ -156,9 +173,10 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
     auto context=params.cluster_materials.textures;
     if(s.textureMissing && params.cluster_materials.primaryReferences)
         context.referenceBits=params.cluster_materials.primaryReferences;
-    value=demandLoading::tex2DGrad<float4>(context,unsigned(b.id),uv.x,uv.y,dx,dy,&resident);
+    if(!b.sampling)value=demandLoading::tex2DGrad<float4>(context,unsigned(b.id),uv.x,uv.y,dx,dy,&resident);
     bool samplerResident=false;
     const auto* sampler=reinterpret_cast<const demandLoading::TextureSampler*>(demandLoading::pagingMapOrRequest(context,unsigned(b.id),&samplerResident));
+    if(b.sampling&&samplerResident&&sampler)value=sampleAuthoredFilter(*sampler,context,uv,dx,dy,b.sampling,resident);
 #if defined(ZENO_CLAS_TEXTURE_LOOKAHEAD)
     if(s.ahead&&samplerResident&&sampler&&sampler->desc.isSparseTexture) {
         auto step=uvTransform(b,s.aheadUv,true),fx=uvTransform(b,s.aheadDx,true),fy=uvTransform(b,s.aheadDy,true);
@@ -185,7 +203,8 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
             if(((pixel.x+pixel.y*17u+params.cluster_materials.residencyEpoch)&15u)==0) {
                 const float desired=getMipLevel(dx,dy,float(b.width),float(b.height),1.f/float(sampler->desc.maxAnisotropy));
                 if(isfinite(desired)) {
-                    const unsigned int level=unsigned(fminf(fmaxf(floorf(desired),0.f),float(sampler->desc.numMipLevels-1)));
+                    const unsigned int level=b.sampling?textureSampleLevels(b.sampling,desired,sampler->desc.numMipLevels-1u).first:
+                        unsigned(fminf(fmaxf(floorf(desired),0.f),float(sampler->desc.numMipLevels-1)));
                     const unsigned int set=params.cluster_materials.materialSets && unsigned(slot)<3?s.material->feedbackSet[slot]:0u;
                     const unsigned int weight=set?4u:slot==BaseColor?4u:slot==Normal||slot==MetallicRoughness?2u:1u;
                     recordTextureImportance(textureCenterPage(*sampler,uv.x,uv.y,level),weight,false);
@@ -199,7 +218,8 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
                         const auto id=unsigned(s.material->textures[member].id);bool ready=false;
                         const auto* other=reinterpret_cast<const demandLoading::TextureSampler*>(demandLoading::pagingMapOrRequest(context,id,&ready));
                         if(!ready || !other || !other->desc.isSparseTexture)continue;
-                        demandLoading::requestTexFootprint2DGrad(*other,context.referenceBits,context.residenceBits,uv.x,uv.y,dx.x,dx.y,dy.x,dy.y,0.f,0.f);
+                        if(b.sampling){bool ready;sampleAuthoredFilter(*other,context,uv,dx,dy,b.sampling,ready);}
+                        else demandLoading::requestTexFootprint2DGrad(*other,context.referenceBits,context.residenceBits,uv.x,uv.y,dx.x,dx.y,dy.x,dy.y,0.f,0.f);
                         recordTextureImportance(textureCenterPage(*other,uv.x,uv.y,level),weight,false);
                         if(level+2<other->mipTailFirstLevel)
                             recordTextureImportance(textureCenterPage(*other,uv.x,uv.y,level+2),weight,true);
@@ -223,7 +243,7 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
         // Probe without requesting every intermediate mip: the original fine
         // footprint and the tail above are the only missing pages we request.
         bool coarse=false;
-        if(samplerResident && sampler) {
+        if(!b.sampling && samplerResident && sampler) {
             const float desired=getMipLevel(dx,dy,float(b.width),float(b.height),1.f/float(sampler->desc.maxAnisotropy));
             const int last=int(sampler->desc.numMipLevels)-1;
             int first=isfinite(desired)?int(fminf(fmaxf(ceilf(desired),0.f),float(last))):last;
@@ -240,7 +260,7 @@ __forceinline__ __device__ float4 sample(const Surface& s,TextureSlot slot) {
                 }
             }
         }
-        if(!coarse)coarse=coarseFallback(params.cluster_materials,unsigned(b.id),uv,dx,dy,value);
+        if(!coarse)coarse=coarseFallback(params.cluster_materials,unsigned(b.id),uv,dx,dy,value,b.sampling,b.width,b.height);
         // An unseen emissive map must not invent a white light while cold.
         if(!coarse)return slot==Normal?make_float4(.5f,.5f,1.f,1.f):slot==Emissive?make_float4(0.f):make_float4(1.f);
     }
@@ -269,7 +289,7 @@ __forceinline__ __device__ float3 tangent(const VertexNormal& v,unsigned int pac
     const float angle=(float((packed>>1)&511)/511.f*2.f-1.f)*M_PIf;
     return cosf(angle)*b+sinf(angle)*t;
 }
-__forceinline__ __device__ MatOutput evaluate(MatInput& attrs,float footprint,bool* textureMissing=nullptr) {
+__forceinline__ __device__ MatOutput evaluate(MatInput& attrs,float footprint,bool* textureMissing=nullptr,float normalOrientation=1.f) {
     MatOutput out{};
     out.basecolor=vec3(.5f);out.roughness=.7f;out.ior=1.5f;out.F0=.04f;out.doubleSide=1;out.smoothness=1;
     out.nrm=attrs.N;out.metalColor=vec3(1.f);out.transColor=vec3(1.f);out.transTint=vec3(1.f);out.reflectance=attrs.reflectance;
@@ -284,6 +304,9 @@ __forceinline__ __device__ MatOutput evaluate(MatInput& attrs,float footprint,bo
     const auto mr=sample(s,MetallicRoughness),spec=sample(s,Specular);
     out.metallic=fminf(fmaxf(m.metallic*mr.z,0.f),1.f);out.roughness=fminf(fmaxf(m.roughness*mr.y,0.f),1.f);
     out.specular=m.specular*spec.w;
+    const auto specColor=sample(s,SpecularColor);
+    out.specularColor=vec3(m.specularColor[0]*specColor.x,m.specularColor[1]*specColor.y,m.specularColor[2]*specColor.z);
+    out.importedFresnel=true;
     out.ior=m.ior;out.F0=pbrt::Sqr((m.ior-1.f)/(m.ior+1.f));
     out.specTrans=m.transmission*sample(s,Transmission).x;out.thin=out.specTrans>0?1.f:0.f;
     out.transColor=out.basecolor;out.transTint=out.basecolor;
@@ -295,7 +318,9 @@ __forceinline__ __device__ MatOutput evaluate(MatInput& attrs,float footprint,bo
         const auto uv0=uvTransform(binding,make_float2(s.a[0]->uv[0],s.a[0]->uv[1]));
         const auto uv1=uvTransform(binding,make_float2(s.a[1]->uv[0],s.a[1]->uv[1]));
         const auto uv2=uvTransform(binding,make_float2(s.a[2]->uv[0],s.a[2]->uv[1]));
-        auto n=static_cast<float3>(attrs.N),t=make_float3(0.f),b=make_float3(0.f);
+        // Build both authored and UV-derived frames on the same unflipped
+        // shading normal, then orient the complete mapped frame exactly once.
+        auto n=normalOrientation*static_cast<float3>(attrs.N),t=make_float3(0.f),b=make_float3(0.f);
         const bool authored=(s.a[0]->tangent&s.a[1]->tangent&s.a[2]->tangent&0x80000000u)&&
             binding.transform[0]==1&&binding.transform[1]==0&&binding.transform[3]==0&&binding.transform[4]==1;
         if(authored) {
@@ -313,10 +338,10 @@ __forceinline__ __device__ MatOutput evaluate(MatInput& attrs,float footprint,bo
             t=normalize(t-dot(t,n)*n);const float sign=dot(cross(n,t),b)<0?-1.f:1.f;b=sign*cross(n,t);
             const auto tex=sample(s,Normal);const float rawX=tex.x*2-1,rawY=tex.y*2-1;
             const float x=rawX*m.normalScale,y=rawY*m.normalScale;
-            const float z=sqrtf(fmaxf(0.f,1.f-rawX*rawX-rawY*rawY));
-            const auto mapped=x*t+y*b+z*n;
+            const float z=binding.normalEncoding==NormalXY?sqrtf(fmaxf(0.f,1.f-rawX*rawX-rawY*rawY)):tex.z*2.f-1.f;
+            const auto mapped=normalOrientation*(x*t+y*b+z*n);
             if(length(mapped)>1.e-10f)out.nrm=normalize(mapped);
-            attrs.T=t;attrs.B=b;
+            attrs.T=normalOrientation*t;attrs.B=normalOrientation*b;
         }
     }
     return out;

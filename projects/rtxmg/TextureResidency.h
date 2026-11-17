@@ -2,6 +2,7 @@
 #include <OptiXToolkit/DemandLoading/TextureSampler.h>
 #include <OptiXToolkit/DemandLoading/TileIndexing.h>
 #include <OptiXToolkit/DemandLoading/Paging.h>
+#include "TextureFootprint.h"
 
 namespace zeno_cluster_device {
 #if defined(__CUDACC__)
@@ -14,15 +15,15 @@ inline constexpr unsigned int InvalidTexturePage=0xffffffffu;
 // Unsupported grids retain the established full-footprint fallback walk.
 ZENO_RESIDENCY_INLINE bool residencyGridSupported(const demandLoading::TextureSampler& s) {
     return s.width && s.height && !(s.width&(s.width-1)) && !(s.height&(s.height-1)) &&
-        s.desc.wrapMode0!=CU_TR_ADDRESS_MODE_MIRROR && s.desc.wrapMode1!=CU_TR_ADDRESS_MODE_MIRROR;
+        s.desc.wrapMode0<=CU_TR_ADDRESS_MODE_MIRROR && s.desc.wrapMode1<=CU_TR_ADDRESS_MODE_MIRROR;
 }
 ZENO_RESIDENCY_INLINE unsigned int textureCenterPage(const demandLoading::TextureSampler& s,
                                                     float u,float v,unsigned int level) {
     if(!residencyGridSupported(s) || !isfinite(u) || !isfinite(v))return InvalidTexturePage;
     if(level>=s.mipTailFirstLevel)return s.startPage;
     if(level>=demandLoading::MAX_TILE_LEVELS)return InvalidTexturePage;
-    u=demandLoading::wrapTexCoord(u,static_cast<CUaddress_mode>(s.desc.wrapMode0));
-    v=demandLoading::wrapTexCoord(v,static_cast<CUaddress_mode>(s.desc.wrapMode1));
+    u=textureAddress(u,s.desc.wrapMode0);
+    v=textureAddress(v,s.desc.wrapMode1);
     const auto width=s.width>>level,height=s.height>>level;
     const auto x=static_cast<unsigned int>(u*(width?width:1))>>s.desc.logTileWidth;
     const auto y=static_cast<unsigned int>(v*(height?height:1))>>s.desc.logTileHeight;

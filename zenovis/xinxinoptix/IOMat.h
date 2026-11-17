@@ -60,6 +60,10 @@ struct MatOutput {
 
     vec3 nrm;
     vec3 emission;
+    // Imported glTF supports a colored dielectric F0 independently of metal
+    // base color. Legacy node materials keep their existing BSDF parameters.
+    vec3 specularColor=vec3(1.f);
+    bool importedFresnel=false;
 };
 
 __forceinline__ float3 transformPoint(float3 p, const float4* matrix) {

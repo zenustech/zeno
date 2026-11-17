@@ -441,7 +441,7 @@ endfunction()
 function(zeno_otk_nvrtc_headers output)
     set(_include "${CMAKE_SOURCE_DIR}/projects/optix-toolkit/DemandLoading/DemandLoading/include/")
     set(_generated "${CMAKE_CURRENT_BINARY_DIR}/otk_nvrtc/")
-    foreach(_name Paging.h TextureSampler.h Texture2D.h ImageHelpers.h)
+    foreach(_name Paging.h TextureSampler.h TileIndexing.h Texture2D.h ImageHelpers.h)
         if(_name STREQUAL "ImageHelpers.h")
             set(_include "${CMAKE_SOURCE_DIR}/projects/optix-toolkit/DemandLoading/ImageSource/include/")
             set(_relative "OptiXToolkit/ImageSource/${_name}")
@@ -454,6 +454,8 @@ function(zeno_otk_nvrtc_headers output)
             string(REPLACE "#include <cuda.h>" "#ifndef __CUDACC_RTC__\n#include <cuda.h>\n#endif" _text "${_text}")
         elseif(_name STREQUAL "TextureSampler.h")
             string(REPLACE "#include \"TextureDescriptor.h\"" "#ifndef __CUDACC_RTC__\n#include \"TextureDescriptor.h\"\n#endif" _text "${_text}")
+        elseif(_name STREQUAL "TileIndexing.h")
+            string(REPLACE "        x = x - floorf( x );" "        x = x - floorf( x );\n    else if( addressMode == CU_TR_ADDRESS_MODE_MIRROR ) {\n        x -= 2.0f * floorf( x * 0.5f );\n        x = x <= 1.0f ? x : 2.0f - x;\n    }" _text "${_text}")
         elseif(_name STREQUAL "Texture2D.h")
             # A null reference vector provides a read-only residency probe for
             # coarse fallbacks, without requesting all intermediate mip levels.
@@ -502,6 +504,24 @@ function(zeno_otk_nvrtc_headers output)
             endif()
             string(REPLACE "${_old_grad}" "${_new_grad}" _text "${_text}")
             string(REPLACE "*isResident = requestTexFootprint2DLod( *sampler, context.referenceBits, context.residenceBits, x, y, lod );" "requestTexFootprint2DLod( *sampler, context.referenceBits, context.residenceBits, x, y, lod );" _text "${_text}")
+            # Shared interval enumeration also covers mirror turning points,
+            # negative UVs, NPOT edge tiles and the complete coarse footprint.
+            string(FIND "${_text}" "D_INLINE bool requestTexFootprint2DRect(" _rect_start)
+            string(FIND "${_text}" "/// Request the footprint for a texture sample at coords (x,y) with texture gradients" _rect_end)
+            if(_rect_start EQUAL -1 OR _rect_end EQUAL -1)
+                message(FATAL_ERROR "OTK rectangular footprint changed; review address-aware enumeration")
+            endif()
+            string(SUBSTRING "${_text}" 0 ${_rect_start} _prefix)
+            string(SUBSTRING "${_text}" ${_rect_end} -1 _suffix)
+            set(_rect [=[D_INLINE bool requestTexFootprint2DRect(const TextureSampler& sampler,
+    unsigned int* referenceBits,unsigned int* residenceBits,float x,float y,float dx,float dy,
+    unsigned int mipLevel,bool singleMipLevel) {
+    return zeno_cluster_device::visitTextureRect(sampler,x,y,dx,dy,mipLevel,singleMipLevel,
+        [&](unsigned int page){return requestAndCheckResidency(referenceBits,residenceBits,page);});
+}
+
+]=])
+            set(_text "#include \"TextureFootprint.h\"\n${_prefix}${_rect}${_suffix}")
         else()
             string(REPLACE "INLINE CUarray_format_enum getFormat( float4" "#ifndef __CUDACC_RTC__\nINLINE CUarray_format_enum getFormat( float4" _text "${_text}")
             string(REPLACE "INLINE unsigned char toUChar( float value)" "#endif\nINLINE unsigned char toUChar( float value)" _text "${_text}")

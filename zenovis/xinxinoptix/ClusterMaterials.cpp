@@ -3,6 +3,7 @@
 #include "ClusterProfiling.h"
 #include "ClusterCache.h"
 #include "ClusterUri.h"
+#include "TextureBlockReader.h"
 #include "TextureTileCache.h"
 #include "TextureFeedback.h"
 #include "TextureMaterialSet.h"
@@ -101,7 +102,7 @@ public:
     }
     uint32_t registerImage(uint64_t mipBytes) {
         if(ramTiles) {
-            workspaceFloor=std::max(workspaceFloor,std::min(totalBudget,mipBytes));
+            if(mipBytes<=totalBudget)workspaceFloor=std::max(workspaceFloor,mipBytes);
         }
         return ++nextImage;
     }
@@ -251,8 +252,23 @@ public:
     CUmemorytype getFillType() const override{return CU_MEMORYTYPE_HOST;}
     bool readTile(char* dest,unsigned int level,const imageSource::Tile& tile,CUstream) override {
         if(tile.width%4||tile.height%4)throw std::runtime_error("BC tile must align to blocks");
+        if(level>=levels.size())throw std::runtime_error("KTX tile mip out of range");
         cache->deliveredBytes.fetch_add(size_t(tile.width/4)*(tile.height/4)*blockBytes,std::memory_order_relaxed);
         cache->requested(path,level);
+        if(!scheme||levels[level].decoded>cache->totalBudget) {
+            const auto bytes=size_t(tile.width/4)*(tile.height/4)*blockBytes;
+            const auto key=path.u8string()+":stream-tile:"+std::to_string(level)+":"+std::to_string(tile.x)+":"+std::to_string(tile.y)+":"+std::to_string(tile.width)+":"+std::to_string(tile.height);
+            auto data=cache->get(key,bytes,[&](char* out) {
+                const auto l=levels[level];
+                const auto s=readTextureBlockTile(path,l.offset,l.bytes,l.decoded,scheme,std::max(info.width>>level,1u),std::max(info.height>>level,1u),
+                    blockBytes,tile.x,tile.y,tile.width,tile.height,std::max<uint64_t>(1u<<20,std::min<uint64_t>(cache->totalBudget/4,64u<<20)),out);
+                cache->decodedBytes.fetch_add(s.decodedBytes,std::memory_order_relaxed);cache->sourceBytes.fetch_add(s.sourceBytes,std::memory_order_relaxed);
+                cache->mipLoads.fetch_add(1,std::memory_order_relaxed);
+                std::lock_guard<std::mutex> lock(statsMutex);bytesRead+=s.sourceBytes;
+            });
+            std::memcpy(dest,data.data(),bytes);
+            std::lock_guard<std::mutex> lock(statsMutex);++reads;return true;
+        }
         if(cache->ramTiles) {
             const HostTileKey key{imageId,level,tile.x,tile.y,tile.width,tile.height,blockBytes};
             if(!cache->retainTiles.load(std::memory_order_relaxed)||!cache->tiles->read(key,dest)) {
@@ -302,7 +318,15 @@ public:
     bool readMipLevel(char* dest,unsigned int level,unsigned int width,unsigned int height,CUstream) override {
         if(level>=levels.size()||width!=std::max(info.width>>level,1u)||height!=std::max(info.height>>level,1u))
             throw std::runtime_error("KTX mip dimensions do not match CUDA array");
-        auto source=mip(level);std::memcpy(dest,source.data(),size_t(levels[level].decoded));return true;
+        if(!scheme||levels[level].decoded>cache->totalBudget) {
+            const auto l=levels[level];
+            const auto s=readTextureBlockTile(path,l.offset,l.bytes,l.decoded,scheme,width,height,blockBytes,0,0,(width+3)&~3u,(height+3)&~3u,
+                std::max<uint64_t>(1u<<20,std::min<uint64_t>(cache->totalBudget/4,64u<<20)),dest);
+            cache->decodedBytes.fetch_add(s.decodedBytes,std::memory_order_relaxed);cache->sourceBytes.fetch_add(s.sourceBytes,std::memory_order_relaxed);
+            cache->mipLoads.fetch_add(1,std::memory_order_relaxed);
+            std::lock_guard<std::mutex> lock(statsMutex);bytesRead+=s.sourceBytes;
+        } else {auto source=mip(level);std::memcpy(dest,source.data(),size_t(levels[level].decoded));}
+        return true;
     }
     bool readMipTail(char* dest,unsigned int first,unsigned int count,const uint2* dims,CUstream stream) override {
         size_t offset=0;
@@ -580,14 +604,27 @@ struct Materials::Impl {
                 }
                 const auto samplers=gltf.value("samplers",Json::array());
                 const auto sampler=texture.contains("sampler")?samplers.at(texture.at("sampler").get<size_t>()):Json::object();
-                auto wrap=[](int mode){return mode==33071?CU_TR_ADDRESS_MODE_CLAMP:mode==33648?CU_TR_ADDRESS_MODE_MIRROR:CU_TR_ADDRESS_MODE_WRAP;};
+                auto wrap=[](int mode){
+                    if(mode!=33071&&mode!=33648&&mode!=10497)throw std::runtime_error("Unsupported glTF wrap mode");
+                    return mode==33071?CU_TR_ADDRESS_MODE_CLAMP:mode==33648?CU_TR_ADDRESS_MODE_MIRROR:CU_TR_ADDRESS_MODE_WRAP;
+                };
                 desc.addressMode[0]=wrap(sampler.value("wrapS",10497));desc.addressMode[1]=wrap(sampler.value("wrapT",10497));
-                if(sampler.value("magFilter",9729)==9728)desc.filterMode=FILTER_POINT;
                 desc.maxAnisotropy=8;
+                const int mag=sampler.value("magFilter",9729),min=sampler.value("minFilter",9987);
+                if((mag!=9728&&mag!=9729)||(min!=9728&&min!=9729&&min!=9984&&min!=9985&&min!=9986&&min!=9987))
+                    throw std::runtime_error("Invalid glTF minification/magnification filter");
+                if(mag!=9729||min!=9987) {
+                    b.sampling=CustomSampling|(mag==9728?MagPoint:0)|((min==9728||min==9984||min==9986)?MinPoint:0)|
+                        ((min==9728||min==9729)?NoMipmaps:0)|((min==9984||min==9985)?PointMipmaps:0);
+                    // One sparse allocation. Explicit per-mip sampling below
+                    // supports independently authored min/mag filtering.
+                    desc.mipmapFilterMode=CU_TR_FILTER_MODE_POINT;desc.maxAnisotropy=1;
+                }
                 b.id=int(loader->createTexture(reader,desc).getId());b.width=reader->getInfo().width;b.height=reader->getInfo().height;
                 if(b.id!=int(sources.size()))throw std::runtime_error("Unexpected demand texture ID ordering");
                 sources.push_back({reader,desc});
                 b.swizzle=reader->swizzle();b.flip=reader->flip();
+                b.normalEncoding=reader->getInfo().format==CU_AD_FORMAT_BC5_UNORM?NormalXY:NormalRgb;
                 coarse.add(unsigned(b.id),reader,desc);
                 it=textureIds.emplace(key,b).first;
             }

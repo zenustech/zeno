@@ -2,14 +2,18 @@
 #include <OptiXToolkit/DemandLoading/DeviceContext.h>
 #include <vector_types.h>
 #include "TextureDelivery.h"
+#include "TextureSampling.h"
 
 namespace zeno_cluster_device {
 enum MaterialFlags { AlphaMask=1, AlphaBlend=2, DoubleSided=4, Unlit=8 };
 enum TextureSlot { BaseColor, MetallicRoughness, Normal, Emissive, Specular, SpecularColor, Transmission, Occlusion, TextureSlots };
+enum NormalEncoding { NormalRgb=0, NormalXY=1 };
 struct TextureBinding {
     int id=-1;
     unsigned int width=1,height=1;
     unsigned int swizzle=0x03020100u,flip=0;
+    unsigned int normalEncoding=NormalRgb;
+    unsigned int sampling=0;
     float transform[6]={1,0,0,0,1,0};
 };
 struct Material {
