@@ -2,6 +2,7 @@
 #include "CompletedTextureUpload.h"
 #include "ClusterProfiling.h"
 #include "ClusterCache.h"
+#include "ClusterUri.h"
 #include "TextureTileCache.h"
 #include "TextureFeedback.h"
 #include "TextureMaterialSet.h"
@@ -569,7 +570,7 @@ struct Materials::Impl {
             if(it==textureIds.end()) {
                 const auto& texture=gltf.at("textures").at(index);
                 const auto& image=gltf.at("images").at(texture.at("source").get<size_t>());
-                const auto imagePath=(source.parent_path()/std::filesystem::u8path(image.at("uri").get<std::string>())).lexically_normal();
+                const auto imagePath=assetUriPath(source.parent_path(),image.at("uri").get<std::string>());
                 auto& reader=images[imagePath];
                 if(!reader)reader=std::make_shared<KtxImage>(imagePath,cache,tileRoot);
                 demandLoading::TextureDescriptor desc;desc.filterMode=FILTER_BILINEAR;

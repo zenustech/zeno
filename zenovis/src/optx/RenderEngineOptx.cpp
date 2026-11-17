@@ -2075,6 +2075,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
 
     void update() override {
+        const auto registeredObjects=scene->objectsMan->pairs();
+        unsigned int clusterDescriptors=0;
+        for(const auto& [key,object]:registeredObjects) {
+            const auto* primitive=dynamic_cast<const zeno::PrimitiveObject*>(object);
+            if(primitive&&primitive->userData().get2<std::string>("ResourceType","")=="ClusterAsset"&&++clusterDescriptors>1) {
+                const char* message="This OptiX scene supports one LoadPrebakedAsset descriptor; combine the meshes in a single asset manifest.";
+                zeno::log_error("{}",message);throw std::runtime_error(message);
+            }
+        }
         xinxinoptix::optixBeginFrame();
 //        zeno::log_error("update");
         update_json(scene->objectsMan->pairs());

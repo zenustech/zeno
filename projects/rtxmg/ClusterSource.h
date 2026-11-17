@@ -1,5 +1,6 @@
 #pragma once
 #include "ClusterCache.h"
+#include "ClusterUri.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -24,7 +25,7 @@ struct Source {
         const auto compressed = ext.find("EXT_meshopt_compression");
         const auto &range = compressed == ext.end() ? v : *compressed;
         const auto buffer = range.at("buffer").get<size_t>();
-        const auto path = root / scene.at("buffers").at(buffer).at("uri").get<std::string>();
+        const auto path = assetUriPath(root,scene.at("buffers").at(buffer).at("uri").get<std::string>());
         const auto offset = range.value("byteOffset", uint64_t(0));
         const auto bytes = range.at("byteLength").get<size_t>();
         const auto fileBytes = fs::file_size(path);
@@ -164,6 +165,33 @@ struct Source {
             result[i] = glm::quat(q[3], q[0], q[1], q[2]);
         }
         return result;
+    }
+    std::string contentKey(size_t id,bool shading=false) const {
+        uint64_t hash=14695981039346656037ull;
+        auto append=[&](const char* p,size_t n){for(size_t i=0;i<n;++i){hash^=static_cast<unsigned char>(p[i]);hash*=1099511628211ull;}};
+        const auto layout=geometryKey(id,shading);append(layout.data(),layout.size());
+        std::vector<char> bytes(1u<<20);
+        for(const auto& p:scene.at("meshes").at(id).at("primitives")) {
+            std::vector<size_t> ids{p.at("indices").get<size_t>(),p.at("attributes").at("POSITION").get<size_t>()};
+            for(const char* name:{"NORMAL","TEXCOORD_0","TANGENT"})
+                if((shading||std::string(name)=="NORMAL")&&p.at("attributes").contains(name))ids.push_back(p.at("attributes").at(name).get<size_t>());
+            for(auto accessor:ids) {
+                const auto& view=scene.at("bufferViews").at(scene.at("accessors").at(accessor).at("bufferView").get<size_t>());
+                const auto ext=view.value("extensions",Json::object());
+                const auto& range=ext.contains("EXT_meshopt_compression")?ext.at("EXT_meshopt_compression"):view;
+                const auto file=assetUriPath(root,scene.at("buffers").at(range.at("buffer").get<size_t>()).at("uri").get<std::string>());
+                const uint64_t offset=range.value("byteOffset",uint64_t(0)),count=range.at("byteLength");
+                const auto size=fs::file_size(file);
+                if(offset>size||count>size-offset)throw std::runtime_error("glTF signature range outside source buffer");
+                std::ifstream input(file,std::ios::binary);input.seekg(offset);
+                for(uint64_t left=count;left;) {
+                    const auto n=size_t(std::min<uint64_t>(left,bytes.size()));input.read(bytes.data(),n);
+                    if(!input)throw std::runtime_error("Cannot read glTF source signature: "+file.u8string());
+                    append(bytes.data(),n);left-=n;
+                }
+            }
+        }
+        return std::to_string(hash);
     }
     std::string geometryKey(size_t id,bool shading=false) const {
         auto accessor = [&](size_t id) {

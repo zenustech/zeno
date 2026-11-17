@@ -178,6 +178,7 @@ int main(int argc,char** argv) try {
     std::unordered_map<size_t,size_t> geometryIndex;
     std::mutex logMutex;
     auto bakeMesh=[&](Source& input,size_t meshID) {
+        const std::string signature="mesh-content-v1-"+input.contentKey(meshID,bakeAttributes)+"-"+bakeSettings.dump();
         const auto base="mesh-"+std::to_string(meshID);
         const fs::path metadata=output/(base+".json"),pages=output/(base+".pages");
         bool resume=false;
@@ -277,6 +278,8 @@ int main(int argc,char** argv) try {
     for(auto& worker:workers)try{worker.get();}catch(...){if(!error)error=std::current_exception();}
     if(error)std::rethrow_exception(error);
     for(size_t meshID:meshOrder){
+        const auto meshSignature=readJson(output/("mesh-"+std::to_string(meshID)+".json")).at("signature").get<std::string>();
+        for(unsigned char byte:meshSignature){fingerprint^=byte;fingerprint*=1099511628211ull;}
         geometryIndex[meshID]=asset["meshes"].size();
         asset["meshes"].push_back({{"sourceMesh",meshID},{"metadata","mesh-"+std::to_string(meshID)+".json"}});
     }
@@ -321,6 +324,7 @@ int main(int argc,char** argv) try {
         }else asset["nodes"].push_back({{"mesh",geometry},{"sourceMesh",sourceMesh},{"sourceNode",id},{"matrix",values}});
     }
     if(asset["nodes"].empty()) throw std::runtime_error("No ordinary mesh placements selected");
+    asset["sourceSignature"]=std::to_string(fingerprint)+"-content-v1-"+bakeSettings.dump();
     writeJson(output/"asset.json.tmp",asset);
     if(fs::exists(output/"asset.json")) fs::remove(output/"asset.json"); fs::rename(output/"asset.json.tmp",output/"asset.json");
     auto checked=loadAsset(output/"asset.json");

@@ -8,6 +8,11 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#else
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 namespace zeno::cluster {
@@ -33,7 +38,7 @@ class Mapping {
 #ifdef _WIN32
     HANDLE file = INVALID_HANDLE_VALUE, mapping = nullptr;
 #else
-    std::vector<uint8_t> storage;
+    int file=-1;
 #endif
   public:
     Bytes bytes{nullptr, 0};
@@ -58,12 +63,15 @@ class Mapping {
         }
         bytes.size = uint64_t(size.QuadPart);
 #else
-        std::ifstream stream(path, std::ios::binary);
-        storage.resize(std::filesystem::file_size(path));
-        stream.read(reinterpret_cast<char *>(storage.data()), storage.size());
-        if (!stream)
-            throw std::runtime_error("Cannot read RTXMG shard: " + path.string());
-        bytes = {storage.data(), storage.size()};
+        file=::open(path.c_str(),O_RDONLY);
+        struct stat info{};
+        if(file<0||fstat(file,&info)!=0||info.st_size<=0) {
+            if(file>=0)::close(file);
+            throw std::runtime_error("Cannot open RTXMG shard: "+path.string());
+        }
+        void* mapped=mmap(nullptr,size_t(info.st_size),PROT_READ,MAP_PRIVATE,file,0);
+        if(mapped==MAP_FAILED){::close(file);throw std::runtime_error("Cannot map RTXMG shard: "+path.string());}
+        bytes={static_cast<const uint8_t*>(mapped),uint64_t(info.st_size)};
 #endif
     }
     ~Mapping() {
@@ -71,6 +79,9 @@ class Mapping {
         UnmapViewOfFile(bytes.data);
         CloseHandle(mapping);
         CloseHandle(file);
+#else
+        munmap(const_cast<uint8_t*>(bytes.data),size_t(bytes.size));
+        ::close(file);
 #endif
     }
     Mapping(const Mapping &) = delete;
