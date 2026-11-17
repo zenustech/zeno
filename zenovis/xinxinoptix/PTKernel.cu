@@ -423,6 +423,11 @@ extern "C" __global__ void __raygen__rg()
         prd.offset3 = seed1;
         prd.pixel_area   = cam.height/(float)(h)/(cam.focal_length);
         prd.textureConeWidth=0.f;prd.textureConeSpread=prd.pixel_area;
+        if(params.physical_camera_panorama_camera) {
+            const float theta=(float(idx.y)+subpixel_jitter.y)/float(h)*M_PIf;
+            prd.pixel_area=fmaxf(M_PIf/float(h),2.f*M_PIf*sinf(theta)/float(w));
+            prd.textureConeSpread=prd.pixel_area;
+        }
 
         prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);

@@ -96,9 +96,19 @@ __forceinline__ __device__ bool surface(Surface& s,float footprint,const float3*
         const auto direction=optixGetWorldRayDirection();
         Onb basis(direction);const float d=dot(direction,n);
         const float inverse=1.f/copysignf(fmaxf(fabsf(d),1.e-5f),d);
-        const float3 axisX=static_cast<float3>(basis.m_tangent),axisY=static_cast<float3>(basis.m_binormal);
-        const auto dx=footprint*(axisX-dot(axisX,n)*inverse*direction);
-        const auto dy=footprint*(axisY-dot(axisY,n)*inverse*direction);
+        float3 axisX=static_cast<float3>(basis.m_tangent),axisY=static_cast<float3>(basis.m_binormal);
+        float footprintX=footprint,footprintY=footprint;
+        if(s.textureMissing&&params.physical_camera_panorama_camera) {
+            const auto up=normalize(params.cam.up);const auto horizontal=cross(up,direction);
+            const float sine=length(horizontal);
+            axisX=sine>1.e-7f?horizontal/sine:normalize(params.cam.right);
+            axisY=normalize(cross(direction,axisX));
+            const float sx=2.f*M_PIf*sine/float(params.width),sy=M_PIf/float(params.height);
+            const float spread=fmaxf(sx,sy);
+            footprintX*=sx/spread;footprintY*=sy/spread;
+        }
+        const auto dx=footprintX*(axisX-dot(axisX,n)*inverse*direction);
+        const auto dy=footprintY*(axisY-dot(axisY,n)*inverse*direction);
         const auto a=cross(e2,n)/area,b=cross(n,e1)/area;
 #if defined(ZENO_CLAS_TEXTURE_LOOKAHEAD)
         float3 aheadDelta{},aheadDx{},aheadDy{};

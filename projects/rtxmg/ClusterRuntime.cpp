@@ -1,6 +1,7 @@
 #include "ClusterRuntime.h"
 #include "ClusterAdaptiveLod.h"
 #include "ClusterGpu.h"
+#include "ClusterDispatch.h"
 #include "ClusterProfiling.h"
 #include "BackgroundEventWait.h"
 #include "DecodedGeometryCache.h"
@@ -473,6 +474,7 @@ struct Runtime::Impl {
     Buffer clasSizes, clasDest, clasScratch, clasStatus, clasCount;
     Arena upload;
     Scene scenes[2];
+    Buffer requestKeys,sortedRequestKeys,requestSortScratch;
     std::vector<Retirement> retired;
     std::vector<uint32_t> geometryOffsets, parentOffsets, parentIDs;
     std::vector<gpu::Geometry> geometryHost;
@@ -1141,8 +1143,8 @@ struct Runtime::Impl {
             while (cursor < scene.residentIDs.size() && scene.residentIDs[cursor] < geometryOffsets[g + 1])
                 ++cursor;
             geo.residentCount = uint32_t(cursor) - geo.residentOffset;
+            geo.workCount = checkedWorkItems(work,geo.residentCount,geo.placementCount);
             geo.workOffset = uint32_t(work);
-            geo.workCount = geo.residentCount * geo.placementCount;
             for (uint32_t i = 0; i < geo.placementCount; ++i)
                 ranges[order[geo.placementOffset + i]] = {uint32_t(work) + i * geo.residentCount, 0};
             work += geo.workCount;
@@ -1547,6 +1549,21 @@ struct Runtime::Impl {
             }
             if (result.emptyPlacements)
                 throw std::runtime_error("Resident cut left a placement without geometry");
+            if(result.requests>gpu::MaxRequests) {
+                // The first bounded list is only a fast path. On overflow,
+                // rank ALL unique stamped requests before discarding any.
+                // This runs on the preparation worker, never the render thread.
+                reserve(requestKeys,uint64_t(result.requests)*sizeof(uint64_t));
+                reserve(sortedRequestKeys,uint64_t(result.requests)*sizeof(uint64_t));
+                reserve(requestSortScratch,gpu::requestSortBytes(result.requests));
+                gpu::selectPriorityRequests(ptr<const uint64_t>(stamps.p),totalGroups,stamp,result.requests,
+                    ptr<gpu::Request>(scene.requests.p),ptr<gpu::Result>(scene.result.p),ptr<uint64_t>(requestKeys.p),ptr<uint64_t>(sortedRequestKeys.p),
+                    ptr<void>(requestSortScratch.p),requestSortScratch.bytes,buildStream);
+                check(cudaMemcpyAsync(scene.requestReceipt,ptr<void>(scene.requests.p),gpu::MaxRequests*sizeof(gpu::Request),cudaMemcpyDeviceToHost,buildStream));
+                check(cudaMemcpyAsync(scene.receipt,ptr<void>(scene.result.p),sizeof(gpu::Result),cudaMemcpyDeviceToHost,buildStream));
+                scene.phaseDone.record(buildStream);scene.phaseDone.wait();
+                if(scene.receipt->collectedRequests!=scene.receipt->requests)throw std::runtime_error("CLAS priority request collection mismatch");
+            }
             requests.assign(scene.requestReceipt,
                             scene.requestReceipt + std::min(result.requests, gpu::MaxRequests));
             size_t flag = 0;

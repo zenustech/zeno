@@ -17,7 +17,7 @@ __device__ float metric(const Group &g, const Placement &p, const Traversal &t) 
     float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - t.eye[0];
     float y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - t.eye[1];
     float z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - t.eye[2];
-    const float distance = sqrtf(x * x + y * y + z * z), radius = b[3] * p.scale;
+    const float distance = sqrtf(x * x + y * y + z * z), radius = b[3] * p.scale+t.zoom.stereoRadius;
     return b[4] * p.scale / fmaxf(distance - radius, .01f) *
            projectionForSphere(t.zoom, x, y, z, radius, distance, t.projection);
 }
@@ -202,6 +202,34 @@ size_t sortBytes(uint32_t n) {
                                           (uint32_t *)nullptr, (uint32_t *)nullptr, n));
     return bytes;
 }
+__global__ void collectPriorityRequests(const uint64_t* stamps,uint32_t groups,uint32_t stamp,
+                                      uint32_t capacity,uint64_t* keys,Result* result) {
+    const uint32_t id=blockIdx.x*blockDim.x+threadIdx.x;
+    if(id>=groups)return;
+    const uint64_t value=stamps[id];
+    if(uint32_t(value>>32)!=stamp)return;
+    const uint32_t rank=uint32_t(value),offset=atomicAdd(&result->collectedRequests,1u);
+    if(offset<capacity)keys[offset]=(uint64_t(rank)<<32)|(0xffffffffu-id);
+}
+__global__ void publishPriorityRequests(const uint64_t* keys,uint32_t count,Request* output) {
+    const uint32_t i=blockIdx.x*blockDim.x+threadIdx.x;
+    if(i>=count||i>=MaxRequests)return;
+    const auto key=keys[i];const uint32_t rank=uint32_t(key>>32);
+    output[i]={0xffffffffu-uint32_t(key),__uint_as_float(rank&0x7fffffffu),rank>>31};
+}
+size_t requestSortBytes(uint32_t count) {
+    size_t bytes=0;
+    check(cub::DeviceRadixSort::SortKeysDescending(nullptr,bytes,(uint64_t*)nullptr,(uint64_t*)nullptr,count));
+    return bytes;
+}
+void selectPriorityRequests(const uint64_t* stamps,uint32_t groups,uint32_t stamp,uint32_t count,
+    Request* output,Result* result,uint64_t* keys,uint64_t* sorted,void* scratch,size_t bytes,cudaStream_t stream) {
+    check(cudaMemsetAsync(&result->collectedRequests,0,sizeof(uint32_t),stream));
+    collectPriorityRequests<<<(groups+255)/256,256,0,stream>>>(stamps,groups,stamp,count,keys,result);
+    check(cub::DeviceRadixSort::SortKeysDescending(scratch,bytes,keys,sorted,count,0,64,stream));
+    publishPriorityRequests<<<(std::min(count,MaxRequests)+255)/256,256,0,stream>>>(sorted,count,output);
+    check(cudaGetLastError());
+}
 void traverse(const Traversal &t, void *scratch, size_t bytes, cudaStream_t stream) {
     const auto stage = [&](const char *name) {
         if (std::getenv("ZENO_CLAS_SYNC_STAGES")) {
@@ -212,13 +240,13 @@ void traverse(const Traversal &t, void *scratch, size_t bytes, cudaStream_t stre
     check(cudaMemsetAsync(t.result, 0, sizeof(Result), stream));
     check(cudaMemsetAsync(&t.result->minLod, 0xff, sizeof(uint32_t), stream));
     initializeWork<<<t.placementCount, 128, 0, stream>>>(t);
-    countWork<<<(t.workCount * 32 + 127) / 128, 128, 0, stream>>>(t);
+    countWork<<<(uint64_t(t.workCount) * 32 + 127) / 128, 128, 0, stream>>>(t);
     finalizeRequests<<<(MaxRequests+127)/128,128,0,stream>>>(t);
     stage("count");
     check(cudaMemsetAsync(t.counts + t.workCount, 0, sizeof(uint32_t), stream));
     check(cub::DeviceScan::ExclusiveSum(scratch, bytes, t.counts, t.offsets, t.workCount + 1, stream));
     stage("scan");
-    scatterWork<<<(t.workCount * 32 + 127) / 128, 128, 0, stream>>>(t);
+    scatterWork<<<(uint64_t(t.workCount) * 32 + 127) / 128, 128, 0, stream>>>(t);
     stage("scatter");
     placementRanges<<<(t.placementCount + 127) / 128, 128, 0, stream>>>(t);
     stage("ranges");
@@ -418,7 +446,7 @@ void canonicalize(const Traversal &t, uint64_t *keys, uint64_t *sortedKeys, uint
     hashCuts<<<t.placementCount, 128, 0, s>>>(t, keys, ids);
     check(cub::DeviceRadixSort::SortPairs(scratch, bytes, keys, sortedKeys, ids, sortedIDs, t.placementCount,
                                           0, 64, s));
-    findCanonical<<<(t.placementCount * 32 + 127) / 128, 128, 0, s>>>(t, sortedKeys, sortedIDs, canonical);
+    findCanonical<<<(uint64_t(t.placementCount) * 32 + 127) / 128, 128, 0, s>>>(t, sortedKeys, sortedIDs, canonical);
     check(cudaMemsetAsync(reuse, 0xff, t.placementCount * sizeof(uint32_t), s));
     reuseCuts<<<(t.placementCount + 127) / 128, 128, 0, s>>>(t, canonical, reuse);
     newGasFlags<<<(t.placementCount + 127) / 128, 128, 0, s>>>(t, canonical, reuse);

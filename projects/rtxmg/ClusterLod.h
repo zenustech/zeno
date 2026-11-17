@@ -9,9 +9,12 @@ namespace zeno::cluster {
 struct ZoomView {
     float planes[4][3]{};
     float feather{}, peripheralProjection{};
+    float panoramaUp[3]{},panoramaVertical{},panoramaHorizontal{},stereoRadius{};
     bool operator==(const ZoomView &other) const {
-        if (feather != other.feather || peripheralProjection != other.peripheralProjection)
+        if (feather != other.feather || peripheralProjection != other.peripheralProjection ||
+            panoramaVertical!=other.panoramaVertical || panoramaHorizontal!=other.panoramaHorizontal || stereoRadius!=other.stereoRadius)
             return false;
+        for(int i=0;i<3;++i)if(panoramaUp[i]!=other.panoramaUp[i])return false;
         for (int p = 0; p < 4; ++p)
             for (int a = 0; a < 3; ++a)
                 if (planes[p][a] != other.planes[p][a]) return false;
@@ -19,6 +22,13 @@ struct ZoomView {
     }
     bool operator!=(const ZoomView &other) const { return !(*this == other); }
 };
+inline ZoomView makePanoramaView(const float* up,float width,float height,float stereoRadius=0.f) {
+    ZoomView view;view.panoramaVertical=height/3.14159265358979323846f;
+    view.panoramaHorizontal=width/(2.f*3.14159265358979323846f);view.stereoRadius=stereoRadius;
+    const float inv=1.f/std::sqrt(up[0]*up[0]+up[1]*up[1]+up[2]*up[2]);
+    for(int i=0;i<3;++i)view.panoramaUp[i]=up[i]*inv;
+    return view;
+}
 inline ZoomView makeZoomView(const float *right, const float *up, const float *forward,
                              float tanHalfX, float tanHalfY, float peripheralProjection,
                              float horizontalShift = 0.f, float verticalShift = 0.f) {
@@ -40,6 +50,15 @@ __host__ __device__
 #endif
 inline float projectionForSphere(const ZoomView &view, float x, float y, float z, float radius, float distance, float projection) 
 {
+    if(view.panoramaVertical>0.f) {
+        const float vertical=x*view.panoramaUp[0]+y*view.panoramaUp[1]+z*view.panoramaUp[2];
+        const float horizontal=sqrtf(fmaxf(0.f,distance*distance-vertical*vertical));
+        // Bound the least latitude sine across the sphere. Groups covering a
+        // pole refine conservatively; seam wrapping never culls geometry.
+        const float sine=fmaxf((horizontal-radius)/fmaxf(distance+radius,.001f),
+                              1.f/fmaxf(view.panoramaHorizontal*6.28318530718f,1.f));
+        return fmaxf(view.panoramaVertical,view.panoramaHorizontal/sine);
+    }
     if (!(view.peripheralProjection > 0.f) || projection <= view.peripheralProjection)
         return projection;
     float outside = 0.f;

@@ -36,6 +36,7 @@ struct Result {
     uint32_t minLod, maxLod, emptyPlacements, maxPerGas;
     uint32_t uniqueGases, uniqueReferences, cutChanged, padding;
     uint32_t newGases, newReferences, newMaxPerGas, padding2;
+    uint32_t collectedRequests;
 };
 struct DescriptorPatch {
     uint32_t slot;
@@ -89,6 +90,9 @@ struct Traversal {
 };
 size_t scanBytes(uint32_t count);
 size_t sortBytes(uint32_t count);
+size_t requestSortBytes(uint32_t count);
+void selectPriorityRequests(const uint64_t* stamps,uint32_t groups,uint32_t stamp,uint32_t count,
+    Request* output,Result* result,uint64_t* keys,uint64_t* sorted,void* scratch,size_t bytes,cudaStream_t stream);
 void traverse(const Traversal &, void *scanScratch, size_t bytes, cudaStream_t stream);
 void canonicalize(const Traversal &, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint32_t *, uint32_t *,
                   void *, size_t, cudaStream_t);
