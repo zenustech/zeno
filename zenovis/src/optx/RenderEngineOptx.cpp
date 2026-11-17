@@ -2108,7 +2108,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
-#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny,cam.zOptixCameraSettingInfo.renderRatio
+#define MY_SIZE_ID(cam) cam.m_nx, cam.m_ny,cam.zOptixCameraSettingInfo.renderRatio,cam.is_locked_window()
     std::optional<decltype(std::tuple{MY_CAM_ID(std::declval<Camera>())})> oldcamid;
     std::optional<decltype(std::tuple{MY_SIZE_ID(std::declval<Camera>())})> oldsizeid;
 
@@ -2214,7 +2214,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
             auto scale = zeno::getSession().userData().has("optix_image_path")?1:cam.zOptixCameraSettingInfo.renderRatio;
-            scale = scene->drawOptions->simpleRender?scale:1;
+            // A fixed viewport preset specifies actual render pixels, including
+            // during camera interaction. Free mode retains preview downsampling.
+            scale = scene->drawOptions->simpleRender && !cam.is_locked_window() ? scale : 1;
             xinxinoptix::set_window_size(max(cam.m_nx/scale,1), max(cam.m_ny/scale,1));
         }
 

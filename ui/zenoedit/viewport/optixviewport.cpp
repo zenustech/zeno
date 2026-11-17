@@ -15,6 +15,7 @@
 #include <zenomodel/include/api.h>
 #include <zenomodel/include/nodesmgr.h>
 #include <zeno/utils/string.h>
+#include <QtMath>
 
 #include "viewport/zoptixviewport.h"
 #include "nodesview/zenographseditor.h"
@@ -188,29 +189,12 @@ void OptixWorker::updateFrame()
     m_zenoVis->paintGL();
     int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
-    int scale = zeno::getSession().userData().has("optix_image_path")?1:m_zenoVis->getSession()->get_scene()->camera->zOptixCameraSettingInfo.renderRatio;
-    int scale2 = m_zenoVis->getSession()->get_scene()->drawOptions->simpleRender?scale:1;
-    if(scale2 == 1 && (w != m_zenoVis->getSession()->get_scene()->camera->m_nx || h!= m_zenoVis->getSession()->get_scene()->camera->m_ny) )
-        scale = scale;
-    else
-        scale = scale2;
-    //m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
-    std::vector<int32_t> img;
-    img.resize(w*h*scale*scale);
-    for(int j=0;j<h*scale;j++)
-        for(int i=0;i<w*scale;i++)
-        {
-            int jj = j/scale;
-            int ii = i/scale;
-            if(ii<w && jj<h)
-            {
-                img[j*w*scale + i]  = ((int32_t *)data)[jj*w + ii];
-            }
-        }
-    m_renderImg = QImage((uchar *)img.data(), w*scale, h*scale, QImage::Format_RGBA8888);
-    m_renderImg = m_renderImg.mirrored(false, true);
-
-    emit renderIterate(m_renderImg);
+    if (!data || w <= 0 || h <= 0) return;
+    // Keep preview downsampling in the renderer. Presentation scales the image
+    // without a CPU loop that expands every pixel back to the viewport size.
+    m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888).mirrored(false, true);
+    const auto camera = m_zenoVis->getSession()->get_window_size();
+    emit renderIterate(m_renderImg, QSize(std::get<0>(camera), std::get<1>(camera)));
 }
 
 void OptixWorker::onPlayToggled(bool bToggled)
@@ -318,7 +302,20 @@ void OptixWorker::setRenderSeparately(int runtype) {
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
     auto scene = m_zenoVis->getSession()->get_scene();
-    scene->camera->set_safe_frames(bLock, nx, ny);
+    const bool fixed = bLock && nx > 0 && ny > 0;
+    scene->camera->set_safe_frames(fixed, qMax(nx, 1), qMax(ny, 1));
+}
+
+void OptixWorker::onSetViewportResolution(QSize resolution)
+{
+    if (resolution.width() <= 0 || resolution.height() <= 0) return;
+    auto session = m_zenoVis->getSession();
+    const auto oldSize = session->get_window_size();
+    if (std::get<0>(oldSize) != resolution.width() || std::get<1>(oldSize) != resolution.height()) {
+        session->set_window_size(resolution.width(), resolution.height(), zeno::vec2i{0, 0});
+        session->get_scene()->drawOptions->needRefresh = true;
+    }
+    session->look_perspective();
 }
 
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
@@ -447,7 +444,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
         m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
         m_renderImg = m_renderImg.mirrored(false, true);
-        emit renderIterate(m_renderImg);
+        emit renderIterate(m_renderImg, QSize(w, h), true);
     }
     return true;
 }
@@ -582,7 +579,7 @@ void OptixWorker::onSendOptixMessage(QString msg_str) {
     if(auto engine = scene->renderMan->getEngine("optx")) {
         std::string msg_std_str = msg_str.toStdString();
         Json msg = Json::parse(msg_std_str);
-        if (msg["MessageType"] == "Xform") {
+        if (msg["MessageType"] == "Xform" && !msg.contains("Resolution")) {
             auto res = m_zenoVis->m_camera_control->res();
             msg["Resolution"] = {res.x(), res.y()};
         }
@@ -685,6 +682,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     , m_camera(nullptr)
     , updateLightOnce(false)
     , m_bMovingCamera(false)
+    , m_worker(nullptr)
     , m_pauseRenderDally(new QTimer)
 {
     setMouseTracking(true);
@@ -735,9 +733,13 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     m_worker->moveToThread(&m_thdOptix);
     connect(&m_thdOptix, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(&m_thdOptix, &QThread::started, m_worker, &OptixWorker::work);
-    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
+    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img, QSize renderResolution, bool recording) {
+        // A frame queued before a resize may arrive after the new menu choice.
+        if (!recording && m_targetRenderResolution.isValid() && renderResolution != m_targetRenderResolution) return;
         m_renderImage = img;
-        drawAxis(m_renderImage);
+        m_frameRenderResolution = renderResolution;
+        m_recordingFrame = recording;
+        gizmo_id_buffer = QImage();
         update();
     });
     connect(m_worker, &OptixWorker::sig_sendToOptixViewport, this, [=](QString const &content) {
@@ -791,6 +793,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sigscreenshoot, m_worker, &OptixWorker::screenShoot, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
+    connect(this, &ZOptixViewport::sig_setViewportResolution, m_worker, &OptixWorker::onSetViewportResolution);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
@@ -988,7 +991,43 @@ void ZOptixViewport::setCameraRes(const QVector2D& res)
 
 void ZOptixViewport::setSafeFrames(bool bLock, int nx, int ny)
 {
+    m_fixedRenderResolution = bLock && nx > 0 && ny > 0 ? QSize(nx, ny) : QSize();
+    gizmo_id_buffer = QImage();
     emit sig_setSafeFrames(bLock, nx, ny);
+    requestRenderSize();
+    update();
+}
+
+void ZOptixViewport::requestRenderSize()
+{
+    const qreal ratio = devicePixelRatioF();
+    m_targetRenderResolution = m_fixedRenderResolution.isValid() ? m_fixedRenderResolution :
+        QSize(qMax(1, qRound(width() * ratio)), qMax(1, qRound(height() * ratio)));
+    if (m_worker) {
+        emit sig_setViewportResolution(m_targetRenderResolution);
+    } else if (m_zenovis && m_zenovis->getSession()) {
+        // CameraControl also calls this during construction, before the worker exists.
+        m_zenovis->getSession()->set_window_size(m_targetRenderResolution.width(), m_targetRenderResolution.height());
+        m_zenovis->getSession()->look_perspective();
+    }
+}
+
+ViewportImageMapping ZOptixViewport::imageMapping() const
+{
+    return ViewportImageMapping(size(), m_frameRenderResolution);
+}
+
+bool ZOptixViewport::imageReady() const
+{
+    return !m_recordingFrame && !m_renderImage.isNull() && m_frameRenderResolution == m_targetRenderResolution;
+}
+
+QColor ZOptixViewport::gizmoAt(QPointF position) const
+{
+    const qreal ratio = gizmo_id_buffer.devicePixelRatioF();
+    const QPoint pixel(qFloor(position.x() * ratio), qFloor(position.y() * ratio));
+    if (gizmo_id_buffer.isNull() || !gizmo_id_buffer.rect().contains(pixel)) return QColor(Qt::black);
+    return gizmo_id_buffer.pixelColor(pixel);
 }
 
 void ZOptixViewport::setNumSamples(int samples)
@@ -1055,38 +1094,42 @@ void ZOptixViewport::resizeEvent(QResizeEvent* event)
     zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
     m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
     m_camera->updatePerspective();
+    gizmo_id_buffer = QImage();
 }
 
 void ZOptixViewport::mousePressEvent(QMouseEvent* event)
 {
+    if (!imageReady() || !imageMapping().contains(event->localPos())) { event->ignore(); return; }
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = true;
         setSimpleRenderOption();
     }
     else if (event->button() == Qt::LeftButton) {
         m_bMovingNode = true;
-        auto currentPos = event->pos();
+        auto currentPos = event->localPos();
         start_pos = zeno::vec2f(currentPos.x(), currentPos.y());
         last_pos = start_pos;
         try_axis = {};
+        axis.clear();
 
         if (!gizmo_id_buffer.isNull()) {
-            auto gizmo_id = gizmo_id_buffer.pixelColor(currentPos);
+            auto gizmo_id = gizmoAt(currentPos);
             if (gizmo_id.isValid()) {
                 auto gizmo_painted = gizmo_id.red();
                 auto gizmo_mode = gizmo_id.green();
                 auto gizmo_type = gizmo_id.blue();
-                axis = gizmo_type_to_axis.at(gizmo_type);
+                const auto found = gizmo_type_to_axis.find(gizmo_type);
+                axis = found == gizmo_type_to_axis.end() ? "" : found->second;
                 try_axis = axis;
             }
         }
-
+        m_bMovingNode = !axis.empty();
         setSimpleRenderOption();
     } else if(event->button() == Qt::RightButton) {
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
-    m_camera->fakeMousePressEvent(event, this);
+    if (!m_bMovingNode) m_camera->fakeMousePressEvent(event, this);
     update();
 }
 
@@ -1108,17 +1151,19 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
 
 void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 {
+    if (!imageReady()) return;
     if (event->buttons() == Qt::NoButton) {
         if (!m_bMovingNode) {
-            auto currentPos = event->pos();
+            auto currentPos = event->localPos();
             if (!gizmo_id_buffer.isNull()) {
-                auto gizmo_id = gizmo_id_buffer.pixelColor(currentPos);
+                auto gizmo_id = gizmoAt(currentPos);
                 if (gizmo_id.isValid()) {
                     auto gizmo_painted = gizmo_id.red();
                     auto gizmo_mode = gizmo_id.green();
                     auto gizmo_type = gizmo_id.blue();
                     auto old_try_axis = try_axis;
-                    try_axis = gizmo_type_to_axis.at(gizmo_type);
+                    const auto found = gizmo_type_to_axis.find(gizmo_type);
+                    try_axis = found == gizmo_type_to_axis.end() ? "" : found->second;
                     if (old_try_axis != try_axis) {
                         update();
                     }
@@ -1128,7 +1173,7 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
         return;
     }
     if (m_bMovingNode) {
-        auto currentPos = event->pos();
+        auto currentPos = event->localPos();
         auto cur_pos = zeno::vec2f(currentPos.x(), currentPos.y());
         if (!last_pos.has_value()) {
             start_pos = cur_pos;
@@ -1142,8 +1187,10 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
         msg["Axis"] = axis;
         msg["LocalSpace"] = local_space;
         msg["Delta"] = {delta[0], delta[1]};
-        msg["LastPos"] = {last_pos.value()[0], last_pos.value()[1]};
-        msg["CurPos"] = {cur_pos[0], cur_pos[1]};
+        const auto imageRect = imageMapping().imageRect();
+        msg["LastPos"] = {last_pos.value()[0] - imageRect.left(), last_pos.value()[1] - imageRect.top()};
+        msg["CurPos"] = {cur_pos[0] - imageRect.left(), cur_pos[1] - imageRect.top()};
+        msg["Resolution"] = {imageRect.width(), imageRect.height()};
         last_pos = cur_pos;
         auto msg_str = msg.dump();
         emit sig_sendOptixMessage(QString::fromStdString(msg_str));
@@ -1163,6 +1210,7 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 
 void ZOptixViewport::mouseDoubleClickEvent(QMouseEvent* event)
 {
+    if (!imageReady() || !imageMapping().contains(event->localPos())) { event->ignore(); return; }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseDoubleClickEvent(event, this);
     update();
@@ -1170,6 +1218,7 @@ void ZOptixViewport::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ZOptixViewport::wheelEvent(QWheelEvent* event)
 {
+    if (!imageReady() || !imageMapping().contains(event->posF())) { event->ignore(); return; }
     m_bMovingCamera = true;
     //m_wheelEventDally->start(100);
     setSimpleRenderOption();
@@ -1283,17 +1332,22 @@ void ZOptixViewport::keyReleaseEvent(QKeyEvent* event)
 
 void ZOptixViewport::paintEvent(QPaintEvent* event)
 {
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::black);
     if (!m_renderImage.isNull())
     {
-        QPainter painter(this);
-        auto *session = m_zenovis->getSession();
-        if (session != nullptr && session->is_lock_window()) {
-            auto *scene = session->get_scene();
-            auto offset = scene->camera->viewport_offset;
-            painter.drawImage(offset[0], offset[1], m_renderImage);
-        }
-        else {
-            painter.drawImage(0, 0, m_renderImage);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawImage(imageMapping().imageRect(), m_renderImage);
+        if (imageReady()) {
+            const qreal ratio = devicePixelRatioF();
+            const QSize pixels(qMax(1, qRound(width() * ratio)), qMax(1, qRound(height() * ratio)));
+            if (m_overlayImage.size() != pixels || m_overlayImage.devicePixelRatioF() != ratio) {
+                m_overlayImage = QImage(pixels, QImage::Format_ARGB32_Premultiplied);
+                m_overlayImage.setDevicePixelRatio(ratio);
+            }
+            m_overlayImage.fill(Qt::transparent);
+            drawAxis(m_overlayImage);
+            painter.drawImage(QPointF(0, 0), m_overlayImage);
         }
     }
 }
@@ -1521,11 +1575,12 @@ void draw_rotation_screen_axis(QPainter &painter, QPainter &painter2, glm::vec2 
 }
 void ZOptixViewport::drawAxis(QImage &img) {
     gizmo_id_buffer = QImage(img.size(), img.format());
+    gizmo_id_buffer.setDevicePixelRatio(img.devicePixelRatioF());
     gizmo_id_buffer.fill(Qt::black);
 
     float axis_len = 1.0f / 10.0f;
-    auto res = m_camera->res();
-    auto resolution = glm::vec2(res.x(), res.y());
+    const auto imageRect = imageMapping().imageRect();
+    auto resolution = glm::vec2(imageRect.width(), imageRect.height());
     auto scene = m_zenovis->getSession()->get_scene();
     auto vp_mat = scene->camera->get_proj_matrix() * scene->camera->get_view_matrix();
 
@@ -1534,6 +1589,8 @@ void ZOptixViewport::drawAxis(QImage &img) {
         auto scale_factor = glm::distance(m_camera->getPos(), center_WS);
         QPainter painter(&img);
         QPainter painter2(&gizmo_id_buffer);
+        painter.translate(imageRect.topLeft()); painter2.translate(imageRect.topLeft());
+        painter.setClipRect(QRectF(QPointF(), imageRect.size())); painter2.setClipRect(QRectF(QPointF(), imageRect.size()));
         draw_rotation_axis(painter, painter2, resolution, vp_mat, center_WS, {1,0,0}, {0,1,0}, {0,0,1}, scale_factor * axis_len, try_axis);
         painter.end();
         painter2.end();
@@ -1549,6 +1606,9 @@ void ZOptixViewport::drawAxis(QImage &img) {
         QPainter painter(&img);
 
         QPainter painter2(&gizmo_id_buffer);
+
+        painter.translate(imageRect.topLeft()); painter2.translate(imageRect.topLeft());
+        painter.setClipRect(QRectF(QPointF(), imageRect.size())); painter2.setClipRect(QRectF(QPointF(), imageRect.size()));
 
         if (mode=="") {
             //draw_display_axis(painter, painter2, resolution, vp_mat, center_WS, x_axis_dir, y_axis_dir, z_axis_dir, scale_factor * axis_len);
