@@ -358,6 +358,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@CallableVolume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@VolumeDensityBake.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DeflMatShader.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@ShadingNormal.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Mnee.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@MneeMath.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@MneeOptix.h

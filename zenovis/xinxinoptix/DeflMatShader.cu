@@ -16,6 +16,7 @@
 #include "Mnee.h"
 #include "SharcDevice.h"
 #include "ClusterMaterialShader.h"
+#include "ShadingNormal.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
 
@@ -599,6 +600,14 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
     shadingNorm = geoNormalFlipped?-mats.nrm:mats.nrm;
+#if (_P_TYPE_==0)
+    if(clusterHit && mats.specTrans<=0.f) {
+        // A normal map can face away from an exterior grazing view even when
+        // the triangle is front-facing. Keep reflection on the triangle's
+        // visible side instead of treating that view as transmission.
+        shadingNorm=shadingNormal::validReflection(prd->geometryNormal,-ray_dir,shadingNorm);
+    }
+#endif
 
 #if (_P_TYPE_!=0)
     mats.smoothness = 0;
@@ -769,6 +778,19 @@ extern "C" __global__ void __closesthit__radiance()
     float3 T = geoNormalFlipped?-attrs.T:attrs.T;
     float3 B = attrs.B;
     float3 N = shadingNorm;
+
+    if(clusterHit) {
+        // Normal mapping and the grazing correction change N. Project the
+        // authored tangent onto that final normal so world/local BSDF
+        // transforms remain inverses, retaining mirrored UV handedness.
+        const float handedness=dot(cross(static_cast<float3>(attrs.N),T),B)<0.f?-1.f:1.f;
+        const float3 tangent=T-dot(T,N)*N;
+        const float length2=dot(tangent,tangent);
+        if(length2>1.e-12f) {
+            T=tangent/sqrtf(length2);
+            B=handedness*cross(N,T);
+        } else {T={};B={};}
+    }
 
     if (float3{}==T || float3{}==B)
     {
