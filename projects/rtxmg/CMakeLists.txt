@@ -46,6 +46,7 @@ target_include_directories(zeno_cluster_cache PRIVATE "${ZENO_CLUSTER_ROOT}/proj
 add_executable(zeno_cluster_bake ClusterBake.cpp)
 target_link_libraries(zeno_cluster_bake PRIVATE zeno_cluster_cache)
 target_include_directories(zeno_cluster_bake PRIVATE "${ZENO_CLUSTER_ROOT}/projects/meshoptimizer/demo")
+include(cmake/ClusterLayerBake.cmake)
 add_executable(zeno_cluster_repack ClusterRepack.cpp)
 add_executable(zeno_cluster_import_rtxmg ClusterImportRtxmg.cpp)
 add_executable(zeno_cluster_quality ClusterQuality.cpp)

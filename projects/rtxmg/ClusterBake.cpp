@@ -2,8 +2,17 @@
 #include "ClusterSource.h"
 #include "ClusterAttributes.h"
 #include <meshoptimizer.h>
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+#include "ClusterLayerBake.h"
+// Route only the LOD generator's simplification calls through the offline
+// constraint adapter; use the unmodified meshoptimizer implementation inside it.
+#define meshopt_simplifyWithAttributes zeno::cluster::layers::simplify
+#endif
 #define CLUSTERLOD_IMPLEMENTATION
 #include <clusterlod.h>
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+#undef meshopt_simplifyWithAttributes
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -16,6 +25,7 @@
 #include <functional>
 #include <atomic>
 #include <future>
+#include <thread>
 #include <mutex>
 #include <map>
 #include <cwchar>
@@ -97,6 +107,13 @@ int main(int argc,char** argv) try {
     bool fallbackSloppy=true,permissive=true;
     bool preserveOpenBorders=false;
     bool bakeAttributes=false;
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+    bool preserveLayers=true;
+#else
+    bool preserveLayers=false;
+#endif
+    bool foldsExplicit=false,bordersExplicit=false,fallbackExplicit=false,permissiveExplicit=false;
+    uint64_t layerCacheMiB=16384;
     int errorClamped=-1;
     for(int i=1;i<argc;++i) {
         const std::string arg=argv[i];
@@ -108,16 +125,30 @@ int main(int argc,char** argv) try {
         else if(arg=="--max-meshes") maxMeshes=std::stoi(argv[++i]);
         else if(arg=="--jobs") jobs=std::stoi(argv[++i]);
         else if(arg=="--include-instances") includeInstances=std::stoi(argv[++i])!=0;
-        else if(arg=="--preserve-folds") preserveFolds=std::stoi(argv[++i])!=0;
+        else if(arg=="--preserve-folds") {preserveFolds=std::stoi(argv[++i])!=0;foldsExplicit=true;}
         else if(arg=="--dilate-borders") dilateBorders=std::stoi(argv[++i])!=0;
-        else if(arg=="--fallback-sloppy") fallbackSloppy=std::stoi(argv[++i])!=0;
-        else if(arg=="--permissive") permissive=std::stoi(argv[++i])!=0;
+        else if(arg=="--fallback-sloppy") {fallbackSloppy=std::stoi(argv[++i])!=0;fallbackExplicit=true;}
+        else if(arg=="--permissive") {permissive=std::stoi(argv[++i])!=0;permissiveExplicit=true;}
         else if(arg=="--error-clamped") errorClamped=std::stoi(argv[++i])!=0;
-        else if(arg=="--preserve-open-borders") preserveOpenBorders=std::stoi(argv[++i])!=0;
+        else if(arg=="--preserve-open-borders") {preserveOpenBorders=std::stoi(argv[++i])!=0;bordersExplicit=true;}
         else if(arg=="--attributes") bakeAttributes=std::stoi(argv[++i])!=0;
+        else if(arg=="--preserve-layers") preserveLayers=std::stoi(argv[++i])!=0;
+        else if(arg=="--layer-cache-mib") layerCacheMiB=std::stoull(argv[++i]);
         else throw std::runtime_error("Unknown bake option: "+arg);
     }
     if(source.empty() || output.empty()) throw std::runtime_error("Usage: zeno_cluster_bake --source scene.gltf --output cache-directory [--selection file] [--mesh id] [--max-meshes n]");
+    if(preserveLayers) {
+        if(!foldsExplicit)preserveFolds=true;
+        if(!bordersExplicit)preserveOpenBorders=true;
+        if(!fallbackExplicit)fallbackSloppy=false;
+        if(!permissiveExplicit)permissive=false;
+        if(dilateBorders || fallbackSloppy || permissive || !preserveFolds || !preserveOpenBorders)
+            throw std::runtime_error("Layer-preserving baking requires fold/open-border preservation, no border dilation, and no sloppy/permissive fallback; use --preserve-layers 0 for legacy baking");
+    }
+    if(!layerCacheMiB || layerCacheMiB>65536)throw std::runtime_error("Layer source cache must be between 1 and 65536 MiB");
+#if !defined(ZENO_CLUSTER_LAYER_BAKE)
+    if(preserveLayers)throw std::runtime_error("Rebuild the baker with ZENO_CLUSTER_LAYER_BAKE=ON");
+#endif
     source=fs::weakly_canonical(source); output=fs::weakly_canonical(output);
     // Source distributions, including their native caches, are immutable inputs.
     const auto sourceDirectory=source.parent_path();
@@ -165,20 +196,31 @@ int main(int argc,char** argv) try {
         meshOrder.push_back(representative);for(size_t id:ids)canonical[id]=representative;
     }
     std::sort(meshOrder.begin(),meshOrder.end());
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+    std::unique_ptr<layers::Scene> layerScene;
+    if(preserveLayers) {layerScene=std::make_unique<layers::Scene>(source,layerCacheMiB<<20,
+        std::max(1u,std::thread::hardware_concurrency()/unsigned(jobs)));layerScene->setAliases(canonical);}
+#endif
     uint64_t fingerprint=14695981039346656037ull;
     for(unsigned char byte:input.scene.dump()) {fingerprint^=byte; fingerprint*=1099511628211ull;}
-    const Json bakeSettings{{"meshoptimizer",MESHOPTIMIZER_VERSION},{"maxVertices",MaxVertices},
+    Json bakeSettings{{"meshoptimizer",MESHOPTIMIZER_VERSION},{"maxVertices",MaxVertices},
         {"maxTriangles",MaxTriangles},{"partitionSize",8},{"fallbackSloppy",fallbackSloppy},
         {"permissive",permissive},{"errorClamped",errorClamped<0?MESHOPTIMIZER_VERSION>=1030:errorClamped!=0},
         {"normalWeight",0.5},{"preserveFolds",preserveFolds},{"dilateBorders",dilateBorders},
         {"preserveOpenBorders",preserveOpenBorders},{"attributes",bakeAttributes}};
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+    if(preserveLayers){bakeSettings["preserveLayers"]=true;bakeSettings["layerPolicyVersion"]=layers::PolicyVersion;}
+#endif
     const std::string signature=std::to_string(fingerprint)+"-gray-clod-v2-"+bakeSettings.dump();
     Json asset{{"schema","zeno.rtxmg.asset"},{"version",CacheVersion},{"source",source.string()},
                {"sourceSignature",signature},{"bakeSettings",bakeSettings},{"meshes",Json::array()},{"nodes",Json::array()},{"gray",true},{"gpuInstancing",includeInstances}};
     std::unordered_map<size_t,size_t> geometryIndex;
     std::mutex logMutex;
     auto bakeMesh=[&](Source& input,size_t meshID) {
-        const std::string signature="mesh-content-v1-"+input.contentKey(meshID,bakeAttributes)+"-"+bakeSettings.dump();
+        std::string signature="mesh-content-v1-"+input.contentKey(meshID,bakeAttributes)+"-"+bakeSettings.dump();
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+        if(layerScene)signature+="-layer-neighbors-"+layerScene->dependencyKey(meshID);
+#endif
         const auto base="mesh-"+std::to_string(meshID);
         const fs::path metadata=output/(base+".json"),pages=output/(base+".pages");
         bool resume=false;
@@ -192,6 +234,7 @@ int main(int argc,char** argv) try {
             std::ofstream stream(pages.string()+".tmp",std::ios::binary|std::ios::trunc);
             Json groups=Json::array();
             uint64_t lockedBoundaryVertices=0;
+            Json layerReports=Json::array();
             const auto& mesh=input.scene.at("meshes").at(meshID);
             {std::lock_guard<std::mutex> lock(logMutex);std::cout<<"[cluster bake] mesh="<<meshID<<" name="<<mesh.value("name","")<<std::endl;}
             uint32_t materialSlot=0;
@@ -240,12 +283,24 @@ int main(int argc,char** argv) try {
                     in.attribute_weights=shadingWeights;in.attribute_count=5;
                 }
                 auto borderLocks=preserveOpenBorders?openBorderLocks(positions,indices):std::vector<unsigned char>{};
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+                std::unique_ptr<layers::Scene::Context> layerContext;
+                if(layerScene) {
+                    layerContext=layerScene->constrain(meshID,materialSlot,positions,indices);
+                    if(borderLocks.empty())borderLocks.resize(positions.size());
+                    const auto& layerLocks=layerContext->locks();
+                    for(size_t i=0;i<borderLocks.size();++i)borderLocks[i]|=layerLocks[i];
+                }
+#endif
                 in.vertex_lock=borderLocks.empty()?nullptr:borderLocks.data();
                 lockedBoundaryVertices+=std::count(borderLocks.begin(),borderLocks.end(),meshopt_SimplifyVertex_Lock);
                 BakeContext context{stream,positions,normals,groups,uvs,tangents,uint16_t(materialSlot++),bakeAttributes};
                 // outputGroup serializes positions immediately: border dilation
                 // mutates this private vertex copy before producing coarser LODs.
                 clodBuild(config,in,&context,outputGroup);
+#if defined(ZENO_CLUSTER_LAYER_BAKE)
+                if(layerContext)layerReports.push_back(layerContext->statistics());
+#endif
             }
             stream.close();
             std::unordered_set<size_t> children;
@@ -259,6 +314,7 @@ int main(int argc,char** argv) try {
                         {"pages",pages.filename().string()},{"pageBytes",fs::file_size(pages)},{"pageCodec",bakeAttributes?5:4},
                         {"attributes",bakeAttributes},
                         {"groups",std::move(groups)},{"roots",std::move(roots)}};
+            if(preserveLayers)result["layerPreservation"]=std::move(layerReports);
             writeJson(metadata.string()+".tmp",result);
             if(fs::exists(metadata)) fs::remove(metadata);
             fs::rename(metadata.string()+".tmp",metadata);
