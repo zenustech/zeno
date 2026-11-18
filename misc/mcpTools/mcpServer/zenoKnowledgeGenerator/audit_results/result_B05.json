@@ -1,0 +1,46 @@
+{
+  "batch": "B05",
+  "audited_node_count": 124,
+  "issues": [
+    {
+      "node": "BulletMakeCylinderShape",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "halfExtents",
+      "kb_says": "halfExtents: vec3f，圆柱半尺寸：X/Y 为半径、Z 为半高；description: 沿 Z 轴朝向的圆柱",
+      "source_says": "构造 btCylinderShape(halfExtents)；Bullet 头文件注明 Its central axis aligned with the Y axis.",
+      "evidence": "projects/Rigid/RigidTest.cpp #679 (btCylinderShape(halfExtents))；projects/Rigid/bullet3/src/BulletCollision/CollisionShapes/btCylinderShape.h #23",
+      "detail": "kb 将 btCylinderShape 描述为沿 Z 轴朝向、X/Y 为半径 Z 为半高，但默认 btCylinderShape(halfExtents) 中心轴沿 Y 轴（upAxis=1），半径在 X/Z、半高在 Y。建议改为：沿 Y 轴朝向，X/Z 为半径、Y 为半高。",
+      "confidence": "high"
+    },
+    {
+      "node": "BulletMultiBodyMakeJointMotor",
+      "issue_type": "incomplete",
+      "field": "inputs",
+      "socket_or_param": "world",
+      "kb_says": "world: BulletMultiBodyWorld 多体世界，电机被 addMultiBodyConstraint 加入（列为输入）",
+      "source_says": "ZENDEFNODE 输入仅注册 object/linkIndex/linkDof/desiredVelocity/maxMotorImpulse 五项，无 world；apply() 中 get_input<BulletMultiBodyWorld>(\"world\") 无条件读取",
+      "evidence": "projects/Rigid/RigidTest.cpp #3109-3114 (ZENDEFNODE inputs)，#3092 (get_input world)",
+      "detail": "kb 将 world 列为输入 socket，但 ZENDEFNODE 宏输入端并未注册 world（world 仅出现在输出端 object/world）。届于 apply() 无条件读取 world 输入，宏缺该 socket 属源码不一致；kb 说明建议补充注明 world 并非已注册输入 socket，无法在图中接线。",
+      "confidence": "medium"
+    },
+    {
+      "node": "MakeVehicle",
+      "issue_type": "incomplete",
+      "field": "description",
+      "socket_or_param": "",
+      "kb_says": "再添加四个悬架车轮(前两轮为驱动轮)",
+      "source_says": "addWheel 对前右/前左传 isFrontWheel=true；SetVehicleState 中驱动力 applyEngineForce 施加于 wheelIndex 2、3（后两轮），前轮 0、1 仅 setSteeringValue",
+      "evidence": "projects/Rigid/RigidTest.cpp #115-118 (addWheel)；#141-156 (SetVehicleState 引擎施于后轮)",
+      "detail": "kb 称前两轮为“驱动轮”欠准确：驱动/制动力实际施加在 back_right/back_left（wheelIndex 2/3），前两轮 only 标记为 isFrontWheel 转向轮并接收转向角。建议表述改为“前两轮为转向轮、后两轮为驱动轮”。",
+      "confidence": "low"
+    }
+  ],
+  "source_files_consulted": [
+    "projects\\Rigid\\RigidTest.cpp",
+    "projects\\Rigid\\RigidFracture.cpp",
+    "projects\\Rigid\\RobotTest.cpp",
+    "projects\\Rigid\\bullet3\\src\\BulletCollision\\CollisionShapes\\btCapsuleShape.h",
+    "projects\\Rigid\\bullet3\\src\\BulletCollision\\CollisionShapes\\btCylinderShape.h"
+  ]
+}

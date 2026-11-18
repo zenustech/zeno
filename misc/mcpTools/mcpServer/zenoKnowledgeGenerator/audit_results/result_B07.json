@@ -1,0 +1,66 @@
+{
+  "batch": "B07",
+  "audited_node_count": 149,
+  "issues": [
+    {
+      "node": "CVConvertColor",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "BGR2GRAY ",
+      "kb_says": "\"BGR2GRAY \": \"颜色转换模式（enum 骨架缺失：涉及 BGR2GRAY/GRAY2BGR，骨架标示默认 GRAY2BGR，即灰度→彩色）\"，以及 \"mode\": \"enum 字符串：转换模式，可选 BGR2GRAY / GRAY2BGR / BGR2RGB / BGR2BGRA / BGRA2BGR / BGR2HSV / HSV2BGR，默认 GRAY2BGR。\"",
+      "source_says": "ZENDEFNODE 声明 inputs 只有两个 socket：{\"CVImageObject\",\"image\"} 与 {\"enum BGR2GRAY GRAY2BGR BGR2RGB BGR2BGRA BGRA2BGR BGR2HSV HSV2BGR\", \"mode\", \"GRAY2BGR\"}，不存在名为 \"BGR2GRAY \" 的输入。",
+      "evidence": "projects/ImgCV/imgcv.cpp # std::enum ... \"mode\", # 宏内 CVConvertColor 声明（image + mode 两个输入）",
+      "detail": "知识库多列了一个并不存在的输入键 \"BGR2GRAY \"（带尾部空格），这是枚举选项列表被误当成独立 socket 的生成残留；应删除该键，仅保留 image 与 mode。",
+      "confidence": "high"
+    },
+    {
+      "node": "CVImageBlit",
+      "issue_type": "incorrect",
+      "field": "inputs",
+      "socket_or_param": "isalphaMask",
+      "kb_says": "\"isalphaMask\": \"bool：误写，实际为 isAlphaMask，同上。\"",
+      "source_says": "ZENDEFNODE 声明 inputs 只有 {\"bool\",\"isAlphaMask\",\"1\"}，不存在名为 \"isalphaMask\"（小写 a）的输入；isAlphaMask 已单独列出。",
+      "evidence": "projects/ImgCV/imgcv.cpp # CVImageBlit 宏内 {\"bool\", \"isAlphaMask\", \"1\"}",
+      "detail": "知识库在 isAlphaMask 之外又多写了一个拼写变体 isalphaMask（小写 a），二者指向同一输入，属重复/冗余键，应删除 isalphaMask。",
+      "confidence": "high"
+    },
+    {
+      "node": "CameraEval",
+      "issue_type": "missing",
+      "field": "inputs",
+      "socket_or_param": "rotateInterpolation",
+      "kb_says": "kb inputs 仅列出 frameid 与 nodelist；description 只提及用三次贝塞尔曲线（createCurvePoint）在 frameid 处求值，未提旋转插值方式选项。",
+      "source_says": "源码 inputs 声明含 {\"enum old slerp bezierSlerp\", \"rotateInterpolation\", \"old\"} 共三个输入：frameid、rotateInterpolation（默认 \"old\"）、nodelist。",
+      "evidence": "projects/FBX/MayaCamera.cpp # ZENO_DEFNODE(CameraEval)（宏位于第377行，enum 于第380行），apply() 内第322/349行使用 rotateInterpolation",
+      "detail": "知识库漏掉 rotateInterpolation 输入（enum old/slerp/bezierSlerp，默认 old），且 description 未说明旋转是 slerp/贝塞尔/old 由该选项控制；应补充该输入并说明其默认 old。",
+      "confidence": "high"
+    }
+  ],
+  "source_files_consulted": [
+    "projects/Alembic/GetAlembicPrim.cpp",
+    "projects/Alembic/ReadAlembic.cpp",
+    "projects/Alembic/AlembicVAT.cpp",
+    "projects/Alembic/WriteAlembic.cpp",
+    "projects/Alembic/png16.cpp",
+    "projects/FBX/FBXSDK.cpp",
+    "projects/FBX/ExtractFBXData.cpp",
+    "projects/FBX/MayaCamera.cpp",
+    "projects/FBX/ReadFBX.cpp",
+    "projects/FBX/EvalFBXAnim.cpp",
+    "projects/FBX/ExportFBX.cpp",
+    "projects/FBX/WriteVAT.cpp",
+    "projects/ImgCV/imgcv.cpp",
+    "projects/ImgCV/ImageComposite.cpp",
+    "projects/ImgCV/ImageProcessing.cpp",
+    "projects/ImgCV/ObjectRecog.cpp",
+    "projects/ImgCV/Video.cpp",
+    "projects/ImgCV/tiff.cpp",
+    "projects/CalcGeometryUV/CalculateGeometryUV.cpp",
+    "projects/CalcGeometryUV/ExportUVObjPrimitive.cpp",
+    "projects/CalcGeometryUV/PrimitivePlyIO.cpp",
+    "projects/CalcGeometryUV/VisualUV.cpp",
+    "projects/GLTF/read_tile.cpp",
+    "projects/mesher/meshNode.cpp",
+    "projects/MeshSubdiv/OSDPrimSubdiv.cpp"
+  ]
+}

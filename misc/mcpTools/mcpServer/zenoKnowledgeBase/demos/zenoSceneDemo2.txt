@@ -1,0 +1,203 @@
+================================================================
+zeno 建图示例 zenoSceneDemo2 —— 程序化几何 + 贴图材质 + 灯光相机
+================================================================
+本文件是 zenoSceneDemo2.zsg（可在 zeno 中直接打开的工程文件）的精简总结，
+供 mcpClient 参考如何用 MCP 命令搭建同类型的场景。
+
+【简介】
+不依赖外部资产、纯节点程序化构建的完整渲染场景：
+CreateCube + CreatePlane 两个几何 → BindMaterial 绑定材质 id →
+SetUserData2 打缓存标记 → PrimMerge 合并 → MakeSceneNode_v2 转场景；
+SmartTexture2D 贴图 → ShaderFinalize 材质；面光源 + HDR 天空；
+双相机关键帧动画。这是"用 MCP 从零搭建 zeno 光追场景"的标准模板，
+结构比 zenoSceneDemo1 更基础，建议先读本例。
+
+【图总览】
+- 子图：1 个 —— main（16 个节点）
+- 时间轴：起始帧 0，结束帧 50，当前帧 50，帧率 24
+- 类型：runGraph 运行类型对应 "runAll"
+
+----------------------------------------------------------------
+一、几何链（两个几何 → 绑材质 → 打标记 → 合并 → 场景）
+----------------------------------------------------------------
+CreateCube（立方体，悬浮在空中）
+  in  position : vec3f = [0.0, 6.0, 0.0]     # 世界坐标位置
+  in  scaleSize: vec3f = [1.0, 1.0, 1.0]
+  in  size     : float = 1.0                 # 边长
+  in  div_w/div_h/div_d : int = 2/2/2        # 三方向细分
+  in  hasNormal/hasVertUV/isFlipFace/quads : bool = false
+  out prim → BindMaterial.object
+
+BindMaterial（把图元标记为属于某材质 id）
+  in  object ← CreateCube.prim
+  in  mtlid  : string = "Mat1"               # 材质 id（与 ShaderFinalize.mtlid 对应！）
+  out object → SetUserData2.object
+
+CreatePlane（地面）
+  in  position : vec3f = [0.0, 0.0, 0.0]
+  in  scaleSize: vec3f = [10.0, 10.0, 10.0]  # 10×10 地面
+  in  size     : float = 1.0
+  in  rows/columns : int = 1/1               # 行列细分
+  out prim → SetUserData2#2.object
+
+SetUserData2 ×2（给图元写用户数据；两实例参数相同）
+  in  key  : string = "stamp-change"
+  in  data : string = "UnChanged"            # 标记几何不随帧变化（缓存优化）
+  in  object ← BindMaterial.object / CreatePlane.prim
+  out object → PrimMerge.listPrim（面板列表 obj0/obj1）
+
+PrimMerge（合并多个图元为一个）
+  in  listPrim : list（面板列表：obj0 ← SetUserData2#1.object，
+                                obj1 ← SetUserData2#2.object）
+  in  tagAttr  : string = ""；tag_scope : enum vert/face/vert_face = "vert"
+  out prim : primitive → MakeSceneNode_v2.prim
+
+MakeSceneNode_v2（图元 → 渲染场景节点）
+  in  prim       ← PrimMerge.prim
+  in  ObjectName : string = ""（留空取 prim 自带名；建议填写如 "cube"）
+  in  type       : enum static/dynamic = "dynamic"
+  in  stampMode  : enum UnChanged/TotalChange = "UnChanged"
+  in  matrixMode : enum UnChanged/TotalChange = "TotalChange"
+  in  centralize : bool = false
+  out scene（无需连线：zeno 光追后端自动收集，见要点 1）
+
+----------------------------------------------------------------
+二、材质链（贴图 → 材质终点）
+----------------------------------------------------------------
+SmartTexture2D（读取贴图文件）
+  in  path        : readpath = "C:/code/zeno/grass.jpg"
+  in  wrapS/wrapT : enum REPEAT/MIRRORED_REPEAT/CLAMP_TO_EDGE/CLAMP_TO_BORDER = "REPEAT"
+  in  minFilter/magFilter : enum NEAREST/LINEAR/... = "LINEAR"
+  in  type        : enum float/vec2/vec3/vec4/R/G/B/A = "vec3"
+  in  post_process: enum raw/srgb/aces/normal_map/1-x/displacement = "raw"
+  in  uvtiling    : vec2f = [1,1]；blockCompression : bool = false
+  out out : shader → ShaderFinalize.basecolor
+
+ShaderFinalize（材质终点，把参数组装成 MaterialObject）
+  param backend = "CUDA"
+  in  basecolor ← SmartTexture2D.out（贴图驱动漫反射色）
+  in  mtlid     : string = "Mat1"            # 与 BindMaterial.mtlid 相同即完成绑定
+  in  roughness : float  = 0.4
+  其余 50+ 输入（base/metallic/sss/sheen/clearcoat/emission 等）均为默认值，
+  完整清单可用 nodeClassesInfo("ShaderFinalize") 查询
+  out mtl : MaterialObject（无需连线，按 mtlid 全局注册）
+
+----------------------------------------------------------------
+三、灯光与环境
+----------------------------------------------------------------
+LightNode（面光源）
+  in  position : vec3f      = [0.0, 10.0, 0.0]
+  in  color    : colorvec3f = 红色 [1,0,0]
+  in  intensity: float      = 1000.0
+  in  shape    : enum = "Plane"；type : enum = "Diffuse"
+  out prim（无需连线，全局收集）
+
+HDRSky（HDR 环境天空）★ 必须打开 VIEW（setView），否则不生效、视口不显示场景
+  in  path    : readpath = "C:\code\zeno\RelDbInfo\bin\hdr\Panorama.hdr"
+  in  strength: float    = 1.0
+  out HDRSky（无需连线，全局收集；但必须开 VIEW）
+
+----------------------------------------------------------------
+四、相机（双相机关键帧动画）
+----------------------------------------------------------------
+CameraNode #1（关键帧 t=0）
+  in  pos  : vec3f = [0.882, 8.052, 1.648]
+  in  up   : vec3f = [-0.199, 0.672, -0.713]
+  in  view : vec3f = [-0.433, -0.713, -0.551]
+  in  fov  : float = 45.0
+  in  frame: int   = 0
+  in  other: string= "0.381546,6.5,0.426584,0,0,2.03709,"
+  out camera : CameraObject
+
+CameraNode #2（关键帧 t=18）
+  in  pos  : vec3f = [3.775, 12.109, 16.559]
+  in  up   : vec3f = [-0.056, 0.880, -0.472]
+  in  view : vec3f = [-0.363, -0.458, -0.811]
+  in  fov  : float = 45.0
+  in  frame: int   = 18
+  in  other: string= "2.00824,9.53674e-07,2.03969,0,0,18.9879,"
+  out camera : CameraObject
+
+MultiMakeList（面板列表：obj0 ← CameraNode#1.camera，obj1 ← CameraNode#2.camera）
+  out list → CameraEval.nodelist
+GetFrameNum（当前帧号） out FrameNum → CameraEval.frameid
+CameraEval（按当前帧插值相机） out camera（无需连线，全局收集）
+
+----------------------------------------------------------------
+五、拓扑连线汇总
+----------------------------------------------------------------
+  CreateCube.prim          → BindMaterial.object
+  BindMaterial.object      → SetUserData2#1.object
+  CreatePlane.prim         → SetUserData2#2.object
+  SetUserData2#1.object    → PrimMerge.listPrim（面板列表项）
+  SetUserData2#2.object    → PrimMerge.listPrim（面板列表项）
+  PrimMerge.prim           → MakeSceneNode_v2.prim
+  SmartTexture2D.out       → ShaderFinalize.basecolor
+  CameraNode#1.camera      → MultiMakeList.list（面板列表项）
+  CameraNode#2.camera      → MultiMakeList.list（面板列表项）
+  MultiMakeList.list       → CameraEval.nodelist
+  GetFrameNum.FrameNum     → CameraEval.frameid
+显式连线仅这些；LightNode/HDRSky/ShaderFinalize.mtl/CameraEval.camera/
+MakeSceneNode_v2.scene 的输出悬空，依赖全局收集机制（见要点 1、2）。
+
+----------------------------------------------------------------
+六、结构要点（对 mcpClient 最重要的认知）
+----------------------------------------------------------------
+1. 全局收集：MakeSceneNode_v2（几何场景）、LightNode（灯光）、
+   HDRSky（天空）、CameraEval（相机）、ShaderFinalize.mtl（材质）
+   的输出都不需要连线到"最终节点"——zeno 光追后端运行时自动收集。
+   场景没有"最终输出节点"，建完直接运行图即可。
+   ★ 例外注意：HDRSky 除全局收集外还必须打开 VIEW（setView）才
+   生效，否则视口不显示场景。
+2. 材质绑定两步配对：ShaderFinalize.mtlid="Mat1" 注册材质；
+   BindMaterial.mtlid="Mat1" 把几何标记为该材质。两个 id 字符串
+   相等即绑定成功，无需把 mtl 输出连给几何链。
+3. stamp-change 缓存标记：SetUserData2(key="stamp-change",
+   data="UnChanged") 告诉缓存系统该几何不随帧变化，静态场景建议
+   照抄此用法。
+4. 相机动画：CameraNode.frame 为关键帧时间、other 字符串携带位姿
+   轨迹；多相机经 MultiMakeList 汇入 CameraEval，GetFrameNum 提供
+   当前帧号插值。
+5. 面板列表（dict-panel）：PrimMerge.listPrim、MultiMakeList.list
+   是"可增删项的面板列表"。用 MCP 复现时推荐：先用 MultiMakeList
+   汇聚多路输入再连到列表口（PrimMerge 也可直接接受多路连线）。
+6. 几何的 position 是世界坐标：cube 在 [0,6,0]（空中），plane 在
+   原点（地面）——不要把"位置"写到 MakeSceneNode_v2 的 xform 里
+   也可以，但直接用几何节点的 position 最简单。
+
+----------------------------------------------------------------
+七、用 MCP 命令复现的骨架（串行）
+----------------------------------------------------------------
+  createGraph("main")
+  # 几何链
+  createNode("main","CreateCube")   → setParam position [0,6,0] / size 1
+  createNode("main","BindMaterial") → setParam mtlid "Mat1"
+  addLink(cube.prim → BindMaterial.object)
+  createNode("main","SetUserData2") → setParam key "stamp-change" data "UnChanged"
+  addLink(BindMaterial.object → SetUserData2.object)
+  createNode("main","CreatePlane")  → setParam position [0,0,0] scaleSize [10,10,10]
+  createNode("main","SetUserData2")（第二实例，同参数）
+  addLink(plane.prim → SetUserData2#2.object)
+  createNode("main","PrimMerge")
+  addLink(SetUserData2#1.object → PrimMerge.listPrim)
+  addLink(SetUserData2#2.object → PrimMerge.listPrim)
+  createNode("main","MakeSceneNode_v2") → setParam ObjectName "cube"
+  addLink(PrimMerge.prim → MakeSceneNode_v2.prim)
+  # 材质链
+  createNode("main","SmartTexture2D") → setParam path "C:/code/zeno/grass.jpg"
+  createNode("main","ShaderFinalize") → setParam mtlid "Mat1" backend "CUDA"
+  addLink(texture.out → ShaderFinalize.basecolor)
+  # 灯光 / 天空
+  createNode("main","LightNode") → setParam position [0,10,0] intensity 1000
+  createNode("main","HDRSky")    → setParam path ".../Panorama.hdr"
+                                 （★ 还必须 setView 打开 VIEW，否则不生效）
+  # 相机
+  createNode("main","CameraNode")×2 → setParam pos/view/up/frame/other
+  createNode("main","MultiMakeList")
+  addLink(camera1.camera → MultiMakeList.list)
+  addLink(camera2.camera → MultiMakeList.list)
+  createNode("main","GetFrameNum"); createNode("main","CameraEval")
+  addLink(GetFrameNum.FrameNum → CameraEval.frameid)
+  addLink(MultiMakeList.list → CameraEval.nodelist)
+  # 每个节点创建后应 setNodePos 排开画布布局
+  # 最后由用户在 zeno 界面运行图，光追视口出图

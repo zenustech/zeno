@@ -13,7 +13,10 @@
 #include <zeno/utils/string.h>
 #include <zeno/utils/scope_exit.h>
 #include <zeno/extra/CAPIInternals.h>
+#include <zeno/types/PythonContextObject.h>
 #include <cwchar>
+#include <fstream>
+#include <sstream>
 #include <utility>
 #include <thread>
 
@@ -361,6 +364,195 @@ namespace zeno {
             {},
             {"command"},
             });
+
+        struct SequentialPythonNode : zeno::INode {
+            virtual void apply() override {
+                auto code = get_input2<std::string>("code");
+
+                // 若提供了 script（python 脚本文件路径），读取其内容作为要执行的
+                // python 代码，与 code 输入走完全相同的流程（链命名空间、zeArgs
+                // 注入、编译执行）。code 为空时二者效果一致。
+                if (has_input("script")) {
+                    auto scriptPath = get_input2<std::string>("script");
+                    if (!scriptPath.empty()) {
+                        std::ifstream fs(scriptPath, std::ios::binary);
+                        if (!fs.is_open())
+                            throw makeError("cannot open python script: " + scriptPath);
+                        std::ostringstream ss;
+                        ss << fs.rdbuf();
+                        code = ss.str();
+                    }
+                }
+
+                auto prevContext = has_input("prev_context") ? get_input<PythonContextObject>("prev_context") : nullptr;
+                auto args = has_input("zeArgs") ? get_input<DictObject>("zeArgs") : nullptr;
+
+                // 下方所有 Python C-API 调用都需要当前线程持有 GIL。
+                // 由于调度器可能在工作线程上执行本节点，故整个函数体
+                // 包裹在 GIL 的获取/释放之间，保证调用与共享 dict 安全。
+                PyGILState_STATE gstate = PyGILState_Ensure();
+                zeno::scope_exit gstateRelease = [=] { PyGILState_Release(gstate); };
+
+                PyObject* globals = nullptr;
+                bool ownsGlobals = false;
+                // 仅当上游上下文确实持有可用 globals 时才沿用；否则按链根新建。
+                bool reusePrevContext = prevContext && prevContext->getGlobals() != nullptr;
+                if (reusePrevContext) {
+                    // 沿用上游节点建立的链内命名空间。该引用为借用引用，
+                    // 由输入持有，我们不得拥有或释放。
+                    globals = prevContext->getGlobals();
+                } else {
+                    // 链根：新建私有命名空间，不复用进程级 __main__ dict，
+                    // 避免独立链相互泄漏变量。此 dict 为自有的新引用，
+                    // 交由上下文对象持有后再释放本处引用。
+                    globals = PyDict_New();
+                    if (!globals)
+                        throw makeError("failed to create python globals dict");
+                    PyObject* builtins = PyEval_GetBuiltins();
+                    if (!builtins)
+                        throw makeError("failed to get python builtins");
+                    PyDict_SetItemString(globals, "__builtins__", builtins);
+                    ownsGlobals = true;
+                }
+                // 链根新建的 globals 即使中途异常也必须释放，避免错误路径泄漏
+                // 引用（正常路径由下方新建的上下文对象持有其自身引用）。
+                zeno::scope_exit globalsRelease = [=] {
+                    if (ownsGlobals)
+                        Py_DECREF(globals);
+                };
+
+                // 参数只存在于链私有 globals 中，不落进程级单例。以保留名
+                // `zeArgs` 绑定到该链命名空间，脚本用 `zeArgs["key"]` 取值，
+                // 既不与普通变量冲突，也不触碰全局 `ze` 模块。
+                if (args) {
+                    PyObject* argsDict = PyDict_New();
+                    if (!argsDict)
+                        throw makeError("failed to create python args dict");
+                    // 中途类型报错等异常路径也要释放 argsDict，避免引用泄漏。
+                    zeno::scope_exit argsDictRelease = [=] {
+                        Py_DECREF(argsDict);
+                    };
+                    for (auto const& [k, v] : args->lut) {
+                        PyObject* pyVal = nullptr;
+                        if (auto numObj = std::dynamic_pointer_cast<NumericObject>(v)) {
+                            auto& val = numObj->get();
+                            std::visit([&](auto const& e) {
+                                using T = std::decay_t<decltype(e)>;
+                                if constexpr (std::is_same_v<T, bool>) {
+                                    pyVal = PyBool_FromLong(e ? 1 : 0);
+                                } else if constexpr (std::is_integral_v<T> && std::is_signed_v<T>) {
+                                    pyVal = PyLong_FromLongLong(static_cast<long long>(e));
+                                } else if constexpr (std::is_integral_v<T> && !std::is_signed_v<T>) {
+                                    pyVal = PyLong_FromUnsignedLongLong(static_cast<unsigned long long>(e));
+                                } else if constexpr (std::is_same_v<T, float>) {
+                                    pyVal = PyFloat_FromDouble(e);
+                                } else if constexpr (std::is_same_v<T, double>) {
+                                    pyVal = PyFloat_FromDouble(e);
+                                }
+                            }, val);
+                        } else if (auto strObj = std::dynamic_pointer_cast<StringObject>(v)) {
+                            pyVal = PyUnicode_FromString(strObj->get().c_str());
+                        }
+                        // 其余 zeno 类型目前静默丢弃；此处显式报错，
+                        // 让用户知道该参数不可用。
+                        if (!pyVal)
+                            throw makeError("unsupported python arg type for key: " + k);
+                        if (PyDict_SetItemString(argsDict, k.c_str(), pyVal) < 0) {
+                            Py_DECREF(pyVal);
+                            throw makeError("failed to set python arg: " + k);
+                        }
+                        Py_DECREF(pyVal);
+                    }
+                    // 将 `zeArgs` 绑定到链命名空间，供脚本读取参数，
+                    // 无需共享任何进程级状态。argsDict 的引用由 argsDictRelease
+                    // 在本块结束处释放。
+                    PyDict_SetItemString(globals, "zeArgs", argsDict);
+                }
+
+                PyObject* compiled = Py_CompileString(code.c_str(), "<code>", Py_file_input);
+                if (!compiled) {
+                    PyErr_Print();
+                    throw makeError("failed to compile code");
+                }
+
+                PyObject* result = PyEval_EvalCode(compiled, globals, globals);
+                Py_DECREF(compiled);
+                if (!result) {
+                    PyErr_Print();
+                    throw makeError("Python exception occurred, see console for more details");
+                }
+                Py_DECREF(result);
+
+                if (reusePrevContext) {
+                    // 沿链直接传递同一个共享上下文。
+                    set_output("context", prevContext);
+                } else {
+                    // 将 globals 交给上下文对象（其持有自己的引用）；链根
+                    // 新建的临时引用由开头注册的 globalsRelease 统一释放，
+                    // 异常路径同样被覆盖，避免泄漏或重复 DECREF。
+                    auto outputContext = std::make_shared<PythonContextObject>(globals);
+                    set_output("context", outputContext);
+                }
+            }
+        };
+
+        ZENDEFNODE(SequentialPythonNode, {
+            {
+                {"readpath", "script"},
+                {"multiline_string", "code"},
+                {"dict", "zeArgs"},
+                {"pythoncontext", "prev_context"},
+            },
+            {
+                {"pythoncontext", "context"},
+            },
+            {},
+            {"command"},
+            });
+
+        // CopyPythonObject：为分叉链路复制一份独立的 python 命名空间副本。
+        // 当一个 SequentialPythonNode 的输出被多条链引用时，各自给每条独立链再接
+        // 一个本节点，使其在各自 globals 副本中运行，避免变量/zeArgs 互相覆盖。
+        // 采用浅拷贝（PyDict_Copy）：新建字典、键空间隔离而值对象仍共享，
+        // 开销极小、不会因不可拷贝对象抛异常；各分叉链各自写新变量互不影响。
+        struct CopyPythonObject : zeno::INode {
+            virtual void apply() override {
+                auto src = has_input<PythonContextObject>("context")
+                    ? get_input<PythonContextObject>("context") : nullptr;
+
+                PyGILState_STATE gstate = PyGILState_Ensure();
+                zeno::scope_exit gstateRelease = [=] { PyGILState_Release(gstate); };
+
+                PyObject* out = nullptr;
+                if (src && src->getGlobals()) {
+                    out = PyDict_Copy(src->getGlobals());  // 浅拷贝：新 dict 共享值
+                    if (!out)
+                        PyErr_Print();
+                }
+                if (!out) {
+                    out = PyDict_New();  // 上游无有效 globals 时退化为空命名空间
+                    if (!out) {
+                        PyErr_Print();
+                        throw makeError("failed to create python globals copy");
+                    }
+                }
+
+                auto outCtx = std::make_shared<PythonContextObject>(out);
+                Py_DECREF(out);
+                set_output("context", outCtx);
+            }
+        };
+
+        ZENDEFNODE(CopyPythonObject, {
+            {
+                {"pythoncontext", "context"},
+            },
+            {
+                {"pythoncontext", "context"},
+            },
+            {},
+            {"command"},
+        });
     }
 }
 #endif

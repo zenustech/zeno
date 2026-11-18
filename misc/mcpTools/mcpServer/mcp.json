@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "zenoMcp": {
+      "command": "C:\\Users\\Zensim\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+      "args": [
+        "C:\\code\\zeno\\misc\\mcpTools\\mcpServer\\main.py"
+      ],
+      "cwd": "C:\\code\\zeno\\misc\\mcpTools\\mcpServer",
+      "env": {},
+      "description": "zenoMcp - 控制 zeno 节点三维软件的 MCP Server。注册通用工具 zeno_command（传一条 DSL 命令字符串 name(\"a\",\"b\")）＋按命令拆分的具名工具 zeno_*(如 zeno_createNode/zeno_setView/zeno_runGraph/zeno_screenShotOptix，各带类型化参数 schema)，二者共享同一严格串行门闩并返回相同 JSON 信封 {ok, code, kind, data}。支持命令：start/stop/status/ping/createGraph/deleteGraph/createNode/createNodeList/deleteNode/deleteNodeList/addLink/addLinkList/removeLink/removeLinkList/setParam/setParamList/getParam/setNodePos/setNodePosList/setView/setViewList/setOnce/setOnceList/setNodeName/setNodeNameList/getNodeSize/graphGeometry/listGraphs/listNodes/nodeInfo/graphInfo/listNodeClasses/listNodeCategories/nodeClassesInfo/searchNodes/categoryInfo/zenoUsageOverview/help/about/capabilities/demoInfo/setTimelineRange/runGraph/killGraph/screenShotOptix/getCameraOptix/setCameraOptix/getOptixBackground/setOptixBackground/getOptixStatus/openOptixViewport/openFile/saveAs。所有命令严格串行执行。批量命令（*List）包括 addLinkList/removeLinkList/setNodePosList/setViewList/setOnceList/setParamList/createNodeList/deleteNodeList/setNodeNameList。光追自验命令（screenShotOptix 等）让 client 抓取光追渲染截图自查画面。"
+    }
+  }
+}

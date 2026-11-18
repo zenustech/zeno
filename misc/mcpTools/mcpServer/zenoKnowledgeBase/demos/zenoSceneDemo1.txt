@@ -1,0 +1,195 @@
+================================================================
+zeno 建图示例 zenoSceneDemo1 —— Alembic 资产导入 + 环境天空 + 关键帧相机
+================================================================
+本文件是 zenoSceneDemo1.zsg（可在 zeno 中直接打开的工程文件）的精简总结，
+供 mcpClient 参考如何用 MCP 命令搭建同类型的场景。
+
+【简介】
+从 .abc（Alembic）文件导入外部资产并构建光追渲染场景：
+Alembic 几何 + faceset 材质注册 + 平行光/天空合成 + HDR 环境天空 +
+双相机关键帧动画（GetFrameNum 按当前帧取相机）。适合"加载现成模型
+渲染"类任务。
+
+【图总览】
+- 子图：2 个 —— main（15 个节点，资产/灯光/相机）+ SubgraphName（2 个节点，材质封装）
+- 时间轴：起始帧 0，结束帧 50，当前帧 0，帧率 24
+- 类型：runGraph 运行类型对应 "loadAsset"（加载资产类场景）
+
+----------------------------------------------------------------
+一、main 子图 —— 资产链（Alembic 导入 → 场景树）
+----------------------------------------------------------------
+ReadAlembic（读 .abc 文件）
+  in  path              : readpath = "C:/code/Assets/test.abc"
+  in  read_face_set     : bool     = true      # 读取 faceset（材质分组）
+  in  skipInvisibleObject: bool    = true      # 跳过不可见对象
+  in  CopyFacesetToMatid: bool     = true      # faceset 名 → matid（材质注册关键）
+  in  use_instance      : bool     = true      # 复用实例
+  in  frameid           : (any)    = 未连线     # 动画资产时可接 GetFrameNum.FrameNum
+  out abctree           : ABCTree
+  out namelist          : (list)
+
+AlembicSceneInfo（提取场景信息 json）
+  in  abctree ← ReadAlembic.abctree
+  out json → FormSceneTree.scene_info
+
+AlembicPrimList（提取图元列表）
+  in  abctree         ← ReadAlembic.abctree
+  in  flipFrontBack   : bool = true    # 翻转面朝向
+  in  killDeadVerts   : bool = true    # 清除死顶点
+  in  use_xform/triangulate/splitByFaceset/pathInclude/pathExclude/facesetInclude/facesetExclude : 默认值
+  out prims → FormSceneTree.prim_list
+
+FormSceneTree（把 abctree 信息 + 图元列表组装成渲染场景树）
+  in  scene_info  ← AlembicSceneInfo.json
+  in  prim_list   ← AlembicPrimList.prims
+  in  stampMode   : enum UnChanged/DataChange/ShapeChange/TotalChange = "UnChanged"
+  in  type        : enum static/dynamic = "dynamic"   # 资产带动画用 dynamic
+  in  matrixMode  : enum UnChanged/TotalChange = "TotalChange"
+  out scene（无需连线：zeno 光追后端自动收集场景输出，见【要点 1】）
+
+----------------------------------------------------------------
+二、main 子图 —— 灯光与环境
+----------------------------------------------------------------
+LightNode（面光源，直接输出、无需连线）
+  in  position : vec3f      = [0.0, 5.0, 0.0]
+  in  color    : colorvec3f = 红色 [1,0,0]（origin/transform 双通道）
+  in  intensity: float      = 10000.0
+  in  shape    : enum " Plane/Ellipse/Sphere/Point/TriangleMesh" = "Plane"
+  in  type     : enum " Diffuse/Direction/IES/Spot/Projector"   = "Diffuse"
+  其余 scale/rotate/quaternion/exposure/fluxFixed/spread/maxDistance/
+  falloffExponent/mask/visible/... 均为默认值
+  out prim（无需连线，全局收集）
+
+DistantLight（平行光/太阳光）
+  in  Lat-Lon     : vec2f      = [13.0, 0.0]        # 太阳方位（纬度/经度）
+  in  angleExtent : float      = 0.5                # 太阳角直径（软阴影大小）
+  in  color       : colorvec3f = 绿色 [0.5, 1, 0]
+  in  intensity   : float      = 10.0
+  out out → SkyComposer.dlights（列表第 1 项）
+
+SkyComposer（天空/平行光合成器）
+  param proxy = "SphereUnbounded"（enum 仅此一项）
+  in  dlights : list（面板列表，本例 obj0 ← DistantLight.out，obj1 空）
+  in  portals : list（空）
+  out out → Route.input
+
+HDRSky（HDR 环境天空）★ 必须打开 VIEW（setView），否则不生效、视口不显示场景
+  in  path      : readpath = "C:\code\zeno\RelDbInfo\bin\hdr\Panorama.hdr"
+  in  rotation3d: vec3f    = [0,0,0]
+  in  strength  : float    = 1.0
+  out HDRSky（无需连线，全局收集；但必须开 VIEW）
+
+Route（运行路由，标记该分支随"运行灯光与相机"执行）
+  param RunType : enum normal/lightCamera/material/matrix = "lightCamera"
+  in  input ← SkyComposer.out
+  out output（本例未继续连线）
+
+----------------------------------------------------------------
+三、main 子图 —— 相机（双相机关键帧动画）
+----------------------------------------------------------------
+CameraNode #1（关键帧 t=0）
+  in  pos    : vec3f = [0.051, 0.381, 4.985]
+  in  up     : vec3f = [-0.00013, 0.997, -0.0763]
+  in  view   : vec3f = [-0.0103, -0.0763, -0.997]
+  in  fov    : float = 45.0
+  in  frame  : int   = 0                       # 关键帧时间点
+  in  other  : string= "0,0,0,0,0,5,"          # 位姿轨迹扩展数据
+  out camera : CameraObject
+
+CameraNode #2（关键帧 t=48）
+  in  pos    : vec3f = [3.512, 6.011, 6.117]
+  in  up     : vec3f = [-0.115, 0.782, -0.612]
+  in  view   : vec3f = [-0.301, -0.615, -0.729]
+  in  fov    : float = 45.0
+  in  frame  : int   = 48
+  in  other  : string= "1.24475,-0.210586,-0.00116942,0,0,9.01574,"
+  out camera : CameraObject
+
+MultiMakeList（把多台相机汇成列表）
+  in  list（面板列表：obj0 ← CameraNode#1.camera，obj1 ← CameraNode#2.camera）
+  out list → CameraEval.nodelist
+
+GetFrameNum（当前帧号） out FrameNum → CameraEval.frameid
+
+CameraEval（按当前帧在相机关键帧之间插值）
+  in  frameid  ← GetFrameNum.FrameNum
+  in  nodelist ← MultiMakeList.list
+  out camera : CameraObject（无需连线，全局收集）
+
+----------------------------------------------------------------
+四、SubgraphName 子图 —— 材质封装（子图输出端口）
+----------------------------------------------------------------
+ShaderFinalize（材质终点，把参数组装成 MaterialObject）
+  param backend = "CUDA"
+  in  mtlid     : string     = "PigFace"        # 材质 id，对应 abc 内 faceset 名
+  in  basecolor : colorvec3f = 橙色 [1, 0.5, 0]
+  in  roughness : float      = 0.4
+  in  ior       : float      = 1.3
+  in  scatterDistance : float= 10000.0
+  其余 50+ 输入（metallic/sss/sheen/clearcoat/transmission/emission 等）
+  均为默认值，完整清单可用 nodeClassesInfo("ShaderFinalize") 查询
+  out mtl : MaterialObject → SubOutput.port
+
+SubOutput（定义子图输出端口）
+  param name = "output1"，param type = ""（自动）
+  in  port ← ShaderFinalize.mtl
+  → 即：SubgraphName 节点在 main 中拥有 output1 输出口，值为该材质
+
+----------------------------------------------------------------
+五、拓扑连线汇总
+----------------------------------------------------------------
+  ReadAlembic.abctree      → AlembicSceneInfo.abctree
+  ReadAlembic.abctree      → AlembicPrimList.abctree
+  AlembicSceneInfo.json    → FormSceneTree.scene_info
+  AlembicPrimList.prims    → FormSceneTree.prim_list
+  DistantLight.out         → SkyComposer.dlights（面板列表项）
+  SkyComposer.out          → Route.input
+  CameraNode#1.camera      → MultiMakeList.list（面板列表项）
+  CameraNode#2.camera      → MultiMakeList.list（面板列表项）
+  MultiMakeList.list       → CameraEval.nodelist
+  GetFrameNum.FrameNum     → CameraEval.frameid
+  ShaderFinalize.mtl       → SubOutput.port（子图内）
+显式连线仅这些；其余输出（LightNode.prim / HDRSky.HDRSky /
+FormSceneTree.scene / CameraEval.camera / SubgraphName.output1）
+都悬空，依赖 zeno 的全局收集机制（见要点 1、2）。
+
+----------------------------------------------------------------
+六、结构要点（对 mcpClient 最重要的认知）
+----------------------------------------------------------------
+1. 全局收集：LightNode、HDRSky、FormSceneTree、CameraEval、
+   MakeSceneNode_v2 这类"场景对象输出"节点，输出不连线也全局生效
+   ——zeno 光追后端运行时自动收集场景中的灯光/天空/相机/几何。
+   不需要也不应该硬凑一条连线到"最终节点"。
+   ★ 例外注意：HDRSky 除全局收集外还必须打开 VIEW（setView）才
+   生效，否则视口不显示场景。
+2. 材质注册：ShaderFinalize.mtlid = "PigFace" 把材质注册到该 id；
+   ReadAlembic.CopyFacesetToMatid=true 使 abc 的 faceset 名成为
+   matid，同名即完成绑定（无需 BindMaterial 节点）。
+3. 相机动画：CameraNode.frame 是关键帧时间点，other 字符串携带
+   位姿轨迹；多台相机经 MultiMakeList 汇入 CameraEval.nodelist，
+   GetFrameNum.FrameNum 提供当前帧号做插值。
+4. Route 节点：param RunType 指定该分支随哪类运行执行
+   （normal/lightCamera/material/matrix），对应 runGraph 的运行类型。
+5. 面板列表（dict-panel）：MultiMakeList.list、SkyComposer.dlights
+   这类多路输入，在 zeno 界面是"可增删项的面板"。用 MCP 复现时，
+   推荐显式使用 MultiMakeList 节点汇聚，再连到目标列表输入口。
+
+----------------------------------------------------------------
+七、用 MCP 命令复现的骨架（串行）
+----------------------------------------------------------------
+  createGraph("main")
+  createNode("main","ReadAlembic")      → setParam path / read_face_set ...
+  createNode("main","AlembicSceneInfo"); createNode("main","AlembicPrimList")
+  createNode("main","FormSceneTree")    → addLink×4 组装场景树
+  createNode("main","LightNode")        → setParam position/intensity/color
+  createNode("main","DistantLight");    createNode("main","SkyComposer")
+  addLink(DistantLight.out → SkyComposer.dlights)
+  createNode("main","HDRSky")           → setParam path（★ 还必须
+                                        setView 打开 VIEW，否则不生效）
+  createNode("main","CameraNode")×2     → setParam pos/view/up/frame/other
+  createNode("main","MultiMakeList")    → addLink×2
+  createNode("main","GetFrameNum");     createNode("main","CameraEval")
+  addLink(GetFrameNum.FrameNum → CameraEval.frameid)
+  addLink(MultiMakeList.list → CameraEval.nodelist)
+  # 材质可建于子图或直接放 main，mtlid 与 faceset 名对应
+  # 最后由用户在 zeno 界面运行图，光追视口出图

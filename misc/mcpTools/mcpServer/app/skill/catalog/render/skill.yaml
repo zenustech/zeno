@@ -1,0 +1,40 @@
+id: render
+version: "1.0"
+description: Configure a camera and produce rendered images or video
+intents:
+  - render
+  - rendering
+  - screenshot
+  - still image
+  - preview render
+  - movie
+tags:
+  - render
+  - camera
+  - optix
+required_capabilities:
+  - camera.configure
+  - render.preview
+optional_capabilities:
+  - render.still
+  - render.screenshot
+  - render.video
+  - render.inspect
+preconditions:
+  - runtime.ready
+  - optix.viewport
+validators:
+  - render_produced_artifact
+repairers:
+  - open_optix_viewport
+  - reset_sample_rate
+defaults:
+  samples: 4
+constraints:
+  single_optix_window: true
+planning_hints:
+  - ensure the optix viewport is open before capturing
+  - restore the previous sample rate after capture
+acceptance_criteria:
+  - an image or video artifact is produced
+templates: []

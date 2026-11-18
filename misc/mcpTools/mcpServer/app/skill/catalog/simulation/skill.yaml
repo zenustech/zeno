@@ -1,0 +1,37 @@
+id: simulation
+version: "1.0"
+description: Configure and run a physics simulation on a scene
+intents:
+  - simulation
+  - simulate
+  - physics simulation
+  - robot simulation
+  - run simulation
+tags:
+  - simulation
+  - physics
+required_capabilities:
+  - scene.add_object
+  - simulation.configure
+  - simulation.run
+optional_capabilities:
+  - simulation.inspect
+  - scene.find
+preconditions:
+  - scene.ready
+validators:
+  - simulation_has_frames
+  - scene_is_valid
+repairers:
+  - fix_simulation_range
+defaults:
+  start_frame: 0
+  end_frame: 120
+constraints:
+  clear_cache_decided_by_user: true
+planning_hints:
+  - confirm clear_cache with the user before running
+  - inspect the scene before running the simulation
+acceptance_criteria:
+  - simulation finished within the requested frame range
+templates: []

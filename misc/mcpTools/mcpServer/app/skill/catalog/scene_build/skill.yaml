@@ -1,0 +1,49 @@
+id: scene_build
+version: "1.0"
+description: Build a static scene from primitives and assets
+intents:
+  - scene build
+  - build scene
+  - create scene
+  - primitive scene
+  - assemble scene
+  - import asset
+  - import model
+  - load asset
+tags:
+  - scene
+  - geometry
+  - asset
+  - import
+  - model
+  - material
+required_capabilities:
+  - scene.create
+  - geometry.create_primitive
+  - scene.add_object
+optional_capabilities:
+  - asset.import
+  - material.create
+  - material.assign
+  - camera.create
+  - scene.set_transform
+preconditions:
+  - runtime.ready
+validators:
+  - scene_has_objects
+  - objects_have_geometry
+repairers:
+  - add_missing_primitive
+  - assign_default_material
+defaults:
+  object_type: cube
+  material: default
+constraints:
+  view_required: true
+planning_hints:
+  - create the scene root before adding objects
+  - enable VIEW on the scene node so it renders
+acceptance_criteria:
+  - at least one scene object exists
+  - every object references a geometry
+templates: []
