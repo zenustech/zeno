@@ -33,8 +33,11 @@
 
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
+#include "BackgroundEventWait.h"
 
 #include <iostream>
+#include <algorithm>
+#include <cstdlib>
 #include <vector>
 
 #include "sutil.h"
@@ -77,6 +80,14 @@ public:
     void           getBuffer();
     void           deletePBO();
     PIXEL_FORMAT*  getHostPointer();
+    // CUDA_DEVICE display path: queue a pinned copy in render order, then wait
+    // for that copy rather than synchronously copying after background work.
+    bool enqueueHostReadback();
+    struct ReadbackWaitStats {
+        size_t queries{};
+        double maxQueryMs{},maxPauseMs{};
+    };
+    PIXEL_FORMAT* finishHostReadback(ReadbackWaitStats* stats=nullptr);
 
 private:
     void makeCurrent() { CUDA_CHECK( cudaSetDevice( m_device_idx ) ); }
@@ -91,6 +102,11 @@ private:
     PIXEL_FORMAT*              m_device_pixels     = nullptr;
     PIXEL_FORMAT*              m_host_zcopy_pixels = nullptr;
     std::vector<PIXEL_FORMAT>  m_host_pixels;
+    PIXEL_FORMAT*             m_readback_pixels       = nullptr;
+    size_t                    m_readback_capacity     = 0;
+    cudaEvent_t               m_readback_ready        = nullptr;
+    bool                      m_readback_pending      = false;
+    CUstream                  m_readback_stream       = nullptr;
 
     CUstream                   m_stream            = 0u;
     int32_t                    m_device_idx        = 0;
@@ -135,6 +151,14 @@ template <typename PIXEL_FORMAT>
 void CUDAOutputBuffer<PIXEL_FORMAT>::freeOutputBuffer()
 {
     makeCurrent();
+    if(m_readback_pending)finishHostReadback();
+    if(m_readback_pixels) {
+        CUDA_CHECK(cudaFreeHost(m_readback_pixels));
+        m_readback_pixels=nullptr;m_readback_capacity=0;
+    }
+    if(m_readback_ready) {
+        CUDA_CHECK(cudaEventDestroy(m_readback_ready));m_readback_ready=nullptr;
+    }
     if( m_type == CUDAOutputBufferType::CUDA_DEVICE || m_type == CUDAOutputBufferType::CUDA_P2P )
     {
         CUDA_CHECK( cudaFree( reinterpret_cast<void*>( m_device_pixels ) ) );
@@ -378,6 +402,69 @@ void CUDAOutputBuffer<PIXEL_FORMAT>::deletePBO()
     GL_CHECK( glBindBuffer( GL_ARRAY_BUFFER, 0 ) );
     GL_CHECK( glDeleteBuffers( 1, &m_pbo ) );
     m_pbo = 0;
+}
+
+template <typename PIXEL_FORMAT>
+bool CUDAOutputBuffer<PIXEL_FORMAT>::enqueueHostReadback()
+{
+    if(m_type!=CUDAOutputBufferType::CUDA_DEVICE)return false;
+    if(m_readback_pending)finishHostReadback();
+    const size_t bytes=size_t(m_width)*m_height*sizeof(PIXEL_FORMAT);
+    if(bytes>m_readback_capacity) {
+        if(m_readback_pixels)CUDA_CHECK(cudaFreeHost(m_readback_pixels));
+        m_readback_pixels=nullptr;m_readback_capacity=0;
+        CUDA_CHECK(cudaMallocHost(reinterpret_cast<void**>(&m_readback_pixels),bytes));
+        m_readback_capacity=bytes;
+    }
+    if(!m_readback_ready)CUDA_CHECK(cudaEventCreateWithFlags(&m_readback_ready,cudaEventDisableTiming));
+    CUDA_CHECK(cudaMemcpyAsync(m_readback_pixels,m_device_pixels,bytes,cudaMemcpyDeviceToHost,m_stream));
+    m_readback_stream=m_stream;
+    const auto recorded=cudaEventRecord(m_readback_ready,m_stream);
+    if(recorded!=cudaSuccess) {
+        // An unrecorded event cannot protect the pinned storage on failure.
+        CUDA_CHECK(cudaStreamSynchronize(m_stream));
+        CUDA_CHECK(recorded);
+    }
+    m_readback_pending=true;
+    return true;
+}
+
+template <typename PIXEL_FORMAT>
+PIXEL_FORMAT* CUDAOutputBuffer<PIXEL_FORMAT>::finishHostReadback(ReadbackWaitStats* stats)
+{
+    if(m_readback_pending) {
+        // Match the SDK CUDA_DEVICE completion primitive. With sparse binding
+        // traffic, the event-only path exhibited much longer WDDM waits in
+        // pressure replays. Keep the event path available for comparisons.
+        static const bool queryFence=[] {const auto* v=std::getenv("ZENO_OPTIX_READBACK_QUERY");return v&&*v=='1';}();
+        static const bool streamFence=[] {const auto* v=std::getenv("ZENO_OPTIX_READBACK_STREAM_FENCE");return !v||*v!='0';}();
+        if(queryFence) {
+            // The event is recorded after the pinned D2H copy. Querying that
+            // same fence preserves publication order while testing whether a
+            // blocking WDDM completion wait is adding latency.
+            using Clock=std::chrono::steady_clock;
+            const auto query=[&] {
+                const auto begin=stats?Clock::now():Clock::time_point{};
+                const auto status=cudaEventQuery(m_readback_ready);
+                if(stats) {
+                    ++stats->queries;
+                    stats->maxQueryMs=std::max(stats->maxQueryMs,std::chrono::duration<double,std::milli>(Clock::now()-begin).count());
+                }
+                return status;
+            };
+            auto status=query();
+            while(status==cudaErrorNotReady) {
+                const auto begin=stats?Clock::now():Clock::time_point{};
+                zeno::cluster::pauseBackgroundEventQuery();
+                if(stats)stats->maxPauseMs=std::max(stats->maxPauseMs,std::chrono::duration<double,std::milli>(Clock::now()-begin).count());
+                status=query();
+            }
+            CUDA_CHECK(status);
+        } else if(streamFence)CUDA_CHECK(cudaStreamSynchronize(m_readback_stream));
+        else CUDA_CHECK(cudaEventSynchronize(m_readback_ready));
+        m_readback_pending=false;
+    }
+    return m_readback_pixels;
 }
 
 template <typename PIXEL_FORMAT>

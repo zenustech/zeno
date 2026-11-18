@@ -6,6 +6,7 @@ file(GLOB_RECURSE stbi_source CONFIGURE_DEPENDS stbi/include/*.h stbi/src/*.cpp 
 # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_library(zenovis OBJECT ${source} ${glad_source} ${stbi_source})
+find_package(Threads REQUIRED)
 target_link_libraries(zenovis PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(zenovis PUBLIC zeno)
 target_include_directories(zenovis PUBLIC

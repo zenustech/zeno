@@ -46,3 +46,18 @@
 [submodule "projects/SHARC"]
 	path = projects/SHARC
 	url = https://github.com/NVIDIA-RTX/SHARC.git
+[submodule "projects/meshoptimizer"]
+	path = projects/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
+[submodule "projects/zstd"]
+	path = projects/zstd
+	url = https://github.com/facebook/zstd.git
+[submodule "projects/fast-envelope"]
+	path = projects/fast-envelope
+	url = https://github.com/wildmeshing/fast-envelope.git
+[submodule "projects/nfg"]
+	path = projects/nfg
+	url = https://github.com/MarcoAttene/nfg.git
+[submodule "projects/indirect-predicates"]
+	path = projects/indirect-predicates
+	url = https://github.com/MarcoAttene/Indirect_Predicates.git

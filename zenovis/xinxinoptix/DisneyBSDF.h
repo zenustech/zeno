@@ -493,6 +493,7 @@ namespace DisneyBSDF{
 
         wm = wm.z<0.0f?-wm:wm;
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
+        if(mat.importedFresnel)Cspec0=vec3(mat.F0)*mat.specularColor;
         //material layer mix weight
         float dielectricWt = (1.0 - mat.metallic) * (1.0 - mat.specTrans);
         float metalWt = mat.metallic;
@@ -744,6 +745,7 @@ namespace DisneyBSDF{
 
         wm = wm.z<0.0f?-wm:wm;
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
+        if(mat.importedFresnel)Cspec0=vec3(mat.F0)*mat.specularColor;
         //material layer mix weight
         float dielectricWt = (1.0f - mat.metallic) * (1.0f - mat.specTrans);
         float dispecular = (mat.specular==0&&mat.metallic==0)?0.0f:1.0f;
@@ -752,8 +754,8 @@ namespace DisneyBSDF{
         float ccWt = 0.25 * mat.clearcoat;
 
         vec3 rho_specular = vec3(1.0f);
-        Cspec0 = 0.04f * mat.specular * rho_specular;
-        vec3 specular_color = mix(0.04f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+        Cspec0 = (mat.importedFresnel?vec3(mat.F0)*mat.specularColor:vec3(0.04f)) * mat.specular * rho_specular;
+        vec3 specular_color = mix((mat.importedFresnel?vec3(mat.F0)*mat.specularColor:vec3(0.04f)) * mat.specular * rho_specular, mat.basecolor, mat.metallic);
 
         //dielectricWt *= (1.0f - mat.specular>0?RgbToY(SpecularColor(wo*vec3(-1,-1,1), wo, specular_color,  mat.ior)):0.0f);
         float diffPr = dielectricWt;
@@ -821,7 +823,7 @@ namespace DisneyBSDF{
           }
           if(metalPr>0.0f){
             float dielectricF = BRDFBasics::SchlickDielectic(abs(dot(wm, wo)), mat.ior);
-            vec3 C0 = 0.04f * mat.specular * rho_specular * (1.0f - mat.metallic) + mat.metallic * mat.basecolor;
+            vec3 C0 = Cspec0 * (1.0f - mat.metallic) + mat.metallic * mat.basecolor;
             vec3 F = mix(C0, vec3(1.0), BRDFBasics::SchlickWeight(HoV));
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(mat.roughness,mat.anisotropic,ax,ay);
@@ -866,7 +868,7 @@ namespace DisneyBSDF{
               float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?mat.ior:1.0f/mat.ior);
               float Fp = mix(mat.F0,1.0,F);
               vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                                            mix(mix(vec3(mat.F0), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
+                                                            mix(mix(vec3(mat.F0)*(mat.importedFresnel?mat.specularColor:vec3(1.f)), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                             tmpPdf) * glassWt;
               tmpPdf *= (mat.roughness<=0.01 && reflectance==false)? 0.0f:Fp;
               s = s * (tmpPdf>0.0f? 1.0f:0.0f);
@@ -892,7 +894,7 @@ namespace DisneyBSDF{
                                                                  ax, ay,
                                                                  entering? mat.ior:1.0f/mat.ior,
                                                                  wo, wi, wm,
-                                                                 mix(mix(vec3(mat.F0), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
+                                                                 mix(mix(vec3(mat.F0)*(mat.importedFresnel?mat.specularColor:vec3(1.f)), mat.diffractColor, mat.diffraction), vec3(1.0f), F) * mat.specular,
                                                                  tmpPdf);
 
                 vec3 t = brdf * glassWt;
@@ -1027,6 +1029,7 @@ namespace DisneyBSDF{
         float F0;
 
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
+        if(mat.importedFresnel)Cspec0=vec3(mat.F0)*mat.specularColor;
 
         //material layer mix weight
         float dielectricWt = (1.0f - mat.metallic) * (1.0f - mat.specTrans);
@@ -1305,6 +1308,7 @@ namespace DisneyBSDF{
         float F0;
 
         BRDFBasics::TintColors(mix(mat.basecolor, mat.sssColor, mat.subsurface), eta, mat.specularTint, mat.sheenTint, F0, Csheen, Cspec0);
+        if(mat.importedFresnel)Cspec0=vec3(mat.F0)*mat.specularColor;
 
         //material layer mix weight
         float dielectricWt = (1.0f - mat.metallic) * (1.0f - mat.specTrans);
@@ -1314,8 +1318,8 @@ namespace DisneyBSDF{
         float ccWt = 0.25 * mat.clearcoat;
 
         vec3 rho_specular = vec3(1.0f);
-        Cspec0 = 0.04f * mat.specular * rho_specular;
-        vec3 specular_color = mix(0.04f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+        Cspec0 = (mat.importedFresnel?vec3(mat.F0)*mat.specularColor:vec3(0.04f)) * mat.specular * rho_specular;
+        vec3 specular_color = mix((mat.importedFresnel?vec3(mat.F0)*mat.specularColor:vec3(0.04f)) * mat.specular * rho_specular, mat.basecolor, mat.metallic);
 
 
         //dielectricWt *= (1.0f - mat.specular>0?RgbToY(SpecularColor(woo*vec3(-1,-1,1), woo, specular_color,  mat.ior)):0.0f);
@@ -1774,14 +1778,14 @@ namespace DisneyBSDF{
         {
             bsdf.enable_specular = true;
             bsdf.specular_weight = weight * _specular_weight;
-            bsdf.ior = (2.0f / (1.0f - sqrtf(0.08f * saturate(mat.specular)))) - 1.0f;
+            bsdf.ior = mat.importedFresnel?mat.ior:(2.0f / (1.0f - sqrtf(0.08f * saturate(mat.specular)))) - 1.0f;
             float aspect = sqrtf(1.0f - mat.anisotropic * 0.9f);
             float roughness2 = mat.roughness * mat.roughness;
             bsdf.alpha_x = roughness2 / aspect;
             bsdf.alpha_y = roughness2 * aspect;
 
             vec3 rho_specular = RgbToY(mat.basecolor)>0.0f?mat.basecolor/RgbToY(mat.basecolor):vec3(0);
-            bsdf.specular_color = mix(0.08f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
+            bsdf.specular_color = mix(mat.importedFresnel?vec3(mat.F0)*mat.specularColor*mat.specular:0.08f * mat.specular * rho_specular, mat.basecolor, mat.metallic);
         }
 
         bsdf.enable_clearcoat = false;
