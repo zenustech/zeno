@@ -3,6 +3,7 @@
 #include <set>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -50,6 +51,7 @@
 #include "LightsWrapper.h"
 #include "ClusterRuntime.h"
 #include "ClusterMaterials.h"
+#include "WaterSurface.h"
 
 #include <parallel_hashmap/phmap.h>
 
@@ -114,9 +116,53 @@ public:
     zeno::cluster::RuntimeSettings clusterSettings;
     bool clusterRootDirty = false;
     bool clusterUnloadPending = false;
+    std::map<std::string,zeno::water::Settings> waterSettings;
+    std::set<std::string> waterUnloadPending;
+    std::unique_ptr<zeno::water::Runtime> water;
+    bool waterRootDirty=false;
+    void preloadWater(const std::string& key,const Json& json) {
+        zeno::water::Settings s;
+        s.center=json.at("center").get<std::array<float,3>>();s.size=json.at("size").get<std::array<float,2>>();
+        s.wind=json.at("wind").get<std::array<float,2>>();s.absorption=json.at("absorption").get<std::array<float,3>>();
+        s.amplitude=json.at("amplitude");s.period=json.at("period");s.windSpeed=json.at("windSpeed");s.depth=json.at("depth");
+        s.roughness=json.at("roughness");s.ior=json.at("ior");s.time=json.at("time");s.edgePixels=json.at("edgePixels");
+        s.loopDuration=json.value("loopDuration",0.f);
+        s.boundaryWidth=json.at("boundaryWidth");s.resolution=json.at("resolution");s.seed=json.at("seed");
+        s.maxClusters=json.at("maxClusters");s.ellipse=json.at("ellipse");zeno::water::validate(s);
+        // Graphics constructors can register several water nodes in parallel.
+        static std::mutex registrationMutex;
+        const std::lock_guard<std::mutex> registration(registrationMutex);
+        waterSettings[key]=s;waterUnloadPending.erase(key);
+        maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
+    }
+    void finalizeWaterRegistration() {
+        for(const auto& key:waterUnloadPending)waterSettings.erase(key);
+        waterUnloadPending.clear();
+        if(waterSettings.empty() && water){water.reset();waterRootDirty=true;}
+    }
+    bool updateWater(const Params& params,bool interactive) {
+        if(waterSettings.empty())return false;
+        if(!water)water=std::make_unique<zeno::water::Runtime>();
+        std::vector<zeno::water::Settings> settings;settings.reserve(waterSettings.size());
+        for(const auto& entry:waterSettings)settings.push_back(entry.second);
+        const auto shader=shader_indice_table.at(std::make_tuple(std::string(zeno::water::MaterialShaderName),ShaderMark::Mesh));
+        const float projection=params.physical_camera_panorama_camera?float(params.height)/3.14159265358979323846f:
+            float(params.height)*params.cam.focal_length/std::max(params.cam.height,.001f);
+        const auto& camera=params.cam;
+        zeno::water::View view{{camera.eye.x,camera.eye.y,camera.eye.z},projection};
+        view.right={camera.right.x,camera.right.y,camera.right.z};view.up={camera.up.x,camera.up.y,camera.up.z};view.front={camera.front.x,camera.front.y,camera.front.z};
+        if(!params.physical_camera_panorama_camera && camera.pitch==0.f && camera.yaw==0.f) {
+            view.tanX=camera.width/(2.f*camera.focal_length)*(1.f+2.f*std::abs(camera.horizontal_shift));
+            view.tanY=camera.height/(2.f*camera.focal_length)*(1.f+2.f*std::abs(camera.vertical_shift));
+        }
+        const bool changed=water->update(OptixUtil::context,shader,settings,view,interactive);
+        waterRootDirty|=changed;return changed;
+    }
     bool canUseOpaqueClusterShadows() const {
         // Legacy geometry can require node-graph opacity, custom intersections
         // or OMM handling. Keep its established enforced-any-hit trace path.
+        // Water keeps any-hit enabled in its grid template and ignores
+        // transmitted intersections, so it can share this fast shadow trace.
         return geoTypeMap.empty() && shader_indice_table.count(
             std::make_tuple(std::string(zeno::cluster::MaterialShaderName),ShaderMark::Mesh));
     }
@@ -699,7 +745,7 @@ public:
             rootNode.hostInstancesUpload.wait();
             auto& instanced=rootNode.hostInstances;
             instanced.clear();
-            instanced.reserve(4);
+            instanced.reserve(5);
 
             OptixInstance opi {};
             memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
@@ -732,15 +778,21 @@ public:
                 memcpy(opi.transform,CameraSapceMatrix.data(),sizeof(float)*12);
                 instanced.push_back(opi);maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
             }
+            if(water && water->handle()) {
+                opi.instanceId=4;opi.visibilityMask=EverythingMask;opi.traversableHandle=water->handle();
+                memcpy(opi.transform,CameraSapceMatrix.data(),sizeof(float)*12);
+                instanced.push_back(opi);maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(2));
+            }
 
             const bool same_children = rootLightChild == lightsWrapper.lightIasHandle
                                 && rootStaticChild == staticRenderGroup
-                                && rootDynamicChild == dynamicRenderGroup && !clusterRootDirty;
+                                && rootDynamicChild == dynamicRenderGroup && !clusterRootDirty && !waterRootDirty;
             xinxinoptix::buildIAS(context, instanced, this->rootNode, same_children, true);
             rootLightChild = lightsWrapper.lightIasHandle;
             rootStaticChild = staticRenderGroup;
             rootDynamicChild = dynamicRenderGroup;
             clusterRootDirty=false;
+            waterRootDirty=false;
         };
 
         if (camera_only || !sceneJson.contains(brikey)) {
@@ -1027,6 +1079,7 @@ public:
         std::map<std::string, std::pair<float const *, size_t>> const &vtab, const GeoChange change=GeoChange::FullChange);
 
     void unload_object(std::string const &key) {
+        if(waterSettings.count(key))waterUnloadPending.insert(key);
         if(clusterAssetKey==key) {
             clusterUnloadPending=true;
         }

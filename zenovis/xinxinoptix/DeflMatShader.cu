@@ -16,6 +16,7 @@
 #include "Mnee.h"
 #include "SharcDevice.h"
 #include "ClusterMaterialShader.h"
+#include "WaterMaterialShader.h"
 #include "ShadingNormal.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
@@ -71,6 +72,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     auto prd = getPRD<ShadowPRD>();
     prd->radiance = make_float3(0,0,0);
+#if defined(ZENO_WATER_ONLY)
+    waterMaterial::shadow(*prd);return;
+#endif
 #if defined(ZENO_CLAS_ONLY)
     if(true) {
 #else
@@ -268,12 +272,23 @@ vec3 FMA(vec3 a, vec3 b, vec3 c) {
 
 extern "C" __global__ void __closesthit__radiance()
 {
-#if defined(ZENO_CLAS_ONLY)
+#if defined(ZENO_WATER_ONLY)
+    constexpr bool clusterHit=false;
+#elif defined(ZENO_CLAS_ONLY)
     constexpr bool clusterHit=true;
 #else
     const bool clusterHit=params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID;
 #endif
     RadiancePRD* prd = getPRD();
+#if defined(ZENO_WATER_ONLY)
+    constexpr bool waterHit=true;
+    if(params.cluster_debug_view && !prd->test_distance) {
+        const auto c=waterMaterial::debug(params.cluster_debug_view);
+        prd->radiance=c;prd->tmp_albedo=c;prd->hit_type=DIFFUSE_HIT;prd->done=true;return;
+    }
+#else
+    constexpr bool waterHit=false;
+#endif
     float clusterNormalOrientation=1.f;
     const auto feedback=params.cluster_feedback;
     if(clusterHit && prd->depth==0 && !prd->test_distance && feedback.requested) {
@@ -453,7 +468,7 @@ extern "C" __global__ void __closesthit__radiance()
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
-    if(clusterHit) optixGetTriangleVertexData(_vertices_);
+    if(clusterHit || waterHit) optixGetTriangleVertexData(_vertices_);
     else optixGetTriangleVertexData(gas, primIdx, sbtGASIndex, 0, _vertices_);
 
     const float2 barys = optixGetTriangleBarycentrics();
@@ -493,6 +508,10 @@ extern "C" __global__ void __closesthit__radiance()
             clusterNormalOrientation=-1.f;
             attrs.N = -attrs.N;
         }
+        attrs.T={};
+    } else if(waterHit) {
+        attrs.N=optixTransformNormalFromObjectToWorldSpace(waterMaterial::normal(objPos));
+        if(dot(attrs.wldNorm,static_cast<float3>(attrs.N))<0.f){attrs.objNorm=-attrs.objNorm;attrs.wldNorm=-attrs.wldNorm;}
         attrs.T={};
     } else {
         let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
@@ -548,6 +567,8 @@ extern "C" __global__ void __closesthit__radiance()
         if(params.cluster_materials.materials)
             mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread,
                 prd->depth==0?&prd->primaryTextureMissing:nullptr,clusterNormalOrientation);
+    } else if(waterHit) {
+        mats=waterMaterial::evaluate(attrs);
     } else {
         mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
     }

@@ -516,6 +516,7 @@ static bool launchSharcUpdate(PathTracerState& state)
         update_width,
         update_height,
         1));
+    if(defaultScene.water)defaultScene.water->rendered(nullptr,true);
 
     SharcResolveSettings settings = {};
     settings.camera_position[0] = state.params.cam.eye.x;
@@ -660,7 +661,7 @@ static bool useClusterViewTransform()
         const auto* v=std::getenv("ZENO_CLAS_CAMERA_TRANSFORM");
         return !(v && std::strcmp(v,"0")==0);
     }();
-    return enabled && defaultScene.clusterAsset && defaultScene.clusterAsset->handle() &&
+    return enabled && defaultScene.waterSettings.empty() && defaultScene.clusterAsset && defaultScene.clusterAsset->handle() &&
         !defaultScene.hasDirtyLightIAS() && !defaultScene.lightsWrapper.lightIasHandle &&
         !defaultScene.staticRenderGroup && !defaultScene.dynamicRenderGroup &&
         defaultScene.nodeCache.empty() && defaultScene.nodeCacheStatic.empty();
@@ -1858,6 +1859,16 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
             storeShaderCore(clusterKey,core);
         });
     }
+    const auto waterKey=ShaderCoreKey{"WaterMatShader.cu",ShaderMark::Mesh};
+    const bool requireWaterShader=std::any_of(shaders.begin(),shaders.end(),[](const auto& shader){return shader->filename=="WaterMatShader.cu";});
+    if(requireWaterShader && (refresh || !findShaderCore(waterKey))) {
+        OptixUtil::_compile_group.run([waterKey] {
+            auto core=std::make_shared<OptixUtil::OptixShaderCore>(sutil::lookupIncFile("WaterMatShader.cu"),"__closesthit__radiance","__anyhit__shadow_cutout");
+            if(!core->loadProgram(6,{"--undefine-macro=_P_TYPE_","--define-macro=_P_TYPE_=0"}))
+                throw std::runtime_error("Water hit program failed to compile");
+            storeShaderCore(waterKey,core);
+        });
+    }
     if (requireTriangLight && (refresh || !findShaderCore(ShaderCoreKey{"Light.cu", ShaderMark::Mesh}))) {
         OptixUtil::_compile_group.run([&] () {
             auto shader_string = sutil::lookupIncFile("Light.cu");
@@ -1974,6 +1985,7 @@ OptixUtil::_compile_group.wait();
             // Imported materials are evaluated inline by the CLAS hit program.
             // Its unused callable slot shares the normal default callable.
             fallback |= shaders[i]->matid == zeno::cluster::MaterialShaderName;
+            fallback |= shaders[i]->matid == zeno::water::MaterialShaderName;
             
             //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
@@ -2491,7 +2503,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     }
     state.params.needAOV = enable_output_aov;
     const auto& runtimeOptions=zeno::getSession().userData();
-    const unsigned int debugView=defaultScene.clusterAsset?std::clamp(runtimeOptions.get2<int>("optix-clas-debug-view",0),0,7):0;
+    const unsigned int debugView=(defaultScene.clusterAsset || !defaultScene.waterSettings.empty())?
+        std::clamp(runtimeOptions.get2<int>("optix-clas-debug-view",0),0,7):0;
     // Denoising mixes cluster IDs, coverage and signed normal colors.
     if(debugView)denoise=false;
     updateRayGen(enable_output_aov, denoise);
@@ -2527,7 +2540,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         output_buffer_type==sutil::CUDAOutputBufferType::CUDA_DEVICE &&
         (!state.params.click_dirty||(asyncClusterPicking&&!runtimeOptions.get2<bool>("optix-sharc",true))) &&
         (!runtimeOptions.get2<bool>("optix-sharc",true)||asyncSharcRays) &&
-        useClusterViewTransform()?state.stream.handle:nullptr;
+        (useClusterViewTransform() || !defaultScene.waterSettings.empty())?state.stream.handle:nullptr;
     output_buffer_o->setStream(renderStream);
     if(renderStream) {
         static bool announced=false;
@@ -2548,6 +2561,17 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const uint64_t previousCut = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats().cutVersion : 0;
     const bool clusterChanged=defaultScene.updateClusters(state.params,interactive,
         {runtimeOptions.get2<bool>("optix-clas-adaptive-lod",true),runtimeOptions.get2<float>("optix-clas-pixel-error",0.f)});
+    const bool waterChanged=defaultScene.updateWater(state.params,interactive);
+    state.params.water=defaultScene.water?defaultScene.water->launch():zeno_water_device::Launch{};
+    if(waterChanged) {
+        state.params.subframe_index=0;state.params.history_samples=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+        const auto s=defaultScene.water->statistics();
+        zeno::log_info("Water: {} clusters, {} triangles, depth {}..{}, tessellation={} ms, submit={} ms, FFT={} ms, CLAS={} ms, GAS={} ms, memory={} MiB, edge={} px{}",
+            s.clusters,s.triangles,s.minDepth,s.maxDepth,s.tessellationMs,s.submitMs,s.fftMs,s.clasMs,s.gasMs,double(s.bytes)/1048576.,s.effectiveEdgePixels,s.qualityLimited?" (budget limited)":"");
+    }
     const auto clusterStats = defaultScene.clusterAsset ? defaultScene.clusterAsset->stats() : zeno::cluster::RuntimeStats{};
     zeno::getSession().userData().set2("optix-clas-lod-status",defaultScene.clusterAsset ? zeno::format(
         "Requested {} px | Effective {} px | Pool {}% | {}",
@@ -2562,7 +2586,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const double clusterSubmitWaitMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-clusterSubmitStart).count();
     // Select the completed CLAS scene before uploading camera-relative root
     // transforms. A moving frame needs one root update, even when both change.
-    if(viewMoving || clusterChanged || useClusterViewTransform())updateRootIAS();
+    if(viewMoving || clusterChanged || waterChanged || defaultScene.waterRootDirty || useClusterViewTransform())updateRootIAS();
     if(clusterChanged) {
         OptixUtil::createPipeline(defaultScene.maxNodeDepth,false);
     }
@@ -2871,6 +2895,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.render_complete.record(renderStream);
         CUDA_CHECK(cudaStreamWaitEvent(nullptr,state.render_complete.event,0));
     }
+    if(defaultScene.water)defaultScene.water->rendered(renderStream);
     }
     if(hostTimings)displaySubmitMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-displaySubmitStart).count();
     if(profile)submitCpuMs+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-submitStart).count();
@@ -3367,6 +3392,7 @@ void optixDestroy() {
 #endif
         state.viewport_pick_ready=CudaUploadFence{};
         decltype(state.viewport_pick){}.swap(state.viewport_pick);
+        defaultScene.water.reset();defaultScene.waterSettings.clear();defaultScene.waterUnloadPending.clear();
         defaultScene.clusterMaterials.reset();defaultScene.clusterAsset.reset();
         optixCleanup();
 

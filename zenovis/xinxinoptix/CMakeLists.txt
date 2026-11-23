@@ -7,6 +7,7 @@ endif()
 set(OPTIX_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(${CMAKE_SOURCE_DIR}/projects/rtxmg rtxmg)
 target_link_libraries(zenovis PRIVATE zeno_cluster_runtime)
+target_link_libraries(zenovis PRIVATE zeno_water_surface)
 target_link_libraries(zenovis PRIVATE zeno_texture_cache)
 target_link_libraries(zenovis PRIVATE zeno_host_texture_cache)
 target_link_libraries(zenovis PRIVATE zeno_texture_feedback)
@@ -291,6 +292,12 @@ if(WIN32)
     file(COPY ${NVRTC_DLLS} DESTINATION "${CMAKE_BINARY_DIR}/bin")
     # Install the DLLs into the shipping package folder structure
     install(FILES ${NVRTC_DLLS} DESTINATION bin)
+    file(GLOB CUFFT_DLLS "${CUDA_BIN_DIR}/x64/cufft64_*.dll" "${CUDA_BIN_DIR}/cufft64_*.dll")
+    if(NOT CUFFT_DLLS)
+        message(FATAL_ERROR "cuFFT DLLs not found! Check your CUDA installation path.")
+    endif()
+    file(COPY ${CUFFT_DLLS} DESTINATION "${CMAKE_BINARY_DIR}/bin")
+    install(FILES ${CUFFT_DLLS} DESTINATION bin)
 else()
     # Linux setup (.so files)
     get_target_property(NVRTC_SO CUDA::nvrtc LOCATION)
@@ -301,6 +308,10 @@ else()
 endif()
 
 set(FILE_LIST
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterDevice.h
+    ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterSampling.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterMaterialShader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterMatShader.cu
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterMaterialDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureDelivery.h

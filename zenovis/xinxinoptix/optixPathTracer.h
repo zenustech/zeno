@@ -8,6 +8,7 @@
 #include "SharcLaunchParameters.h"
 #include "ClusterDevice.h"
 #include "ClusterMaterialDevice.h"
+#include "WaterDevice.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -220,6 +221,7 @@ struct Params
     zeno_cluster_device::ViewFeedback cluster_feedback;
     unsigned int cluster_debug_view;
     zeno_cluster_device::MaterialLaunch cluster_materials;
+    zeno_water_device::Launch water;
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;

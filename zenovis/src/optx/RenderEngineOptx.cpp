@@ -348,6 +348,10 @@ struct GraphicsManager {
 
             if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
+                if(prim_in0->userData().get2<std::string>("ResourceType","")=="WaterSurface") {
+                    defaultScene.preloadWater(key,Json::parse(prim_in0->userData().get2<std::string>("waterSettings")));
+                    return;
+                }
                 if(prim_in0->userData().get2<std::string>("ResourceType","")=="ClusterAsset") {
                     const auto& ud=prim_in0->userData();
                     zeno::cluster::RuntimeSettings settings;
@@ -1374,6 +1378,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool meshNeedUpdate = true;
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
+    std::map<std::string,const zeno::IObject*> waterStaticObjects;
+    bool hadWaterDescriptors = false;
     void outlineInit(Json const &in_msg) override {
 //        zeno::log_error("MessageType: {}", in_msg.dump());
         if (in_msg["MessageType"] == "Init") {
@@ -2077,12 +2083,33 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     void update() override {
         const auto registeredObjects=scene->objectsMan->pairs();
         unsigned int clusterDescriptors=0;
+        unsigned int waterDescriptors=0;
+        std::map<std::string,const zeno::IObject*> staticObjects;
         for(const auto& [key,object]:registeredObjects) {
             const auto* primitive=dynamic_cast<const zeno::PrimitiveObject*>(object);
+            if(primitive && primitive->userData().get2<std::string>("ResourceType","")=="WaterSurface")
+                ++waterDescriptors;
+            else staticObjects.emplace(key,object);
             if(primitive&&primitive->userData().get2<std::string>("ResourceType","")=="ClusterAsset"&&++clusterDescriptors>1) {
                 const char* message="This OptiX scene supports one LoadPrebakedAsset descriptor; combine the meshes in a single asset manifest.";
                 zeno::log_error("{}",message);throw std::runtime_error(message);
             }
+        }
+        const bool waterOnly=waterDescriptors && hadWaterDescriptors && !defaultScene.waterSettings.empty() && staticObjects==waterStaticObjects &&
+            !lightNeedUpdate && !meshNeedUpdate && !matNeedUpdate && !staticNeedUpdate &&
+            !scene->objectsMan->needUpdateLight && !scene->drawOptions->updateMatlOnly &&
+            !scene->drawOptions->updateLightCameraOnly;
+        waterStaticObjects=std::move(staticObjects);hadWaterDescriptors=waterDescriptors!=0;
+        if(waterOnly) {
+            // Timeline playback replaces only tiny water descriptors. Preserve
+            // the existing camera, lights, SBT, CLAS asset and texture workers.
+            // Keep both insertion passes so removal/replacement has the same
+            // lifetime rules as an ordinary scene update.
+            graphicsMan->load_static_objects(registeredObjects);
+            graphicsMan->load_objects(registeredObjects);
+            defaultScene.finalizeClusterAssetRegistration();
+            defaultScene.finalizeWaterRegistration();
+            return;
         }
         xinxinoptix::optixBeginFrame();
 //        zeno::log_error("update");
@@ -2112,6 +2139,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         {
         }
         defaultScene.finalizeClusterAssetRegistration();
+        defaultScene.finalizeWaterRegistration();
         meshNeedUpdate = matNeedUpdate = true;
         if (scene->drawOptions->updateMatlOnly)
         {
@@ -2602,6 +2630,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 requireTriangObj=true;
             }
 
+            if(!defaultScene.waterSettings.empty()) {
+                const auto key=std::make_tuple(std::string(zeno::water::MaterialShaderName),ShaderMark::Mesh);
+                if(!cached_shaders.count(key)) {
+                    auto shader=make_default_shader(ShaderMark::Mesh);
+                    shader->matid=zeno::water::MaterialShaderName;shader->filename="WaterMatShader.cu";
+                    cached_shaders[key]=std::move(shader);ShaderDirty=true;
+                }
+                requireTriangObj=true;
+            }
             ShaderDirty |= cached_shaders.size() != shaderCount;
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
@@ -2649,7 +2686,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 if (usesCurveTypeFlags)
                     usesPrimitiveTypeFlags |= usesCurveTypeFlags;
 
-                auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags,bool(defaultScene.clusterAsset));
+                auto refresh = OptixUtil::configPipeline((OptixPrimitiveTypeFlags)usesPrimitiveTypeFlags,bool(defaultScene.clusterAsset)||!defaultScene.waterSettings.empty());
                 ShaderDirty |= refresh;
 
                 if (ShaderDirty) {
@@ -2713,6 +2750,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void assetLoad() {
+        waterStaticObjects.clear();hadWaterDescriptors=false;
         topoMap.clear();
         defaultScene = {};
         cached_shaders = {};
@@ -2739,6 +2777,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void cleanupAssets() override {
+        waterStaticObjects.clear();hadWaterDescriptors=false;
         cached_shaders = {};
         OptixUtil::rtMaterialShaders.clear();
 
