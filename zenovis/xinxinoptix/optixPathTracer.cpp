@@ -665,25 +665,28 @@ static bool useClusterViewTransform()
         return !(v && std::strcmp(v,"0")==0);
     }();
     return enabled && defaultScene.waterSettings.empty() && defaultScene.clusterAsset && defaultScene.clusterAsset->handle() &&
+        !defaultScene.streamedGeometryInScene(defaultScene.clusterObjectName) &&
+        defaultScene.clusterScenePlacements().size()==1 &&
         !defaultScene.hasDirtyLightIAS() && !defaultScene.lightsWrapper.lightIasHandle &&
-        !defaultScene.staticRenderGroup && !defaultScene.dynamicRenderGroup &&
-        defaultScene.nodeCache.empty() && defaultScene.nodeCacheStatic.empty();
+        !defaultScene.staticRenderGroup && !defaultScene.dynamicRenderGroup;
 }
 
 void updateRootIAS()
 {
     zeno::cluster::TimelineRange timeline("OptiX: root IAS");
     if(useClusterViewTransform()) {
+        defaultScene.maxNodeDepth=std::max(defaultScene.maxNodeDepth,uint8_t(3));
         // With one world-space CLAS child, a top-level transform needs no BVH
         // bounds refit when the camera moves. Its child is published only after
         // CLAS completion; stream 0 orders the upload after previous readers.
         OptixStaticTransform transform{};
         transform.child=defaultScene.clusterAsset->handle();
-        transform.transform[0]=transform.transform[5]=transform.transform[10]=1.f;
-        transform.invTransform[0]=transform.invTransform[5]=transform.invTransform[10]=1.f;
         const auto eye=state.params.cam.eye;
-        transform.transform[3]=-eye.x;transform.transform[7]=-eye.y;transform.transform[11]=-eye.z;
-        transform.invTransform[3]=eye.x;transform.invTransform[7]=eye.y;transform.invTransform[11]=eye.z;
+        auto camera=IdentityMatrix;camera[3]=-eye.x;camera[7]=-eye.y;camera[11]=-eye.z;
+        const auto world=zeno::mega::compose(camera,defaultScene.clusterScenePlacements().front());
+        const auto inverse=zeno::mega::inverse(world);
+        std::copy(world.begin(),world.end(),transform.transform);
+        std::copy(inverse.begin(),inverse.end(),transform.invTransform);
         if(state.cluster_view_host.empty() || std::memcmp(&state.cluster_view_host.front(),&transform,sizeof(transform))) {
             state.cluster_view_upload.wait();
             if(state.cluster_view_host.empty())state.cluster_view_host.resize(1);
@@ -1862,11 +1865,11 @@ void updateShaders(std::vector<std::shared_ptr<ShaderPrepared>> &shaders,
             storeShaderCore(clusterKey,core);
         });
     }
-    const auto waterKey=ShaderCoreKey{"WaterMatShader.cu",ShaderMark::Mesh};
-    const bool requireWaterShader=std::any_of(shaders.begin(),shaders.end(),[](const auto& shader){return shader->filename=="WaterMatShader.cu";});
+    const auto waterKey=ShaderCoreKey{"WaterHitShader.cu",ShaderMark::Mesh};
+    const bool requireWaterShader=std::any_of(shaders.begin(),shaders.end(),[](const auto& shader){return shader->filename=="WaterHitShader.cu";});
     if(requireWaterShader && (refresh || !findShaderCore(waterKey))) {
         OptixUtil::_compile_group.run([waterKey] {
-            auto core=std::make_shared<OptixUtil::OptixShaderCore>(sutil::lookupIncFile("WaterMatShader.cu"),"__closesthit__radiance","__anyhit__shadow_cutout");
+            auto core=std::make_shared<OptixUtil::OptixShaderCore>(sutil::lookupIncFile("WaterHitShader.cu"),"__closesthit__radiance","__anyhit__shadow_cutout");
             if(!core->loadProgram(6,{"--undefine-macro=_P_TYPE_","--define-macro=_P_TYPE_=0"}))
                 throw std::runtime_error("Water hit program failed to compile");
             storeShaderCore(waterKey,core);
@@ -1988,7 +1991,6 @@ OptixUtil::_compile_group.wait();
             // Imported materials are evaluated inline by the CLAS hit program.
             // Its unused callable slot shares the normal default callable.
             fallback |= shaders[i]->matid == zeno::cluster::MaterialShaderName;
-            fallback |= shaders[i]->matid == zeno::water::MaterialShaderName;
             
             //("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, fallback)==false)
@@ -2543,7 +2545,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         output_buffer_type==sutil::CUDAOutputBufferType::CUDA_DEVICE &&
         (!state.params.click_dirty||(asyncClusterPicking&&!runtimeOptions.get2<bool>("optix-sharc",true))) &&
         (!runtimeOptions.get2<bool>("optix-sharc",true)||asyncSharcRays) &&
-        (useClusterViewTransform() || !defaultScene.waterSettings.empty())?state.stream.handle:nullptr;
+        (useClusterViewTransform() || !defaultScene.waterSettings.empty() ||
+            (defaultScene.clusterAsset && defaultScene.candidates.empty()))?state.stream.handle:nullptr;
     output_buffer_o->setStream(renderStream);
     if(renderStream) {
         static bool announced=false;
@@ -2565,7 +2568,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const bool clusterChanged=defaultScene.updateClusters(state.params,interactive,
         {runtimeOptions.get2<bool>("optix-clas-adaptive-lod",true),runtimeOptions.get2<float>("optix-clas-pixel-error",0.f)});
     const bool waterChanged=defaultScene.updateWater(state.params,interactive);
-    state.params.water=defaultScene.water?defaultScene.water->launch():zeno_water_device::Launch{};
+    if(defaultScene.consumeStreamPlacementChanges()) {
+        state.params.subframe_index=0;state.params.history_samples=0;
+#if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
+        state.sharc_reset_pending=true;
+#endif
+    }
+    state.params.water=defaultScene.water?defaultScene.water->launch():zeno_water_device::SceneLaunch{};
     if(waterChanged) {
         state.params.subframe_index=0;state.params.history_samples=0;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
@@ -2589,8 +2598,8 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const double clusterSubmitWaitMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-clusterSubmitStart).count();
     // Select the completed CLAS scene before uploading camera-relative root
     // transforms. A moving frame needs one root update, even when both change.
-    if(viewMoving || clusterChanged || waterChanged || defaultScene.waterRootDirty || useClusterViewTransform())updateRootIAS();
-    if(clusterChanged) {
+    if(viewMoving || clusterChanged || waterChanged || defaultScene.clusterRootDirty || defaultScene.waterRootDirty || useClusterViewTransform())updateRootIAS();
+    if(clusterChanged || waterChanged) {
         OptixUtil::createPipeline(defaultScene.maxNodeDepth,false);
     }
     const double rootSetupMs=setupCheckpoint();
@@ -3413,7 +3422,10 @@ void optixDestroy() {
         state.viewport_pick_ready=CudaUploadFence{};
         state.pathSamplingResources.reset();state.params.pathSampling={};
         decltype(state.viewport_pick){}.swap(state.viewport_pick);
-        defaultScene.water.reset();defaultScene.waterSettings.clear();defaultScene.waterUnloadPending.clear();
+        defaultScene.water.reset();defaultScene.waterSettings.clear();defaultScene.waterMaterialNames.clear();defaultScene.waterUnloadPending.clear();
+        defaultScene.waterObjectNames.clear();defaultScene.waterPlacements.clear();defaultScene.waterVisible=false;
+        defaultScene.clusterPlacements.clear();defaultScene.clusterObjectName.clear();defaultScene.clearScenePublications();
+        defaultScene.placementsDirty=true;defaultScene.streamPlacementsChanged=false;
         defaultScene.clusterMaterials.reset();defaultScene.clusterAsset.reset();
         optixCleanup();
 

@@ -331,14 +331,16 @@ namespace xinxinoptix {
     inline void buildIAS(OptixDeviceContext& context, std::vector<OptixInstance, ALLOC<OptixInstance>>& instances,
                          Node& node, bool allow_update, bool prefer_fast_build=false, bool compact=false)
     {
-        const auto requested_build_flags = [compact, allow_update, prefer_fast_build] () {
-            uint flags = prefer_fast_build? OPTIX_BUILD_FLAG_PREFER_FAST_BUILD : OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-            if (compact)
-                flags |= OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
-            if (allow_update)
-                flags |= OPTIX_BUILD_FLAG_ALLOW_UPDATE;
-            return flags;
-        } ();
+        // Match the flags actually used by buildIAS above. Whether this call
+        // may UPDATE is separate from whether the allocation supports UPDATE.
+        const unsigned requested_build_flags = compact?
+            OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE :
+            OPTIX_BUILD_FLAG_ALLOW_UPDATE | (prefer_fast_build?OPTIX_BUILD_FLAG_PREFER_FAST_BUILD:0);
+
+        if(instances.empty()) {
+            node.handle=0;node.count=0;
+            return; // Retain the allocation for a later visibility change.
+        }
 
         const bool update = allow_update
                    && node.count == instances.size()

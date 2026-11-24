@@ -86,7 +86,8 @@ target_include_directories(zeno_cluster_runtime PUBLIC
   "${ZENO_CLUSTER_ROOT}/zenovis/xinxinoptix/include")
 target_link_libraries(zeno_cluster_runtime PUBLIC zeno_cluster_cache zeno_decoded_geometry_cache CUDA::cudart_static CUDA::cuda_driver)
 target_compile_definitions(zeno_cluster_runtime PUBLIC NOMINMAX)
-add_library(zeno_water_surface STATIC WaterSurface.cu)
+add_library(zeno_water_surface STATIC WaterSurface.cu WaterScene.cpp)
+target_compile_features(zeno_water_surface PUBLIC cxx_std_17)
 set_target_properties(zeno_water_surface PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
   CUDA_ARCHITECTURES "75-real;89-real;75-virtual")
 target_link_libraries(zeno_water_surface PUBLIC zeno_cluster_runtime CUDA::cufft)

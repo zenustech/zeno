@@ -222,7 +222,7 @@ struct Params
     zeno_cluster_device::ViewFeedback cluster_feedback;
     unsigned int cluster_debug_view;
     zeno_cluster_device::MaterialLaunch cluster_materials;
-    zeno_water_device::Launch water;
+    zeno_water_device::SceneLaunch water;
     zeno_path_sampling::Launch pathSampling;
 
     int usingHdrSky;

@@ -36,7 +36,7 @@ struct Result {
     uint32_t minLod, maxLod, emptyPlacements, maxPerGas;
     uint32_t uniqueGases, uniqueReferences, cutChanged, padding;
     uint32_t newGases, newReferences, newMaxPerGas, padding2;
-    uint32_t collectedRequests;
+    uint32_t collectedRequests,primaryRequests,selectedPrimary,padding3;
 };
 struct DescriptorPatch {
     uint32_t slot;
@@ -85,6 +85,8 @@ struct Traversal {
     Result *result;
     float eye[3], projection, error;
     ZoomView zoom;
+    const LodCamera* instanceViews{};
+    uint32_t instanceViewCount{};
     uint64_t *primaryFeedback;
     uint64_t feedbackEpoch;
 };

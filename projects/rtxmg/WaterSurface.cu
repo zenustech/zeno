@@ -2,6 +2,7 @@
 #include "WaterTessellation.h"
 #include "WaterSampling.h"
 #include "ClusterRuntime.h"
+#include "ScenePlacements.h"
 #include <optix_stubs.h>
 #include <cufft.h>
 #include <algorithm>
@@ -17,20 +18,23 @@
 
 namespace zeno::water {
 bool Settings::operator==(const Settings& b) const {
-    return std::tie(center,size,wind,absorption,amplitude,period,windSpeed,depth,roughness,ior,time,loopDuration,edgePixels,boundaryWidth,resolution,seed,maxClusters,ellipse)==
-        std::tie(b.center,b.size,b.wind,b.absorption,b.amplitude,b.period,b.windSpeed,b.depth,b.roughness,b.ior,b.time,b.loopDuration,b.edgePixels,b.boundaryWidth,b.resolution,b.seed,b.maxClusters,b.ellipse);
+    return std::tie(center,size,wind,amplitude,period,windSpeed,depth,time,loopDuration,edgePixels,boundaryWidth,resolution,seed,maxClusters,ellipse,sbt,clusterIdBase,objectToGeometry,poolToWorld,instanceTransforms)==
+        std::tie(b.center,b.size,b.wind,b.amplitude,b.period,b.windSpeed,b.depth,b.time,b.loopDuration,b.edgePixels,b.boundaryWidth,b.resolution,b.seed,b.maxClusters,b.ellipse,b.sbt,b.clusterIdBase,b.objectToGeometry,b.poolToWorld,b.instanceTransforms);
 }
 void validate(const Settings& s) {
+    if(!mega::visible(s.objectToGeometry))throw std::runtime_error("Water transform must be nonsingular");
+    if(!mega::visible(s.poolToWorld))throw std::runtime_error("Water pool transform must be nonsingular");
+    for(const auto& m:s.instanceTransforms)if(!mega::visible(m))throw std::runtime_error("Water instance transform must be nonsingular");
+    if(s.clusterIdBase%zeno_water_device::ObjectClusterSpan || s.clusterIdBase/zeno_water_device::ObjectClusterSpan>=zeno_water_device::MaxSceneSurfaces)
+        throw std::runtime_error("Invalid water cluster namespace");
     for(float v:s.center)if(!std::isfinite(v))throw std::runtime_error("Water center must be finite");
     for(float v:s.size)if(!std::isfinite(v)||v<=0)throw std::runtime_error("Water dimensions must be positive");
     for(float v:s.wind)if(!std::isfinite(v))throw std::runtime_error("Water wind direction must be finite");
-    for(float v:s.absorption)if(!std::isfinite(v)||v<0)throw std::runtime_error("Water absorption must be nonnegative");
     if(!std::isfinite(s.time)||!std::isfinite(s.loopDuration)||s.loopDuration<0||!std::isfinite(s.amplitude)||s.amplitude<0||s.amplitude>100||
        !std::isfinite(s.period)||s.period<=0||!std::isfinite(s.depth)||s.depth<=0||
        !std::isfinite(s.windSpeed)||s.windSpeed<0||s.windSpeed>100||
-       !std::isfinite(s.roughness)||s.roughness<0||s.roughness>1||!std::isfinite(s.ior)||s.ior<=1||
        !std::isfinite(s.edgePixels)||s.edgePixels<=0||!std::isfinite(s.boundaryWidth)||s.boundaryWidth<0)
-        throw std::runtime_error("Invalid water spectrum, material or tessellation parameter");
+        throw std::runtime_error("Invalid water spectrum or tessellation parameter");
     if(s.resolution<32||s.resolution>2048||(s.resolution&(s.resolution-1))||!s.maxClusters||s.maxClusters>65536||s.ellipse>1)
         throw std::runtime_error("Water requires a power-of-two FFT from 32 to 2048, 1..65536 clusters, and a rectangle/ellipse footprint");
 }
@@ -72,8 +76,8 @@ bool sameSpectrum(const Settings& a,const Settings& b) {
 bool sameTopology(const Settings& a,const Settings& b) {
     // Wave time, spectrum and shading do not change the projected patch bound.
     // Amplitude does: selection uses a conservative height envelope.
-    return std::tie(a.center,a.size,a.amplitude,a.edgePixels,a.maxClusters,a.ellipse)==
-        std::tie(b.center,b.size,b.amplitude,b.edgePixels,b.maxClusters,b.ellipse);
+    return std::tie(a.center,a.size,a.amplitude,a.edgePixels,a.maxClusters,a.ellipse,a.objectToGeometry,a.poolToWorld,a.instanceTransforms)==
+        std::tie(b.center,b.size,b.amplitude,b.edgePixels,b.maxClusters,b.ellipse,b.objectToGeometry,b.poolToWorld,b.instanceTransforms);
 }
 struct Spectrum {
     Settings settings;
@@ -136,11 +140,11 @@ __global__ void packField(const float2* transformed,float4* field,uint32_t count
         field[i]=make_float4(transformed[i].x/count,transformed[count+i].x/count,transformed[2*count+i].x/count,0.f);
 }
 __global__ void fill(const Patch* patches,const Surface* surfaces,const TessellationStats* stats,float3* vertices,
-                     const CUdeviceptr* templates,OptixClusterAccelBuildInputTemplatesArgs* arguments,uint32_t sbt) {
+                     const CUdeviceptr* templates,OptixClusterAccelBuildInputTemplatesArgs* arguments) {
     const auto id=blockIdx.x;if(id>=stats->clusters)return;const auto p=patches[id];const auto s=surfaces[p.surface];
     for(unsigned v=threadIdx.x;v<GridVertices;v+=blockDim.x)vertices[id*GridVertices+v]=position(s,p,v%(GridSegments+1),v/(GridSegments+1));
     if(!threadIdx.x) {
-        OptixClusterAccelBuildInputTemplatesArgs a{};a.clusterIdOffset=id;a.sbtIndexOffset=sbt;
+        OptixClusterAccelBuildInputTemplatesArgs a{};a.clusterIdOffset=s.clusterIdBase+id;a.sbtIndexOffset=s.sbt;
         a.clusterTemplate=templates[0];a.vertexBuffer=reinterpret_cast<CUdeviceptr>(vertices+id*GridVertices);a.vertexStrideInBytes=sizeof(float3);arguments[id]=a;
     }
 }
@@ -152,18 +156,19 @@ __global__ void gasArguments(const TessellationStats* stats,CUdeviceptr handles,
 
 struct Runtime::Impl {
     struct Bank {
-        Buffer positions,patches,surfaces,arguments,clas,clasHandles,gas,gasHandle,gasArgs,tessellationInputs,tessellationStats,tessellationTotal;
+        Buffer positions,patches,surfaces,arguments,clas,clasHandles,gas,gasHandle,gasArgs,tessellationInputs,tessellationStats,tessellationTotal,instanceTransforms;
         std::vector<std::unique_ptr<Buffer>> fields;
         std::vector<float> fieldTimes,fieldLoopDurations;
         std::vector<uint64_t> fieldGenerations;
         std::vector<Settings> settings;
         Pinned<zeno_water_device::Surface> uploadSurfaces;
         Pinned<TessellationInput> uploadTessellation;
+        Pinned<float> uploadTransforms;
         Pinned<TessellationStats> tessellationResult;
         Pinned<uint64_t> result;
         Event done,read,auxiliary,begin{true},fftEnd{true},tessellationEnd{true},clasEnd{true},gasEnd{true};
         bool wasRead=false,wasAuxiliary=false;
-        uint32_t sbt=0;
+        uint32_t maxSbt=0;
         uint64_t topologyRevision=0;
         size_t reservedClusters=0;
         OptixAccelBufferSizes clasSizes{},gasSizes{};
@@ -230,11 +235,12 @@ struct Runtime::Impl {
 };
 Runtime::Runtime():impl(std::make_unique<Impl>()){}
 Runtime::~Runtime()=default;
-bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Settings>& inputSettings,View view,bool interactive) {
+bool Runtime::update(OptixDeviceContext ctx,uint32_t maxSbt,const std::vector<Settings>& inputSettings,View view,bool interactive) {
     auto& p=*impl;bool changed=false;
     auto settings=inputSettings;
     for(auto& s:settings) {
         validate(s);
+        if(s.sbt>maxSbt)throw std::runtime_error("Water material binding exceeds the declared SBT range");
         if(s.loopDuration>0.f) {
             s.time=std::fmod(s.time,s.loopDuration);
             if(s.time<0.f)s.time+=s.loopDuration;
@@ -247,7 +253,11 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
     if(settings.empty())return false;
     const size_t capacity=std::accumulate(settings.begin(),settings.end(),size_t(0),[](size_t n,const Settings& s){return n+s.maxClusters;});
     if(capacity>262144 || settings.size()>64)throw std::runtime_error("Water exceeds the combined surface/cluster limit");
-    const bool blocking=!interactive || p.active<0 || p.banks[p.active].sbt!=sbt;
+    const bool sameBindings=p.active>=0 && p.banks[p.active].settings.size()==settings.size() &&
+        std::equal(settings.begin(),settings.end(),p.banks[p.active].settings.begin(),[](const auto& a,const auto& b){return a.sbt==b.sbt && a.clusterIdBase==b.clusterIdBase && a.objectToGeometry==b.objectToGeometry;});
+    // Publish a new binding together with its complete CLAS cut, even when the
+    // largest SBT index stays the same (for example, swapping two materials).
+    const bool blocking=!interactive || !sameBindings || p.banks[p.active].maxSbt!=maxSbt;
     if(p.pending>=0) {
         auto status=cudaEventQuery(p.banks[p.pending].done.event);
         if(status==cudaErrorNotReady && !blocking)return false;
@@ -257,7 +267,7 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
     const bool sameView=p.havePlan && p.plannedView.eye==view.eye && p.plannedView.projection==view.projection &&
         p.plannedView.right==view.right && p.plannedView.up==view.up && p.plannedView.front==view.front &&
         p.plannedView.tanX==view.tanX && p.plannedView.tanY==view.tanY;
-    if(sameView && p.plannedSettings==settings && p.banks[p.active].sbt==sbt)return changed;
+    if(sameView && p.plannedSettings==settings && p.banks[p.active].maxSbt==maxSbt)return changed;
     const bool reuseTopology=sameView && p.plannedSettings.size()==settings.size() &&
         std::equal(settings.begin(),settings.end(),p.plannedSettings.begin(),sameTopology);
     if(!reuseTopology)++p.topologyRevision;
@@ -267,7 +277,7 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
     const int next=p.active<0?0:1-p.active;auto& b=p.banks[next];
     if(b.wasRead)check(cudaStreamWaitEvent(p.stream,b.read.event,0));
     if(b.wasAuxiliary)check(cudaStreamWaitEvent(p.stream,b.auxiliary.event,0));
-    p.initializeTemplate(ctx,sbt);
+    p.initializeTemplate(ctx,maxSbt);
     while(p.spectra.size()<settings.size()){p.spectra.emplace_back();p.generations.push_back(0);}
     while(b.fields.size()<settings.size()) {
         b.fields.push_back(std::make_unique<Buffer>());
@@ -280,18 +290,36 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
             p.spectra[i]=std::move(spectrum);++p.generations[i];
         }
     }
-    const bool sbtChanged=b.sbt!=sbt;b.settings=settings;b.sbt=sbt;
+    const bool sbtChanged=b.maxSbt!=maxSbt;b.settings=settings;b.maxSbt=maxSbt;
     b.positions.reserve(capacity*GridVertices*sizeof(float3),p.stream);b.patches.reserve(capacity*sizeof(zeno_water_device::Patch),p.stream);
     b.surfaces.reserve(settings.size()*sizeof(zeno_water_device::Surface),p.stream);b.arguments.reserve(capacity*sizeof(OptixClusterAccelBuildInputTemplatesArgs),p.stream);
     b.clasHandles.reserve(capacity*sizeof(uint64_t),p.stream);b.gasHandle.reserve(sizeof(uint64_t),p.stream);b.gasArgs.reserve(sizeof(OptixClusterAccelBuildInputClustersArgs),p.stream);
     b.uploadSurfaces.reserve(settings.size());b.uploadTessellation.reserve(settings.size());b.tessellationResult.reserve(1);b.result.reserve(1);
     const bool selectTopology=!reuseTopology;
+    size_t transformCount=0;
+    for(const auto& s:settings)transformCount+=s.instanceTransforms.size();
+    if(selectTopology && transformCount) {
+        b.uploadTransforms.reserve(transformCount*12);b.instanceTransforms.reserve(transformCount*12*sizeof(float),p.stream);
+        size_t at=0;
+        for(const auto& s:settings)for(const auto& m:s.instanceTransforms) {
+            const auto world=mega::compose(m,s.objectToGeometry);
+            std::copy(world.begin(),world.end(),b.uploadTransforms.data+at);at+=12;
+        }
+        check(cudaMemcpyAsync(ptr<void>(b.instanceTransforms.p),b.uploadTransforms.data,transformCount*12*sizeof(float),cudaMemcpyHostToDevice,p.stream));
+    }
     unsigned int offset=0,hashCapacity=0;
+    size_t transformOffset=0;
     for(size_t i=0;selectTopology && i<settings.size();++i) {
         const auto& s=settings[i];auto& t=b.uploadTessellation.data[i];t={};
         std::copy(s.center.begin(),s.center.end(),t.center);std::copy(s.size.begin(),s.size.end(),t.size);std::copy(view.eye.begin(),view.eye.end(),t.eye);
         std::copy(view.right.begin(),view.right.end(),t.right);std::copy(view.up.begin(),view.up.end(),t.up);std::copy(view.front.begin(),view.front.end(),t.front);t.tanX=view.tanX;t.tanY=view.tanY;
         t.projection=view.projection;t.amplitude=s.amplitude;t.edgePixels=s.edgePixels;t.ellipse=s.ellipse;t.capacity=s.maxClusters;t.offset=offset;t.hashOffset=hashCapacity;
+        const auto world=mega::compose(s.poolToWorld,s.objectToGeometry);
+        std::copy(world.begin(),world.end(),t.objectToWorld);
+        t.transformed=world!=mega::Identity;
+        t.instanceCount=unsigned(s.instanceTransforms.size());
+        if(t.instanceCount)t.instanceTransforms=ptr<const float>(b.instanceTransforms.p)+transformOffset;
+        transformOffset+=s.instanceTransforms.size()*12;
         t.hashSize=1;while(t.hashSize<2*s.maxClusters)t.hashSize*=2;
         offset+=s.maxClusters;hashCapacity+=t.hashSize;
     }
@@ -315,8 +343,12 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
             b.fieldTimes[i]=s.time;b.fieldLoopDurations[i]=s.loopDuration;b.fieldGenerations[i]=p.generations[i];
         }
         auto& d=b.uploadSurfaces.data[i];d={};d.field=ptr<const float4>(b.fields[i]->p);
-        std::copy(s.center.begin(),s.center.end(),d.center);std::copy(s.size.begin(),s.size.end(),d.size);std::copy(s.absorption.begin(),s.absorption.end(),d.absorption);
-        d.period=s.period;d.amplitude=s.amplitude;d.roughness=s.roughness;d.ior=s.ior;d.boundaryWidth=s.boundaryWidth;d.resolution=s.resolution;d.ellipse=s.ellipse;
+        std::copy(s.center.begin(),s.center.end(),d.center);std::copy(s.size.begin(),s.size.end(),d.size);
+        d.period=s.period;d.amplitude=s.amplitude;d.boundaryWidth=s.boundaryWidth;d.resolution=s.resolution;d.ellipse=s.ellipse;d.sbt=s.sbt;
+        std::copy(s.objectToGeometry.begin(),s.objectToGeometry.end(),d.objectToGeometry);
+        const auto inverse=mega::inverse(s.objectToGeometry);std::copy(inverse.begin(),inverse.end(),d.geometryToObject);
+        d.clusterIdBase=s.clusterIdBase;d.flipWinding=mega::determinant(s.objectToGeometry)<0.;
+        d.transformed=s.objectToGeometry!=mega::Identity;
     }
     b.fftEnd.record(p.stream);
     unsigned int fillClusters=unsigned(capacity);
@@ -338,11 +370,11 @@ bool Runtime::update(OptixDeviceContext ctx,uint32_t sbt,const std::vector<Setti
     b.tessellationEnd.record(p.stream);
     check(cudaMemcpyAsync(ptr<void>(b.surfaces.p),b.uploadSurfaces.data,settings.size()*sizeof(zeno_water_device::Surface),cudaMemcpyHostToDevice,p.stream));
     fill<<<fillClusters,128,0,p.stream>>>(ptr<const zeno_water_device::Patch>(b.patches.p),ptr<const zeno_water_device::Surface>(b.surfaces.p),ptr<const TessellationStats>(b.tessellationTotal.p),
-        ptr<float3>(b.positions.p),ptr<const CUdeviceptr>(p.templateHandle.p),ptr<OptixClusterAccelBuildInputTemplatesArgs>(b.arguments.p),sbt);
+        ptr<float3>(b.positions.p),ptr<const CUdeviceptr>(p.templateHandle.p),ptr<OptixClusterAccelBuildInputTemplatesArgs>(b.arguments.p));
     check(cudaGetLastError());
     OptixClusterAccelBuildInput input{};input.type=OPTIX_CLUSTER_ACCEL_BUILD_TYPE_CLUSTERS_FROM_TEMPLATES;
     input.triangles.flags=OPTIX_CLUSTER_ACCEL_BUILD_FLAG_PREFER_FAST_TRACE;input.triangles.maxArgCount=uint32_t(capacity);input.triangles.vertexFormat=OPTIX_VERTEX_FORMAT_FLOAT3;
-    input.triangles.maxSbtIndexValue=sbt;input.triangles.maxUniqueSbtIndexCountPerArg=1;
+    input.triangles.maxSbtIndexValue=maxSbt;input.triangles.maxUniqueSbtIndexCountPerArg=1;
     input.triangles.maxTriangleCountPerArg=GridSegments*GridSegments*2;input.triangles.maxVertexCountPerArg=GridVertices;
     if(capacity>b.reservedClusters || sbtChanged) {
         check(optixClusterAccelComputeMemoryUsage(ctx,OPTIX_CLUSTER_ACCEL_BUILD_MODE_IMPLICIT_DESTINATIONS,&input,&b.clasSizes));
@@ -378,7 +410,7 @@ Statistics Runtime::statistics() const {
     s.bytes=p.scratch.bytes+p.templateData.bytes+p.templateHandle.bytes+p.templateArgs.bytes+
         p.workA.bytes+p.workB.bytes+p.workCut.bytes+p.hashKeys.bytes+p.hashValues.bytes+p.split.bytes;
     for(const auto& b:p.banks) {
-        s.bytes+=b.positions.bytes+b.patches.bytes+b.surfaces.bytes+b.arguments.bytes+b.clas.bytes+b.clasHandles.bytes+b.gas.bytes+b.gasHandle.bytes+b.gasArgs.bytes+b.tessellationInputs.bytes+b.tessellationStats.bytes+b.tessellationTotal.bytes;
+        s.bytes+=b.positions.bytes+b.patches.bytes+b.surfaces.bytes+b.arguments.bytes+b.clas.bytes+b.clasHandles.bytes+b.gas.bytes+b.gasHandle.bytes+b.gasArgs.bytes+b.tessellationInputs.bytes+b.tessellationStats.bytes+b.tessellationTotal.bytes+b.instanceTransforms.bytes;
         for(const auto& field:b.fields)s.bytes+=field->bytes;
     }
     for(const auto& spectrum:p.spectra)if(spectrum)s.bytes+=spectrum->initial.bytes+spectrum->transform.bytes+spectrum->workspace.bytes;

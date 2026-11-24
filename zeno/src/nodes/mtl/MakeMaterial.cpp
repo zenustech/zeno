@@ -144,7 +144,7 @@ struct ExtractMaterialShader : zeno::INode
             auto list = get_input2<zeno::ListObject>("object");
             for (auto p: list->arr) {
                 auto np = std::dynamic_pointer_cast<PrimitiveObject>(p);
-                np->userData().setLiterial("mtlid", std::move(mtlid));
+                np->userData().setLiterial("mtlid", mtlid);
             }
             set_output("object", std::move(list));
             return;

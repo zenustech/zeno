@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include "XAS.h"
 
 #include <memory>
@@ -112,7 +113,10 @@ struct SceneNodeT {
     OptixTraversableHandle handle{};
     uint32_t count{};
     uint32_t frame{UINT32_MAX};
+    bool valid=false; // Viewport frame -1 is valid input, never a dirty sentinel.
+    bool gpuDirty=false; // A fused root can retain its local layout without building a second IAS.
     uint8_t depth{};
+    std::optional<OptixInstance> singleChild;
 };
 
 // OptiX IAS UPDATE permits instance-field changes, but not a changed sequence
@@ -175,6 +179,8 @@ struct SceneTypes {
     using Collector = InstanceCollectorT<ALLOC>;
 };
 
-using DefaultSceneTypes = SceneTypes<std::allocator>;
+// Group IAS uploads must remain asynchronous even when the scene stream is
+// waiting for previous rays. Retain pinned instance arrays and their copy fence.
+using DefaultSceneTypes = SceneTypes<CudaPinnedAllocator>;
 using SceneNode = DefaultSceneTypes::Node;
 using InstanceCollector = DefaultSceneTypes::Collector;

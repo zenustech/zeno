@@ -11,15 +11,24 @@ static void check(cudaError_t r) {
     if (r)
         throw std::runtime_error(cudaGetErrorString(r));
 }
-__device__ float metric(const Group &g, const Placement &p, const Traversal &t) {
+__device__ float metricCamera(const Group &g,const Placement &p,const float* eye,float projection,const ZoomView& zoom) {
     const float *m = p.transform;
     const float *b = g.bounds;
-    float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - t.eye[0];
-    float y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - t.eye[1];
-    float z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - t.eye[2];
-    const float distance = sqrtf(x * x + y * y + z * z), radius = b[3] * p.scale+t.zoom.stereoRadius;
+    float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - eye[0];
+    float y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - eye[1];
+    float z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - eye[2];
+    const float distance = sqrtf(x * x + y * y + z * z), radius = b[3] * p.scale+zoom.stereoRadius;
     return b[4] * p.scale / fmaxf(distance - radius, .01f) *
-           projectionForSphere(t.zoom, x, y, z, radius, distance, t.projection);
+           projectionForSphere(zoom, x, y, z, radius, distance, projection);
+}
+__device__ float metric(const Group &g, const Placement &p, const Traversal &t) {
+    if(!t.instanceViewCount)return metricCamera(g,p,t.eye,t.projection,t.zoom);
+    float error=0;
+    for(uint32_t i=0;i<t.instanceViewCount;++i) {
+        const auto& view=t.instanceViews[i];
+        error=fmaxf(error,metricCamera(g,p,view.eye,view.projection,view.zoom));
+    }
+    return error;
 }
 // One warp per resident group/placement. A resident group can only be admitted
 // after all its parents, and parents cannot be retired while children remain.
@@ -210,12 +219,14 @@ __global__ void collectPriorityRequests(const uint64_t* stamps,uint32_t groups,u
     if(uint32_t(value>>32)!=stamp)return;
     const uint32_t rank=uint32_t(value),offset=atomicAdd(&result->collectedRequests,1u);
     if(offset<capacity)keys[offset]=(uint64_t(rank)<<32)|(0xffffffffu-id);
+    if(rank>>31)atomicAdd(&result->primaryRequests,1u);
 }
-__global__ void publishPriorityRequests(const uint64_t* keys,uint32_t count,Request* output) {
+__global__ void publishPriorityRequests(const uint64_t* keys,uint32_t count,Request* output,Result* result) {
     const uint32_t i=blockIdx.x*blockDim.x+threadIdx.x;
     if(i>=count||i>=MaxRequests)return;
     const auto key=keys[i];const uint32_t rank=uint32_t(key>>32);
     output[i]={0xffffffffu-uint32_t(key),__uint_as_float(rank&0x7fffffffu),rank>>31};
+    if(rank>>31)atomicAdd(&result->selectedPrimary,1u);
 }
 size_t requestSortBytes(uint32_t count) {
     size_t bytes=0;
@@ -224,10 +235,10 @@ size_t requestSortBytes(uint32_t count) {
 }
 void selectPriorityRequests(const uint64_t* stamps,uint32_t groups,uint32_t stamp,uint32_t count,
     Request* output,Result* result,uint64_t* keys,uint64_t* sorted,void* scratch,size_t bytes,cudaStream_t stream) {
-    check(cudaMemsetAsync(&result->collectedRequests,0,sizeof(uint32_t),stream));
+    check(cudaMemsetAsync(&result->collectedRequests,0,3*sizeof(uint32_t),stream));
     collectPriorityRequests<<<(groups+255)/256,256,0,stream>>>(stamps,groups,stamp,count,keys,result);
     check(cub::DeviceRadixSort::SortKeysDescending(scratch,bytes,keys,sorted,count,0,64,stream));
-    publishPriorityRequests<<<(std::min(count,MaxRequests)+255)/256,256,0,stream>>>(sorted,count,output);
+    publishPriorityRequests<<<(std::min(count,MaxRequests)+255)/256,256,0,stream>>>(sorted,count,output,result);
     check(cudaGetLastError());
 }
 void traverse(const Traversal &t, void *scratch, size_t bytes, cudaStream_t stream) {

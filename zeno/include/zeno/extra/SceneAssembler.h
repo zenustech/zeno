@@ -449,6 +449,9 @@ struct SceneObject : IObjectClone<SceneObject> {
                 for (const auto & child: scene_tree[entry].children) {
                     RenderGroups[entry][child].clear();
                 }
+                for (const auto & mesh: scene_tree[entry].meshes) {
+                    RenderGroups[entry][mesh].clear();
+                }
             }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
@@ -558,8 +561,11 @@ static std::shared_ptr <SceneObject> get_scene_tree_from_list2(std::shared_ptr <
         if (resource_type == "SceneTree") {
             scene_tree->from_json(ud.get2<std::string>("json"));
         }
-        else if (resource_type == "Mesh") {
+        else if (resource_type == "Mesh" || resource_type == "WaterSurface" || resource_type == "ClusterAsset") {
             auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
+            // Prefixing a scene must not rename the source descriptor retained
+            // by an ONCE node or by a different scene placement.
+            if(resource_type!="Mesh")prim=std::make_shared<PrimitiveObject>(*prim);
             auto object_name = ud.get2<std::string>("ObjectName");
             scene_tree->prim_list[object_name] = prim;
         }

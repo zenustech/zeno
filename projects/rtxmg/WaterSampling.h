@@ -2,6 +2,16 @@
 #include "WaterDevice.h"
 
 namespace zeno_water_device {
+__device__ __forceinline__ float3 transformPoint(const float* m,float3 p) {
+    return make_float3(m[0]*p.x+m[1]*p.y+m[2]*p.z+m[3],m[4]*p.x+m[5]*p.y+m[6]*p.z+m[7],m[8]*p.x+m[9]*p.y+m[10]*p.z+m[11]);
+}
+__device__ __forceinline__ float3 transformVector(const float* m,float3 p) {
+    return make_float3(m[0]*p.x+m[1]*p.y+m[2]*p.z,m[4]*p.x+m[5]*p.y+m[6]*p.z,m[8]*p.x+m[9]*p.y+m[10]*p.z);
+}
+__device__ __forceinline__ float3 transformNormal(const float* inverse,float3 n) {
+    return make_float3(inverse[0]*n.x+inverse[4]*n.y+inverse[8]*n.z,
+        inverse[1]*n.x+inverse[5]*n.y+inverse[9]*n.z,inverse[2]*n.x+inverse[6]*n.y+inverse[10]*n.z);
+}
 struct Sample { float height, dx, dz; };
 __device__ __forceinline__ void cubicWeights(float t,float* w) {
     const float t2=t*t,t3=t2*t;
@@ -45,10 +55,12 @@ __device__ __forceinline__ float2 domain(const Patch& p,unsigned int i,unsigned 
     return make_float2(float(p.x*GridSegments+i)*scale,float(p.y*GridSegments+j)*scale);
 }
 __device__ __forceinline__ float3 position(const Surface& s,const Patch& p,unsigned int i,unsigned int j) {
+    if(s.flipWinding){const auto swap=i;i=j;j=swap;}
     const auto uv=domain(p,i,j);
     float x=2.f*uv.x-1.f,z=1.f-2.f*uv.y;
     if(s.ellipse){const float a=x;x*=sqrtf(fmaxf(0.f,1.f-z*z*.5f));z*=sqrtf(fmaxf(0.f,1.f-a*a*.5f));}
     x=s.center[0]+x*s.size[0]*.5f;z=s.center[2]+z*s.size[1]*.5f;
-    return make_float3(x,s.center[1]+sample(s,x,z).height,z);
+    const auto point=make_float3(x,s.center[1]+sample(s,x,z).height,z);
+    return s.transformed?transformPoint(s.objectToGeometry,point):point;
 }
 }

@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <atomic>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -51,7 +52,9 @@
 #include "LightsWrapper.h"
 #include "ClusterRuntime.h"
 #include "ClusterMaterials.h"
-#include "WaterSurface.h"
+#include "WaterScene.h"
+#include "ScenePlacements.h"
+#include "SceneDependencies.h"
 
 #include <parallel_hashmap/phmap.h>
 
@@ -78,9 +81,48 @@ private:
 
     nlohmann::json sceneJson;
     std::optional<std::string> sceneJsonSource;
+    std::optional<std::string> pendingSceneSource;
+    struct PendingMatrices {std::vector<m3r4c> matrices;std::vector<int> ids;};
+    std::map<std::string,PendingMatrices> pendingMatrices;
+    static std::mutex& registrationMutex() {static std::mutex mutex;return mutex;}
     bool candidateBindingsDirty {true};
     bool sceneGraphDirty {true};
-    std::unordered_map<std::string, std::vector<std::string>> dynamicMatrixDependencies;
+    zeno::scene::Dependencies sceneDependencies;
+    struct GeometryPublication {
+        OptixTraversableHandle handle=0;
+        uint64_t version=0;
+        uint8_t depth=0;
+    };
+    std::map<std::string,GeometryPublication> streamedGeometry;
+    std::set<std::pair<bool,std::string>> mutableGroups;
+    struct OwnedGroup {SceneNode* node;std::string name;bool isStatic;};
+    std::unordered_map<OptixTraversableHandle,OwnedGroup> ownedGroupHandles;
+    SceneNode* fusedRootGroup=nullptr;
+    std::string fusedRootName;
+    bool fusedRootStatic=false;
+    bool skipFusedRootBuild=false,sourceTopologyDirty=true;
+    bool rootBoundsDirty=true;
+    std::optional<m3r4c> rootCamera;
+
+    void refreshMutableGroups() {
+        mutableGroups.clear();
+        for(const auto& [name,_]:streamedGeometry)
+            for(const auto& group:sceneDependencies.ancestors(name))mutableGroups.emplace(group.isStatic,group.name);
+    }
+    void publishGeometry(const std::string& name,OptixTraversableHandle handle,uint64_t version,uint8_t depth) {
+        auto inserted=streamedGeometry.try_emplace(name);
+        auto& previous=inserted.first->second;
+        if(!inserted.second && previous.handle==handle && previous.version==version && previous.depth==depth)return;
+        sourceTopologyDirty|=inserted.second || bool(previous.handle)!=bool(handle) || previous.depth!=depth;
+        previous={handle,version,depth};
+        sceneDependencies.geometryChanged(name);rootBoundsDirty=true;
+        if(inserted.second)refreshMutableGroups();
+    }
+    void removePublishedGeometry(const std::string& name) {
+        if(!streamedGeometry.erase(name))return;
+        sourceTopologyDirty=true;
+        sceneDependencies.geometryChanged(name);rootBoundsDirty=true;refreshMutableGroups();
+    }
 
     phmap::parallel_node_hash_set_m<std::string> matrix_dirty;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<m3r4c>> matrix_map{};
@@ -116,36 +158,95 @@ public:
     zeno::cluster::RuntimeSettings clusterSettings;
     bool clusterRootDirty = false;
     bool clusterUnloadPending = false;
+    std::string clusterObjectName;
+    std::vector<m3r4c> clusterPlacements;
     std::map<std::string,zeno::water::Settings> waterSettings;
+    std::map<std::string,std::string> waterMaterialNames;
+    std::map<std::string,std::string> waterObjectNames;
+    std::map<std::string,std::vector<m3r4c>> waterPlacements;
+    zeno::mega::PlacementInvalidation placementsDirty;
+    bool waterVisible=false;
+    bool streamPlacementsChanged=false;
     std::set<std::string> waterUnloadPending;
-    std::unique_ptr<zeno::water::Runtime> water;
+    std::unique_ptr<zeno::water::SceneRuntime> water;
     bool waterRootDirty=false;
-    void preloadWater(const std::string& key,const Json& json) {
+    void preloadWater(const std::string& key,const Json& json,const std::string& material,const std::string& objectName) {
         zeno::water::Settings s;
         s.center=json.at("center").get<std::array<float,3>>();s.size=json.at("size").get<std::array<float,2>>();
-        s.wind=json.at("wind").get<std::array<float,2>>();s.absorption=json.at("absorption").get<std::array<float,3>>();
+        s.wind=json.at("wind").get<std::array<float,2>>();
         s.amplitude=json.at("amplitude");s.period=json.at("period");s.windSpeed=json.at("windSpeed");s.depth=json.at("depth");
-        s.roughness=json.at("roughness");s.ior=json.at("ior");s.time=json.at("time");s.edgePixels=json.at("edgePixels");
+        s.time=json.at("time");s.edgePixels=json.at("edgePixels");
         s.loopDuration=json.value("loopDuration",0.f);
         s.boundaryWidth=json.at("boundaryWidth");s.resolution=json.at("resolution");s.seed=json.at("seed");
         s.maxClusters=json.at("maxClusters");s.ellipse=json.at("ellipse");zeno::water::validate(s);
         // Graphics constructors can register several water nodes in parallel.
         static std::mutex registrationMutex;
         const std::lock_guard<std::mutex> registration(registrationMutex);
-        waterSettings[key]=s;waterUnloadPending.erase(key);
+        if(waterObjectNames.find(key)==waterObjectNames.end() || waterObjectNames.at(key)!=objectName)placementsDirty=true;
+        waterObjectNames[key]=objectName;
+        waterSettings[key]=s;waterMaterialNames[key]=material;waterUnloadPending.erase(key);
         maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
     }
     void finalizeWaterRegistration() {
-        for(const auto& key:waterUnloadPending)waterSettings.erase(key);
+        // Descriptor keys can change on a new graph frame while the named GPU
+        // resource survives. Retire publications only after resolving all keys.
+        for(const auto& key:waterUnloadPending){waterSettings.erase(key);waterMaterialNames.erase(key);waterObjectNames.erase(key);placementsDirty=true;}
         waterUnloadPending.clear();
-        if(waterSettings.empty() && water){water.reset();waterRootDirty=true;}
+        std::vector<std::string> removed;
+        for(const auto& [name,_]:streamedGeometry)if(name!=clusterObjectName &&
+            std::none_of(waterObjectNames.begin(),waterObjectNames.end(),[&](const auto& item){return item.second==name;}))removed.push_back(name);
+        for(const auto& name:removed)removePublishedGeometry(name);
+        if(waterSettings.empty() && water){water.reset();waterRootDirty=true;waterVisible=false;}
     }
+    bool isStreamedGeometry(const std::string& name) const {
+        if(clusterAsset && name==clusterObjectName)return true;
+        for(const auto& [_,waterName]:waterObjectNames)if(waterName==name)return true;
+        return false;
+    }
+    bool streamedGeometryInScene(const std::string& name) const {return sceneDependencies.references(name);}
+    void clearScenePublications() {
+        streamedGeometry.clear();mutableGroups.clear();rootCamera.reset();rootBoundsDirty=true;
+        fusedRootGroup=nullptr;fusedRootName.clear();sourceTopologyDirty=true;
+        // A renderer can be destroyed while the unchanged logical scene remains.
+        sceneDependencies.compile(sceneJson);
+        for(auto* cache:{&nodeCache,&nodeCacheStatic})for(auto& [_,node]:*cache)if(node)node->valid=false;
+    }
+    bool isStreamedBinding(const std::string& key) const {
+        if(!sceneJson.contains(brikey) || !sceneJson.at(brikey).contains(key))return false;
+        return isStreamedGeometry(sceneJson.at(brikey).at(key).value("Geom",std::string{}));
+    }
+    void resolveStreamPlacements() {
+        finalizeSceneRegistration();
+        if(!placementsDirty.exchange(false))return;
+        std::set<std::string> names;
+        if(clusterAsset)names.insert(clusterObjectName);
+        for(const auto& [_,name]:waterObjectNames)names.insert(name);
+        const auto resolved=zeno::mega::resolvePlacements(sceneJson,names,[&](const std::string& key)->const std::vector<m3r4c>* {
+            const auto found=matrix_map.find(key);return found==matrix_map.end()?nullptr:&found->second;
+        });
+        const auto next=clusterAsset?resolved.at(clusterObjectName).world:std::vector<m3r4c>{};
+        if(next!=clusterPlacements){clusterPlacements=next;clusterRootDirty=true;streamPlacementsChanged=true;}
+        std::map<std::string,std::vector<m3r4c>> nextWater;
+        for(const auto& [key,name]:waterObjectNames)nextWater[key]=resolved.at(name).world;
+        if(nextWater!=waterPlacements){waterPlacements=std::move(nextWater);streamPlacementsChanged=true;}
+    }
+    const std::vector<m3r4c>& clusterScenePlacements() {resolveStreamPlacements();return clusterPlacements;}
+    bool consumeStreamPlacementChanges() {const auto changed=streamPlacementsChanged;streamPlacementsChanged=false;return changed;}
     bool updateWater(const Params& params,bool interactive) {
         if(waterSettings.empty())return false;
-        if(!water)water=std::make_unique<zeno::water::Runtime>();
-        std::vector<zeno::water::Settings> settings;settings.reserve(waterSettings.size());
-        for(const auto& entry:waterSettings)settings.push_back(entry.second);
-        const auto shader=shader_indice_table.at(std::make_tuple(std::string(zeno::water::MaterialShaderName),ShaderMark::Mesh));
+        resolveStreamPlacements();
+        std::vector<zeno::water::SceneSurface> settings;settings.reserve(waterSettings.size());
+        uint32_t maxSbt=0;
+        for(const auto& [key,surface]:waterSettings) {
+            auto s=surface;
+            s.sbt=shader_indice_table.at(std::make_tuple(zeno::water::shaderKey(waterMaterialNames.at(key)),ShaderMark::Mesh));
+            maxSbt=std::max(maxSbt,s.sbt);
+            const auto& placements=waterPlacements.at(key);
+            s.poolToWorld=placements.empty()?IdentityMatrix:placements.front();
+            if(placements.size()>1)s.instanceTransforms=placements;
+            settings.push_back({waterObjectNames.at(key),std::move(s),!placements.empty()});
+        }
+        if(!water)water=std::make_unique<zeno::water::SceneRuntime>();
         const float projection=params.physical_camera_panorama_camera?float(params.height)/3.14159265358979323846f:
             float(params.height)*params.cam.focal_length/std::max(params.cam.height,.001f);
         const auto& camera=params.cam;
@@ -155,19 +256,25 @@ public:
             view.tanX=camera.width/(2.f*camera.focal_length)*(1.f+2.f*std::abs(camera.horizontal_shift));
             view.tanY=camera.height/(2.f*camera.focal_length)*(1.f+2.f*std::abs(camera.vertical_shift));
         }
-        const bool changed=water->update(OptixUtil::context,shader,settings,view,interactive);
+        const bool changed=water->update(OptixUtil::context,maxSbt,settings,view,interactive);
+        waterVisible=false;
+        for(const auto& source:water->publications()) {
+            publishGeometry(source.key,source.handle,source.version,1);
+            waterVisible|=source.handle!=0;
+        }
         waterRootDirty|=changed;return changed;
     }
     bool canUseOpaqueClusterShadows() const {
         // Legacy geometry can require node-graph opacity, custom intersections
         // or OMM handling. Keep its established enforced-any-hit trace path.
-        // Water keeps any-hit enabled in its grid template and ignores
-        // transmitted intersections, so it can share this fast shadow trace.
+        // Structured water keeps any-hit enabled in its grid template; its
+        // bound callable determines opacity and shadow transmission.
         return geoTypeMap.empty() && shader_indice_table.count(
             std::make_tuple(std::string(zeno::cluster::MaterialShaderName),ShaderMark::Mesh));
     }
     void preloadClusterAsset(const std::string& key,const std::string& path,const std::string& revision,
-                             zeno::cluster::RuntimeSettings settings) {
+                             zeno::cluster::RuntimeSettings settings,const std::string& objectName) {
+        if(clusterObjectName!=objectName){removePublishedGeometry(clusterObjectName);clusterObjectName=objectName;placementsDirty=true;}
         if(clusterAsset && clusterAssetManifest==path && clusterAssetRevision==revision &&
            clusterSettings.geometryBytes==settings.geometryBytes && clusterSettings.clasBytes==settings.clasBytes &&
            clusterSettings.pixelError==settings.pixelError && clusterSettings.loadsPerFrame==settings.loadsPerFrame &&
@@ -177,9 +284,11 @@ public:
         }
         auto next=std::make_shared<zeno::cluster::Runtime>(std::filesystem::u8path(path),settings);
         clusterMaterials.reset();clusterAsset=std::move(next);
+        removePublishedGeometry(clusterObjectName);
         clusterAssetKey=key;clusterAssetManifest=path;clusterAssetRevision=revision;clusterSettings=settings;
         clusterUnloadPending=false;
         clusterRootDirty=true;
+        placementsDirty=true;
         maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
     }
     void finalizeClusterAssetRegistration() {
@@ -187,11 +296,15 @@ public:
         // Delay deletion until both passes finish so a refreshed reference can
         // retain its renderer-owned residency instead of reloading every frame.
         if(!clusterUnloadPending)return;
+        removePublishedGeometry(clusterObjectName);
         clusterMaterials.reset();clusterAsset.reset();clusterAssetKey.clear();clusterAssetManifest.clear();clusterAssetRevision.clear();
+        clusterObjectName.clear();placementsDirty=true;
         clusterRootDirty=true;clusterUnloadPending=false;
     }
     bool updateClusters(const Params& params,bool interactive,zeno::cluster::LodControl control = {}) {
         if(!clusterAsset)return false;
+        resolveStreamPlacements();
+        if(clusterPlacements.empty())return false;
         if(clusterSettings.materials && !clusterMaterials) {
             clusterMaterials=std::make_unique<zeno::cluster::Materials>(std::filesystem::u8path(clusterAssetManifest),clusterSettings.textureMiB,clusterSettings.hostTextureMiB);
             clusterAsset->setOpaqueShadowPolicy(clusterMaterials->opaqueShadowPolicy());
@@ -216,15 +329,70 @@ public:
         if (const char* timing = std::getenv("ZENO_OPTIX_RENDER_TIMING"); timing && timing[0] == '1')
             zeno::log_info("CLAS view: eye={},{},{}, projection={}",
                 params.cam.eye.x, params.cam.eye.y, params.cam.eye.z, projection);
+        zeno::cluster::LodCamera base{{params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,zoom};
+        std::vector<zeno::cluster::LodCamera> views;views.reserve(clusterPlacements.size());
+        for(const auto& world:clusterPlacements)views.push_back(cameraInAsset(world,base));
+        const auto& primary=views.front();
         const bool changed=clusterAsset->update(OptixUtil::context,index,
-                                              {params.cam.eye.x,params.cam.eye.y,params.cam.eye.z},projection,interactive,zoom,control);
+            {primary.eye[0],primary.eye[1],primary.eye[2]},primary.projection,interactive,primary.zoom,control,
+            views.size()>1?views:std::vector<zeno::cluster::LodCamera>{});
+        publishGeometry(clusterObjectName,clusterAsset->handle(),clusterAsset->stats().sceneVersion,2);
         clusterRootDirty|=changed;return changed;
+    }
+    static zeno::cluster::LodCamera cameraInAsset(const m3r4c& world,const zeno::cluster::LodCamera& base) {
+        if(world==IdentityMatrix)return base;
+        const auto inverse=zeno::mega::inverse(world);
+        auto camera=base;const auto eye=zeno::mega::point(inverse,{base.eye[0],base.eye[1],base.eye[2]});
+        std::copy(eye.begin(),eye.end(),camera.eye);
+        const auto norm=[](const m3r4c& m) {
+            float largest=0;
+            for(unsigned i=0;i<3;++i) {
+                float row=0;for(unsigned j=0;j<3;++j) {
+                    float value=0;for(unsigned k=0;k<3;++k)value+=m[k*4+i]*m[k*4+j];
+                    row+=std::abs(value);
+                }
+                largest=std::max(largest,row);
+            }
+            return std::sqrt(largest);
+        };
+        const float inverseScale=norm(inverse),condition=std::max(1.f,norm(world)*inverseScale);
+        camera.projection*=condition;
+        if(base.zoom.panoramaVertical>0.f) {
+            float length2=0;
+            for(unsigned i=0;i<3;++i) {
+                camera.zoom.panoramaUp[i]=0;
+                for(unsigned j=0;j<3;++j)camera.zoom.panoramaUp[i]+=inverse[i*4+j]*base.zoom.panoramaUp[j];
+                length2+=camera.zoom.panoramaUp[i]*camera.zoom.panoramaUp[i];
+            }
+            for(float& v:camera.zoom.panoramaUp)v/=std::sqrt(length2);
+            camera.zoom.panoramaVertical*=condition*condition;camera.zoom.panoramaHorizontal*=condition*condition;
+            camera.zoom.stereoRadius*=inverseScale;
+        } else if(condition>1.0001f) {
+            // A conservative omnidirectional metric avoids under-refinement
+            // when a nonuniform parent transform distorts the viewing cone.
+            camera.zoom={};
+        } else if(base.zoom.peripheralProjection>0.f) {
+            for(unsigned p=0;p<4;++p) {
+                float length2=0;
+                for(unsigned i=0;i<3;++i) {
+                    camera.zoom.planes[p][i]=0;
+                    for(unsigned j=0;j<3;++j)camera.zoom.planes[p][i]+=world[j*4+i]*base.zoom.planes[p][j];
+                    length2+=camera.zoom.planes[p][i]*camera.zoom.planes[p][i];
+                }
+                for(float& v:camera.zoom.planes[p])v/=std::sqrt(length2);
+            }
+        }
+        return camera;
     }
     uint32_t frameid;
     phmap::parallel_flat_hash_map_m<std::string, std::pair<glm::vec3, glm::vec3>> mesh_bbox;
     phmap::parallel_flat_hash_map_m<std::string, std::vector<glm::mat4>> glm_matrix_map;
     phmap::parallel_node_hash_map_m<std::string, std::shared_ptr<VolumeWrapper>> _vdb_grids_cached;
 
+    bool shaderIndexMatches(const shader_key_t& key,size_t index) const {
+        const auto current=shader_indice_table.find(key);
+        return current!=shader_indice_table.end() && current->second==index;
+    }
     inline void load_shader_indice_table(std::unordered_map<shader_key_t, uint16_t, ByShaderKey> &table) {
         const bool unchanged = table.size() == shader_indice_table.size()
             && std::all_of(table.begin(), table.end(), [&](const auto& item) {
@@ -285,16 +453,8 @@ public:
     }
 
     inline void load_matrix_list(std::string key, std::vector<m3r4c>& matrix_list, std::vector<int> instance_ids) {
-        matrix_map[key] = std::move(matrix_list);
-        matrix_dirty.insert(key);
-        if (!instance_ids.empty()) {
-            instance_ids_map[key] = std::move(instance_ids);
-        } else {
-            // Frame data may stop supplying custom IDs. Do not retain a
-            // shorter vector from an earlier frame and index through it while
-            // rebuilding the IAS.
-            instance_ids_map.erase(key);
-        }
+        const std::lock_guard<std::mutex> lock(registrationMutex());
+        pendingMatrices[std::move(key)]={std::move(matrix_list),std::move(instance_ids)};
     }    
 
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
@@ -309,21 +469,36 @@ public:
     std::vector<std::string> cur_link;
 
     inline void preload_scene(const std::string& jsonString) {
-        if (sceneJsonSource && *sceneJsonSource == jsonString) return;
+        const std::lock_guard<std::mutex> lock(registrationMutex());
+        pendingSceneSource=jsonString;
+    }
 
-        try {
-            auto nextScene = nlohmann::json::parse(jsonString);
-            sceneJsonSource = jsonString;
-            if (nextScene == sceneJson) return;
-
-            sceneJson = std::move(nextScene);
-            rebuildDynamicMatrixDependencies();
-            candidateBindingsDirty = true;
-            sceneGraphDirty = true;
+    void finalizeSceneRegistration() {
+        // Both GraphicsManager insertion passes finish before this boundary.
+        // Intermediate empty descriptors must not invalidate the retained AS.
+        const std::lock_guard<std::mutex> lock(registrationMutex());
+        if(pendingSceneSource) {
+            auto source=std::move(*pendingSceneSource);pendingSceneSource.reset();
+            if(!sceneJsonSource || *sceneJsonSource!=source)try {
+                auto next=nlohmann::json::parse(source);
+                if(next!=sceneJson) {
+                    zeno::scene::Dependencies dependencies;dependencies.compile(next);
+                    sceneJson=std::move(next);sceneDependencies=std::move(dependencies);
+                    refreshMutableGroups();placementsDirty=true;
+                    candidateBindingsDirty=true;sceneGraphDirty=true;
+                }
+                sceneJsonSource=std::move(source);
+            }catch(const std::exception& error){zeno::log_error("Invalid render scene: {}",error.what());}
         }
-        catch (...) {
-            zeno::log_error("Can not parse json in preload_scene");
+        for(auto& [key,next]:pendingMatrices) {
+            const auto previous=matrix_map.find(key);const auto ids=instance_ids_map.find(key);
+            if(previous!=matrix_map.end() && previous->second==next.matrices &&
+                (next.ids.empty()?ids==instance_ids_map.end():ids!=instance_ids_map.end() && ids->second==next.ids))continue;
+            matrix_map[key]=std::move(next.matrices);
+            if(next.ids.empty())instance_ids_map.erase(key);else instance_ids_map[key]=std::move(next.ids);
+            matrix_dirty.insert(key);placementsDirty=true;
         }
+        pendingMatrices.clear();
     }
 
     inline void updateGeoType(const std::string& key, ShaderMark mark) {
@@ -488,12 +663,6 @@ public:
     };
 
 private:
-    struct TreeLookPolicy {
-        bool collapseSingleChild{};
-        bool allowUpdate{};
-        bool preferFastBuild{};
-    };
-
     static m3r4c composeAffine(const m3r4c& parent, const m3r4c& local) {
         m3r4c result{};
         for (int row = 0; row < 3; ++row) {
@@ -513,6 +682,7 @@ private:
 
     static void appendInstance(InstanceCollector& collector, OptixTraversableHandle handle, const m3r4c& transform,
                                uint32_t instance_id, uint32_t sbt_offset = 0, uint8_t visibility_mask = EverythingMask) {
+        if(!zeno::mega::visible(transform))return;
         OptixInstance instance{};
         memcpy(instance.transform, transform.data(), sizeof(float) * 12);
         instance.instanceId = instance_id;
@@ -575,73 +745,11 @@ private:
         }
     }
 
-    void rebuildDynamicMatrixDependencies() {
-        dynamicMatrixDependencies.clear();
-
-        const auto groups_it = sceneJson.find("DynamicRenderGroups");
-        if (groups_it == sceneJson.end() || !groups_it->is_object()) return;
-        const auto& groups = *groups_it;
-
-        std::unordered_map<std::string, std::vector<std::string>> parents;
-        std::unordered_map<std::string, std::unordered_set<std::string>> direct_dependencies;
-
-        for (const auto& group : groups.items()) {
-            if (!group.value().is_object()) continue;
-            for (const auto& child : group.value().items()) {
-                if (groups.contains(child.key())) {
-                    parents[child.key()].push_back(group.key());
-                }
-                for (const auto& matrix : child.value().items()) {
-                    if (!matrix.value().is_string()) continue;
-                    const auto& matrix_key = matrix.value().get_ref<const std::string&>();
-                    direct_dependencies[matrix_key].insert(group.key());
-                }
-            }
-        }
-
-        for (auto& [matrix_key, direct] : direct_dependencies) {
-            std::unordered_set<std::string> dependencies = std::move(direct);
-            std::vector<std::string> pending(dependencies.begin(), dependencies.end());
-            while (!pending.empty()) {
-                auto group_name = std::move(pending.back());
-                pending.pop_back();
-
-                const auto parent_it = parents.find(group_name);
-                if (parent_it == parents.end()) continue;
-                for (const auto& parent : parent_it->second) {
-                    if (dependencies.insert(parent).second) {
-                        pending.push_back(parent);
-                    }
-                }
-            }
-
-            auto& cached = dynamicMatrixDependencies[matrix_key];
-            cached.reserve(dependencies.size());
-            for (const auto& group_name : dependencies) {
-                cached.push_back(group_name);
-            }
-        }
-    }
-
-    void invalidateDynamicMatrixDependencies() {
-        for (const auto& matrix_key : matrix_dirty) {
-            const auto dependency_it = dynamicMatrixDependencies.find(matrix_key);
-            if (dependency_it == dynamicMatrixDependencies.end()) continue;
-
-            for (const auto& group_name : dependency_it->second) {
-                const auto node_it = nodeCache.find(group_name);
-                if (node_it != nodeCache.end() && node_it->second) {
-                    node_it->second->frame = UINT32_MAX;
-                }
-            }
-        }
-    }
-
     void refreshCandidateBindings(const std::unordered_set<std::string>& geometry_dirty, std::unordered_set<std::string>& candidate_dirty) {
         const auto& bri = sceneJson[brikey];
 
         for (auto candidate_it = candidates.begin(); candidate_it != candidates.end();) {
-            if (!bri.contains(candidate_it->first)) {
+            if (!bri.contains(candidate_it->first) || isStreamedBinding(candidate_it->first)) {
                 candidate_dirty.insert(candidate_it->first);
                 candidate_it = candidates.erase(candidate_it);
             } else {
@@ -653,6 +761,7 @@ private:
         for (auto it = bri.begin(); it != bri.end(); ++it) {
             const auto& candidate_name = it.key();
             const auto& geometry_name = it.value()["Geom"].get_ref<const std::string&>();
+            if(isStreamedGeometry(geometry_name))continue;
 
             cleanTasks.erase(geometry_name);
 
@@ -726,327 +835,200 @@ private:
 
 public:
 
-    inline void make_scene(OptixDeviceContext& context, float3 cam, bool camera_only) {
-
-        this->cameraPos = cam;
-        if (lightIasDirty) {
-            prepare_light_ias(context);
-            lightIasDirty = false;
+    // Retained group nodes stay in scene coordinates. Only the root carries
+    // the floating-origin camera translation.
+    uint8_t emitSceneNode(OptixDeviceContext& context,const std::string& key,Json& groups,
+                         std::unordered_map<std::string,std::shared_ptr<SceneNode>>& cache,
+                         InstanceCollector& destination,const m3r4c& transform,uint32_t instanceId,bool isStatic) {
+        if(sceneJson.contains(brikey) && sceneJson.at(brikey).contains(key)) {
+            const auto name=sceneJson.at(brikey).at(key).value("Geom",std::string{});
+            const auto source=streamedGeometry.find(name);
+            if(source!=streamedGeometry.end()) {
+                if(!source->second.handle)return 0;
+                appendInstance(destination,source->second.handle,transform,instanceId);
+                return source->second.depth;
+            }
+            if(isStreamedGeometry(name))return 0; // Its first complete publication is not ready.
         }
-        auto gather = [&]() {
-            
-            auto CameraSapceMatrix = IdentityMatrix;
-            CameraSapceMatrix[3] -= cam.x;
-            CameraSapceMatrix[7] -= cam.y;
-            CameraSapceMatrix[11] -= cam.z;
-
-            // Root transforms change with the camera. Keep their pinned upload
-            // alive until its own copy fence, without pageable staging waits.
-            rootNode.hostInstancesUpload.wait();
-            auto& instanced=rootNode.hostInstances;
-            instanced.clear();
-            instanced.reserve(5);
-
-            OptixInstance opi {};
-            memcpy(opi.transform, CameraSapceMatrix.data(), sizeof(float)*12);
-
-            if (lightsWrapper.lightIasHandle != 0u) {
-                opi.instanceId = 0;
-                opi.visibilityMask = LightMatMask;
-                opi.traversableHandle = lightsWrapper.lightIasHandle;
-                instanced.push_back(opi);
-
-                maxNodeDepth = max(maxNodeDepth, 3);
-            }
-
-            if (staticRenderGroup != 0u) {
-                opi.instanceId = 1;
-                opi.visibilityMask = EverythingMask;
-                opi.traversableHandle = staticRenderGroup;
-                instanced.push_back(opi);
-            }
-            if (dynamicRenderGroup != 0u) {
-                opi.instanceId = 2;
-                opi.visibilityMask = EverythingMask;
-                opi.traversableHandle = dynamicRenderGroup;
-                memcpy(opi.transform, IdentityMatrix.data(), sizeof(float)*12);
-                instanced.push_back(opi);
-            }
-
-            if(clusterAsset && clusterAsset->handle()!=0) {
-                opi.instanceId=3;opi.visibilityMask=EverythingMask;opi.traversableHandle=clusterAsset->handle();
-                memcpy(opi.transform,CameraSapceMatrix.data(),sizeof(float)*12);
-                instanced.push_back(opi);maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(3));
-            }
-            if(water && water->handle()) {
-                opi.instanceId=4;opi.visibilityMask=EverythingMask;opi.traversableHandle=water->handle();
-                memcpy(opi.transform,CameraSapceMatrix.data(),sizeof(float)*12);
-                instanced.push_back(opi);maxNodeDepth=max(maxNodeDepth,decltype(maxNodeDepth)(2));
-            }
-
-            const bool same_children = rootLightChild == lightsWrapper.lightIasHandle
-                                && rootStaticChild == staticRenderGroup
-                                && rootDynamicChild == dynamicRenderGroup && !clusterRootDirty && !waterRootDirty;
-            xinxinoptix::buildIAS(context, instanced, this->rootNode, same_children, true);
-            rootLightChild = lightsWrapper.lightIasHandle;
-            rootStaticChild = staticRenderGroup;
-            rootDynamicChild = dynamicRenderGroup;
-            clusterRootDirty=false;
-            waterRootDirty=false;
-        };
-
-        if (camera_only || !sceneJson.contains(brikey)) {
-            if (!nodeCache.empty())
-                dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, true);
-            gather();
-            return;
+        const auto candidate=candidates.find(key);
+        if(candidate!=candidates.end()) {
+            const auto& c=candidate->second;if(!c.handle)return 0;
+            appendInstance(destination,c.handle,transform,instanceId,c.sbt,c.vmask);return 1;
         }
+        const auto group=groups.find(key);
+        if(group==groups.end())return 0;
+        auto& node=cache[key];if(!node)node=std::make_shared<SceneNode>();
+        if(!node->valid)buildSceneGroup(context,key,*group,groups,cache,*node,isStatic);
+        if(!node->depth)return 0;
+        if(node->singleChild) {
+            auto instance=*node->singleChild;m3r4c local;
+            memcpy(local.data(),instance.transform,sizeof(instance.transform));
+            const auto world=composeAffine(transform,local);
+            memcpy(instance.transform,world.data(),sizeof(instance.transform));
+            if(zeno::mega::visible(world))destination.append(instance);
+        } else appendInstance(destination,node->handle,transform,instanceId);
+        return node->depth;
+    }
 
-        dynamicRenderGroup = 0;
-        //nodeCache = {};
+    void buildSceneGroup(OptixDeviceContext& context,const std::string& key,const Json& children,Json& groups,
+                         std::unordered_map<std::string,std::shared_ptr<SceneNode>>& cache,SceneNode& node,bool isStatic) {
+        InstanceCollector collector(node);uint8_t childDepth=0;
+        forEachGroupChildInstance(children,collector,[&](const std::string& child,const m3r4c& matrix,uint32_t id) {
+            childDepth=std::max(childDepth,emitSceneNode(context,child,groups,cache,collector,matrix,id,isStatic));
+        });
+        node.singleChild.reset();
+        if(collapseDynamicSingleChildIAS && node.hostInstances.size()==1) {
+            node.singleChild=node.hostInstances.front();node.depth=childDepth;
+        } else if(skipFusedRootBuild && &node==fusedRootGroup) {
+            // This local instance layout is copied into root with its outer
+            // transform. Keep its world-space GPU cache lazy until it is needed
+            // as an actual child again (for example, after adding a root light).
+            node.gpuDirty=true;node.depth=node.hostInstances.empty()?0:childDepth+1;
+        } else {
+            // Logical static placement does not imply immutable acceleration
+            // bounds. Streamed descendants make their ancestors updateable.
+            const bool mutableAS=!isStatic || mutableGroups.count({isStatic,key})!=0;
+            const auto previousHandle=node.handle;
+            xinxinoptix::buildIAS(context,node.hostInstances,node,mutableAS && !node.gpuDirty && collector.canUpdate(),mutableAS,!mutableAS);
+            node.gpuDirty=false;
+            if(previousHandle!=node.handle)ownedGroupHandles.erase(previousHandle);
+            if(node.handle && !ownedGroupHandles.count(node.handle))ownedGroupHandles.emplace(node.handle,OwnedGroup{&node,key,isStatic});
+            node.depth=node.hostInstances.empty()?0:childDepth+1;
+        }
+        collector.commit();node.frame=frameid;node.valid=true;
+    }
 
-        // A child GAS UPDATE keeps its traversable handle, but OptiX still
-        // requires every ancestor IAS to be updated or rebuilt. Preserve the
-        // dirty task keys through the existing candidate pass so dependency
-        // invalidation does not depend on the opaque handle changing.
-        std::unordered_set<std::string> geometry_dirty;
-        geometry_dirty.reserve(dirtyTasks.size());
-        if (!dirtyTasks.empty()) {
-            
-            for(auto& [key, task] : dirtyTasks) {
-                geometry_dirty.insert(key);
-                auto handle = task(context);
-                gas_handles[key] = handle;
-                gas_to_obj_id[handle] = key;
+    uint64_t sceneGroup(OptixDeviceContext& context,bool isStatic) {
+        const std::string category=isStatic?"StaticRenderGroups":"DynamicRenderGroups";
+        const std::string entries=isStatic?"StaticEntries":"DynamicEntries";
+        auto& rootInstance=isStatic?staticRootInstance:dynamicRootInstance;
+        rootInstance.reset();
+        if(!sceneJson.contains(category) || !sceneJson.contains(entries))return 0;
+        auto& cache=isStatic?nodeCacheStatic:nodeCache;
+        auto& top=cache[category];if(!top)top=std::make_shared<SceneNode>();
+        if(!top->valid)
+            buildSceneGroup(context,category,sceneJson.at(entries),sceneJson.at(category),cache,*top,isStatic);
+        if(!top->depth)return 0;
+        rootInstance=top->singleChild;
+        return rootInstance?rootInstance->traversableHandle:top->handle;
+    }
+
+    inline void make_scene(OptixDeviceContext& context,float3 cam,bool camera_only) {
+        finalizeSceneRegistration();
+        cameraPos=cam;
+        if(lightIasDirty) {prepare_light_ias(context);lightIasDirty=false;rootBoundsDirty=true;}
+        if(!camera_only && sceneJson.contains(brikey)) {
+            std::unordered_set<std::string> geometryDirty,candidateDirty;
+            for(auto& [key,task]:dirtyTasks) {
+                geometryDirty.insert(key);const auto handle=task(context);
+                gas_handles[key]=handle;gas_to_obj_id[handle]=key;
             }
             dirtyTasks.clear();
-        }
-        if (!dirtyTextures.empty()) {
-            for (auto& key : dirtyTextures) {
-                auto& ref = OptixUtil::tex_lut.at(key);
-                if (ref.use_count()==1) {
-                    OptixUtil::removeTexture(key);
-                }
+            for(const auto& key:dirtyTextures) {
+                const auto& texture=OptixUtil::tex_lut.at(key);
+                if(texture.use_count()==1)OptixUtil::removeTexture(key);
             }
             dirtyTextures.clear();
-        }
-
-        std::unordered_set<std::string> candidate_dirty;
-        if (candidateBindingsDirty || !geometry_dirty.empty() || !cleanTasks.empty()) {
-            refreshCandidateBindings(geometry_dirty, candidate_dirty);
-        }
-
-        if (!cleanTasks.empty()) {
-            for (auto& [k, task] : cleanTasks) {
-                task(k);
-                gas_handles.erase(k);
-            }
+            if(candidateBindingsDirty || !geometryDirty.empty() || !cleanTasks.empty())
+                refreshCandidateBindings(geometryDirty,candidateDirty);
+            for(auto& [key,task]:cleanTasks){task(key);gas_handles.erase(key);}
             cleanTasks.clear();
+            for(const auto& key:candidateDirty)sceneDependencies.bindingChanged(key);
         }
-
-        if (sceneGraphDirty) {
-            for (auto& [_, node] : nodeCache) {
-                if (node) node->frame = UINT32_MAX;
-            }
-            for (auto& [_, node] : nodeCacheStatic) {
-                if (node) node->frame = UINT32_MAX;
-            }
-            staticRenderGroup = 0;
-            sceneGraphDirty = false;
+        const unsigned categories=unsigned(sceneJson.contains("StaticEntries") && !sceneJson.at("StaticEntries").empty())+
+            unsigned(sceneJson.contains("DynamicEntries") && !sceneJson.at("DynamicEntries").empty());
+        const bool canFuseRoot=collapseDynamicSingleChildIAS && !lightsWrapper.lightIasHandle && categories==1 &&
+            std::none_of(streamedGeometry.begin(),streamedGeometry.end(),[&](const auto& item){return item.second.handle && !streamedGeometryInScene(item.first);});
+        // A topology/visibility/matrix edit can change which group supplies the
+        // root. Make every lazy GPU cache current before changing that plan.
+        skipFusedRootBuild=canFuseRoot && fusedRootGroup && !sceneGraphDirty && matrix_dirty.empty() &&
+            candidates.empty() && !sourceTopologyDirty;
+        if(!skipFusedRootBuild && fusedRootGroup && fusedRootGroup->gpuDirty)
+            sceneDependencies.groupChanged(fusedRootName,fusedRootStatic);
+        if(sceneGraphDirty) {
+            fusedRootGroup=nullptr;
+            // Structural edits are rare. Resource/matrix changes below only
+            // touch their reverse dependencies, including shared ancestors.
+            for(auto* cache:{&nodeCache,&nodeCacheStatic})
+                for(auto& [_,node]:*cache)if(node)node->valid=false;
+            sceneGraphDirty=false;rootBoundsDirty=true;
         }
-
-        std::function<bool(const std::string&, nlohmann::json&, decltype(nodeCache)&)> dirtyCheck;
-
-        dirtyCheck = [&](const std::string& key, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache) -> bool {
-
-            auto& node = nodeCache[key];
-            if (nullptr == node) {
-                //return false;
-                node = std::make_shared<SceneNode>();
-            }
-
-            auto find_obj = renderGroup.find(key);
-            if (find_obj == renderGroup.end()) {
-                return candidate_dirty.count(key)>0 || candidates.count(key)==0;
-            }
-            auto& ref = *find_obj;
-
-            bool dirty = false;
-            for (auto& item : ref.items()) {
-                auto& item_key = item.key();
-                bool check = dirtyCheck(item_key, renderGroup, nodeCache);
-                dirty |= check;
-
-                auto& matrix_keys = item.value();
-                for (auto& matrix_key : matrix_keys.items()) {
-                    const auto& matrix_name = matrix_key.value().get_ref<const std::string&>();
-                    if (matrix_dirty.contains(matrix_name)) {
-                        dirty |= true; break;
-                    }
-                }
-            }
-            if (dirty) {
-                node->frame = UINT32_MAX;
-            }
-            return dirty;
-        };
-
-        auto dirtyGroup = [&](std::string_view group_key, std::string_view entry_key, decltype(nodeCache)& nodeCache) 
-        {
-            if (!sceneJson.contains(group_key)) return false;
-            if (!sceneJson.contains(entry_key)) return false;
-
-            auto& rg = sceneJson[group_key];
-            auto& entrys = sceneJson[entry_key];
-
-            bool dirty = false;
-            for (const auto& kv : entrys.items()) {
-                dirty |= dirtyCheck(kv.key(), rg, nodeCache);
-            }
-            return dirty;
-        };
-
-        if (!matrix_dirty.empty() || !candidate_dirty.empty()) {
-            if (candidate_dirty.empty()) {
-                invalidateDynamicMatrixDependencies();
-            } else {
-                // Candidate/GAS changes are rare and can affect topology, so
-                // retain the recursive dependency check for that general case.
-                dirtyGroup("DynamicRenderGroups", "DynamicEntries", nodeCache);
-            }
-            if (collapseDynamicSingleChildIAS && !candidate_dirty.empty()) {
-                // Candidate changes can alter the collapsed topology itself.
-                for (auto& [_, node] : nodeCache) {
-                    if (node) node->frame = UINT32_MAX;
-                }
-            }
-            if (!candidate_dirty.empty() && dirtyGroup("StaticRenderGroups", "StaticEntries", nodeCacheStatic)) {
-                staticRenderGroup = 0;
-            }
-            matrix_dirty.clear();
+        for(const auto& key:matrix_dirty)sceneDependencies.matrixChanged(key);
+        matrix_dirty.clear();
+        for(const auto& group:sceneDependencies.takeDirty()) {
+            auto& cache=group.isStatic?nodeCacheStatic:nodeCache;
+            const auto node=cache.find(group.name);
+            if(node!=cache.end() && node->second)node->second->valid=false;
+            rootBoundsDirty=true;
         }
-        
-        // Emit obj_key into destination and return its traversable depth.
-        // Unary groups emit their descendants directly; other groups append a
-        // cached or newly built IAS instance.
-        treeLook = [this, &context](const std::string& obj_key, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache,
-                                   InstanceCollector& destination, const m3r4c& transform, const uint32_t instance_id, const TreeLookPolicy& policy) -> uint
-        {
-            const auto candidate_it = candidates.find(obj_key);
-            if (candidate_it != candidates.end()) {
-                const auto& candidate = candidate_it->second;
-                if (candidate.handle == 0) return 0;
-                appendInstance(destination, candidate.handle, transform, instance_id, candidate.sbt, candidate.vmask);
-                return 1;
-            }
-
-            const auto group_it = renderGroup.find(obj_key);
-            if (group_it == renderGroup.end() || group_it->empty()) return 0;
-
-            if (group_it->size() == 1 && policy.collapseSingleChild) {
-
-                uint8_t max_depth = 0;
-                // One child key can still expand to many matrix instances.
-                forEachGroupChildInstance(*group_it, destination, [&](const std::string& item_key, const m3r4c& local_transform, uint32_t child_instance_id) {
-                    auto tmp_matrix = composeAffine(transform, local_transform);
-                    auto test_depth = treeLook(item_key, renderGroup, nodeCache, destination, tmp_matrix, child_instance_id, policy);
-                    max_depth = max(max_depth, test_depth);
-                });
-                return max_depth;
-            }
-
-            auto& node = nodeCache[obj_key];
-            if (nullptr == node) {
-                node = std::make_shared<SceneNode>();
-            } else if (node->frame != UINT32_MAX && node->handle != 0) {
-                appendInstance(destination, node->handle, transform, instance_id);
-                return node->depth;
-            }
-
-            InstanceCollector collector(*node);
-            uint8_t child_depth = 0;
-            forEachGroupChildInstance(*group_it, collector, [&](const std::string& item_key, const m3r4c& local_transform, uint32_t child_instance_id) {
-                auto test_depth = treeLook(item_key, renderGroup, nodeCache, collector, local_transform, child_instance_id, policy);
-                child_depth = max(child_depth, test_depth);
-            });
-
-            xinxinoptix::buildIAS(context, node->hostInstances, *node,
-                policy.allowUpdate && collector.canUpdate(), policy.preferFastBuild, !policy.preferFastBuild);
-            collector.commit();
-
-            if (node->handle == 0) return 0;
-            node->frame = frameid;
-            node->depth = node->hostInstances.empty()? 0 : child_depth + 1;
-
-            appendInstance(destination, node->handle, transform, instance_id);
-            return node->depth;
-        };
-
-        groupTask = [this, &context](std::string_view group_key, std::string_view entry_key, bool cameraSpace, decltype(nodeCache)& nodeCache, bool allow_update) -> uint64_t
-        {
-            if (!sceneJson.contains(group_key)) return 0;
-            if (!sceneJson.contains(entry_key)) return 0;
-
-            auto& rg = sceneJson[group_key];
-            auto& entrys = sceneJson[entry_key];
-            const TreeLookPolicy policy { cameraSpace && collapseDynamicSingleChildIAS, allow_update, cameraSpace };
-
-            auto& top_node = nodeCache[group_key.data()];
-            if (nullptr == top_node) top_node = std::make_shared<SceneNode>();
-            InstanceCollector collector(*top_node);
-            uint8_t child_depth = 0;
-            uint32_t instance_id = 0;
-
-            for (const auto& entry : entrys.items()) {
-                const auto& key = entry.key();
-                const auto& matrix_keys = entry.value();
-                for (const auto& matrix_key_json : matrix_keys.items()) {
-                    const auto& matrix_key = matrix_key_json.value().get_ref<const std::string&>();
-                    const auto matrix_it = matrix_map.find(matrix_key);
-                    if (matrix_it == matrix_map.end()) continue;
-                    collector.reserveAdditional(matrix_it->second.size());
-                    for (auto matrix : matrix_it->second) {
-                        if (cameraSpace) {
-                            matrix[3] -= cameraPos.x;
-                            matrix[7] -= cameraPos.y;
-                            matrix[11] -= cameraPos.z;
-                        }
-                        auto test_depth = treeLook(key, rg, nodeCache, collector, matrix, instance_id++, policy);
-                        child_depth = max(child_depth, test_depth);
-                    }
-                }
-            }
-
-            if (top_node->hostInstances.empty()) {
-                collector.commit();
-                top_node->depth = 0;
-                return 0;
-            }
-
-            xinxinoptix::buildIAS(context, top_node->hostInstances, *top_node, policy.allowUpdate && collector.canUpdate(), policy.preferFastBuild, !policy.preferFastBuild);
-            collector.commit();
-            top_node->frame = frameid;
-            top_node->depth = child_depth + 1;
-            maxNodeDepth = max(top_node->depth, maxNodeDepth);
-            return top_node->handle;
-        };
-
-        maxNodeDepth = 1;
-        {
-            dynamicRenderGroup = groupTask("DynamicRenderGroups", "DynamicEntries", true, nodeCache, true);
+        resolveStreamPlacements();
+        staticRenderGroup=sceneGroup(context,true);
+        dynamicRenderGroup=sceneGroup(context,false);
+        const auto singleRoot=staticRenderGroup?staticRenderGroup:dynamicRenderGroup;
+        const auto fused=canFuseRoot?ownedGroupHandles.find(singleRoot):ownedGroupHandles.end();
+        fusedRootGroup=fused!=ownedGroupHandles.end()?fused->second.node:nullptr;
+        fusedRootName=fusedRootGroup?fused->second.name:std::string{};
+        fusedRootStatic=fusedRootGroup && fused->second.isStatic;
+        sourceTopologyDirty=false;
+        maxNodeDepth=1;
+        for(const auto& entry:std::array<std::pair<const char*,const decltype(nodeCache)*>,2>{{
+                {"StaticRenderGroups",&nodeCacheStatic},{"DynamicRenderGroups",&nodeCache}}}) {
+            if(entry.second==&nodeCacheStatic?!staticRenderGroup:!dynamicRenderGroup)continue;
+            const auto n=entry.second->find(entry.first);
+            if(n!=entry.second->end() && n->second)maxNodeDepth=std::max(maxNodeDepth,uint8_t(1+n->second->depth));
         }
-        if (0 == staticRenderGroup) {
-            staticRenderGroup = groupTask("StaticRenderGroups", "StaticEntries", false, nodeCacheStatic, false);
+        auto camera=IdentityMatrix;camera[3]=-cam.x;camera[7]=-cam.y;camera[11]=-cam.z;
+        if(lightsWrapper.lightIasHandle)maxNodeDepth=std::max(maxNodeDepth,uint8_t(3));
+        for(const auto& [name,source]:streamedGeometry)if(source.handle && !streamedGeometryInScene(name))
+            maxNodeDepth=std::max(maxNodeDepth,uint8_t(source.depth+1));
+        if(fusedRootGroup)maxNodeDepth=fusedRootGroup->depth;
+        rootBoundsDirty|=clusterRootDirty || waterRootDirty;
+        if(!rootBoundsDirty && rootCamera && *rootCamera==camera)return;
+        InstanceCollectorT<CudaPinnedAllocator> collector(rootNode);
+        collector.reserveAdditional(4+clusterPlacements.size()+waterSettings.size());
+        auto append=[&](OptixTraversableHandle handle,const m3r4c& local,uint32_t id,uint8_t mask=EverythingMask) {
+            if(!handle)return;
+            OptixInstance instance{};instance.traversableHandle=handle;instance.instanceId=id;instance.visibilityMask=mask;
+            const auto world=composeAffine(camera,local);memcpy(instance.transform,world.data(),sizeof(instance.transform));
+            if(zeno::mega::visible(world))collector.append(instance);
+        };
+        if(lightsWrapper.lightIasHandle) {
+            append(lightsWrapper.lightIasHandle,IdentityMatrix,0,LightMatMask);maxNodeDepth=std::max(maxNodeDepth,uint8_t(3));
+        }
+        auto appendGroup=[&](uint64_t handle,const std::optional<OptixInstance>& folded,uint32_t id) {
+            if(!handle)return;
+            if(!folded){append(handle,IdentityMatrix,id);return;}
+            auto instance=*folded;m3r4c local;memcpy(local.data(),instance.transform,sizeof(instance.transform));
+            const auto world=composeAffine(camera,local);memcpy(instance.transform,world.data(),sizeof(instance.transform));
+            collector.append(instance);
+        };
+        if(fusedRootGroup) {
+            auto outer=IdentityMatrix;
+            const auto& folded=staticRenderGroup?staticRootInstance:dynamicRootInstance;
+            if(folded)memcpy(outer.data(),folded->transform,sizeof(folded->transform));
+            const auto rootTransform=composeAffine(camera,outer);
+            collector.reserveAdditional(fusedRootGroup->hostInstances.size());
+            for(auto instance:fusedRootGroup->hostInstances) {
+                m3r4c local;memcpy(local.data(),instance.transform,sizeof(instance.transform));
+                const auto world=composeAffine(rootTransform,local);memcpy(instance.transform,world.data(),sizeof(instance.transform));
+                collector.append(instance);
+            }
         } else {
-            uint8_t depth = 1;
-            auto find = nodeCacheStatic.find("StaticRenderGroups");
-            if (find != nodeCacheStatic.end()) {
-                depth = find->second->depth;
-            }
-            maxNodeDepth = max(maxNodeDepth, depth);
+            appendGroup(staticRenderGroup,staticRootInstance,1);
+            appendGroup(dynamicRenderGroup,dynamicRootInstance,2);
         }
-        maxNodeDepth += 1;
-        gather();
+        // Preserve direct VIEW-node graphs, but grouped resources enter through
+        // their actual scene parents and must never also appear under root.
+        for(const auto& [name,source]:streamedGeometry)if(source.handle && !streamedGeometryInScene(name)) {
+            if(name==clusterObjectName)for(const auto& placement:clusterPlacements)append(source.handle,placement,3);
+            else append(source.handle,IdentityMatrix,4);
+            maxNodeDepth=std::max(maxNodeDepth,uint8_t(source.depth+1));
+        }
+        // Child identity/layout decides UPDATE legality; bounds versions decide
+        // whether it is necessary. Stable handles still require ancestor refits.
+        xinxinoptix::buildIAS(context,rootNode.hostInstances,rootNode,collector.canUpdate(),true);
+        collector.commit();rootNode.frame=frameid;rootNode.valid=true;rootCamera=camera;rootBoundsDirty=false;
+        clusterRootDirty=false;waterRootDirty=false;
     }
 
     uint8_t maxNodeDepth = 1;
@@ -1057,21 +1039,13 @@ public:
     float3 cameraPos;
     SceneNodeT<CudaPinnedAllocator> rootNode;
     IASBuildWorkspace iasBuildWorkspace;
-    uint64_t rootLightChild {};
-    uint64_t rootStaticChild {};
-    uint64_t rootDynamicChild {};
 
     uint64_t staticRenderGroup {};
     uint64_t dynamicRenderGroup {};
+    std::optional<OptixInstance> staticRootInstance,dynamicRootInstance;
     
     std::unordered_map<std::string, Candidate> candidates {};
     bool volume_scene_bindings_dirty {};
-
-    std::function<uint8_t(const std::string&, nlohmann::json& renderGroup, decltype(nodeCache)& nodeCache, 
-        InstanceCollector& destination, const m3r4c& transform, const uint32_t instance_id, const TreeLookPolicy& policy)> treeLook;
-
-    std::function<uint64_t(std::string_view group_key, std::string_view entry_key, bool cameraSpace,
-        decltype(nodeCache)& nodeCache, bool allow_update)> groupTask;
 
     void preload_mesh(const std::string &key, const std::string &mtlid, 
         const std::vector<std::string> &matNames, const int *matIds,
@@ -1098,9 +1072,10 @@ public:
     void setCollapseDynamicSingleChildIAS(bool enabled) {
         if (collapseDynamicSingleChildIAS == enabled) return;
         collapseDynamicSingleChildIAS = enabled;
-        for (auto& [_, node] : nodeCache) {
+        rootBoundsDirty=true;
+        for (auto* cache:{&nodeCache,&nodeCacheStatic})for(auto& [_,node]:*cache) {
             if (!node) continue;
-            node->frame = UINT32_MAX;
+            node->valid = false;
             node->childHandles.clear();
             node->childHandlesScratch.clear();
         }
@@ -1120,6 +1095,8 @@ public:
 
     auto prepareShaderSet() {
 
+        finalizeSceneRegistration();
+
         std::map<std::string, std::set<ShaderMark>> shader_key_set;
 
         uniqueMatsForMesh.insert("");
@@ -1127,6 +1104,8 @@ public:
             auto& cached = shader_key_set[mat];
             cached.insert( ShaderMark::Mesh );
         }
+        for(const auto& [_,material]:waterMaterialNames)
+            shader_key_set[material].insert(ShaderMark::Mesh);
 
         if (sceneJson.contains(brikey)) {
             auto& bri = sceneJson[brikey];
@@ -1134,6 +1113,7 @@ public:
             for (auto it = bri.begin(); it != bri.end(); ++it) {
 
                 std::string geo_name = it.value()["Geom"].template get<std::string>();
+                if(isStreamedGeometry(geo_name))continue;
                 const auto geo_type = checkGeoType(geo_name);
 
                 const auto material_str = it.value().value("Material", "");

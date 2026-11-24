@@ -382,6 +382,8 @@ struct Scene {
     std::array<float, 3> camera{};
     float projection{}, error{};
     ZoomView zoom;
+    Buffer instanceViewBuffer;
+    std::vector<LodCamera> instanceViews;
     Clock::time_point submitted{};
     UploadJob uploadJob;
     std::vector<gpu::GroupPatch> patches;
@@ -461,6 +463,7 @@ struct Runtime::Impl {
     std::array<float, 3> requestedCamera{};
     float requestedProjection{};
     ZoomView requestedZoom;
+    std::vector<LodCamera> instanceViews,requestedInstanceViews,lastInstanceViews;
     bool hasRequestedView{};
     ChunkPool geometryPool,clasPool,gasPools[2];
     Pool descriptorPool;
@@ -1247,6 +1250,13 @@ struct Runtime::Impl {
         std::copy(scene.camera.begin(), scene.camera.end(), t.eye);
         t.projection = scene.projection;
         t.zoom = scene.zoom;
+        if(!scene.instanceViews.empty()) {
+            reserve(scene.instanceViewBuffer,scene.instanceViews.size()*sizeof(LodCamera));
+            check(cudaMemcpyAsync(ptr<void>(scene.instanceViewBuffer.p),scene.instanceViews.data(),
+                scene.instanceViews.size()*sizeof(LodCamera),cudaMemcpyHostToDevice,buildStream));
+            t.instanceViews=ptr<const LodCamera>(scene.instanceViewBuffer.p);
+            t.instanceViewCount=uint32_t(scene.instanceViews.size());
+        }
         t.primaryFeedback=primaryFeedbackEnabled()?ptr<uint64_t>(primaryRequests.p):nullptr;
         t.feedbackEpoch=feedbackEpoch.load(std::memory_order_relaxed);
         t.error = error;
@@ -1309,6 +1319,7 @@ struct Runtime::Impl {
         scene.camera = camera;
         scene.projection = projection;
         scene.zoom = zoom;
+        scene.instanceViews=instanceViews;
         scene.submitted = start;
         scene.sizingMs = scene.uploadPriorMs = 0;
         scene.pageReadMs = batch.readMs;
@@ -1496,6 +1507,7 @@ struct Runtime::Impl {
         lastCamera = scene.camera;
         lastProjection = scene.projection;
         lastZoom = scene.zoom;
+        lastInstanceViews=scene.instanceViews;
         hasView = true;
     }
     void profileScene(const Scene &scene, bool built) {
@@ -1704,7 +1716,7 @@ struct Runtime::Impl {
         startReading();
         const bool ioReady = reading.valid() && (blocking || reading.wait_for(std::chrono::seconds(0)) ==
                                                                  std::future_status::ready);
-        const bool different = !hasView || camera != lastCamera || projection != lastProjection || zoom != lastZoom;
+        const bool different = !hasView || camera != lastCamera || projection != lastProjection || zoom != lastZoom || instanceViews!=lastInstanceViews;
         if (different || residencyVersion != traversedResidency || ioReady || !pendingRemoval.empty()) {
             if(blocking)beginTraversal(ctx,camera,projection,true,zoom);
             else traversalPending=true;
@@ -1759,13 +1771,16 @@ struct Runtime::Impl {
                 if (!available.count(geometryOffsets[geometry] + child))
                     return false;
                 const auto &b = source.groups[child].bounds;
-                const float x = m[0] * b[0] + m[1] * b[1] + m[2] * b[2] + m[3] - scene.camera[0],
-                            y = m[4] * b[0] + m[5] * b[1] + m[6] * b[2] + m[7] - scene.camera[1],
-                            z = m[8] * b[0] + m[9] * b[1] + m[10] * b[2] + m[11] - scene.camera[2];
-                const float distance = std::sqrt(x * x + y * y + z * z), radius = b[3] * placement.scale;
-                return b[4] * placement.scale / std::max(distance - radius, .01f) *
-                           projectionForSphere(scene.zoom, x, y, z, radius, distance, scene.projection) >
-                       scene.error;
+                const auto metric=[&](const float* eye,float projection,const ZoomView& zoom) {
+                    const float x=m[0]*b[0]+m[1]*b[1]+m[2]*b[2]+m[3]-eye[0],
+                        y=m[4]*b[0]+m[5]*b[1]+m[6]*b[2]+m[7]-eye[1],
+                        z=m[8]*b[0]+m[9]*b[1]+m[10]*b[2]+m[11]-eye[2];
+                    const float distance=std::sqrt(x*x+y*y+z*z),radius=b[3]*placement.scale+zoom.stereoRadius;
+                    return b[4]*placement.scale/std::max(distance-radius,.01f)*projectionForSphere(zoom,x,y,z,radius,distance,projection);
+                };
+                if(scene.instanceViews.empty())return metric(scene.camera.data(),scene.projection,scene.zoom)>scene.error;
+                for(const auto& view:scene.instanceViews)if(metric(view.eye,view.projection,view.zoom)>scene.error)return true;
+                return false;
             };
             const auto visit = [&](auto &&self, uint32_t id) -> void {
                 if (!visited.insert(id).second)
@@ -1804,7 +1819,7 @@ void Runtime::setOpaqueShadowPolicy(const OpaqueSlotPolicy& policy) {
     std::cout<<"[CLAS shadow policy] opaque slots="<<opaque<<" total slots="<<total<<std::endl;
 }
 bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<float, 3> &camera,
-                     float projection, bool interactive, const ZoomView &zoom, LodControl control) {
+                     float projection, bool interactive, const ZoomView &zoom, LodControl control,const std::vector<LodCamera>& instanceViews) {
     TimelineRange timeline("CLAS: render update");
     auto &s = *impl;
     const auto start = Clock::now();
@@ -1816,6 +1831,10 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
         throw std::runtime_error("Invalid CLAS view");
     if (!(control.pixelError >= 0.f) || !std::isfinite(control.pixelError))
         throw std::runtime_error("Invalid requested CLAS pixel error");
+    for(const auto& view:instanceViews) {
+        if(!(view.projection>0.f) || !std::isfinite(view.projection))throw std::runtime_error("Invalid instanced CLAS projection");
+        for(float v:view.eye)if(!std::isfinite(v))throw std::runtime_error("Invalid instanced CLAS camera");
+    }
     if (zoom.peripheralProjection != 0.f) {
         if (!(zoom.peripheralProjection > 0.f) || !std::isfinite(zoom.peripheralProjection) ||
             !(zoom.feather > 0.f) || !std::isfinite(zoom.feather))
@@ -1846,6 +1865,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
         s.preparing.get();
         completedPreparation = true;
     }
+    s.instanceViews=instanceViews;
     const float requestedError = control.pixelError > 0.f ? control.pixelError : s.settings.pixelError;
     if (control.adaptive != s.lodControl.adaptive || requestedError != s.requestedError) {
         s.lodControl = control;
@@ -1857,12 +1877,13 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     }
     // A new view may recover beyond the discrete-LOD limit learned for the
     // previous view. Keep its effective error; recover gradually with headroom.
-    if (!s.hasRequestedView || camera != s.requestedCamera || projection != s.requestedProjection || zoom != s.requestedZoom) {
+    if (!s.hasRequestedView || camera != s.requestedCamera || projection != s.requestedProjection || zoom != s.requestedZoom || instanceViews!=s.requestedInstanceViews) {
         s.adaptive.viewChanged(requestedError);
         s.budgetBlocked = s.allocationPressure = false;
         s.requestedCamera = camera;
         s.requestedProjection = projection;
         s.requestedZoom = zoom;
+        s.requestedInstanceViews=instanceViews;
         s.hasRequestedView = true;
     }
     s.counters.updates = s.mainUpdates;
@@ -1887,7 +1908,7 @@ bool Runtime::update(OptixDeviceContext ctx, uint32_t sbt, const std::array<floa
     const auto settled = [&] {
         return s.front >= 0 && s.candidate < 0 && !s.reading.valid() && (s.requests.empty() || s.budgetBlocked) &&
                s.pendingRemoval.empty() && s.traversedResidency == s.residencyVersion && s.hasView &&
-               camera == s.lastCamera && projection == s.lastProjection && zoom == s.lastZoom;
+               camera == s.lastCamera && projection == s.lastProjection && zoom == s.lastZoom && instanceViews==s.lastInstanceViews;
     };
     const auto policyStats = [&] {
         s.counters.requestedPixelError = s.requestedError;

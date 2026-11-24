@@ -30,6 +30,7 @@
 #include <zenovis/Scene.h>
 #include <zenovis/Camera.h>
 #include <zenovis/RenderEngine.h>
+#include <zenovis/SceneEditorMetadata.h>
 #include <zenovis/bate/GraphicsManager.h>
 #include <zenovis/bate/IGraphic.h>
 #include <zenovis/opengl/scope.h>
@@ -197,6 +198,7 @@ static void cleanMesh(zeno::PrimitiveObject* prim,
 }
 struct GraphicsManager {
     Scene *scene;
+    bool cameraHasSampleOverride=false;
 
         struct DetMaterial {
             std::vector<std::shared_ptr<zeno::Texture2DObject>> tex2Ds;
@@ -349,7 +351,10 @@ struct GraphicsManager {
             if (auto const *prim_in0 = dynamic_cast<zeno::PrimitiveObject *>(obj))
             {
                 if(prim_in0->userData().get2<std::string>("ResourceType","")=="WaterSurface") {
-                    defaultScene.preloadWater(key,Json::parse(prim_in0->userData().get2<std::string>("waterSettings")));
+                    const auto& ud=prim_in0->userData();
+                    auto material=ud.get2<std::string>("mtlid","");
+                    if(material.empty())material=ud.get2<std::string>("Material_0","");
+                    defaultScene.preloadWater(key,Json::parse(ud.get2<std::string>("waterSettings")),material,ud.get2<std::string>("ObjectName",key));
                     return;
                 }
                 if(prim_in0->userData().get2<std::string>("ResourceType","")=="ClusterAsset") {
@@ -363,7 +368,7 @@ struct GraphicsManager {
                     settings.textureMiB=uint32_t(ud.get2<int>("clusterTextureMiB",2048));
                     settings.hostTextureMiB=uint32_t(ud.get2<int>("clusterTextureHostMiB",256));
                     defaultScene.preloadClusterAsset(key,ud.get2<std::string>("clusterManifest"),
-                                                    ud.get2<std::string>("clusterRevision",""),settings);
+                                                    ud.get2<std::string>("clusterRevision",""),settings,ud.get2<std::string>("ObjectName",key));
                     return;
                 }
                 // vvv deepcopy to cihou following inplace ops vvv
@@ -1150,6 +1155,7 @@ struct GraphicsManager {
                 {
                     scene->camera->setCamera(cam->get());     // pyb fix
                     auto &ud = cam->userData();
+                    cameraHasSampleOverride=ud.has("aces");
                     if (ud.has("aces")) {
                         scene->camera->setPhysicalCamera(
                             ud.get2<float>("aperture"),
@@ -1209,6 +1215,7 @@ struct GraphicsManager {
                     if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
                         scene->camera->setCamera(cam->get()); // pyb fix
                         auto &ud = cam->userData();
+                        cameraHasSampleOverride=ud.has("aces");
                         if (ud.has("aces")) {
                             scene->camera->setPhysicalCamera(
                                 ud.get2<float>("aperture"),
@@ -1379,32 +1386,29 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     bool matNeedUpdate = true;
     bool staticNeedUpdate = true;
     std::map<std::string,const zeno::IObject*> waterStaticObjects;
+    std::map<std::string,std::string> waterSceneDescriptors;
     bool hadWaterDescriptors = false;
+    SceneEditorMetadata editorMetadata;
+    void refreshEditorDetails(bool staticSelection) {
+        if(staticSelection) {
+            editorMetadata.refreshDetails(true,defaultScene.static_scene_tree);
+            return;
+        }
+        if(editorMetadata.refreshDetails(false,defaultScene.dynamic_scene_tree))
+            defaultScene.dynamic_scene->from_json(defaultScene.dynamic_scene_tree);
+    }
+    void publishOutline(bool force=false) {
+        if(auto message=editorMetadata.outline(defaultScene.lights_name,force))
+            fun(message->dump());
+    }
     void outlineInit(Json const &in_msg) override {
 //        zeno::log_error("MessageType: {}", in_msg.dump());
+        if(in_msg["MessageType"]!="Init")
+            refreshEditorDetails(in_msg["MessageType"]=="Select" && in_msg["Content"][0]=="StaticScene");
         if (in_msg["MessageType"] == "Init") {
-            Json message;
-            if (!defaultScene.static_scene_tree.is_null()) {
-                Json scene_tree;
-                scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
-                scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
-                message["StaticSceneTree"] = scene_tree;
-            }
-            if (!defaultScene.dynamic_scene_tree.is_null()) {
-                Json scene_tree;
-                scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
-                scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
-                scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
-                message["DynamicSceneTree"] = scene_tree;
-            }
-            message["Lights"] = defaultScene.lights_name;
-
-            if (message.is_null()) {
-                return;
-            }
-
-            message["MessageType"] = "SceneTree";
-            fun(message.dump());
+            // Opening/reopening the panel explicitly requests the current tree,
+            // even when playback has not changed its structure.
+            publishOutline(true);
         }
         else if (in_msg["MessageType"] == "Focus") {
             auto const & link = defaultScene.cur_link;
@@ -2010,42 +2014,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void update_json(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         for (auto const&[key, obj]: objs) {
-            Json message;
-            message["MessageType"] = "SceneTree";
-            if (obj == nullptr) {
-                continue;
-            }
+            if (obj == nullptr)continue;
             auto &ud = obj->userData();
             if (ud.get2<std::string>("ResourceType", "") == "SceneTree") {
-                if (ud.get2<std::string>("SceneTreeType", "") == "static") {
-                    if (!defaultScene.static_scene_tree.is_null()) {
-                        continue;
-                    }
-                    auto content = ud.get2<std::string>("json");
-                    defaultScene.static_scene_tree = Json::parse(content);
-                    Json scene_tree;
-                    scene_tree["root_name"] = defaultScene.static_scene_tree["root_name"];
-                    scene_tree["scene_tree"] = defaultScene.static_scene_tree["scene_tree"];
-                    message["StaticSceneTree"] = scene_tree;
-                }
-                else if (ud.get2<std::string>("SceneTreeType", "") == "dynamic") {
-                    auto content = ud.get2<std::string>("json");
-                    defaultScene.dynamic_scene_tree = Json::parse(content);
-                    defaultScene.dynamic_scene_tree["node_key"] = key;
-
-                    Json scene_tree;
-                    scene_tree["root_name"] = defaultScene.dynamic_scene_tree["root_name"];
-                    scene_tree["scene_tree"] = defaultScene.dynamic_scene_tree["scene_tree"];
-                    scene_tree["node_key"] = defaultScene.dynamic_scene_tree["node_key"];
-                    message["DynamicSceneTree"] = scene_tree;
-
-                    defaultScene.dynamic_scene->from_json(defaultScene.dynamic_scene_tree);
-                }
-                else {
-                    continue;
-                }
-                auto msg_str = message.dump();
-//                fun(std::move(msg_str));
+                const auto type=ud.get2<std::string>("SceneTreeType", "");
+                if(type!="static" && type!="dynamic")continue;
+                const auto content=ud.get<zeno::StringObject>("json");
+                editorMetadata.stage(type=="static",content->get(),key);
             }
         }
     }
@@ -2084,22 +2059,52 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         const auto registeredObjects=scene->objectsMan->pairs();
         unsigned int clusterDescriptors=0;
         unsigned int waterDescriptors=0;
-        std::map<std::string,const zeno::IObject*> staticObjects;
         for(const auto& [key,object]:registeredObjects) {
             const auto* primitive=dynamic_cast<const zeno::PrimitiveObject*>(object);
-            if(primitive && primitive->userData().get2<std::string>("ResourceType","")=="WaterSurface")
-                ++waterDescriptors;
-            else staticObjects.emplace(key,object);
-            if(primitive&&primitive->userData().get2<std::string>("ResourceType","")=="ClusterAsset"&&++clusterDescriptors>1) {
-                const char* message="This OptiX scene supports one LoadPrebakedAsset descriptor; combine the meshes in a single asset manifest.";
+            if(!primitive)continue;
+            const auto resource=primitive->userData().get2<std::string>("ResourceType","");
+            if(resource=="WaterSurface")++waterDescriptors;
+            else if(resource=="ClusterAsset" && ++clusterDescriptors>1) {
+                const char* message="This OptiX scene supports one MegaGeometryAsset resource; instance that resource through its scene-node transforms, or combine meshes in its source asset.";
                 zeno::log_error("{}",message);throw std::runtime_error(message);
             }
         }
-        const bool waterOnly=waterDescriptors && hadWaterDescriptors && !defaultScene.waterSettings.empty() && staticObjects==waterStaticObjects &&
+        std::map<std::string,std::string> waterBindings;
+        std::map<std::string,std::string> sceneDescriptors;
+        std::map<std::string,const zeno::IObject*> staticObjects;
+        // Comparing water-only animation is useful only while water exists.
+        // In ordinary scenes, do not copy the potentially huge SceneTree JSON
+        // or populate comparison maps for a fast path that cannot be taken.
+        if(waterDescriptors)for(const auto& [key,object]:registeredObjects) {
+            const auto* primitive=dynamic_cast<const zeno::PrimitiveObject*>(object);
+            if(primitive && primitive->userData().get2<std::string>("ResourceType","")=="WaterSurface") {
+                const auto& ud=primitive->userData();
+                auto material=ud.get2<std::string>("mtlid","");
+                if(material.empty())material=ud.get2<std::string>("Material_0","");
+                waterBindings[key]=std::move(material);
+            } else {
+                const auto resource=object?object->userData().get2<std::string>("ResourceType",""):std::string{};
+                if(resource=="SceneTree" || resource=="SceneDescriptor" || resource=="DeletedSceneDescriptor") {
+                    // MakeSceneNode emits fresh metadata objects each frame.
+                    // Compare their content, not their allocation addresses.
+                    const auto& ud=object->userData();
+                    sceneDescriptors[key]=resource+"\n"+ud.get2<std::string>(
+                        resource=="SceneTree"?"json":"Scene","")+"\n"+ud.get2<std::string>("SceneTreeType","");
+                } else {
+                    const auto previous=waterStaticObjects.find(key);
+                    const bool unchangedMatrix=resource=="Matrixes" && previous!=waterStaticObjects.end() &&
+                        object->userData().get2<std::string>("stamp-change","")=="UnChanged";
+                    staticObjects.emplace(key,unchangedMatrix?previous->second:object);
+                }
+            }
+        }
+        const bool waterOnly=waterDescriptors && hadWaterDescriptors && !defaultScene.waterSettings.empty() &&
+            waterBindings==defaultScene.waterMaterialNames && sceneDescriptors==waterSceneDescriptors && staticObjects==waterStaticObjects &&
             !lightNeedUpdate && !meshNeedUpdate && !matNeedUpdate && !staticNeedUpdate &&
             !scene->objectsMan->needUpdateLight && !scene->drawOptions->updateMatlOnly &&
             !scene->drawOptions->updateLightCameraOnly;
         waterStaticObjects=std::move(staticObjects);hadWaterDescriptors=waterDescriptors!=0;
+        waterSceneDescriptors=std::move(sceneDescriptors);
         if(waterOnly) {
             // Timeline playback replaces only tiny water descriptors. Preserve
             // the existing camera, lights, SBT, CLAS asset and texture workers.
@@ -2107,15 +2112,16 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             // lifetime rules as an ordinary scene update.
             graphicsMan->load_static_objects(registeredObjects);
             graphicsMan->load_objects(registeredObjects);
+            defaultScene.finalizeSceneRegistration();
             defaultScene.finalizeClusterAssetRegistration();
             defaultScene.finalizeWaterRegistration();
             return;
         }
         xinxinoptix::optixBeginFrame();
 //        zeno::log_error("update");
-        update_json(scene->objectsMan->pairs());
+        update_json(registeredObjects);
 
-        if(graphicsMan->need_update_light(scene->objectsMan->pairs())
+        if(graphicsMan->need_update_light(registeredObjects)
             || scene->objectsMan->needUpdateLight)
         {
             defaultScene.lights_name = graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
@@ -2132,12 +2138,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             fun(message.dump());
         }
 
-        if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
+        if (graphicsMan->load_static_objects(registeredObjects)) {
             staticNeedUpdate = true;
         }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
+        if (graphicsMan->load_objects(registeredObjects))
         {
         }
+        defaultScene.finalizeSceneRegistration();
         defaultScene.finalizeClusterAssetRegistration();
         defaultScene.finalizeWaterRegistration();
         meshNeedUpdate = matNeedUpdate = true;
@@ -2152,12 +2159,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             matNeedUpdate = true;
             meshNeedUpdate = false;
         }
-        graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
+        graphicsMan->load_shader_uniforms(registeredObjects);
         replace_with_modified_matrix();
 
-        Json msg;
-        msg["MessageType"] = "Init";
-        outlineInit(msg);
+        publishOutline();
     }
 
 #define MY_CAM_ID(cam) cam.m_nx, cam.m_ny, cam.zOptixCameraSettingInfo.renderRatio, cam.m_rotation, cam.m_pos, cam.m_fov, cam.focalPlaneDistance, cam.m_aperture
@@ -2384,8 +2389,12 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
                     if (!is_default) {
                         auto& shader_ref = matMap[key]; 
-                        is_dirty = shader_ref->dirty;
+                        is_dirty = shader_ref->dirty || std::any_of(value.begin(),value.end(),[&](const auto mark) {
+                            const auto cached=cached_shaders.find(std::make_tuple(key,mark));
+                            return cached==cached_shaders.end() || !cached->second;
+                        });
                         if (is_dirty) {
+                            shader_ref->dirty=true;
                             dirtyShaderNames.push_back(key);
                         }
                     }
@@ -2630,24 +2639,51 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 requireTriangObj=true;
             }
 
-            if(!defaultScene.waterSettings.empty()) {
-                const auto key=std::make_tuple(std::string(zeno::water::MaterialShaderName),ShaderMark::Mesh);
-                if(!cached_shaders.count(key)) {
-                    auto shader=make_default_shader(ShaderMark::Mesh);
-                    shader->matid=zeno::water::MaterialShaderName;shader->filename="WaterMatShader.cu";
+            std::set<shader_key_t,ByShaderKey> waterVariants;
+            for(const auto& [_,material]:defaultScene.waterMaterialNames) {
+                const auto key=std::make_tuple(zeno::water::shaderKey(material),ShaderMark::Mesh);
+                if(!waterVariants.insert(key).second)continue;
+                const auto source=cached_shaders.at(std::make_tuple(material,ShaderMark::Mesh));
+                auto parameters=source->parameters.empty()?Json::object():Json::parse(source->parameters);
+                // Water shadows need the bound closure even at constant alpha:
+                // transmission is a material property, not geometric opacity.
+                parameters["opacity"]=2.f;
+                // MNEE's manifold decoder requires ordinary mesh GAS metadata;
+                // structured grids are traced by the normal path integrator.
+                parameters["causticCaster"]=false;
+                const auto waterParameters=parameters.dump();
+                const auto previous=cached_shaders.find(key);
+                const bool changed=previous==cached_shaders.end() || source->dirty ||
+                    previous->second->callable!=source->callable || previous->second->parameters!=waterParameters ||
+                    previous->second->texs!=source->texs || previous->second->vdb_keys!=source->vdb_keys;
+                if(changed) {
+                    auto shader=std::make_shared<ShaderPrepared>(*source);
+                    shader->parameters=waterParameters;
+                    shader->filename="WaterHitShader.cu";shader->dirty=true;
                     cached_shaders[key]=std::move(shader);ShaderDirty=true;
                 }
-                requireTriangObj=true;
             }
+            // Water materials use the normal callable, with only the geometry
+            // decoding core changed. Remove variants no longer bound by a node.
+            for(auto it=cached_shaders.begin();it!=cached_shaders.end();) {
+                if(it->second->filename=="WaterHitShader.cu" && !waterVariants.count(it->first)) {
+                    it=cached_shaders.erase(it);ShaderDirty=true;
+                } else ++it;
+            }
+            requireTriangObj|=!waterVariants.empty();
             ShaderDirty |= cached_shaders.size() != shaderCount;
 
             std::vector<std::shared_ptr<ShaderPrepared>> allShaders{};
             allShaders.reserve(cached_shaders.size()+2);
 
-            ShaderKeyIndex.clear();
             for (const auto& [key, shader] : cached_shaders) {
                 auto idx = allShaders.size();
-
+                // Runtime shader records are indexed by SBT position. Inserting
+                // or removing a binding can move unchanged cached shaders;
+                // refresh those records instead of reusing the previous owner.
+                if(!defaultScene.shaderIndexMatches(key,idx)) {
+                    shader->dirty=true;ShaderDirty=true;
+                }
                 allShaders.push_back(shader);
                 ShaderKeyIndex[key] = idx;
             }
@@ -2736,7 +2772,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         // physical camera's offline count can be much larger (e.g. 64), and
         // using it for every viewport tick makes a static scene appear stalled.
         const bool recording=zeno::getSession().userData().has("optix_image_path");
-        const int samples=std::max(1,recording?cam.zOptixCameraSettingInfo.num_samples:opt.num_samples);
+        // Legacy CameraEval/CameraNode graphs have no authored physical-camera
+        // sample count. Recording must honor the requested recorder count there.
+        const int samples=std::max(1,recording && graphicsMan->cameraHasSampleOverride?
+            cam.zOptixCameraSettingInfo.num_samples:opt.num_samples);
         if(const char* timing=std::getenv("ZENO_OPTIX_RENDER_TIMING");timing && timing[0]=='1') {
             zeno::log_info("OptiX sample selection: mode={}, viewportSamples={}, cameraSamples={}, actualSamples={}",
                 recording?"record":"viewport",opt.num_samples,cam.zOptixCameraSettingInfo.num_samples,samples);
@@ -2750,7 +2789,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void assetLoad() {
-        waterStaticObjects.clear();hadWaterDescriptors=false;
+        waterStaticObjects.clear();waterSceneDescriptors.clear();hadWaterDescriptors=false;
+        editorMetadata.clear();
         topoMap.clear();
         defaultScene = {};
         cached_shaders = {};
@@ -2777,7 +2817,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     }
 
     void cleanupAssets() override {
-        waterStaticObjects.clear();hadWaterDescriptors=false;
+        waterStaticObjects.clear();waterSceneDescriptors.clear();hadWaterDescriptors=false;
+        editorMetadata.invalidateOutline();
         cached_shaders = {};
         OptixUtil::rtMaterialShaders.clear();
 

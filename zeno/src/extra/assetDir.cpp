@@ -29,6 +29,7 @@ ZENO_API std::string getConfigVariable(std::string key) {
 }
 
 ZENO_API void setExecutableDir(std::string dir) {
+    g_execFile=dir;
 #ifdef _WIN32
     g_assetRoot = dir + "/assets/";
     cihouWinPath(g_assetRoot);
@@ -36,6 +37,8 @@ ZENO_API void setExecutableDir(std::string dir) {
     g_assetRoot = dir + "/../share/Zeno/assets/";
 #endif
 }
+
+ZENO_API std::string getExecutableDir() { return g_execFile; }
 
 ZENO_API std::string getAssetDir(std::string dir) {
     //dir = std::filesystem::absolute(dir).string();

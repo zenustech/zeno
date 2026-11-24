@@ -11,10 +11,9 @@ struct MakeWaterSurface : INode {
         const auto center=get_input2<vec3f>("center");
         const auto size=get_input2<vec2f>("size");
         const auto wind=get_input2<vec2f>("windDirection");
-        const auto absorption=get_input2<vec3f>("absorption");
         nlohmann::json settings{{"center",{center[0],center[1],center[2]}},{"size",{size[0],size[1]}},
-            {"wind",{wind[0],wind[1]}},{"absorption",{absorption[0],absorption[1],absorption[2]}}};
-        for(const char* name:{"time","amplitude","period","windSpeed","depth","roughness","ior","edgePixels","boundaryWidth"}) {
+            {"wind",{wind[0],wind[1]}}};
+        for(const char* name:{"time","amplitude","period","windSpeed","depth","edgePixels","boundaryWidth"}) {
             const auto value=get_input2<float>(name);
             if(!std::isfinite(value))throw std::runtime_error(std::string("Nonfinite water parameter: ")+name);
             settings[name]=value;
@@ -38,7 +37,6 @@ struct MakeWaterSurface : INode {
         for(float value:center)if(!std::isfinite(value))throw std::runtime_error("Water center must be finite");
         for(float value:size)if(!std::isfinite(value))throw std::runtime_error("Water size must be finite");
         for(float value:wind)if(!std::isfinite(value))throw std::runtime_error("Water wind must be finite");
-        for(float value:absorption)if(!std::isfinite(value)||value<0)throw std::runtime_error("Water absorption must be finite and nonnegative");
         settings["ellipse"]=get_input2<bool>("ellipse")?1:0;
         auto object=std::make_shared<PrimitiveObject>();
         object->userData().set2("ResourceType",std::string("WaterSurface"));
@@ -53,8 +51,7 @@ ZENDEFNODE(MakeWaterSurface,{
      {"float","amplitude","0.008"},{"float","period","12"},
      {"vec2f","windDirection","1,0"},{"float","windSpeed","3"},{"float","depth","1"},
      {"int","resolution","256"},{"int","seed","42"},{"float","edgePixels","2"},{"int","maxClusters","8192"},
-     {"float","boundaryWidth","0.1"},{"float","roughness","0.025"},{"float","ior","1.333"},
-     {"vec3f","absorption","0.12,0.04,0.02"},{"string","objectName","Water"}},
+     {"float","boundaryWidth","0.1"},{"string","objectName","Water"}},
     {"surface"},{},{"primitive"},
 });
 }

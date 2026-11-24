@@ -248,6 +248,11 @@ static __forceinline__ __device__ void traceRadiance(
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
 
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_RADIANCE,ray_origin,ray_direction,tmin,tmax,0.f,OPTIX_RAY_FLAG_DISABLE_ANYHIT);
+        optixInvoke(u0,u1);return;
+    }
+
     optixTrace( handle,
             ray_origin, ray_direction,
             tmin, tmax,
@@ -271,6 +276,11 @@ static __forceinline__ __device__ void traceRadianceSER(
 {
     unsigned int u0, u1;
     packPointer(prd, u0, u1);
+
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_RADIANCE,ray_origin,ray_direction,tmin,tmax,0.f,OPTIX_RAY_FLAG_DISABLE_ANYHIT);
+        optixInvoke(u0,u1);return;
+    }
 
     optixTraverse(
         handle,
@@ -339,6 +349,11 @@ static __forceinline__ __device__ void traceOcclusion(
     const auto& materials=params.cluster_materials;
     const unsigned int flags=materials.materials && materials.opaqueShadowFastPath && materials.twoSidedOpaque ?
         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT : OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
+
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_OCCLUSION,ray_origin,ray_direction,tmin,tmax,0.f,flags);
+        optixInvoke(u0,u1);return;
+    }
 
     optixTrace( handle,
             ray_origin, ray_direction,

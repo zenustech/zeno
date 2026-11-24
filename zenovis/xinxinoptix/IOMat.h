@@ -110,6 +110,8 @@ struct MatInput {
     float2 barys2;
     float3* vertices;
     uint3 vertex_idx;
+    // Optional corner UVs for procedural triangles without mesh GAS metadata.
+    const float2* triangleUVs=nullptr;
 
     float4 objectToWorld[3];
     float4 worldToObject[3];
@@ -121,6 +123,7 @@ struct MatInput {
     float rayLength;
     bool isBackFace  : 1;
     bool isShadowRay : 1;
+    bool proceduralTriangle : 1;
     
     vec3 reflectance;
 
@@ -139,6 +142,7 @@ struct TriangleInput : MatInput {
     }
 
     inline vec3 interpNorm(float smooth=1.0f) const {
+        if(proceduralTriangle)return smooth==0.f?vec3(wldNorm):N;
         let gas_ptr = getGasPointer();
         let nrm_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-4) );
         if (nrm_ptr == nullptr) { return wldNorm; }
@@ -164,6 +168,7 @@ struct TriangleInput : MatInput {
     }
 
     inline vec3 interpTang() const {
+        if(proceduralTriangle)return T;
         let gas_ptr = getGasPointer();
         let tan_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-5) );
         if (tan_ptr == nullptr) { return {}; }
@@ -179,14 +184,14 @@ struct TriangleInput : MatInput {
     }
 
     inline const float2* uvPtr() const {
+        if(proceduralTriangle)return triangleUVs;
         let gas_ptr = getGasPointer();
         let uv_ptr  = reinterpret_cast<const float2*>( *(gas_ptr-2) );
         return uv_ptr;
     }
     
     inline vec3 uv() const {
-        let gas_ptr = getGasPointer();
-        let uv_ptr  = reinterpret_cast<const float2*>( *(gas_ptr-2) );
+        const auto uv_ptr=uvPtr();
         if (uv_ptr == nullptr) { return {}; }
 
         const auto& uv0 = uv_ptr[ vertex_idx.x ];
@@ -197,6 +202,7 @@ struct TriangleInput : MatInput {
         return {tmp.x, tmp.y, 0.0f};
     }
     inline vec3 clr() const {
+        if(proceduralTriangle)return {};
         let gas_ptr = getGasPointer();
         let clr_ptr = reinterpret_cast<const ushort3*>(*(gas_ptr-3) );
         if (clr_ptr == nullptr) { return {}; }

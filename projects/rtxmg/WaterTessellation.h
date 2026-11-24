@@ -6,6 +6,10 @@ struct TessellationInput {
     float center[3],size[2],eye[3],projection,amplitude,edgePixels;
     float right[3],up[3],front[3],tanX,tanY;
     unsigned int ellipse,capacity,offset,hashOffset,hashSize;
+    float objectToWorld[12];
+    unsigned int transformed;
+    const float* instanceTransforms;
+    unsigned int instanceCount;
 };
 struct TessellationStats {
     unsigned int clusters,minDepth,maxDepth,limited;
@@ -41,7 +45,7 @@ __device__ float2 ellipseBounds(float lo,float hi,float a,float b) {
     const float small=sqrtf(fmaxf(0.f,1.f-farthest*farthest*.5f)),large=sqrtf(fmaxf(0.f,1.f-closest*closest*.5f));
     return make_float2(lo*(lo<0?large:small),hi*(hi>0?large:small));
 }
-__device__ float projected(const TessellationInput& s,Patch p) {
+__device__ float projectedIdentity(const TessellationInput& s,Patch p) {
     const float span=ldexpf(1.f,-int(p.depth));
     float2 x=make_float2(2.f*p.x*span-1.f,2.f*(p.x+1)*span-1.f);
     float2 z=make_float2(1.f-2.f*(p.y+1)*span,1.f-2.f*p.y*span);
@@ -85,6 +89,73 @@ __device__ float projected(const TessellationInput& s,Patch p) {
     }
     // Complete coverage also retains water for reflection and refraction rays.
     return 1.5f*fmaxf(s.size[0],s.size[1])*span*s.projection/(distance*zeno_water_device::GridSegments*(visible?1.f:16.f));
+}
+__device__ float projectedWorld(const TessellationInput& s,Patch p) {
+    if(!s.transformed)return projectedIdentity(s,p);
+    const float span=ldexpf(1.f,-int(p.depth));
+    float2 x=make_float2(2.f*p.x*span-1.f,2.f*(p.x+1)*span-1.f);
+    float2 z=make_float2(1.f-2.f*(p.y+1)*span,1.f-2.f*p.y*span);
+    if(s.ellipse){const auto a=ellipseBounds(x.x,x.y,z.x,z.y);z=ellipseBounds(z.x,z.y,x.x,x.y);x=a;}
+    x=make_float2(s.center[0]+x.x*s.size[0]*.5f,s.center[0]+x.y*s.size[0]*.5f);
+    z=make_float2(s.center[2]+z.x*s.size[1]*.5f,s.center[2]+z.y*s.size[1]*.5f);
+    const float localCenter[3]{(x.x+x.y)*.5f,s.center[1],(z.x+z.y)*.5f};
+    const float localExtent[3]{(x.y-x.x)*.5f,8.f*s.amplitude,(z.y-z.x)*.5f};
+    float center[3],extent[3],distance2=0;
+    for(unsigned r=0;r<3;++r) {
+        center[r]=s.objectToWorld[r*4+3]-s.eye[r];extent[r]=0;
+        for(unsigned c=0;c<3;++c){center[r]+=s.objectToWorld[r*4+c]*localCenter[c];extent[r]+=fabsf(s.objectToWorld[r*4+c])*localExtent[c];}
+        const float d=fmaxf(0.f,fabsf(center[r])-extent[r]);distance2+=d*d;
+    }
+    bool visible=true;
+    if(s.tanX>0 && s.tanY>0)for(unsigned plane=0;plane<5;++plane) {
+        float upper=0;
+        for(unsigned a=0;a<3;++a) {
+            float n=s.front[a];
+            if(plane<2)n=n*s.tanX+s.right[a]*(plane==0?1.f:-1.f);
+            else if(plane<4)n=n*s.tanY+s.up[a]*(plane==2?1.f:-1.f);
+            upper+=n*center[a]+fabsf(n)*extent[a];
+        }
+        if(upper<0){visible=false;break;}
+    }
+    const float step[2]{(x.y-x.x)/zeno_water_device::GridSegments,(z.y-z.x)/zeno_water_device::GridSegments};
+    if(visible && s.tanX>0 && s.tanY>0) {
+        float rate=0;
+        for(unsigned corner=0;corner<8;++corner) {
+            const float local[3]{corner&1?x.y:x.x,s.center[1]+(corner&4?8.f:-8.f)*s.amplitude,corner&2?z.y:z.x};
+            float q[3],depth=0,right=0,up=0;
+            for(unsigned r=0;r<3;++r) {
+                q[r]=s.objectToWorld[r*4+3]-s.eye[r];for(unsigned c=0;c<3;++c)q[r]+=s.objectToWorld[r*4+c]*local[c];
+                depth+=q[r]*s.front[r];right+=q[r]*s.right[r];up+=q[r]*s.up[r];
+            }
+            depth=fmaxf(depth,.01f);
+            for(unsigned axis=0;axis<2;++axis) {
+                float df=0,dr=0,du=0;
+                for(unsigned r=0;r<3;++r) {
+                    const auto d=s.objectToWorld[r*4+axis*2]*step[axis];
+                    df+=d*s.front[r];dr+=d*s.right[r];du+=d*s.up[r];
+                }
+                dr=dr*depth-right*df;du=du*depth-up*df;
+                rate=fmaxf(rate,s.projection*sqrtf(dr*dr+du*du)/(depth*depth));
+            }
+        }
+        return 1.25f*rate;
+    }
+    float longest=0;
+    for(unsigned axis=0;axis<2;++axis) {
+        float length2=0;for(unsigned r=0;r<3;++r){const auto d=s.objectToWorld[r*4+axis*2]*s.size[axis];length2+=d*d;}
+        longest=fmaxf(longest,sqrtf(length2));
+    }
+    return 1.5f*longest*span*s.projection/(fmaxf(.01f,sqrtf(distance2))*zeno_water_device::GridSegments*(visible?1.f:16.f));
+}
+__device__ float projected(const TessellationInput& s,Patch p) {
+    if(!s.instanceCount)return projectedWorld(s,p);
+    float error=0;
+    auto instance=s;instance.transformed=1;
+    for(unsigned i=0;i<s.instanceCount;++i) {
+        for(unsigned c=0;c<12;++c)instance.objectToWorld[c]=s.instanceTransforms[i*12+c];
+        error=fmaxf(error,projectedWorld(instance,p));
+    }
+    return error;
 }
 
 // One cooperative block owns each bounded surface queue. Selection and 2:1

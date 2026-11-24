@@ -22,6 +22,14 @@ struct ZoomView {
     }
     bool operator!=(const ZoomView &other) const { return !(*this == other); }
 };
+struct LodCamera {
+    float eye[3]{},projection{};
+    ZoomView zoom;
+    bool operator==(const LodCamera& b) const {
+        return eye[0]==b.eye[0] && eye[1]==b.eye[1] && eye[2]==b.eye[2] && projection==b.projection && zoom==b.zoom;
+    }
+    bool operator!=(const LodCamera& b) const {return !(*this==b);}
+};
 inline ZoomView makePanoramaView(const float* up,float width,float height,float stereoRadius=0.f) {
     ZoomView view;view.panoramaVertical=height/3.14159265358979323846f;
     view.panoramaHorizontal=width/(2.f*3.14159265358979323846f);view.stereoRadius=stereoRadius;

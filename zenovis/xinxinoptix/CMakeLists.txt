@@ -320,8 +320,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@PathSampling.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterSampling.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterMaterialShader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterMatShader.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterGeometry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@WaterHitShader.cu
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@ClusterMaterialDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@TextureDelivery.h

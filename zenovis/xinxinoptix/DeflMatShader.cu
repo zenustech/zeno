@@ -16,7 +16,7 @@
 #include "Mnee.h"
 #include "SharcDevice.h"
 #include "ClusterMaterialShader.h"
-#include "WaterMaterialShader.h"
+#include "WaterGeometry.h"
 #include "ShadingNormal.h"
 
 #include <OptiXToolkit/ShaderUtil/SelfIntersectionAvoidance.h>
@@ -73,9 +73,13 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto prd = getPRD<ShadowPRD>();
     prd->radiance = make_float3(0,0,0);
 #if defined(ZENO_WATER_ONLY)
-    waterMaterial::shadow(*prd);return;
+    constexpr bool waterHit=true;
+#else
+    constexpr bool waterHit=false;
 #endif
-#if defined(ZENO_CLAS_ONLY)
+#if defined(ZENO_WATER_ONLY)
+    if(false) {
+#elif defined(ZENO_CLAS_ONLY)
     if(true) {
 #else
     if(params.cluster_data && optixGetClusterId()!=OPTIX_CLUSTER_ID_INVALID) {
@@ -110,6 +114,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     MatInput attrs {};
+    float2 proceduralUVs[3];
     attrs.ptype = optixGetPrimitiveType();
     attrs.gas = gas;
     attrs.priIdx = primIdx;
@@ -119,6 +124,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.rayLength = optixGetRayTmax();
     attrs.isBackFace = optixIsBackFaceHit();
     attrs.seed = prd->seed;
+    attrs.V=-ray_dir;attrs.ray=ray_dir;attrs.depth=prd->depth;
 
     float3& objPos = attrs.objPos; 
     float3& objNorm = attrs.objNorm; 
@@ -138,12 +144,12 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     optixGetSphereData( gas, primIdx, sbtGASIndex, 0.f, &q );
 
     wldPos = P;
-    objPos = optixTransformPointFromWorldToObjectSpace( wldPos );
+    objPos = transformPoint(wldPos,attrs.worldToObject);
 
     float3& _center_object_ = *(float3*)&q; 
 
     objNorm  = ( objPos - _center_object_ ) / q.w;
-    wldNorm  = normalize( optixTransformNormalFromObjectToWorldSpace( objNorm ) );
+    wldNorm  = normalize(transformNormal(objNorm,attrs.worldToObject));
 
     auto _origin_object_ = optixGetObjectRayOrigin();
     bool sphere_external_ray = length(_origin_object_ - _center_object_) > q.w;
@@ -156,23 +162,29 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
     const float3& v2 = _vertices_[2];
-    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
+    if(waterHit)optixGetTriangleVertexData(_vertices_);
+    else optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
 
     float2 barys = optixGetTriangleBarycentrics();
     objPos = interp(barys, v0, v1, v2);
     objNorm = normalize(cross(v1-v0, v2-v0));
 
-    wldPos = optixTransformPointFromObjectToWorldSpace(objPos);
-    wldNorm = optixTransformNormalFromObjectToWorldSpace(objNorm);
+    wldPos = transformPoint(objPos,attrs.objectToWorld);
+    wldNorm = transformNormal(objNorm,attrs.worldToObject);
     wldNorm = normalize(wldNorm);
 
-    let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-    let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
-    attrs.vertex_idx = idx_ptr[primIdx];
-
     attrs.barys2 = barys;
-    attrs.N = reinterpret_cast<TriangleInput&>(attrs).interpNorm();
-    attrs.T = reinterpret_cast<TriangleInput&>(attrs).interpTang();
+    if(waterHit) {
+        waterGeometry::attributes(attrs,proceduralUVs);
+        if(dot(attrs.wldNorm,static_cast<float3>(attrs.N))<0.f){attrs.objNorm=-attrs.objNorm;attrs.wldNorm=-attrs.wldNorm;}
+    }
+    else {
+        let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+        let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
+        attrs.vertex_idx = idx_ptr[primIdx];
+        attrs.N = reinterpret_cast<TriangleInput&>(attrs).interpNorm();
+        attrs.T = reinterpret_cast<TriangleInput&>(attrs).interpTang();
+    }
 #endif
 
     attrs.isShadowRay = true;
@@ -182,6 +194,25 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     if(mats.shadowReceiver > 0.0f) {
         optixIgnoreIntersection();
+        return;
+    }
+
+    // Structured surface shadows use the bound material's transmission.
+    // Refraction is handled by radiance rays.
+    const float transmission=fminf(fmaxf(mats.specTrans,0.f),1.f)*(1.f-fminf(fmaxf(mats.metallic,0.f),1.f));
+    if(waterHit && transmission>0.f) {
+        const float ior=fmaxf(mats.ior,1.e-4f);
+        const float directionNormal=dot(normalize(ray_dir),attrs.wldNorm);
+        const float cosine=fminf(1.f,fabsf(dot(normalize(ray_dir),static_cast<float3>(mats.nrm))));
+        const float eta=directionNormal>0.f?ior:1.f/ior;
+        const float f0=pbrt::Sqr((ior-1.f)/(ior+1.f));
+        const float fresnel=f0+(1.f-f0)*powf(1.f-cosine,5.f);
+        const float interfaceTransmission=eta*eta*(1.f-cosine*cosine)>1.f?0.f:transmission*(1.f-fresnel);
+        const float alpha=fminf(fmaxf(mats.opacity,0.f),1.f);
+        const vec3 through=vec3(alpha)+(1.f-alpha)*interfaceTransmission*clamp(mats.transColor,vec3(0.f),vec3(1.f));
+        prd->attanuation*=through;
+        if(fmaxf(through.x,fmaxf(through.y,through.z))<=0.f)optixTerminateRay();
+        else optixIgnoreIntersection();
         return;
     }
     
@@ -283,7 +314,7 @@ extern "C" __global__ void __closesthit__radiance()
 #if defined(ZENO_WATER_ONLY)
     constexpr bool waterHit=true;
     if(params.cluster_debug_view && !prd->test_distance) {
-        const auto c=waterMaterial::debug(params.cluster_debug_view);
+        const auto c=waterGeometry::debug(params.cluster_debug_view);
         prd->radiance=c;prd->tmp_albedo=c;prd->hit_type=DIFFUSE_HIT;prd->done=true;return;
     }
 #else
@@ -464,6 +495,7 @@ extern "C" __global__ void __closesthit__radiance()
 #else
     
     float3 _vertices_[3];
+    float2 proceduralUVs[3];
     attrs.vertices = _vertices_;
     const float3& v0 = _vertices_[0];
     const float3& v1 = _vertices_[1];
@@ -500,7 +532,7 @@ extern "C" __global__ void __closesthit__radiance()
         const bool coarseNormalConflict = cluster.lod > 0 &&
             (dot(n0,objNorm)<-1.e-4f || dot(n1,objNorm)<-1.e-4f || dot(n2,objNorm)<-1.e-4f);
         attrs.N=!coarseNormalConflict && length(n)>0?
-            normalize(optixTransformNormalFromObjectToWorldSpace(n)):wldNorm;
+            normalize(transformNormal(n,attrs.worldToObject)):wldNorm;
         // The gray CLAS material is two-sided. Match RTXMG's orientation of
         // interpolated normals; coarse LODs can retain normals facing away
         // from the incoming ray even where the triangle itself faces it.
@@ -510,9 +542,8 @@ extern "C" __global__ void __closesthit__radiance()
         }
         attrs.T={};
     } else if(waterHit) {
-        attrs.N=optixTransformNormalFromObjectToWorldSpace(waterMaterial::normal(objPos));
+        waterGeometry::attributes(attrs,proceduralUVs);
         if(dot(attrs.wldNorm,static_cast<float3>(attrs.N))<0.f){attrs.objNorm=-attrs.objNorm;attrs.wldNorm=-attrs.wldNorm;}
-        attrs.T={};
     } else {
         let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
         let idx_ptr = reinterpret_cast<uint3*>(  *(gas_ptr-1) );
@@ -567,8 +598,6 @@ extern "C" __global__ void __closesthit__radiance()
         if(params.cluster_materials.materials)
             mats=clusterMaterial::evaluate(attrs,prd->textureConeWidth+optixGetRayTmax()*prd->textureConeSpread,
                 prd->depth==0?&prd->primaryTextureMissing:nullptr,clusterNormalOrientation);
-    } else if(waterHit) {
-        mats=waterMaterial::evaluate(attrs);
     } else {
         mats=optixDirectCall<MatOutput, cudaTextureObject_t[], MatInput&>(rt_data->dc_index,rt_data->textures,attrs);
     }
@@ -636,12 +665,17 @@ extern "C" __global__ void __closesthit__radiance()
     if (!clusterHit && mats.smoothness > 0 && mats.shadowTerminatorOffset > 0) {
 
         auto barys3 = vec3(1-barys.x-barys.y, barys.x, barys.y);
-        let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
-        let nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
         float c = geoNormalFlipped?-1.0f:1.0f;
-        float3 n0 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.x ]) );
-        float3 n1 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.y ]) );
-        float3 n2 = normalize( decodeHalf(nrm_ptr[ attrs.vertex_idx.z ]) );
+        float3 n0,n1,n2;
+        if(waterHit) {
+            n0=waterGeometry::normal(v0);n1=waterGeometry::normal(v1);n2=waterGeometry::normal(v2);
+        } else {
+            let gas_ptr = (void**)optixGetGASPointerFromHandle(gas);
+            let nrm_ptr = reinterpret_cast<ushort3*>(*(gas_ptr-4) );
+            n0=normalize(decodeHalf(nrm_ptr[attrs.vertex_idx.x]));
+            n1=normalize(decodeHalf(nrm_ptr[attrs.vertex_idx.y]));
+            n2=normalize(decodeHalf(nrm_ptr[attrs.vertex_idx.z]));
+        }
 
         const auto localpos = (1-barys.x-barys.y)*v0 + barys.x * v1 + barys.y * v2;
         const auto offset = bezierOffset(localpos, v0, v1, v2, n0, n1, n2, barys3);
