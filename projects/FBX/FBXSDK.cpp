@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <stack>
@@ -14,6 +14,7 @@
 #include "zeno/utils/bit_operations.h"
 #include <zeno/types/UserData.h>
 #include "zeno/types/PrimitiveObject.h"
+#include <zeno/types/PrimitiveUV.h>
 #include "zeno/utils/scope_exit.h"
 #include "zeno/funcs/PrimitiveUtils.h"
 #include "zeno/utils/string.h"
@@ -963,6 +964,7 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
             ud.set2(zeno::format("boneName_{}", i), bone_names[i]);
         }
     }
+    std::vector<PrimitiveUVSet> uvSets;
     if (pMesh->GetElementUVCount() > 0) {
         auto* arr = pMesh->GetElementUV(0);
         std::string name = "uv";
@@ -1038,6 +1040,21 @@ static std::shared_ptr<PrimitiveObject> GetMesh(
                 }
             }
         }
+    }
+    for (int j = 0; j < pMesh->GetElementUVCount(); ++j) {
+        const auto element = pMesh->GetElementUV(j);
+        const bool point = element->GetMappingMode() == FbxLayerElement::eByControlPoint;
+        const bool corner = element->GetMappingMode() == FbxLayerElement::eByPolygonVertex;
+        if (!point && !corner) {
+            continue;
+        }
+        const auto source =
+            point ? (j ? "uv_" + std::to_string(j) : "uv") : (j ? "uv" + std::to_string(j) + "s" : "uvs");
+        uvSets.push_back(
+            {unsigned(j), element->GetName(), source, point ? "point" : "corner", point ? -1 : j});
+    }
+    if (!uvSets.empty()) {
+        setPrimitiveUVSets(*prim, uvSets);
     }
     if (pMesh->GetElementVertexColorCount()>0)
     {

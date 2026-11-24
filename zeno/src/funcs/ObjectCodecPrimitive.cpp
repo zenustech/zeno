@@ -84,7 +84,19 @@ std::shared_ptr<PrimitiveObject> decodePrimitiveObject(const char *it) {
     decodeAttrVector(obj->polys, it);
     decodeAttrVector(obj->edges, it);
     decodeAttrVector(obj->uvs, it);
-    if (*it++ == '1') {
+    // 0/1 are the original no-material/material records. 2/3 add palettes
+    // before the optional material; old primitive caches remain readable.
+    const char flags = *it++;
+    if (flags == '2' || flags == '3') {
+        uint32_t count;
+        std::memcpy(&count, it, sizeof(count));
+        it += sizeof(count);
+        obj->append_uvs.resize(count);
+        for (auto &uv : obj->append_uvs) {
+            decodeAttrVector(uv, it);
+        }
+    }
+    if (flags == '1' || flags == '3') {
         obj->mtl = std::make_shared<MaterialObject>();
         obj->mtl->deserialize(it);
     }
@@ -102,12 +114,18 @@ bool encodePrimitiveObject(PrimitiveObject const *obj, std::back_insert_iterator
     encodeAttrVector(obj->polys, it);
     encodeAttrVector(obj->edges, it);
     encodeAttrVector(obj->uvs, it);
+    const bool extra = !obj->append_uvs.empty();
+    *it++ = extra ? (obj->mtl ? '3' : '2') : (obj->mtl ? '1' : '0');
+    if (extra) {
+        const uint32_t count = uint32_t(obj->append_uvs.size());
+        it = std::copy_n(reinterpret_cast<const char *>(&count), sizeof(count), it);
+        for (const auto &uv : obj->append_uvs) {
+            encodeAttrVector(uv, it);
+        }
+    }
     if (obj->mtl) {
-        *it++ = '1';
         for (char c: obj->mtl->serialize())
             *it++ = c;
-    } else {
-        *it++ = '0';
     }
     return true;
 }

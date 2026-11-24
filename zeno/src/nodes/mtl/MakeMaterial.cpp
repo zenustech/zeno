@@ -5,6 +5,7 @@
 #include "zeno/types/StringObject.h"
 #include <zeno/types/UserData.h>
 #include <zeno/types/AlternativeAttribute.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <type_traits>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <cmath>
@@ -342,6 +343,7 @@ struct ExtractMaterialShader : zeno::INode
                     }
                 } else throw std::runtime_error("Unknown alternative source domain: "+domain);
             };
+            const auto imported = primitiveUVSets(*input);
             for (const auto &row : rows) {
                 const auto source=row.at("source").get<std::string>();
                 const auto domain=row.at("domain").get<std::string>();
@@ -356,6 +358,42 @@ struct ExtractMaterialShader : zeno::INode
                     if (existing.at("alter")==index && existing.at("attr")==attr)
                         throw std::runtime_error("Duplicate alternative binding: " + attr + "/" + std::to_string(index));
                 const auto name=alternativeAttributeName(attr,index);
+                const PrimitiveUVSet *uvSet = nullptr;
+                if (semantic == MeshAttributeSemantic::UV) {
+                    for (const auto &set : imported) {
+                        if (set.name == source || set.source == source ||
+                            std::find(set.aliases.begin(), set.aliases.end(), source) != set.aliases.end()) {
+                            if (uvSet) {
+                                throw std::runtime_error("Ambiguous source UV set name: " + source);
+                            }
+                            uvSet = &set;
+                        }
+                    }
+                }
+                if (uvSet) {
+                    storeAttribute(name, domain, [&](size_t t, int k) -> vec2f {
+                        vec2f value{};
+                        bool valid = false;
+                        if (domain == "point") {
+                            valid =
+                                uvSet->domain == "point" && primitiveUVPointValue(*input, *uvSet, t, value);
+                        } else if (domain == "corner") {
+                            const auto &r = remap[t];
+                            if (r.kind == 0) {
+                                valid = primitiveUVValue(*input, *uvSet, r.face, k, value);
+                            } else if (r.kind == 2) {
+                                valid = primitiveUVLoopValue(*input, *uvSet, r.corners[k], value);
+                            }
+                        }
+                        if (!valid) {
+                            throw std::runtime_error("Invalid source UV set or domain: " + source + "/" +
+                                                     domain);
+                        }
+                        return value;
+                    });
+                    metadata.push_back(row);
+                    continue;
+                }
                 auto prepareValues=[&](auto read) {
                     using Value=decltype(read(input->verts,source,size_t(0)));
                     storeAttribute(name,domain,[&](size_t t,int k)->Value {
@@ -363,18 +401,37 @@ struct ExtractMaterialShader : zeno::INode
                         const auto &r=remap[t];
                         if(domain=="face")
                             return r.kind==0?read(input->tris,source,r.face):r.kind==1?read(input->quads,source,r.face):read(input->polys,source,r.face);
-                        if(r.kind==0) return read(input->tris,source+std::to_string(k),r.face);
+                        if (r.kind == 0) {
+                            if constexpr (std::is_same_v<Value, vec2f>) {
+                                int set = primitiveUVIndex(source);
+                                if (source.rfind("auv_", 0) == 0) {
+                                    set = primitiveUVIndex("uvs_" + source.substr(4));
+                                }
+                                if (set >= 0) {
+                                    vec2f value;
+                                    if (!primitiveUVTriangleValue(*input, set, r.face, k, value)) {
+                                        throw std::runtime_error("Invalid triangulated UV source: " + source);
+                                    }
+                                    return value;
+                                }
+                            }
+                            const auto name = primitiveCornerName(source, k);
+                            return read(input->tris,
+                                        input->tris.has_attr(name) ? name : source + std::to_string(k),
+                                        r.face);
+                        }
                         if(r.kind==1) return read(input->quads,source+std::to_string(r.corners[k]),r.face);
                         if constexpr(std::is_same_v<Value,vec2f>) {
                             // Only UV sources may refer to an imported UV palette.
                             if(input->loops.attr_is<int>(source)) {
                                 const auto index=input->loops.attr<int>(source).at(r.corners[k]);
                                 if(index<0) throw std::runtime_error("Negative alternative UV palette index");
-                                vec2f value; bool found=source=="uvs";
-                                if(found) value=input->uvs.values.at(index);
-                                for(size_t u=0;!found && u<input->append_uvs.size();++u)
-                                    if(source=="uv"+std::to_string(u+1)+"s"){value=input->append_uvs[u].values.at(index);found=true;}
-                                if(!found) throw std::runtime_error("Unknown alternative UV palette: "+source);
+                                const auto set = primitiveUVIndex(source);
+                                const auto palette = set >= 0 ? primitiveUVPalette(*input, set) : nullptr;
+                                if (!palette) {
+                                    throw std::runtime_error("Unknown alternative UV palette: " + source);
+                                }
+                                const auto value = palette->values.at(index);
                                 if(!std::isfinite(value[0]) || !std::isfinite(value[1])) throw std::runtime_error("Non-finite alternative UV: "+source);
                                 return value;
                             }

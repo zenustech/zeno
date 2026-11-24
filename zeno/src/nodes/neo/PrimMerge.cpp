@@ -2,6 +2,7 @@
 #include <zeno/para/parallel_for.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
@@ -190,8 +191,11 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMergeWithFacesetMatid(std::v
     }
     return outprim;
 }
-ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::PrimitiveObject *> const &primList,
-                                                          std::string const &tagAttr, bool tag_on_vert, bool tag_on_face) {
+ZENO_API std::shared_ptr<zeno::PrimitiveObject>
+primMerge(std::vector<zeno::PrimitiveObject *> const &inputList, std::string const &tagAttr, bool tag_on_vert,
+          bool tag_on_face) {
+    auto primList = inputList;
+    std::vector<std::shared_ptr<PrimitiveObject>> polygonated;
     //zeno::log_critical("asdfjhl {}", primList.size());
     //throw;
     int poly_flag = 0;
@@ -204,6 +208,8 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
     if (0 < poly_flag && poly_flag < primList.size()) {
         for (auto &p : primList) {
             if (p->polys.size() == 0) {
+                polygonated.push_back(std::make_shared<PrimitiveObject>(*p));
+                p = polygonated.back().get();
                 primPolygonate(p, true);
             }
         }
@@ -682,7 +688,199 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         });
     }
 
+    primMergeUVs(*outprim, primList);
     return outprim;
+}
+
+ZENO_API void primMergeUVs(PrimitiveObject &out, const std::vector<PrimitiveObject *> &inputs) {
+    size_t sets = 0;
+    std::vector<std::vector<PrimitiveUVSet>> inputSets;
+    for (const auto p : inputs) {
+        sets = std::max(sets, p->append_uvs.size());
+        inputSets.push_back(primitiveUVSets(*p));
+    }
+    out.append_uvs.resize(sets);
+    for (size_t set = 1; set <= sets; ++set) {
+        auto &palette = out.append_uvs[set - 1];
+        size_t count = 0;
+        for (const auto p : inputs) {
+            if (const auto src = primitiveUVPalette(*p, set)) {
+                count += src->size();
+                src->foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+                    using T = std::decay_t<decltype(values[0])>;
+                    palette.add_attr<T>(key);
+                });
+            }
+        }
+        if (count > size_t(std::numeric_limits<int>::max())) {
+            throw std::runtime_error("Merged UV palette is too large");
+        }
+        palette.resize(count);
+        std::vector<int> *loops = nullptr;
+        std::vector<vec3i> *triangles = nullptr;
+        for (const auto p : inputs) {
+            if (primitiveUVLoopIndices(*p, set)) {
+                loops = &out.loops.add_attr<int>(primitiveUVLoopName(set));
+            }
+            if (p->tris.attr_is<vec3i>(primitiveUVTriangleName(set)) ||
+                p->tris.attr_is<int>("uv" + std::to_string(set) + "0")) {
+                triangles = &out.tris.add_attr<vec3i>(primitiveUVTriangleName(set));
+            }
+        }
+        if (loops) {
+            std::fill(loops->begin(), loops->end(), -1);
+        }
+        if (triangles) {
+            std::fill(triangles->begin(), triangles->end(), vec3i(-1));
+        }
+        for (size_t i = 0; i < inputs.size(); ++i) {
+            for (const auto &uv : inputSets[i]) {
+                if (uv.domain == "point" && uv.palette == int(set) &&
+                    inputs[i]->verts.attr_is<int>(uv.source)) {
+                    auto &ids = out.verts.add_attr<int>(uv.source);
+                    std::fill(ids.begin(), ids.end(), -1);
+                }
+            }
+        }
+        size_t valueBase = 0, loopBase = 0, triBase = 0, pointBase = 0;
+        for (size_t mesh = 0; mesh < inputs.size(); ++mesh) {
+            const auto p = inputs[mesh];
+            const auto src = primitiveUVPalette(*p, set);
+            if (src) {
+                std::copy(src->begin(), src->end(), palette.begin() + valueBase);
+                src->foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+                    using T = std::decay_t<decltype(values[0])>;
+                    std::copy(values.begin(), values.end(), palette.attr<T>(key).begin() + valueBase);
+                });
+            }
+            if (const auto ids = primitiveUVLoopIndices(*p, set); ids && loops) {
+                for (size_t i = 0; i < p->loops.size(); ++i) {
+                    (*loops)[loopBase + i] = !src || ids->at(i) < 0 || size_t(ids->at(i)) >= src->size()
+                                                 ? -1
+                                                 : int(valueBase) + ids->at(i);
+                }
+            }
+            const auto packed = primitiveUVTriangleName(set);
+            const auto old = "uv" + std::to_string(set);
+            if (triangles) {
+                for (size_t t = 0; t < p->tris.size(); ++t) {
+                    for (int k = 0; k < 3; ++k) {
+                        int index = -1;
+                        if (p->tris.attr_is<vec3i>(packed)) {
+                            index = p->tris.attr<vec3i>(packed)[t][k];
+                        } else if (p->tris.attr_is<int>(old + std::to_string(k))) {
+                            index = p->tris.attr<int>(old + std::to_string(k))[t];
+                        }
+                        (*triangles)[triBase + t][k] =
+                            !src || index < 0 || size_t(index) >= src->size() ? -1 : int(valueBase) + index;
+                    }
+                }
+            }
+            for (const auto &uv : inputSets[mesh]) {
+                if (uv.domain == "point" && uv.palette == int(set) && p->verts.attr_is<int>(uv.source)) {
+                    auto &dst = out.verts.attr<int>(uv.source);
+                    const auto &ids = p->verts.attr<int>(uv.source);
+                    for (size_t v = 0; v < p->verts.size(); ++v) {
+                        dst[pointBase + v] = !src || ids.at(v) < 0 || size_t(ids.at(v)) >= src->size()
+                                                 ? -1
+                                                 : int(valueBase) + ids.at(v);
+                    }
+                }
+            }
+            valueBase += src ? src->size() : 0;
+            loopBase += p->loops.size();
+            triBase += p->tris.size();
+            pointBase += p->verts.size();
+        }
+        // Keep old cached index spellings consistent when they are present.
+        const auto oldLoop = "uv" + std::to_string(set) + "s";
+        if (loops && out.loops.attr_is<int>(oldLoop)) {
+            out.loops.attr<int>(oldLoop) = *loops;
+        }
+        for (int k = 0; k < 3; ++k) {
+            const auto old = "uv" + std::to_string(set) + std::to_string(k);
+            if (triangles && out.tris.attr_is<int>(old)) {
+                for (size_t t = 0; t < out.tris.size(); ++t) {
+                    out.tris.attr<int>(old)[t] = (*triangles)[t][k];
+                }
+            }
+        }
+    }
+    std::map<unsigned, PrimitiveUVSet> descriptors;
+    for (const auto &list : inputSets) {
+        for (const auto &set : list) {
+            auto [it, inserted] = descriptors.emplace(set.index, set);
+            auto &dst = it->second;
+            for (const auto &name : set.aliases) {
+                if (name != dst.name &&
+                    std::find(dst.aliases.begin(), dst.aliases.end(), name) == dst.aliases.end()) {
+                    dst.aliases.push_back(name);
+                }
+            }
+            if (set.name != dst.name &&
+                std::find(dst.aliases.begin(), dst.aliases.end(), set.name) == dst.aliases.end()) {
+                dst.aliases.push_back(set.name);
+            }
+        }
+    }
+    for (auto &[index, dst] : descriptors) {
+        bool compatible = true;
+        for (const auto &list : inputSets) {
+            for (const auto &set : list) {
+                if (set.index == index) {
+                    compatible &= set.domain == dst.domain && set.palette == dst.palette &&
+                                  ((set.domain == "corner" && set.palette >= 0) || set.source == dst.source);
+                }
+            }
+        }
+        if (compatible) {
+            continue;
+        }
+        // Bake only heterogeneous domains to corners; indexed sets stay indexed.
+        const auto source = "__merged_uv_" + std::to_string(index);
+        auto &loops = out.loops.add_attr<vec2f>(source);
+        for (int k = 0; k < 3; ++k) {
+            out.tris.add_attr<vec2f>(primitiveCornerName(source, k));
+        }
+        size_t loopBase = 0, triBase = 0;
+        for (size_t i = 0; i < inputs.size(); ++i) {
+            const PrimitiveUVSet *set = nullptr;
+            for (const auto &candidate : inputSets[i]) {
+                if (candidate.index == index) {
+                    set = &candidate;
+                }
+            }
+            const auto p = inputs[i];
+            for (size_t l = 0; l < p->loops.size(); ++l) {
+                vec2f value{};
+                if (set && !primitiveUVLoopValue(*p, *set, l, value)) {
+                    value = {};
+                }
+                loops[loopBase + l] = value;
+            }
+            for (int k = 0; k < 3; ++k) {
+                for (size_t t = 0; t < p->tris.size(); ++t) {
+                    vec2f value{};
+                    if (set && !primitiveUVValue(*p, *set, t, k, value)) {
+                        value = {};
+                    }
+                    out.tris.attr<vec2f>(primitiveCornerName(source, k))[triBase + t] = value;
+                }
+            }
+            loopBase += p->loops.size();
+            triBase += p->tris.size();
+        }
+        dst.source = source;
+        dst.domain = "corner";
+        dst.palette = -1;
+    }
+    if (!descriptors.empty()) {
+        std::vector<PrimitiveUVSet> result;
+        for (const auto &[index, set] : descriptors) {
+            result.push_back(set);
+        }
+        setPrimitiveUVSets(out, result);
+    }
 }
 
 namespace {

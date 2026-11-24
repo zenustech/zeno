@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/para/parallel_scan.h>
@@ -40,7 +41,36 @@ ZENO_API void primTriangulateQuads(PrimitiveObject *prim) {
             prim->tris.attr<int>("matid")[base + i * 2 + 1] = -1;
         }
     }
-    prim->quads.clear();
+    // Preserve face data, and the established name0..name3 quad-corner form.
+    prim->quads.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+        using T = std::decay_t<decltype(values[0])>;
+        auto &out = prim->tris.add_attr<T>(key);
+        for (size_t i = 0; i < values.size(); ++i) {
+            out[base + 2 * i] = out[base + 2 * i + 1] = values[i];
+        }
+    });
+    prim->quads.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+        if (key.empty() || key.back() != '0') {
+            return;
+        }
+        using T = std::decay_t<decltype(values[0])>;
+        const auto source = key.substr(0, key.size() - 1);
+        for (int k = 1; k < 4; ++k) {
+            if (!prim->quads.attr_is<T>(source + std::to_string(k))) {
+                return;
+            }
+        }
+        const int corners[2][3] = {{0, 1, 2}, {0, 2, 3}};
+        for (int k = 0; k < 3; ++k) {
+            auto &out = prim->tris.attr<T>(source + std::to_string(k));
+            for (size_t i = 0; i < values.size(); ++i) {
+                for (int t = 0; t < 2; ++t) {
+                    out[base + 2 * i + t] = prim->quads.attr<T>(source + std::to_string(corners[t][k]))[i];
+                }
+            }
+        }
+    });
+    prim->quads.clear_with_attr();
 }
 
 ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_lines, bool with_attr) {
@@ -111,18 +141,6 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
         auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
         auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
         auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
-        int *uv1s = prim->loops.attr_is<int>("uv1s")? prim->loops.attr<int>("uv1s").data(): nullptr;
-        int *uv2s = prim->loops.attr_is<int>("uv2s")? prim->loops.attr<int>("uv2s").data(): nullptr;
-        int *uv3s = prim->loops.attr_is<int>("uv3s")? prim->loops.attr<int>("uv3s").data(): nullptr;
-        int* uv10 = uv1s? prim->tris.add_attr<int>("uv10").data(): nullptr;
-        int* uv11 = uv1s? prim->tris.add_attr<int>("uv11").data(): nullptr;
-        int* uv12 = uv1s? prim->tris.add_attr<int>("uv12").data(): nullptr;
-        int* uv20 = uv2s? prim->tris.add_attr<int>("uv20").data(): nullptr;
-        int* uv21 = uv2s? prim->tris.add_attr<int>("uv21").data(): nullptr;
-        int* uv22 = uv2s? prim->tris.add_attr<int>("uv22").data(): nullptr;
-        int* uv30 = uv3s? prim->tris.add_attr<int>("uv30").data(): nullptr;
-        int* uv31 = uv3s? prim->tris.add_attr<int>("uv31").data(): nullptr;
-        int* uv32 = uv3s? prim->tris.add_attr<int>("uv32").data(): nullptr;
 
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
@@ -137,21 +155,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                 uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                 uv1[scanbase] = {uvs[loop_uv[start + 1]][0], uvs[loop_uv[start + 1]][1], 0};
                 uv2[scanbase] = {uvs[loop_uv[start + 2]][0], uvs[loop_uv[start + 2]][1], 0};
-                if (uv1s) {
-                    uv10[scanbase] = uv1s[start];
-                    uv11[scanbase] = uv1s[start + 1];
-                    uv12[scanbase] = uv1s[start + 2];
-                }
-                if (uv2s) {
-                    uv20[scanbase] = uv2s[start];
-                    uv21[scanbase] = uv2s[start + 1];
-                    uv22[scanbase] = uv2s[start + 2];
-                }
-                if (uv3s) {
-                    uv30[scanbase] = uv3s[start];
-                    uv31[scanbase] = uv3s[start + 1];
-                    uv32[scanbase] = uv3s[start + 2];
-                }
+
+
+
                 prim->tris[scanbase] = vec3i(
                         prim->loops[start],
                         prim->loops[start + 1],
@@ -162,21 +168,9 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
                     uv0[scanbase] = {uvs[loop_uv[start]][0], uvs[loop_uv[start]][1], 0};
                     uv1[scanbase] = {uvs[loop_uv[start + j - 1]][0], uvs[loop_uv[start + j - 1]][1], 0};
                     uv2[scanbase] = {uvs[loop_uv[start + j]][0], uvs[loop_uv[start + j]][1], 0};
-                    if (uv1s) {
-                        uv10[scanbase] = uv1s[start];
-                        uv11[scanbase] = uv1s[start + j - 1];
-                        uv12[scanbase] = uv1s[start + j];
-                    }
-                    if (uv2s) {
-                        uv20[scanbase] = uv2s[start];
-                        uv21[scanbase] = uv2s[start + j - 1];
-                        uv22[scanbase] = uv2s[start + j];
-                    }
-                    if (uv3s) {
-                        uv30[scanbase] = uv3s[start];
-                        uv31[scanbase] = uv3s[start + j - 1];
-                        uv32[scanbase] = uv3s[start + j];
-                    }
+
+
+
                     prim->tris[scanbase] = vec3i(
                             prim->loops[start],
                             prim->loops[start + j - 1],
@@ -195,6 +189,51 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
             }
         });
 
+    }
+    // One corner map drives every loop attribute, independently of primary UVs.
+    if (with_uv || with_attr) {
+        std::vector<vec3i> corners(prim->tris.size());
+        for (size_t i = 0; i < prim->polys.size(); ++i) {
+            const auto [start, len] = prim->polys[i];
+            int base;
+            if constexpr (has_lines.value) {
+                base = scansum[i][0] + tribase;
+            } else {
+                base = scansum[i] + tribase;
+            }
+            for (int k = 2; k < len; ++k) {
+                corners[base + k - 2] = {start, start + k - 1, start + k};
+            }
+        }
+        prim->loops.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+            using T = std::decay_t<decltype(values[0])>;
+            if (key == "uvs") {
+                return; // the legacy primary path remains unchanged
+            }
+            const int uvIndex = primitiveUVIndex(key);
+            if constexpr (std::is_same_v<T, int>) {
+                if (uvIndex > 0) {
+                    if (!with_uv) {
+                        return;
+                    }
+                    auto &out = prim->tris.add_attr<vec3i>(primitiveUVTriangleName(uvIndex));
+                    for (size_t t = tribase; t < out.size(); ++t) {
+                        out[t] = {values.at(corners[t][0]), values.at(corners[t][1]),
+                                  values.at(corners[t][2])};
+                    }
+                    return;
+                }
+            }
+            if (!with_attr) {
+                return;
+            }
+            for (int k = 0; k < 3; ++k) {
+                auto &out = prim->tris.add_attr<T>(primitiveCornerName(key, k));
+                for (size_t t = tribase; t < out.size(); ++t) {
+                    out[t] = values.at(corners[t][k]);
+                }
+            }
+        });
     }
     if (with_attr) {
         prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
