@@ -834,7 +834,6 @@ extern "C" __global__ void __closesthit__radiance()
     mats.subsurface = prd->sssDepth>0?0:mats.subsurface;
     while(DisneyBSDF::SampleDisney3(
                 prd->seed,
-                prd->eventseed,
                 mats,
                 T,
                 B,
@@ -1090,6 +1089,8 @@ extern "C" __global__ void __closesthit__radiance()
     };
 
     ShadowPRD shadowPRD {};
+    shadowPRD.samplerPixel=prd->samplerPixel;shadowPRD.samplerOffset=prd->samplerOffset;
+    shadowPRD.samplerDimension=unsigned(prd->depth)*16u+8u;
     shadowPRD.seed = prd->seed;
     rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);rnd(shadowPRD.seed);
     shadowPRD.depth = prd->depth;

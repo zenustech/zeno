@@ -86,6 +86,7 @@
 #include "LightTree.h"
 #include "Portal.h"
 #include "Scene.h"
+#include "PathSamplingResources.h"
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
 #include "SharcResources.h"
 #endif
@@ -153,6 +154,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_m;
 
     OptiXDenoiser denoiser;
+    std::unique_ptr<zeno_path_sampling::Resources> pathSamplingResources;
     raii<CUdeviceptr> denoised_buffer;
     
     raii<CUdeviceptr> pick_buffer;
@@ -608,6 +610,7 @@ static void launchSubframe( uchar4* result_buffer_data, PathTracerState& state, 
 }
 
 static void advanceAccumulation(Params& params) {
+    params.pathSampling.sampleIndex+=params.samples_per_launch;
     if (++params.subframe_index == 0) {
         // Preserve the image weight even if a multi-year sequence wraps.
         params.subframe_index = 1;
@@ -2750,6 +2753,21 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         state.params.outside_random_number=uint32_t(replayCamera[cr::seed]);
         state.params.subframe_index=uint32_t(replayCamera[cr::sample_start]);
         state.params.history_samples=uint32_t(replayCamera[cr::history_start]);
+        state.params.pathSampling.sampleIndex=uint32_t(replayCamera[cr::sample_start]);
+    }
+    static const int configuredSampler=[] {
+        const auto* value=std::getenv("ZENO_OPTIX_PATH_SAMPLER");
+        return value && (std::string(value)=="0" || std::string(value)=="legacy")?
+            int(zeno_path_sampling::Legacy):int(zeno_path_sampling::FAST);
+    }();
+    const auto samplerMode=runtimeOptions.get2<int>("optix-path-sampler",configuredSampler)==int(zeno_path_sampling::Legacy)?
+        zeno_path_sampling::Legacy:zeno_path_sampling::FAST;
+    if(!state.pathSamplingResources || samplerMode!=state.params.pathSampling.mode) {
+        if(!state.pathSamplingResources)state.pathSamplingResources=std::make_unique<zeno_path_sampling::Resources>();
+        const auto sequence=state.params.pathSampling.sampleIndex;
+        state.params.pathSampling=state.pathSamplingResources->launch(samplerMode,sequence,0x1234abcdu);
+        state.params.history_samples=0;
+        zeno::log_info("Path sampler: mode={}, sequence={}, independent accumulation history",samplerMode,sequence);
     }
     cr::Frame cameraFrame;
     if(recordCamera) {
@@ -2820,6 +2838,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     const bool boundedThisRender = state.cluster_history_bounded;
     timer.tick();
     const uint32_t textureRandomSeed=state.params.outside_random_number;
+    const uint32_t textureSamplerIndex=state.params.pathSampling.sampleIndex;
     for(unsigned int texturePass=0;;++texturePass) {
     // Probe one sample while cold, then replay the full requested sample set.
     // Failed texture passes never become offline output. Interactive passes
@@ -2911,6 +2930,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     zeno::log_info("CLAS texture retry: pass={}, missing={}, probe={}, tiles={}, GPU bytes={}, host mip bytes={}",
         texturePass,textureMiss,textureProbe,textureStats.tilesRead,textureStats.deviceBytes,textureStats.hostMipBytes);
     state.params.subframe_index=0;state.params.history_samples=0;state.params.outside_random_number=textureRandomSeed;
+    state.params.pathSampling.sampleIndex=textureSamplerIndex;
 #if defined(ZENO_WITH_SHARC) && ZENO_WITH_SHARC
     state.sharc_reset_pending=true;
     if(sharc_enabled)sharc_enabled=prepareSharc(state);
@@ -3391,6 +3411,7 @@ void optixDestroy() {
         state.sharc.reset();
 #endif
         state.viewport_pick_ready=CudaUploadFence{};
+        state.pathSamplingResources.reset();state.params.pathSampling={};
         decltype(state.viewport_pick){}.swap(state.viewport_pick);
         defaultScene.water.reset();defaultScene.waterSettings.clear();defaultScene.waterUnloadPending.clear();
         defaultScene.clusterMaterials.reset();defaultScene.clusterAsset.reset();

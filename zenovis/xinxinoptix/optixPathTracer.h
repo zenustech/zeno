@@ -9,6 +9,7 @@
 #include "ClusterDevice.h"
 #include "ClusterMaterialDevice.h"
 #include "WaterDevice.h"
+#include "PathSamplingLaunch.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -222,6 +223,7 @@ struct Params
     unsigned int cluster_debug_view;
     zeno_cluster_device::MaterialLaunch cluster_materials;
     zeno_water_device::Launch water;
+    zeno_path_sampling::Launch pathSampling;
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;

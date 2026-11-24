@@ -18,6 +18,11 @@ target_sources(zenovis PRIVATE
   optixPathTracer.h
   ClusterMaterials.cpp
   ClusterMaterials.h
+  PathSamplingResources.cpp
+  PathSamplingResources.h
+  PathSamplingData.h
+  PathSamplingLaunch.h
+  PathSampling.h
   NvrtcWorker.cpp
   NvrtcWorker.h
   NvrtcCompileProtocol.h
@@ -73,6 +78,9 @@ target_sources(zenovis PRIVATE
   SDK/sutil/Preprocessor.h      SDK/sutil/WorkDistribution.h
 
   )
+
+include(cmake/FastSamplingData.cmake)
+zeno_embed_fast_sampling_data(zenovis)
 
 set(ZENO_SHARC_ROOT "${CMAKE_SOURCE_DIR}/projects/SHARC" CACHE PATH
     "Path to the NVIDIA SHARC SDK checkout")
@@ -308,6 +316,8 @@ else()
 endif()
 
 set(FILE_LIST
+    ${CMAKE_CURRENT_SOURCE_DIR}/@PathSamplingLaunch.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@PathSampling.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterDevice.h
     ${CMAKE_SOURCE_DIR}/projects/rtxmg/@WaterSampling.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@WaterMaterialShader.h

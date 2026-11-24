@@ -983,7 +983,6 @@ namespace DisneyBSDF{
     static __inline__ __device__
     bool SampleDisney2(
         unsigned int& seed,
-        unsigned int& eventseed,
         const MatOutput& mat,
         vec3 T,
         vec3 B,
@@ -1019,9 +1018,6 @@ namespace DisneyBSDF{
         float eta = dot(woo, N)>0?mat.ior:1.0f/mat.ior;
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         world2local(woo, T, B, N);
-        //float2 r = sobolRnd(params.subframe_index,prd->depth+2, prd->eventseed);
-        //float r1 = r.x;
-        //float r2 = r.y;
         float r1 = rnd(seed);
         float r2 = rnd(seed);
 
@@ -1077,11 +1073,7 @@ namespace DisneyBSDF{
         float p4 = p3 + glassPr;
         float p5 = p4 + clearCtPr;
 
-        //finally got this clear, each seed can represent a whole different permutation of the whole van der corput sequence
-        //and offset is the "index" to "take" the random number from van der corput
-        //as a result, for i'th ray in a pixel, its offset shall be subframe_index, and scrumble seed shall change between
-        //events
-        float r3 = vdcrnd(prd->offset, prd->vdcseed);
+        float r3 = prd->sample1D(unsigned(prd->depth)*16u);
 
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
@@ -1262,7 +1254,6 @@ namespace DisneyBSDF{
     static __inline__ __device__
     bool SampleDisney3(
         unsigned int& seed,
-        unsigned int& eventseed,
         const MatOutput& mat,
         vec3 T,
         vec3 B,
@@ -1298,11 +1289,9 @@ namespace DisneyBSDF{
         float eta = dot(woo, N)>0?mat.ior:1.0f/mat.ior;
         rotateTangent(T, B, N, mat.anisoRotation * 2 * 3.1415926f);
         world2local(woo, T, B, N);
-        //float2 r = sobolRnd(params.subframe_index,prd->depth+2, prd->eventseed);
-        //float r1 = r.x;
-        //float r2 = r.y;
-        float r1 = rnd(seed);
-        float r2 = rnd(seed);
+        const unsigned samplerBase=unsigned(prd->depth)*16u;
+        const auto direction=prd->sample2D(samplerBase+2u);
+        const float r1=direction.x,r2=direction.y;
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -1339,17 +1328,9 @@ namespace DisneyBSDF{
         float p4 = p3 + glassPr;
         float p5 = p4 + ccPr;
 
-        //finally got this clear, each seed can represent a whole different permutation of the whole van der corput sequence
-        //and offset is the "index" to "take" the random number from van der corput
-        //as a result, for i'th ray in a pixel, its offset shall be subframe_index, and scrumble seed shall change between
-        //events
-        unsigned int depth_offset = tea<4>( prd->depth, 0);
-        unsigned int perm0 = prd->vdcseed + depth_offset;
-        unsigned int perm1 = getScrumble(perm0);
-        unsigned int perm2 = getScrumble(perm1);
-        float r3 = vdcrnd(prd->offset, perm0);
-        float r4 = prd->depth<1?vdcrnd(prd->offset, perm1):rnd(prd->seed);
-        float r5 = prd->depth<1?vdcrnd(prd->offset, perm2):rnd(prd->seed);
+        const float r3=prd->sample1D(samplerBase);
+        const auto pair=prd->sample2D(samplerBase+4u);
+        const float r4=pair.x,r5=pair.y;
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
         tbn.m_binormal = B;

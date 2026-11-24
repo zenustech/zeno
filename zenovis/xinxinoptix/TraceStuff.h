@@ -6,6 +6,7 @@
 #include "optixPathTracer.h"
 
 #include <Sampling.h>
+#include "PathSampling.h"
 #include <cuda/random.h>
 #include <cuda/climits.h>
 
@@ -56,15 +57,37 @@ struct CommonPRD {
     bool test_distance;
     float maxDistance;
 
+    // The sole mutable RNG state, for variable-length sampling paths.
+    // Fixed-purpose BSDF draws derive their scrambles from the coordinates.
     uint32_t seed;
-    __device__ float rndf() {
+    unsigned samplerPixel=0xffffffffu, samplerOffset=0, samplerDimension=0;
+    __device__ float sample1D(unsigned dimension) {
+        if(samplerPixel!=0xffffffffu)
+            return zeno_path_sampling::sample(params.pathSampling,samplerPixel,params.width,params.pathSampling.sampleIndex+samplerOffset,dimension);
         return rnd(seed);
+    }
+    __device__ float2 sample2D(unsigned dimension) {
+        if(samplerPixel!=0xffffffffu)
+            return zeno_path_sampling::sample2(params.pathSampling,samplerPixel,params.width,params.pathSampling.sampleIndex+samplerOffset,dimension);
+        const float x=rnd(seed),y=rnd(seed);return make_float2(x,y);
+    }
+    __device__ float rndf() {
+        if(params.pathSampling.mode && samplerPixel!=0xffffffffu)return sample1D(samplerDimension++);
+        return rnd(seed);
+    }
+    __device__ float2 rnd2f() {
+        if(params.pathSampling.mode && samplerPixel!=0xffffffffu) {
+            const auto dimension=(samplerDimension+1u)&~1u;samplerDimension=dimension+2u;
+            return sample2D(dimension);
+        }
+        const float x=rnd(seed),y=rnd(seed);return make_float2(x,y);
     }
 
     VolumePRD vol {};
 };
 
 struct ShadowPRD : CommonPRD {
+
 
     uint32_t lightIdx = UINT_MAX;
     
@@ -104,11 +127,6 @@ struct RadianceCacheProxy {
 };
 
 struct RadiancePRD : CommonPRD {
-    //zxx seed
-    unsigned int offset = 0;
-    unsigned int offset2 = 0;
-    unsigned int offset3 = 0;
-    unsigned int vdcseed = 0;
     bool         print_info = false;
     int          alphaDepth;
     float3       radiance;
@@ -125,8 +143,6 @@ struct RadiancePRD : CommonPRD {
     float3 tmp_normal {};
     
     float        minSpecRough;
-
-    unsigned int eventseed;
 
     float        scatterDistance;
     float        scatterPDF;
