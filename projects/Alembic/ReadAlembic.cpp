@@ -4,6 +4,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
@@ -340,6 +341,92 @@ void attr_from_data_vec(std::shared_ptr<PrimitiveObject> prim, GeometryScope sco
         }
     }
 }
+static void read_uv_set(PrimitiveObject &prim, IV2fGeomParam param, const ISampleSelector &sample,
+                        unsigned index) {
+    const auto data = param.getIndexedValue(sample);
+    const auto values = data.getVals();
+    const auto indices = data.getIndices();
+    if (!values || !indices) {
+        return;
+    }
+    const auto scope = data.getScope();
+    const bool point = scope == kVertexScope || scope == kVaryingScope;
+    if (!point && scope != kFacevaryingScope && scope != kConstantScope && scope != kUniformScope) {
+        return;
+    }
+    size_t expected = prim.loops.size();
+    if (point) {
+        expected = prim.verts.size();
+    } else if (scope == kConstantScope) {
+        expected = 1;
+    } else if (scope == kUniformScope) {
+        expected = prim.polys.size();
+    }
+    if (indices->size() != expected) {
+        log_warn("[alembic] UV set {} has {} indices, expected {}", param.getName(), indices->size(),
+                 expected);
+        return;
+    }
+    if (point) {
+        for (const auto vertex : prim.loops) {
+            if (vertex < 0 || size_t(vertex) >= prim.verts.size()) {
+                log_warn("[alembic] UV set {} has invalid mesh point connectivity", param.getName());
+                return;
+            }
+        }
+    }
+    for (size_t i = 0; i < indices->size(); ++i) {
+        if ((*indices)[i] >= values->size()) {
+            log_warn("[alembic] UV set {} has an out-of-range palette index", param.getName());
+            return;
+        }
+    }
+    if (index && prim.append_uvs.size() < index) {
+        prim.append_uvs.resize(index);
+    }
+    auto &palette = index ? prim.append_uvs[index - 1] : prim.uvs;
+    palette.resize(values->size());
+    for (size_t i = 0; i < values->size(); ++i) {
+        palette[i] = {(*values)[i][0], (*values)[i][1]};
+    }
+    const auto source = primitiveUVLoopName(index);
+    // Keep additional vertex UV sets indexed in their original point domain.
+    // The legacy primary reader consumes loop indices, so promote only slot 0.
+    if (point && index) {
+        auto &ids = prim.verts.add_attr<int>(source);
+        for (size_t i = 0; i < ids.size(); ++i) {
+            ids[i] = int((*indices)[i]);
+        }
+    } else {
+        auto &ids = prim.loops.add_attr<int>(source);
+        if (scope == kUniformScope) {
+            for (size_t f = 0; f < prim.polys.size(); ++f) {
+                const auto poly = prim.polys[f];
+                for (int k = 0; k < poly[1]; ++k) {
+                    ids.at(poly[0] + k) = int((*indices)[f]);
+                }
+            }
+        } else {
+            for (size_t l = 0; l < ids.size(); ++l) {
+                size_t sourceIndex = l;
+                if (point) {
+                    sourceIndex = size_t(prim.loops[l]);
+                } else if (scope == kConstantScope) {
+                    sourceIndex = 0;
+                }
+                ids[l] = int(indices->get()[sourceIndex]);
+            }
+        }
+    }
+    auto sets = primitiveUVSets(prim);
+    auto name = GetSourceName(param.getMetaData());
+    if (name.empty()) {
+        name = param.getName();
+    }
+    sets.push_back({index, name, source, point && index ? "point" : "corner", int(index)});
+    setPrimitiveUVSets(prim, sets);
+}
+
 static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, const ISampleSelector &iSS, bool read_done) {
     if (!arbattrs) {
         return;
@@ -374,8 +461,23 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
                 //log_info("[alembic] int attr {}, len {}.", p.getName(), data.size());
             }
             attr_from_data(prim, samp.getScope(), p.getName(), data);
-        }
-        else if (IV3fGeomParam::matches(p)) {
+        } else if (IV2fGeomParam::matches(p)) {
+            IV2fGeomParam param(arbattrs, p.getName());
+            if (isUV(p)) {
+                unsigned index = 1;
+                for (const auto &set : primitiveUVSets(*prim)) {
+                    index = std::max(index, set.index + 1);
+                }
+                read_uv_set(*prim, param, iSS, index);
+            } else {
+                const auto data = param.getExpandedValue(iSS);
+                std::vector<vec2f> values(data.getVals()->size());
+                for (size_t i = 0; i < values.size(); ++i) {
+                    values[i] = {(*data.getVals())[i][0], (*data.getVals())[i][1]};
+                }
+                attr_from_data_vec(prim, data.getScope(), p.getName(), values);
+            }
+        } else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
 
             IV3fGeomParam::Sample samp = param.getExpandedValue(iSS);
@@ -389,8 +491,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
                 //log_info("[alembic] V3f attr {}, len {}.", p.getName(), data.size());
             }
             attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
-        }
-        else if (IN3fGeomParam::matches(p)) {
+        } else if (IN3fGeomParam::matches(p)) {
             IN3fGeomParam param(arbattrs, p.getName());
 
             IN3fGeomParam::Sample samp = param.getExpandedValue(iSS);
@@ -404,8 +505,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
                 //log_info("[alembic] N3f attr {}, len {}.", p.getName(), data.size());
             }
             attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
-        }
-        else if (IC3fGeomParam::matches(p)) {
+        } else if (IC3fGeomParam::matches(p)) {
             IC3fGeomParam param(arbattrs, p.getName());
 
             IC3fGeomParam::Sample samp = param.getExpandedValue(iSS);
@@ -419,8 +519,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
                 //log_info("[alembic] C3f attr {}, len {}.", p.getName(), data.size());
             }
             attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
-        }
-        else if (IC4fGeomParam::matches(p)) {
+        } else if (IC4fGeomParam::matches(p)) {
             IC4fGeomParam param(arbattrs, p.getName());
 
             IC4fGeomParam::Sample samp = param.getExpandedValue(iSS);
@@ -440,8 +539,7 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
             attr_from_data_vec(prim, samp.getScope(), p.getName(), data);
             attr_from_data_vec(prim, samp.getScope(), p.getName() + "_rgb", data_xyz);
             attr_from_data_vec(prim, samp.getScope(), p.getName() + "_a", data_w);
-        }
-        else {
+        } else {
             //log_info("[alembic] unknown attr {}.", p.getName());
             //zeno::log_info("getExtent {} ", p.getDataType().getExtent());
             //zeno::log_info("getNumBytes {} ", p.getDataType().getNumBytes());
@@ -452,7 +550,10 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
         if (prim->loops.attr_keys<AttrAcceptAll>().size() == 0) {
             return;
         }
-        if (prim->loops.attr_keys<AttrAcceptAll>().size() == 1 && prim->loops.has_attr("uvs")) {
+        bool hasNonUV = false;
+        prim->loops.foreach_attr<AttrAcceptAll>(
+            [&](const auto &key, const auto &) { hasNonUV |= primitiveUVIndex(key) < 0; });
+        if (!hasNonUV) {
             return;
         }
         if (!prim->loops.has_attr("uvs")) {
@@ -467,8 +568,8 @@ static void read_attributes2(std::shared_ptr<PrimitiveObject> prim, ICompoundPro
             }
             prim->uvs.values = uvs;
             std::iota(uv_index.begin(), uv_index.end(), 0);
-            prim->loops.foreach_attr<AttrAcceptAll>([&] (auto const &key, auto &arr) {
-                if (key == "uvs") {
+            prim->loops.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
+                if (primitiveUVIndex(key) >= 0) {
                     return;
                 }
                 using T = std::decay_t<decltype(arr[0])>;
@@ -655,41 +756,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(
         }
     }
     if (auto uv = mesh.getUVsParam()) {
-        auto uvsamp =
-            uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
-        int value_size = (int)uvsamp.getVals()->size();
-        int index_size = (int)uvsamp.getIndices()->size();
-        if (!read_done) {
-//            log_debug("[alembic] totally {} uv value", value_size);
-//            log_debug("[alembic] totally {} uv indices", index_size);
-            if (prim->loops.size() == index_size) {
-//                log_debug("[alembic] uv per face");
-            } else if (prim->verts.size() == index_size) {
-//                log_debug("[alembic] uv per vertex");
-            } else {
-                log_error("[alembic] error uv indices");
-            }
-        }
-        prim->uvs.resize(value_size);
-        {
-            auto marr = uvsamp.getVals();
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                prim->uvs[i] = {val[0], val[1]};
-            }
-        }
-        if (prim->loops.size() == index_size) {
-            prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loops.attr<int>("uvs")[i] = (*uvsamp.getIndices())[i];
-            }
-        }
-        else if (prim->verts.size() == index_size) {
-            prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loops.attr<int>("uvs")[i] = prim->loops[i];
-            }
-        }
+        read_uv_set(*prim, uv, iSS, 0);
     }
     if (!prim->loops.has_attr("uvs")) {
         if (!read_done) {
@@ -805,41 +872,7 @@ static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSche
         }
     }
     if (auto uv = subd.getUVsParam()) {
-        auto uvsamp =
-            uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
-        int value_size = (int)uvsamp.getVals()->size();
-        int index_size = (int)uvsamp.getIndices()->size();
-        if (!read_done) {
-//            log_debug("[alembic] totally {} uv value", value_size);
-//            log_debug("[alembic] totally {} uv indices", index_size);
-            if (prim->loops.size() == index_size) {
-//                log_debug("[alembic] uv per face");
-            } else if (prim->verts.size() == index_size) {
-//                log_debug("[alembic] uv per vertex");
-            } else {
-                log_error("[alembic] error uv indices");
-            }
-        }
-        prim->uvs.resize(value_size);
-        {
-            auto marr = uvsamp.getVals();
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                prim->uvs[i] = {val[0], val[1]};
-            }
-        }
-        if (prim->loops.size() == index_size) {
-            prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loops.attr<int>("uvs")[i] = (*uvsamp.getIndices())[i];
-            }
-        }
-        else if (prim->verts.size() == index_size) {
-            prim->loops.add_attr<int>("uvs");
-            for (auto i = 0; i < prim->loops.size(); i++) {
-                prim->loops.attr<int>("uvs")[i] = prim->loops[i];
-            }
-        }
+        read_uv_set(*prim, uv, iSS, 0);
     }
     if (!prim->loops.has_attr("uvs")) {
         if (!read_done) {

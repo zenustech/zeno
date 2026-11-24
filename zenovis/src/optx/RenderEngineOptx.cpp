@@ -42,6 +42,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/AttrVector.h>
 #include <zeno/types/AlternativeAttribute.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <tinygltf/json.hpp>
 
 #include <map>
@@ -654,7 +655,7 @@ struct GraphicsManager {
 
                 if (reType == "Mesh")
                 {
-                    const bool hasAlterAttr = prim_in->userData().has("AlternativeAttributes"); 
+                    bool hasAlterAttr = prim_in->userData().has("AlternativeAttributes");
                     nlohmann::json alternativesInfo;
                     if (hasAlterAttr) {
                         alternativesInfo=nlohmann::json::parse(prim_in->userData().get2<std::string>("AlternativeAttributes"));
@@ -670,6 +671,65 @@ struct GraphicsManager {
                         zeno::primTriangulate(prim_in);
                     }
                     if(prim_in->tris.size()==0) return;
+
+                    // Import metadata belongs to this mesh. Explicit Prepare rows
+                    // take priority; all other imported slots upload unconditionally.
+                    for (const auto &set : zeno::primitiveUVSets(*prim_in)) {
+                        if (!set.index) {
+                            continue;
+                        }
+                        if (set.index > zeno::MeshAttributeAlterCount) {
+                            zeno::log_warn("UV set {} is retained on the primitive; shader UV alternatives "
+                                           "are limited to 1..8",
+                                           set.name);
+                            continue;
+                        }
+                        if (alternativesInfo.is_null()) {
+                            alternativesInfo = {{"bindings", nlohmann::json::array()}};
+                        }
+                        bool overridden = false;
+                        for (const auto &row : alternativesInfo.at("bindings")) {
+                            overridden |= row.at("attr") == "uv" && row.at("alter") == set.index;
+                        }
+                        if (overridden) {
+                            continue;
+                        }
+                        const auto name = zeno::alternativeAttributeName("uv", set.index);
+                        bool valid = true;
+                        if (set.domain == "point") {
+                            auto &values = prim_in->verts.add_attr<zeno::vec2f>(name);
+                            for (size_t i = 0; i < values.size(); ++i) {
+                                values[i] = {};
+                                if (!zeno::primitiveUVPointValue(*prim_in, set, i, values[i])) {
+                                    values[i] = {};
+                                    valid = false;
+                                }
+                            }
+                        } else {
+                            for (int k = 0; k < 3; ++k) {
+                                auto &values = prim_in->tris.add_attr<zeno::vec2f>(name + "_corner_" +
+                                                                                   std::to_string(k));
+                                for (size_t t = 0; t < values.size(); ++t) {
+                                    values[t] = {};
+                                    if (!zeno::primitiveUVValue(*prim_in, set, t, k, values[t])) {
+                                        values[t] = {};
+                                        valid = false;
+                                    }
+                                }
+                            }
+                        }
+                        if (!valid) {
+                            zeno::log_warn(
+                                "UV set {} contains missing/invalid entries; those entries use zero UV",
+                                set.name);
+                        }
+                        alternativesInfo["bindings"].push_back(
+                            {{"source", set.name},
+                             {"domain", set.domain == "point" ? "point" : "corner"},
+                             {"attr", "uv"},
+                             {"alter", set.index}});
+                        hasAlterAttr = true;
+                    }
 
                     bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
                     if(has_uv == false)

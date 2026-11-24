@@ -1,5 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/PrimitiveUV.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/utils/log.h>
 
@@ -104,6 +105,43 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
 
     prim->loops.update();
     prim->polys.update();
+
+    // Restore packed UV indices and generic triangle-corner attributes before
+    // clearing triangles. This also supports mixed polygon/triangle merges.
+    if (with_uv) {
+        for (size_t set = 1; set <= prim->append_uvs.size(); ++set) {
+            const auto packed = primitiveUVTriangleName(set);
+            const auto old = "uv" + std::to_string(set);
+            if (!prim->tris.attr_is<vec3i>(packed) && !prim->tris.attr_is<int>(old + "0")) {
+                continue;
+            }
+            auto &ids = prim->loops.add_attr<int>(primitiveUVLoopName(set));
+            for (size_t t = 0; t < prim->tris.size(); ++t) {
+                for (int k = 0; k < 3; ++k) {
+                    ids[old_loop_base + 3 * t + k] = prim->tris.attr_is<vec3i>(packed)
+                                                         ? prim->tris.attr<vec3i>(packed)[t][k]
+                                                         : prim->tris.attr<int>(old + std::to_string(k))[t];
+                }
+            }
+        }
+    }
+    prim->tris.foreach_attr<AttrAcceptAll>([&](const auto &key, const auto &values) {
+        if (key.rfind("__corner_", 0) != 0 || key.size() < 11 || key.substr(key.size() - 2) != "_0") {
+            return;
+        }
+        using T = std::decay_t<decltype(values[0])>;
+        const auto source = key.substr(9, key.size() - 11);
+        if (!prim->tris.attr_is<T>(primitiveCornerName(source, 1)) ||
+            !prim->tris.attr_is<T>(primitiveCornerName(source, 2))) {
+            return;
+        }
+        auto &out = prim->loops.add_attr<T>(source);
+        for (int k = 0; k < 3; ++k) {
+            for (size_t t = 0; t < prim->tris.size(); ++t) {
+                out[old_loop_base + 3 * t + k] = prim->tris.attr<T>(primitiveCornerName(source, k))[t];
+            }
+        }
+    });
 
     if (!(!prim->tris.has_attr("uv0") || !prim->tris.has_attr("uv1") ||
           !prim->tris.has_attr("uv2") || !with_uv)) {
