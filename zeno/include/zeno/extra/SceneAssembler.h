@@ -343,6 +343,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
 
         prim->userData().set2("ResourceType", "Matrixes");
+        prim->userData().set2("objRunType", "matrix");
         if (use_static) {
             prim->userData().set2("stamp-change", "UnChanged");
         } else {
@@ -388,6 +389,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto scene_descriptor = std::make_shared<PrimitiveObject>();
             auto &ud = scene_descriptor->userData();
             ud.set2("ResourceType", std::string("SceneDescriptor"));
+            if (use_static) {
+                ud.set2("stamp-change", std::string("UnChanged"));
+            }
             Json json;
             json["type"] = use_static ? "static" : "dynamic";
             Json BasicRenderInstances = Json();
@@ -468,6 +472,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             st->userData().set2("json", to_json());
             st->userData().set2("ResourceType", std::string("SceneTree"));
             st->userData().set2("SceneTreeType", this->type);
+            if (use_static) {
+                st->userData().set2("stamp-change", std::string("UnChanged"));
+            }
             scene->arr.push_back(st);
         }
         return scene;
@@ -548,6 +555,9 @@ struct SceneObject : IObjectClone<SceneObject> {
         auto st = std::make_shared<PrimitiveObject>();
         st->userData().set2("json", to_json());
         st->userData().set2("ResourceType", std::string("SceneTree"));
+        if (type == "static") {
+            st->userData().set2("stamp-change", std::string("UnChanged"));
+        }
         scene->arr.push_back(st);
         return scene;
     }

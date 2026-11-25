@@ -109,7 +109,7 @@ bool Scene::loadFrameObjects(int frameid) {
     ud.set2<int>("frameid", std::move(frameid));
 
     const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs, std::string& runtype) -> bool {
-        return this->objectsMan->load_objects(objs, runtype);
+        return this->objectsMan->load_objects(objs, runtype, renderMan && renderMan->getDefaultEngineName()=="optx");
     };
     auto cbUpdate = [this](int frameid, bool inserted, bool hasstamp) {
         if (renderMan->getDefaultEngineName() == "optx") {

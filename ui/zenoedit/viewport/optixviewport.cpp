@@ -163,6 +163,8 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     , m_pTimer(nullptr)
 {
     m_pTimer = new QTimer(this);
+    // Avoid an extra playback interval after a frame overruns its deadline.
+    m_pTimer->setTimerType(Qt::PreciseTimer);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 
     ZASSERT_EXIT(m_zenoVis);
@@ -223,6 +225,7 @@ OptixWorker::OptixWorker(QObject* parent)
 {
     //used by offline worker.
     m_pTimer = new QTimer(this);
+    m_pTimer->setTimerType(Qt::PreciseTimer);
     m_zenoVis = new Zenovis(this);
 
     //fake GL
@@ -297,6 +300,7 @@ void OptixWorker::updateFrame()
 
 void OptixWorker::onPlayToggled(bool bToggled)
 {
+    if(bToggled)zeno::getSession().globalComm->preloadPlaybackFrames();
     m_zenoVis->startPlay(bToggled);
     if (bToggled) {
         m_pTimer->start(m_slidFeq);

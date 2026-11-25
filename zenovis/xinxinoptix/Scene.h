@@ -44,6 +44,7 @@
 #include "optix_types.h"
 #include "zeno/utils/vec.h"
 #include "zeno/extra/SceneAssembler.h"
+#include <zeno/types/PreparedFrame.h>
 
 #include "optixSphere.h"
 #include "optixTriMesh.h"
@@ -457,6 +458,36 @@ public:
         pendingMatrices[std::move(key)]={std::move(matrix_list),std::move(instance_ids)};
     }    
 
+    // Owner-thread matrix input; no temporary graphic or primitive clone.
+    inline bool load_matrix_primitive(const std::string& key, const zeno::PrimitiveObject* prim) {
+        const size_t count = prim->verts.size() / 4;
+        const auto old = matrix_map.find(key);
+        const auto ids = instance_ids_map.find(key);
+        const auto* data = reinterpret_cast<const float*>(prim->verts.data());
+        const bool sameIds = prim->loops.values.empty() ? ids == instance_ids_map.end() :
+            ids != instance_ids_map.end() && ids->second == prim->loops.values;
+        if (old != matrix_map.end() && old->second.size() == count && sameIds &&
+            (!count || std::memcmp(old->second.data(), data, count * sizeof(m3r4c)) == 0)) return false;
+        auto& matrices = matrix_map[key];matrices.resize(count);
+        if (count) std::memcpy(matrices.data(), data, count * sizeof(m3r4c));
+        if (prim->loops.values.empty()) instance_ids_map.erase(key);
+        else instance_ids_map[key] = prim->loops.values;
+        if (count) {
+            auto& ui = glm_matrix_map[key];ui.resize(count);
+            const auto* prepared=dynamic_cast<const zeno::PreparedMatrix*>(prim);
+            const bool ready=prepared && prepared->storage && prepared->offset+count<=prepared->storage->transforms.size() &&
+                std::memcmp(data,prepared->storage->transforms.data()+prepared->offset,count*sizeof(m3r4c))==0;
+            if(ready)std::copy_n(prepared->storage->uiTransforms.data()+prepared->offset,count,ui.data());
+            else for (size_t i=0;i<count;++i) {
+                ui[i] = glm::mat4(1.0f);
+                for (size_t row=0;row<3;++row)for(size_t col=0;col<4;++col)
+                    ui[i][col][row] = data[i*12+row*4+col];
+            }
+        }
+        matrix_dirty.insert(key);placementsDirty=true;
+        return true;
+    }
+
     std::unordered_map<uint64_t, std::string> gas_to_obj_id;
     std::unordered_map<uint64_t, std::string> dc_index_to_mat;
 
@@ -473,8 +504,10 @@ public:
         pendingSceneSource=jsonString;
     }
 
-    void finalizeSceneRegistration() {
-        // Both GraphicsManager insertion passes finish before this boundary.
+    struct RegistrationChanges {bool scene=false, bindings=false, matrices=false;};
+    RegistrationChanges finalizeSceneRegistration() {
+        RegistrationChanges changes;
+        // Graphic construction finishes before this publication boundary.
         // Intermediate empty descriptors must not invalidate the retained AS.
         const std::lock_guard<std::mutex> lock(registrationMutex());
         if(pendingSceneSource) {
@@ -482,6 +515,10 @@ public:
             if(!sceneJsonSource || *sceneJsonSource!=source)try {
                 auto next=nlohmann::json::parse(source);
                 if(next!=sceneJson) {
+                    changes.scene=true;
+                    const auto previous=sceneJson.find(brikey), incoming=next.find(brikey);
+                    changes.bindings=(previous==sceneJson.end())!=(incoming==next.end()) ||
+                        (previous!=sceneJson.end() && incoming!=next.end() && *previous!=*incoming);
                     zeno::scene::Dependencies dependencies;dependencies.compile(next);
                     sceneJson=std::move(next);sceneDependencies=std::move(dependencies);
                     refreshMutableGroups();placementsDirty=true;
@@ -496,9 +533,10 @@ public:
                 (next.ids.empty()?ids==instance_ids_map.end():ids!=instance_ids_map.end() && ids->second==next.ids))continue;
             matrix_map[key]=std::move(next.matrices);
             if(next.ids.empty())instance_ids_map.erase(key);else instance_ids_map[key]=std::move(next.ids);
-            matrix_dirty.insert(key);placementsDirty=true;
+            matrix_dirty.insert(key);placementsDirty=true;changes.matrices=true;
         }
         pendingMatrices.clear();
+        return changes;
     }
 
     inline void updateGeoType(const std::string& key, ShaderMark mark) {

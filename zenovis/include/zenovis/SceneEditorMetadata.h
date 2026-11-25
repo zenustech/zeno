@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -19,6 +20,7 @@ class SceneEditorMetadata {
     struct Source {
         std::string text, key;
         Json topology;
+        std::shared_ptr<const Json> preparedTopology;
         bool present=false, topologyDirty=false, detailsDirty=false;
         uint64_t topologyVersion=0;
     };
@@ -53,7 +55,7 @@ class SceneEditorMetadata {
         source.topologyDirty=false;
     }
 public:
-    void stage(bool isStatic,std::string_view text,std::string key={}) {
+    void stage(bool isStatic, std::string_view text, std::string key={}, std::shared_ptr<const Json> prepared={}) {
         auto& source=sources[isStatic?0:1];
         // Static editor metadata follows the existing LoadAsset lifecycle.
         if(isStatic && source.present)return;
@@ -63,6 +65,16 @@ public:
             // StringObject after registration, so a borrowed view is unsafe.
             source.text.assign(text.data(),text.size());
             source.present=true;source.topologyDirty=true;source.detailsDirty=true;
+            if(!prepared)source.preparedTopology.reset();
+        }
+        if(prepared) {
+            if(source.preparedTopology!=prepared) {
+                if(source.topology!=*prepared) {
+                    source.topology=*prepared;++source.topologyVersion;
+                }
+                source.preparedTopology=std::move(prepared);
+            }
+            source.topologyDirty=false;
         }
     }
     bool refreshDetails(bool isStatic,Json& output) {
