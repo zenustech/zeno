@@ -486,7 +486,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
 
         } else { // Diffuse
 
-            float2 uu = {prd->rndf(), prd->rndf()};
+            float2 uu = prd->rnd2f();
 
             switch (light.shape) {
                 case zeno::LightShape::Plane: {
@@ -627,7 +627,7 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
             if (pick.index < 0) return;
             const auto plight = &plights->list[pick.index];
 
-            float2 uu = { prd->rndf(), prd->rndf() };
+            float2 uu = prd->rnd2f();
             
             plight->sample(lsr, reinterpret_cast<const Vector3f&>(shadingP), uu, lcolor);
             // Portal images contain unscaled HDR texels; match live sky energy.
@@ -641,8 +641,13 @@ void DirectLighting(ShadowPRD& shadowPRD, float3 shadingP, const float3& ray_dir
         else { // SKY
             float2 skyuv = {};
             float envpdf = 1.0f;
-            lsr.dir = ImportanceSampleEnv(params.skycdf, params.sky_start, params.skynx, params.skyny,
-                                            rnd(prd->seed), envpdf, skyuv, prd->rndf(), prd->rndf());
+            if(params.pathSampling.mode && prd->samplerPixel!=0xffffffffu) {
+                const float choice=prd->rndf();const auto uv=prd->rnd2f();
+                lsr.dir=ImportanceSampleEnv(params.skycdf,params.sky_start,params.skynx,params.skyny,choice,envpdf,skyuv,uv.x,uv.y);
+            } else {
+                lsr.dir = ImportanceSampleEnv(params.skycdf, params.sky_start, params.skynx, params.skyny,
+                                                rnd(prd->seed), envpdf, skyuv, prd->rndf(), prd->rndf());
+            }
             lcolor = sampleSkyTexture(skyuv, 100, 0, lsr.PDF);
             
             if (lsr.PDF <= 0.0f) { return; }

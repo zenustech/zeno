@@ -32,7 +32,7 @@ struct ObjectsManager : zeno::disable_copy {
     ObjectsManager();
     ~ObjectsManager();
     void clear_objects();
-    bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs, std::string& runtype);
+    bool load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs, std::string& runtype, bool packMatrices=false);
 
     std::optional<zeno::IObject*> get(std::string nid);
 };

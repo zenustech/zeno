@@ -3,6 +3,7 @@
 #include <zeno/core/IObject.h>
 #include <zeno/utils/PolymorphicMap.h>
 #include <memory>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <mutex>
@@ -57,6 +58,12 @@ struct GlobalComm {
     ZENO_API int numOfFinishedFrame();
     ZENO_API int numOfInitializedFrame();
     ZENO_API std::pair<int, int> frameRange();
+    struct PlaybackCacheStats {
+        size_t frames=0, estimatedBytes=0, budgetBytes=0;
+        double preparationMs=0;
+    };
+    ZENO_API void preloadPlaybackFrames(size_t budgetBytes=size_t(4)*1024*1024*1024);
+    ZENO_API PlaybackCacheStats playbackCacheStats() const;
     ZENO_API void clearState();
     ZENO_API void clearFrameState();
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
@@ -85,6 +92,10 @@ struct GlobalComm {
     std::shared_ptr<IObject> fromDiskReadObject(std::string cachedir, int frameid, std::string objectName);
     static std::tuple<std::string, bool, std::string> getRunType(std::filesystem::path dir);
 private:
+    struct PlaybackCache;
+    std::shared_ptr<PlaybackCache> m_playbackCache;
+    uint64_t m_cacheGeneration=0;
+    void releaseCachedFrame(int frameid);
     ViewObjects const *_getViewObjects(const int frameidm, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp);
 };
 

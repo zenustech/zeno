@@ -343,6 +343,7 @@ struct SceneObject : IObjectClone<SceneObject> {
         }
 
         prim->userData().set2("ResourceType", "Matrixes");
+        prim->userData().set2("objRunType", "matrix");
         if (use_static) {
             prim->userData().set2("stamp-change", "UnChanged");
         } else {
@@ -388,6 +389,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             auto scene_descriptor = std::make_shared<PrimitiveObject>();
             auto &ud = scene_descriptor->userData();
             ud.set2("ResourceType", std::string("SceneDescriptor"));
+            if (use_static) {
+                ud.set2("stamp-change", std::string("UnChanged"));
+            }
             Json json;
             json["type"] = use_static ? "static" : "dynamic";
             Json BasicRenderInstances = Json();
@@ -449,6 +453,9 @@ struct SceneObject : IObjectClone<SceneObject> {
                 for (const auto & child: scene_tree[entry].children) {
                     RenderGroups[entry][child].clear();
                 }
+                for (const auto & mesh: scene_tree[entry].meshes) {
+                    RenderGroups[entry][mesh].clear();
+                }
             }
             if (use_static) {
                 json["StaticRenderGroups"] = RenderGroups;
@@ -465,6 +472,9 @@ struct SceneObject : IObjectClone<SceneObject> {
             st->userData().set2("json", to_json());
             st->userData().set2("ResourceType", std::string("SceneTree"));
             st->userData().set2("SceneTreeType", this->type);
+            if (use_static) {
+                st->userData().set2("stamp-change", std::string("UnChanged"));
+            }
             scene->arr.push_back(st);
         }
         return scene;
@@ -545,6 +555,9 @@ struct SceneObject : IObjectClone<SceneObject> {
         auto st = std::make_shared<PrimitiveObject>();
         st->userData().set2("json", to_json());
         st->userData().set2("ResourceType", std::string("SceneTree"));
+        if (type == "static") {
+            st->userData().set2("stamp-change", std::string("UnChanged"));
+        }
         scene->arr.push_back(st);
         return scene;
     }
@@ -558,8 +571,11 @@ static std::shared_ptr <SceneObject> get_scene_tree_from_list2(std::shared_ptr <
         if (resource_type == "SceneTree") {
             scene_tree->from_json(ud.get2<std::string>("json"));
         }
-        else if (resource_type == "Mesh") {
+        else if (resource_type == "Mesh" || resource_type == "WaterSurface" || resource_type == "ClusterAsset") {
             auto prim = std::static_pointer_cast<PrimitiveObject>(list_obj->arr[i]);
+            // Prefixing a scene must not rename the source descriptor retained
+            // by an ONCE node or by a different scene placement.
+            if(resource_type!="Mesh")prim=std::make_shared<PrimitiveObject>(*prim);
             auto object_name = ud.get2<std::string>("ObjectName");
             scene_tree->prim_list[object_name] = prim;
         }

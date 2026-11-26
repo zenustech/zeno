@@ -4,6 +4,7 @@
 #include <zeno/utils/log.h>
 #include <filesystem>
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <cassert>
 #include <zeno/types/UserData.h>
@@ -14,6 +15,8 @@
 #include <zeno/types/LightObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/DummyObject.h>
+#include <zeno/types/PreparedFrame.h>
+#include <chrono>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/document.h>
@@ -38,6 +41,150 @@ enum class ObjectType : int32_t {
 };
 
 namespace zeno {
+struct GlobalComm::PlaybackCache {
+    using Stamps=decltype(GlobalComm::m_inCacheFrames)::mapped_type;
+    struct Token {
+        std::array<std::pair<std::filesystem::file_time_type,uintmax_t>,7> files;
+        bool valid=false;
+        bool operator==(const Token& other) const {return valid && other.valid && files==other.files;}
+    };
+    struct Frame {
+        ViewObjects objects;
+        Stamps stamps;
+        std::tuple<std::string,bool,std::string> runInfo;
+        Token token;
+        bool resident=false;
+    };
+    std::map<int,Frame> frames;
+    PlaybackCacheStats stats;
+
+    static Token token(const std::filesystem::path& root,int frame) {
+        const auto dir=root/std::to_string(1000000+frame).substr(1);
+        const std::array<std::filesystem::path,7> paths={dir/"stampInfo.txt",dir/"runInfo.txt",
+            dir/"lightCameraObj.zencache",dir/"materialObj.zencache",dir/"matrixObj.zencache",
+            dir/"normalObj.zencache",root/"data/stampInfo.txt"};
+        Token result;
+        for(size_t i=0;i<paths.size();++i) {
+            std::error_code error;
+            result.files[i].first=std::filesystem::last_write_time(paths[i],error);
+            if(error)return result;
+            result.files[i].second=std::filesystem::file_size(paths[i],error);
+            if(error)return result;
+        }
+        result.valid=true;return result;
+    }
+};
+
+ZENO_API GlobalComm::PlaybackCacheStats GlobalComm::playbackCacheStats() const {
+    std::lock_guard lock(m_mtx);
+    return m_playbackCache?m_playbackCache->stats:PlaybackCacheStats{};
+}
+
+ZENO_API void GlobalComm::preloadPlaybackFrames(size_t budgetBytes) {
+    const auto start=std::chrono::steady_clock::now();
+    std::string path;
+    int begin=0,end=0;
+    uint64_t generation=0;
+    std::vector<int> completed;
+    {
+        std::lock_guard lock(m_mtx);
+        if(cacheFramePath.empty() || !maxCachedFrames)return;
+        if(!budgetBytes){m_playbackCache.reset();++m_cacheGeneration;return;}
+        if(m_playbackCache && m_playbackCache->stats.budgetBytes==budgetBytes)return;
+        if(m_playbackCache){m_playbackCache.reset();++m_cacheGeneration;}
+        path=cacheFramePath;begin=beginFrameNumber;end=endFrameNumber;generation=m_cacheGeneration;
+        for(size_t i=0;i<m_frames.size();++i)
+            if(m_frames[i].frame_state==FRAME_COMPLETED)completed.push_back(begin+static_cast<int>(i));
+    }
+    if(completed.size()<3 || end<begin || completed.back()>end)return;
+    auto prepared=std::make_shared<PlaybackCache>();prepared->stats.budgetBytes=budgetBytes;
+    GlobalComm reader;reader.beginFrameNumber=begin;reader.endFrameNumber=end;
+    reader.currentFrameNumber=begin-1;reader.m_frames.resize(size_t(end-begin+1));
+    std::unordered_set<const IObject*> retained;
+    std::array<std::shared_ptr<const nlohmann::json>,2> topologies;
+    int previous=-1;
+    for(const auto frame:completed) {
+        const auto token=PlaybackCache::token(std::filesystem::u8path(path),frame);
+        if(!token.valid)continue;
+        const auto dir=std::filesystem::u8path(path)/std::to_string(1000000+frame).substr(1);
+        const auto run=getRunType(dir);
+        if(std::get<0>(run)!="RunAll" && std::get<0>(run)!="LoadAsset")continue;
+        // Do not allocate an unexpectedly large frame merely to discover that
+        // it cannot fit the bounded RAM cache. Ordinary playback remains valid.
+        const auto largest=std::max({token.files[2].second,token.files[3].second,
+                                    token.files[4].second,token.files[5].second});
+        if(largest>budgetBytes/4)continue;
+        const int index=frame-begin;
+        auto& objects=reader.m_frames[index].view_objects;
+        PlaybackCache::Stamps stamps;
+        try {
+            if(!reader.fromDiskByStampinfo(path,frame,objects,stamps,std::get<0>(run),true))continue;
+        } catch(const std::exception&) {objects.clear();continue;}
+        auto matrices=std::make_shared<PreparedMatrixStorage>();
+        for(auto& [key,object]:objects) {
+            auto* primitive=dynamic_cast<PrimitiveObject*>(object.get());
+            if(!primitive)continue;
+            const auto& ud=primitive->userData();
+            const auto resource=ud.get2<std::string>("ResourceType","");
+            if(resource=="Matrixes" && !dynamic_cast<PreparedMatrix*>(primitive) &&
+                !ud.has("ShaderAttributes") && primitive->verts.size()%4==0) {
+                auto matrix=std::make_shared<PreparedMatrix>();
+                static_cast<PrimitiveObject&>(*matrix)=*primitive;
+                matrix->matrixName=ud.get2<std::string>("ObjectName",key);
+                matrix->unchanged=ud.get2<std::string>("stamp-change","TotalChange")=="UnChanged";
+                matrix->offset=matrices->transforms.size();matrix->count=matrix->verts.size()/4;
+                matrix->idOffset=matrices->instanceIds.size();matrix->idCount=matrix->loops.size();
+                matrices->instanceIds.insert(matrices->instanceIds.end(),matrix->loops.values.begin(),matrix->loops.values.end());
+                const auto* data=reinterpret_cast<const float*>(matrix->verts.data());
+                for(size_t i=0;i<matrix->count;++i) {
+                    std::array<float,12> transform;std::copy_n(data+i*12,12,transform.data());
+                    glm::mat4 ui(1.0f);
+                    for(size_t row=0;row<3;++row)for(size_t column=0;column<4;++column)ui[column][row]=transform[row*4+column];
+                    matrices->transforms.push_back(transform);matrices->uiTransforms.push_back(ui);
+                }
+                matrix->storage=matrices;object=std::move(matrix);
+            } else if(resource=="SceneTree" && !dynamic_cast<PreparedSceneTree*>(primitive)) {
+                const auto type=ud.get2<std::string>("SceneTreeType","");
+                if(type!="static" && type!="dynamic")continue;
+                try {
+                    auto topology=nlohmann::json::parse(ud.get2<std::string>("json"),
+                        [](int depth,nlohmann::json::parse_event_t event,nlohmann::json& value) {
+                            return !(depth==1 && event==nlohmann::json::parse_event_t::key &&
+                                (value=="node_to_matrix" || value=="node_to_id"));
+                        });
+                    auto& shared=topologies[type=="static"?0:1];
+                    if(!shared || *shared!=topology)shared=std::make_shared<const nlohmann::json>(std::move(topology));
+                    auto tree=std::make_shared<PreparedSceneTree>();
+                    static_cast<PrimitiveObject&>(*tree)=*primitive;tree->topology=shared;object=std::move(tree);
+                } catch(const std::exception&) { /* Keep the ordinary decoder path. */ }
+            }
+        }
+        size_t estimate=stamps.size()*512;
+        for(const auto& [id,stamp]:stamps) {
+            const auto object=objects.find(std::get<3>(stamp));
+            if(object!=objects.end() && retained.insert(object->second.get()).second) {
+                const size_t bytes=std::get<6>(stamp);
+                if(bytes>budgetBytes/4){estimate=budgetBytes;break;}
+                estimate+=bytes*4+512;
+            }
+        }
+        if(!(token==PlaybackCache::token(std::filesystem::u8path(path),frame)))break;
+        if(estimate>budgetBytes-std::min(budgetBytes,prepared->stats.estimatedBytes))break;
+        PlaybackCache::Frame stored;stored.objects=objects;stored.stamps=stamps;stored.runInfo=run;stored.token=token;
+        prepared->frames.emplace(frame,std::move(stored));prepared->stats.estimatedBytes+=estimate;
+        reader.m_inCacheFrames.clear();reader.m_inCacheFrames.emplace(frame,std::move(stamps));reader.currentFrameNumber=frame;
+        if(previous>=0)reader.m_frames[previous].view_objects.clear();previous=index;
+    }
+    prepared->stats.frames=prepared->frames.size();
+    if(prepared->frames.empty())return;
+    prepared->stats.preparationMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+    {
+        std::lock_guard lock(m_mtx);
+        if(generation!=m_cacheGeneration || path!=cacheFramePath || begin!=beginFrameNumber || end!=endFrameNumber)return;
+        m_playbackCache=std::move(prepared);
+    }
+}
+
 int secondLastColonIdx(const std::string& str) {
     int count = 0;
     for (int i = str.length() - 1; i >= 0; --i) {
@@ -53,6 +200,7 @@ int secondLastColonIdx(const std::string& str) {
 std::vector<std::filesystem::path> cachepath(4);
 void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, std::string runtype, bool balways, std::string fileName, bool isStampModeInit) {
     if (cachedir.empty()) return;
+    m_playbackCache.reset();++m_cacheGeneration;
 
     std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + (isStampModeInit ? "data" : std::to_string(1000000 + frameid).substr(1)));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -113,7 +261,7 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
                 doc.Parse(buffer.str().c_str());
                 if (doc.IsObject()) {
                     for (const auto& group : doc.GetObject()) {
-                        if (group.name.GetString() == runtype) {
+                        if (group.value.IsObject()) {
                             for (const auto& node : group.value.GetObject()) {
                                 const std::string& key = node.name.GetString();
                                 lastframeStampinfo.insert({ key.substr(0, secondLastColonIdx(key)), std::tuple<std::string, int>(node.value["stamp-change"].GetString(), node.value["stamp-base"].GetInt()) });
@@ -145,7 +293,10 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
             std::string oldStampChange = obj->userData().get2<std::string>("stamp-change", "TotalChange");
 
             std::string stamptag = isStampModeInit ? "TotalChange" : oldStampChange;
-            int baseframe = isStampModeInit ? -9999 : (stamptag == "TotalChange" || frameid == beginFrameNumber ? frameid : std::get<1>(lastframeStampinfo[key.substr(0, secondLastColonIdx(key))]));
+            const auto previousStamp = lastframeStampinfo.find(key.substr(0, secondLastColonIdx(key)));
+            int baseframe = isStampModeInit ? -9999 :
+                (stamptag == "TotalChange" || frameid == beginFrameNumber || previousStamp == lastframeStampinfo.end()
+                    ? frameid : std::get<1>(previousStamp->second));
             obj->userData().set2("stamp-base", baseframe);
             obj->userData().set2("stamp-change", stamptag);
 
@@ -202,7 +353,8 @@ void GlobalComm::toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjec
 					else {
 						auto unchangeObj = constructEmptyObj(0);
 					}
-					unchangeObj->m_userData = std::move(obj->userData());
+                    // View objects may also be retained by cached graph nodes.
+                    unchangeObj->m_userData = obj->userData();
                     obj = unchangeObj;
                 //}
             }
@@ -529,297 +681,146 @@ std::shared_ptr<zeno::IObject> GlobalComm::constructEmptyObj(int type)
 
 bool GlobalComm::fromDiskByStampinfo(std::string cachedir, int frameid, GlobalComm::ViewObjects& objs, std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>>& newFrameStampInfo, std::string runtype, bool switchTimeline, bool loadasset, std::string currViewNodes)
 {
-    bool loadPartial = false;
-
-    auto dir = std::filesystem::u8path(cachedir) / (loadasset ? "data" : std::to_string(1000000 + frameid).substr(1));
-    //runtype = getRunType(dir);
-
-    std::map<std::string, std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>> currentFrameStampinfo;
-    auto it = m_inCacheFrames.find(currentFrameNumber);
-    if (it != m_inCacheFrames.end()) {
-        currentFrameStampinfo = it->second;
+    if (cachedir.empty()) return false;
+    using StampInfo = std::decay_t<decltype(newFrameStampInfo)>;
+    using StampIterator = StampInfo::iterator;
+    const auto root = std::filesystem::u8path(cachedir);
+    const auto dir = root / (loadasset ? "data" : std::to_string(1000000 + frameid).substr(1));
+    const std::array<const char*, 4> categories = {"lightCameraObj", "materialObj", "matrixObj", "normalObj"};
+    const int runCategory = runtype == "RunLightCamera" ? 0 : runtype == "RunMaterial" ? 1 : runtype == "RunMatrix" ? 2 : -1;
+    std::array<std::filesystem::path, 4> paths;
+    for (int i = 0; i < 4; ++i) {
+        const bool fromAssets = !switchTimeline && !loadasset && i < 3 &&
+            (runtype == "RunAll" || i == runCategory);
+        paths[i] = (fromAssets ? root / "data" : dir) / (std::string(categories[i]) + ".zencache");
     }
 
-    std::filesystem::path frameStampPath = dir / "stampInfo.txt";
-    std::ifstream file(frameStampPath);
-    if (file) {
+    const auto readStamps = [](const std::filesystem::path& path, rapidjson::Document& doc) {
+        std::ifstream file(path);
+        if (!file) return false;
         std::stringstream buffer;
         buffer << file.rdbuf();
-        rapidjson::Document doc, datadoc;
         doc.Parse(buffer.str().c_str());
-        if (doc.IsObject()) {
-            std::vector<rapidjson::Value> list(4);
-            if (!switchTimeline && !loadasset) {//不是loadasset的运行分开加载stampinfo
-                auto datadir = std::filesystem::u8path(cachedir) / "data";
-                std::ifstream datafile(datadir / "stampInfo.txt");
-                if (datafile) {
-                    std::stringstream databuffer;
-                    databuffer << datafile.rdbuf();
-                    datadoc.Parse(databuffer.str().c_str());
-                    if (datadoc.IsObject()) {
-                        if (runtype == "RunAll") {
-                            list[0] = datadoc.GetObject()["lightCameraObj"].GetObject();
-                            list[1] = datadoc.GetObject()["materialObj"].GetObject();
-                            list[2] = datadoc.GetObject()["matrixObj"].GetObject();
-                        } else if (runtype == "RunLightCamera") {
-							list[0] = datadoc.GetObject()["lightCameraObj"].GetObject();
-							list[1] = doc.GetObject()["materialObj"].GetObject();
-							list[2] = doc.GetObject()["matrixObj"].GetObject();
-                        } else if (runtype == "RunMaterial") {
-							list[0] = doc.GetObject()["lightCameraObj"].GetObject();
-							list[1] = datadoc.GetObject()["materialObj"].GetObject();
-							list[2] = doc.GetObject()["matrixObj"].GetObject();
-                        } else if (runtype == "RunMatrix") {
-							list[0] = doc.GetObject()["lightCameraObj"].GetObject();
-							list[1] = doc.GetObject()["materialObj"].GetObject();
-							list[2] = datadoc.GetObject()["matrixObj"].GetObject();
+        return !doc.HasParseError() && doc.IsObject();
+    };
+    rapidjson::Document doc, assetDoc;
+    if (!readStamps(dir / "stampInfo.txt", doc)) return false;
+    if (!switchTimeline && !loadasset && (runtype == "RunAll" || runCategory >= 0) &&
+        !readStamps(root / "data/stampInfo.txt", assetDoc)) return false;
+
+    const StampInfo* previousStamps = nullptr;
+    const ViewObjects* previousObjects = nullptr;
+    const auto previous = m_inCacheFrames.find(currentFrameNumber);
+    const int previousIndex = currentFrameNumber - beginFrameNumber;
+    // A rerun or asset reload must read fresh payloads, even when node names match.
+    if (switchTimeline && !loadasset && frameid != currentFrameNumber &&
+        previous != m_inCacheFrames.end() && previousIndex >= 0 && previousIndex < m_frames.size()) {
+        previousStamps = &previous->second;
+        previousObjects = &m_frames[previousIndex].view_objects;
+    }
+    std::array<std::vector<StampIterator>, 4> required;
+    std::array<int, 4> order = {0, 1, 2, 3};
+    if (runCategory >= 0) std::swap(order[0], order[runCategory]);
+    for (const int category : order) {
+        const bool fromAssets = !switchTimeline && !loadasset && category < 3 &&
+            (runtype == "RunAll" || category == runCategory);
+        const auto& source = fromAssets ? assetDoc : doc;
+        if (!source.HasMember(categories[category]) || !source[categories[category]].IsObject()) return false;
+        for (const auto& node : source[categories[category]].GetObject()) {
+            const std::string key = node.name.GetString();
+            const auto nodeid = key.substr(0, secondLastColonIdx(key));
+            if (runtype != "RunAll" && runtype != "LoadAsset" &&
+                currViewNodes.find(nodeid.substr(0, nodeid.find_first_of(':'))) == std::string::npos) continue;
+            if (!node.value.IsObject()) return false;
+            const auto& value = node.value;
+            const std::string change = value.HasMember("stamp-change") ? value["stamp-change"].GetString() : "TotalChange";
+            const int base = value.HasMember("stamp-base") ? value["stamp-base"].GetInt() : -1;
+            const int type = value.HasMember("stamp-objType") ? value["stamp-objType"].GetInt() : 0;
+            const std::string hint = value.HasMember("stamp-dataChange-hint") ? value["stamp-dataChange-hint"].GetString() : "";
+            const size_t offset = value.HasMember("startIndexInCache") ? std::stoull(value["startIndexInCache"].GetString()) : 0;
+            const size_t length = value.HasMember("ObjSize") ? std::stoull(value["ObjSize"].GetString()) : 0;
+            const auto [stamp, inserted] = newFrameStampInfo.emplace(nodeid,
+                std::make_tuple(change, base, type, key, hint, offset, length));
+            if (!inserted) continue;
+
+            if (change == "UnChanged" && previousStamps) {
+                const auto old = previousStamps->find(nodeid);
+                if (old != previousStamps->end() && std::get<0>(old->second) == "UnChanged" &&
+                    std::get<1>(old->second) == base && std::get<2>(old->second) == type) {
+                    const auto& oldKey = std::get<3>(old->second);
+                    const auto object = previousObjects->find(oldKey);
+                    if (object != previousObjects->end() && object->second &&
+                        object->second->userData().get2<std::string>("stamp-change", "TotalChange") == "UnChanged") {
+                        // Lights are re-enumerated on each frame by ObjectsManager.
+                        // Retain their payload, but preserve the incoming registration key.
+                        auto& resolvedKey = std::get<3>(stamp->second);
+                        if (category != 0 && !object->second->userData().get2<int>("isRealTimeObject", 0)) {
+                            resolvedKey = oldKey;
                         }
-					    list[3] = doc.GetObject()["normalObj"].GetObject();
-                    }
-                }
-            } else {
-                list[0] = doc.GetObject()["lightCameraObj"].GetObject();
-                list[1] = doc.GetObject()["materialObj"].GetObject();
-                list[2] = doc.GetObject()["matrixObj"].GetObject();
-                list[3] = doc.GetObject()["normalObj"].GetObject();
-            }
-            if (runtype == "RunAll" || runtype == "LoadAsset") {
-                for (auto& val : list) {
-                    for (const auto& node : val.GetObject()) {
-                        const std::string& newFrameChangeInfo = node.value.HasMember("stamp-change") ? node.value["stamp-change"].GetString() : "TotalChange" ;
-                        const int& newFrameBaseframe = node.value.HasMember("stamp-base") ? node.value["stamp-base"].GetInt() : -1;
-                        const int& newFrameObjtype = node.value.HasMember("stamp-objType") ? node.value["stamp-objType"].GetInt() : 0;
-                        const std::string& newFrameObjkey = node.name.GetString();
-                        const size_t& newFrameObjStartIdx = node.value.HasMember("startIndexInCache") ? std::stoull(node.value["startIndexInCache"].GetString()) : 0;
-                        const size_t& newFrameObjLength = node.value.HasMember("ObjSize") ? std::stoull(node.value["ObjSize"].GetString()) : 0;
-
-                        //const std::string& nodeid = newFrameObjkey.substr(0, newFrameObjkey.find_first_of(":"));
-                        const std::string& nodeid = newFrameObjkey.substr(0, secondLastColonIdx(newFrameObjkey));
-                        const std::string& newFrameChangeHint = node.value.HasMember("stamp-dataChange-hint") ? node.value["stamp-dataChange-hint"].GetString() : "";
-                        newFrameStampInfo.insert({ nodeid , std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey, newFrameChangeHint, newFrameObjStartIdx, newFrameObjLength})});
-                        if (!currentFrameStampinfo.empty()) {
-                            const std::string& curFrameChangeInfo = std::get<0>(currentFrameStampinfo[nodeid]);
-                            const int& curFrameBaseframe = std::get<1>(currentFrameStampinfo[nodeid]);
-
-                            if (curFrameBaseframe != newFrameBaseframe) {
-                                if (newFrameChangeInfo != "TotalChange") {//不是Totalchange但baseframe变化的情况
-                                    loadPartial = true;
-                                }
-                            }
-                        }
-        #if 0
-                        else {//currentFrameStampinfo为空是重新run
-                            if (newFrameChangeInfo != "TotalChange") {//重新run且不是Totalchange
-                                loadPartial = true;
-                            }
-                        }
-        #endif
-                    }
-                }
-            } else { 
-                if (runtype == "RunLightCamera") {
-                } else if (runtype == "RunMaterial") {
-                    std::swap(list[0], list[1]);
-                } else if (runtype == "RunMatrix") {
-                    std::swap(list[0], list[2]);
-                }
-                std::string objtype = runtype == "RunLightCamera" ? "lightCameraObj" : (runtype == "RunMaterial" ? "materialObj" : (runtype == "RunMatrix" ? "matrixObj" : "normalObj"));
-                for (int i = 0; i < 4; i++) {
-                    for (const auto& node : list[i].GetObject()) {
-                        const std::string& newFrameObjkey = node.name.GetString();
-                        const std::string& nodeid = newFrameObjkey.substr(0, secondLastColonIdx(newFrameObjkey));
-                        int objRunType = (node.value.HasMember("objRunType") ? node.value["objRunType"].GetInt() : 3);
-                        std::string correspondruntype = objRunType == 0 ? "RunLightCamera" : (objRunType == 1 ? "RunMaterial" : (objRunType == 2 ? "RunMatrix" : "RunAll"));
-
-                        if (newFrameStampInfo.find(nodeid) == newFrameStampInfo.end() &&
-                            currViewNodes.find(nodeid.substr(0, nodeid.find_first_of(':'))) != std::string::npos) {//当运行灯光相机材质矩阵时，必须存在在当前的viewNodes中才能加载（避免加载到旧的obj）
-                            const std::string& newFrameChangeInfo = node.value.HasMember("stamp-change") ? node.value["stamp-change"].GetString() : "TotalChange";
-                            const int& newFrameBaseframe = node.value.HasMember("stamp-base") ? node.value["stamp-base"].GetInt() : -1;
-                            const int& newFrameObjtype = node.value.HasMember("stamp-objType") ? node.value["stamp-objType"].GetInt() : 0;
-                            const size_t& newFrameObjStartIdx = node.value.HasMember("startIndexInCache") ? std::stoull(node.value["startIndexInCache"].GetString()) : 0;
-                            const size_t& newFrameObjLength = node.value.HasMember("ObjSize") ? std::stoull(node.value["ObjSize"].GetString()) : 0;
-
-                            const std::string& newFrameChangeHint = node.value.HasMember("stamp-dataChange-hint") ? node.value["stamp-dataChange-hint"].GetString() : "";
-                            newFrameStampInfo.insert({ nodeid , std::tuple<std::string, int, int, std::string, std::string, size_t, size_t>({newFrameChangeInfo, newFrameBaseframe, newFrameObjtype, newFrameObjkey, newFrameChangeHint, newFrameObjStartIdx, newFrameObjLength}) });
-
-                        }
+                        objs.try_emplace(resolvedKey, object->second);
+                        continue;
                     }
                 }
             }
+            if (change == "TotalChange" || change == "UnChanged") required[category].push_back(stamp);
         }
     }
-    //除assetload之外的运行(涉及lightcamera,material,matrix)，如果是UnChanged，需要标记为totalchange以便光追能更新(因为可能改了数据)
-    const auto& needMarkAsTotalChange = [&switchTimeline, &runtype](int cachetype, std::string stampchange) -> bool {
-        if (!switchTimeline && stampchange == "UnChanged") {
-            if (
-                //runtype == "RunAll" && (cachetype == 0 || cachetype == 1 || cachetype == 2) ||
-                runtype == "RunLightCamera" && cachetype == 0 ||
-                runtype == "RunMaterial" && cachetype == 1 || 
-                runtype == "RunMatrix" && cachetype == 2) {
-                return true;
-            }
+
+    for (int category = 0; category < 4; ++category) {
+        auto& requests = required[category];
+        if (requests.empty()) continue;
+        std::ifstream file(paths[category], std::ios::binary);
+        if (!file) return false;
+        const auto fileSize = std::filesystem::file_size(paths[category]);
+        std::string header;
+        if (!std::getline(file, header, '\a') || header.compare(0, 8, "ZENCACHE") != 0) return false;
+        const size_t keyCount = std::stoull(header.substr(8));
+        if (keyCount > fileSize / sizeof(size_t)) return false;
+        for (size_t i = 0; i < keyCount; ++i) {
+            if (!std::getline(file, header, '\a')) return false;
         }
-        return false;
-    };
-    const auto& load = [&dir,&needMarkAsTotalChange, &newFrameStampInfo, &switchTimeline, &loadasset](std::string cachedir, GlobalComm::ViewObjects& objs, std::string& runtype)->bool {
-        if (cachedir.empty())
-            return false;
-
-        if (!switchTimeline && !loadasset) {//不是loadasset的运行分开加载stampinfo
-			auto datadir = std::filesystem::u8path(cachedir) / "data";
-			if (runtype == "RunAll") {
-                cachepath[0] = datadir / "lightCameraObj.zencache";
-                cachepath[1] = datadir / "materialObj.zencache";
-                cachepath[2] = datadir / "matrixObj.zencache";
-			}
-			else if (runtype == "RunLightCamera") {
-                cachepath[0] = datadir / "lightCameraObj.zencache";
-                cachepath[1] = dir / "materialObj.zencache";
-                cachepath[2] = dir / "matrixObj.zencache";
-			}
-            else if (runtype == "RunMaterial") {
-                cachepath[0] = datadir / "materialObj.zencache";
-                cachepath[1] = dir / "lightCameraObj.zencache";
-                cachepath[2] = dir / "matrixObj.zencache";
-            }
-            else if (runtype == "RunMatrix") {
-                cachepath[0] = datadir / "matrixObj.zencache";
-                cachepath[1] = dir / "lightCameraObj.zencache";
-                cachepath[2] = dir / "materialObj.zencache";
-            }
-			cachepath[3] = dir / "normalObj.zencache";
-        } else {
-            cachepath[0] = dir / "lightCameraObj.zencache";
-            cachepath[1] = dir / "materialObj.zencache";
-            cachepath[2] = dir / "matrixObj.zencache";
-            cachepath[3] = dir / "normalObj.zencache";
+        file.seekg((keyCount + 1) * sizeof(size_t), std::ios::cur);
+        const auto position = file.tellg();
+        if (position < 0 || static_cast<size_t>(position) > fileSize) return false;
+        const size_t payload = static_cast<size_t>(position);
+        for (const auto stamp : requests) {
+            const auto offset = std::get<5>(stamp->second), length = std::get<6>(stamp->second);
+            if (!length || offset > fileSize - payload || length > fileSize - payload - offset) return false;
         }
-
-        for (int i = 0; i < cachepath.size(); i++)
-        {
-            //if (runtype == "RunLightCamera" && i != 0 || runtype == "RunMaterial" && i != 1 || runtype == "RunMatrix" && i != 2) {
-            //    continue;
-            //}
-            if (!std::filesystem::exists(cachepath[i])) {
-                continue;
+        std::sort(requests.begin(), requests.end(), [](const auto left, const auto right) {
+            return std::get<5>(left->second) < std::get<5>(right->second);
+        });
+        for (size_t first = 0; first < requests.size();) {
+            const size_t offset = std::get<5>(requests[first]->second);
+            size_t end = offset + std::get<6>(requests[first]->second), last = first + 1;
+            // Coalesce adjacent required payloads without rereading skipped static data.
+            while (last < requests.size() && std::get<5>(requests[last]->second) == end &&
+                std::get<6>(requests[last]->second) <= 8 * 1024 * 1024 - std::min(end - offset, size_t(8 * 1024 * 1024))) {
+                end += std::get<6>(requests[last]->second);
+                ++last;
             }
-            log_debug("load cache from disk {}", cachepath[i]);
-
-            auto szBuffer = std::filesystem::file_size(cachepath[i]);
-
-            std::ifstream file(cachepath[i], std::ios::binary);
-            if (!file.is_open()) {
-                log_error("zeno cache file does not exist");
-                return false;
-            }
-            std::string keysStr;
-            std::getline(file, keysStr, '\a');
-            size_t pos = keysStr.size();
-            if (pos <= 8) {
-                log_error("zeno cache file broken");
-                return false;
-            }
-
-            size_t keyscount = std::stoi(keysStr.substr(8));
-            if (keyscount < 1) {
-                continue;
-            }
-
-            std::vector<std::string>keys(keyscount);
-            for (int k = 0; k < keyscount; k++) {
-                std::getline(file, keys[k], '\a');
-            }
-            file.seekg((keyscount + 1) * sizeof(size_t), std::ios::cur);
-            for (auto& k : keys) {
-                //auto it = newFrameStampInfo.find(k.substr(0, k.find_first_of(":")));
-                auto it = newFrameStampInfo.find(k.substr(0, secondLastColonIdx(k)));
-                if (it != newFrameStampInfo.end()) {
-                    bool needMarkTotalChange = needMarkAsTotalChange(i, std::get<0>(it->second));
-                    if (std::get<0>(it->second) == "TotalChange" || needMarkTotalChange) {
-                        int64_t originalPos = file.tellg();
-                        file.seekg(std::get<5>(it->second), std::ios::cur);
-                        int64_t startPos = file.tellg();
-                        if(startPos + std::get<6>(it->second) > szBuffer) {
-                            continue;
-                        }
-                        std::vector<char> objbuff(std::get<6>(it->second));
-                        file.read(objbuff.data(), std::get<6>(it->second));
-                        file.seekg(originalPos);
-                        auto spobj = decodeObject(objbuff.data(), std::get<6>(it->second));
-                        if (spobj && needMarkTotalChange) {
-                            spobj->userData().set2("stamp-change", "TotalChange");
-                        }
-                        objs.try_emplace(std::get<3>(it->second), spobj);
-                    } else if (std::get<0>(it->second) == "UnChanged") {
-						int64_t originalPos = file.tellg();
-						file.seekg(std::get<5>(it->second), std::ios::cur);
-						int64_t startPos = file.tellg();
-						if (startPos + std::get<6>(it->second) > szBuffer) {
-							continue;
-						}
-						std::vector<char> objbuff(std::get<6>(it->second));
-						file.read(objbuff.data(), std::get<6>(it->second));
-						file.seekg(originalPos);
-						auto spobj = decodeObject(objbuff.data(), std::get<6>(it->second));
-						if (spobj) {
-							spobj->userData().set2("stamp-change", "UnChanged");
-						}
-						objs.try_emplace(std::get<3>(it->second), spobj);
-					}
+            std::vector<char> buffer(end - offset);
+            file.seekg(payload + offset, std::ios::beg);
+            if (!file.read(buffer.data(), buffer.size())) return false;
+            for (size_t i = first; i < last; ++i) {
+                const auto& stamp = requests[i]->second;
+                auto object = decodeObject(buffer.data() + std::get<5>(stamp) - offset, std::get<6>(stamp));
+                if (!object) return false;
+                const auto& resource = !switchTimeline
+                    ? object->userData().get2<std::string>("ResourceType", "") : std::string();
+                const bool forceRegistration = !switchTimeline &&
+                    (category == runCategory || resource == "SceneDescriptor" || resource == "SceneTree");
+                if (forceRegistration && std::get<0>(stamp) == "UnChanged") {
+                    object->userData().set2("stamp-change", "TotalChange");
+                } else if (std::get<0>(stamp) == "UnChanged") {
+                    object->userData().set2("stamp-change", "UnChanged");
                 }
+                objs.try_emplace(std::get<3>(stamp), std::move(object));
             }
+            first = last;
         }
-        return true;
-    };
-    //if (!loadPartial) {
-        bool ret = load(cachedir, objs, runtype);
-//        for (auto& [key, tup] : newFrameStampInfo) {
-//            //if (std::get<0>(tup) == "UnChanged") {
-//            if (std::get<0>(tup) != "TotalChange") {//不是Totalchange的，暂时全部按照unchange处理
-//                std::shared_ptr<IObject> emptyobj = constructEmptyObj(std::get<2>(tup));
-//                emptyobj->userData().set2("stamp-change", std::get<0>(tup));
-//                emptyobj->userData().set2("stamp-base", std::get<1>(tup));
-//                objs.try_emplace(std::get<3>(tup), emptyobj);
-//            }
-//        }
-        return ret;
-    //}
-#if 0
-    else {
-        bool ret = load(cacheFramePath, objs, runtype);
-        if (ret) {
-            for (auto& [key, tup] : newFrameStampInfo) {
-                int newframeObjBaseframe = std::get<1>(tup);
-                std::string newframeObjfullkey = std::get<3>(tup);
-                std::string newframeObjStampchange = std::get<0>(tup);
-                std::string newframeDataChangeHint = std::get<4>(tup);
-
-                if (newframeObjStampchange == "UnChanged") {
-                    if (auto correspondFrameObj = fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key)) {
-                        correspondFrameObj->userData().set2("stamp-change", "TotalChange");
-                        objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), correspondFrameObj);
-                    }
-                }
-                else if (newframeObjStampchange == "DataChange") {
-                    auto baseobj = std::move(fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
-                    auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                    //根据newframeDataChangeHint获取newDataChangedObj的data,设置给baseobj
-                    objs.m_curr.erase(newframeObjfullkey);
-                    objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), baseobj);
-                }
-                else if (newframeObjStampchange == "ShapeChange") {
-                    auto baseobj = std::move(fromDiskReadObject(cacheFramePath, newframeObjBaseframe, key));
-                    auto newDataChangedObj = objs.m_curr[newframeObjfullkey];
-                    //暂时并入Totalchange
-                    objs.m_curr.erase(newframeObjfullkey);
-                    objs.try_emplace(key + newframeObjfullkey.substr(lasttwo(newframeObjfullkey)), baseobj);
-                }
-            }
-            return true;
-        }
-        return ret;//此时objs中对象的stamp-change已经根据切帧前后的变化正确调整
     }
-#endif
+    return true;
 }
 
 std::shared_ptr<IObject> GlobalComm::fromDiskReadObject(std::string cachedir, int frameid, std::string objectName)
@@ -1116,6 +1117,7 @@ ZENO_API void GlobalComm::addViewObject(std::string const &key, std::shared_ptr<
 
 ZENO_API void GlobalComm::clearState() {
     std::lock_guard lck(m_mtx);
+    m_playbackCache.reset();++m_cacheGeneration;
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
@@ -1126,6 +1128,7 @@ ZENO_API void GlobalComm::clearState() {
 ZENO_API void GlobalComm::clearFrameState()
 {
     std::lock_guard lck(m_mtx);
+    m_playbackCache.reset();++m_cacheGeneration;
     m_frames.clear();
     m_inCacheFrames.clear();
     m_maxPlayFrame = 0;
@@ -1133,12 +1136,20 @@ ZENO_API void GlobalComm::clearFrameState()
 
 ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
     std::lock_guard lck(m_mtx);
+    if(path==cacheFramePath && gcmax!=maxCachedFrames){m_playbackCache.reset();++m_cacheGeneration;}
+    if(path!=cacheFramePath) {
+        m_playbackCache.reset();++m_cacheGeneration;
+        m_inCacheFrames.clear();for(auto& frame:m_frames)frame.view_objects.clear();
+        assetsInitialized=false;
+        for(auto& [scene,flags]:sceneLoadedFlag)std::get<0>(flags)=true;
+    }
     cacheFramePath = path;
     maxCachedFrames = gcmax;
 }
 
 ZENO_API void GlobalComm::initFrameRange(int beg, int end) {
     std::lock_guard lck(m_mtx);
+    if(beg!=beginFrameNumber || end!=endFrameNumber){m_playbackCache.reset();++m_cacheGeneration;}
     beginFrameNumber = beg;
     endFrameNumber = end;
 }
@@ -1171,11 +1182,60 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
     return _getViewObjects(frameid, -1, runtype, hasstamp);
 }
 
+void GlobalComm::releaseCachedFrame(int frameid) {
+    auto cached=m_inCacheFrames.find(frameid);
+    if(cached==m_inCacheFrames.end())return;
+    const auto index=frameid-beginFrameNumber;
+    if(index>=0 && index<m_frames.size()) {
+        auto& objects=m_frames[index].view_objects;
+        if(m_playbackCache) {
+            auto prepared=m_playbackCache->frames.find(frameid);
+            if(prepared!=m_playbackCache->frames.end() && prepared->second.resident) {
+                objects.m_curr.swap(prepared->second.objects.m_curr);
+                cached->second.swap(prepared->second.stamps);
+                prepared->second.resident=false;
+            }
+        }
+        objects.clear();
+    }
+    m_inCacheFrames.erase(cached);
+}
+
 GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, uintptr_t sceneIdn, std::string& runtype, bool& hasStamp) {
+    bool reloadTimelineFrame=false;
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
+        if(m_playbackCache && assetsInitialized && !m_inCacheFrames.empty()) {
+            auto prepared=m_playbackCache->frames.find(frameid);
+            if(prepared!=m_playbackCache->frames.end()) {
+                const auto token=PlaybackCache::token(std::filesystem::u8path(cacheFramePath),frameid);
+                if(prepared->second.token==token) {
+                    const bool wasResident=m_inCacheFrames.count(frameid)!=0;
+                    if(!wasResident) {
+                        m_frames[frameIdx].view_objects.m_curr.swap(prepared->second.objects.m_curr);
+                        m_inCacheFrames[frameid].swap(prepared->second.stamps);
+                        prepared->second.resident=true;
+                    }
+                    if(!wasResident || currentFrameNumber!=frameid)
+                        for(auto& [scene,flags]:sceneLoadedFlag)std::get<2>(flags)=true;
+                    runtype=std::get<0>(prepared->second.runInfo);hasStamp=true;currentFrameNumber=frameid;
+                    while(m_inCacheFrames.size()>maxCachedFrames) {
+                        auto old=m_inCacheFrames.begin();if(old->first==frameid)++old;
+                        if(old==m_inCacheFrames.end())break;releaseCachedFrame(old->first);
+                    }
+                    return &m_frames[frameIdx].view_objects;
+                }
+                const bool assetsChanged=!token.valid || token.files.back()!=prepared->second.token.files.back();
+                while(!m_inCacheFrames.empty())releaseCachedFrame(m_inCacheFrames.begin()->first);
+                m_playbackCache.reset();++m_cacheGeneration;
+                if(assetsChanged) {
+                    assetsInitialized=false;
+                    for(auto& [scene,flags]:sceneLoadedFlag)std::get<0>(flags)=true;
+                } else reloadTimelineFrame=true;
+            }
+        }
         // load back one gc:
         if (!m_inCacheFrames.count(frameid)) {  // notinmem then cacheit
             std::get<2>(sceneLoadedFlag[sceneIdn]) = true;
@@ -1210,7 +1270,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                         //if (currentFrameNumber != frameid) {//运行时不在起始帧,发生了切帧
                         //    runtype = "RunAll";
                         //}
-                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, false, false, currViewNodes);
+                        bool ret = fromDiskByStampinfo(cacheFramePath, frameid, m_frames[frameIdx].view_objects, baseframeinfo, runtype, reloadTimelineFrame, false, currViewNodes);
                         if (!ret)
                             return nullptr;
                     }
@@ -1239,8 +1299,7 @@ GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid, ui
                         // seems that objs will not be modified when load_objects called later.
                         // so, there is no need to dump.
                         //toDisk(cacheFramePath, i, m_frames[i - beginFrameNumber].view_objects);
-                        m_frames[i - beginFrameNumber].view_objects.clear();
-                        m_inCacheFrames.erase(i);
+                        releaseCachedFrame(i);
                         break;
                     }
                 }

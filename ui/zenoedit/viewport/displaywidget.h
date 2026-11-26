@@ -83,6 +83,12 @@ public slots:
     void onSetBackground(bool bShowBackground);
     void setSampleNumber(int sample_number);
     void resetSharcCache();
+    void clearTextureResidency();
+    void setClasDebugView(int view);
+    void setClasHistorySettings(bool keep, int samples);
+    void setClasTwoSidedOpaque(bool enabled);
+    void setClasLodSettings(bool adaptive, double pixelError);
+    QString clasLodStatus() const;
     void setRayTracingSettings(
         bool denoise,
         int maxBounce,

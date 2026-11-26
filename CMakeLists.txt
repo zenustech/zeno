@@ -229,6 +229,13 @@ endif()
 
 add_subdirectory(projects)
 
+if (TARGET zenoedit AND TARGET zeno_cluster_bake)
+    add_dependencies(zenoedit zeno_cluster_bake)
+    if (ZENO_INSTALL_TARGET)
+        install(TARGETS zeno_cluster_bake RUNTIME DESTINATION bin)
+    endif()
+endif()
+
 if (ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno Designer")
     add_subdirectory(ui/zenodesign)

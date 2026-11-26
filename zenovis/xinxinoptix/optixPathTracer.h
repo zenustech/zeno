@@ -6,6 +6,10 @@
 #include "LightBounds.h"
 #include "LightSelection.h"
 #include "SharcLaunchParameters.h"
+#include "ClusterDevice.h"
+#include "ClusterMaterialDevice.h"
+#include "WaterDevice.h"
+#include "PathSamplingLaunch.h"
 #include <zeno/types/LightObject.h>
 
 #define TRI_PER_MESH (1<<29) //2^29
@@ -165,7 +169,8 @@ struct PickInfo {
 
 struct Params
 {
-    uint16_t subframe_index;
+    uint32_t subframe_index;
+    uint32_t history_samples; // Effective history weight, independent of the RNG sequence.
     uint16_t     frame_time;
     float3*      accum_buffer;
     float3*      accum_buffer_D;
@@ -213,6 +218,12 @@ struct Params
     LightSelection::Distribution lightSelection;
 
     OptixTraversableHandle handle;
+    const zeno_cluster_device::Cluster* cluster_data;
+    zeno_cluster_device::ViewFeedback cluster_feedback;
+    unsigned int cluster_debug_view;
+    zeno_cluster_device::MaterialLaunch cluster_materials;
+    zeno_water_device::SceneLaunch water;
+    zeno_path_sampling::Launch pathSampling;
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;

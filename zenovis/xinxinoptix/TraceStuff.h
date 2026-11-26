@@ -6,8 +6,11 @@
 #include "optixPathTracer.h"
 
 #include <Sampling.h>
+#include "PathSampling.h"
 #include <cuda/random.h>
 #include <cuda/climits.h>
+
+extern "C" { extern __constant__ Params params; }
 
 #define _FLT_MAX_ __FLT_MAX__
 #define _FLT_MIN_ __FLT_MIN__
@@ -54,15 +57,37 @@ struct CommonPRD {
     bool test_distance;
     float maxDistance;
 
+    // The sole mutable RNG state, for variable-length sampling paths.
+    // Fixed-purpose BSDF draws derive their scrambles from the coordinates.
     uint32_t seed;
-    __device__ float rndf() {
+    unsigned samplerPixel=0xffffffffu, samplerOffset=0, samplerDimension=0;
+    __device__ float sample1D(unsigned dimension) {
+        if(samplerPixel!=0xffffffffu)
+            return zeno_path_sampling::sample(params.pathSampling,samplerPixel,params.width,params.pathSampling.sampleIndex+samplerOffset,dimension);
         return rnd(seed);
+    }
+    __device__ float2 sample2D(unsigned dimension) {
+        if(samplerPixel!=0xffffffffu)
+            return zeno_path_sampling::sample2(params.pathSampling,samplerPixel,params.width,params.pathSampling.sampleIndex+samplerOffset,dimension);
+        const float x=rnd(seed),y=rnd(seed);return make_float2(x,y);
+    }
+    __device__ float rndf() {
+        if(params.pathSampling.mode && samplerPixel!=0xffffffffu)return sample1D(samplerDimension++);
+        return rnd(seed);
+    }
+    __device__ float2 rnd2f() {
+        if(params.pathSampling.mode && samplerPixel!=0xffffffffu) {
+            const auto dimension=(samplerDimension+1u)&~1u;samplerDimension=dimension+2u;
+            return sample2D(dimension);
+        }
+        const float x=rnd(seed),y=rnd(seed);return make_float2(x,y);
     }
 
     VolumePRD vol {};
 };
 
 struct ShadowPRD : CommonPRD {
+
 
     uint32_t lightIdx = UINT_MAX;
     
@@ -77,6 +102,7 @@ struct ShadowPRD : CommonPRD {
     uint8_t nonThinTransHit;
 
     float3 ShadowNormal;
+    float textureConeWidth=0.f,textureConeSpread=0.f;
 };
 
 enum class RadianceCacheEvent : uint8_t {
@@ -101,11 +127,6 @@ struct RadianceCacheProxy {
 };
 
 struct RadiancePRD : CommonPRD {
-    //zxx seed
-    unsigned int offset = 0;
-    unsigned int offset2 = 0;
-    unsigned int offset3 = 0;
-    unsigned int vdcseed = 0;
     bool         print_info = false;
     int          alphaDepth;
     float3       radiance;
@@ -123,13 +144,13 @@ struct RadiancePRD : CommonPRD {
     
     float        minSpecRough;
 
-    unsigned int eventseed;
-
     float        scatterDistance;
     float        scatterPDF;
     float        scatterStep;
 
     float        pixel_area;
+    float        textureConeWidth=0.f,textureConeSpread=0.f;
+    bool         primaryTextureMissing=false;
 
     float        samplePdf;
     vec3         mask_value;
@@ -227,6 +248,11 @@ static __forceinline__ __device__ void traceRadiance(
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
 
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_RADIANCE,ray_origin,ray_direction,tmin,tmax,0.f,OPTIX_RAY_FLAG_DISABLE_ANYHIT);
+        optixInvoke(u0,u1);return;
+    }
+
     optixTrace( handle,
             ray_origin, ray_direction,
             tmin, tmax,
@@ -250,6 +276,11 @@ static __forceinline__ __device__ void traceRadianceSER(
 {
     unsigned int u0, u1;
     packPointer(prd, u0, u1);
+
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_RADIANCE,ray_origin,ray_direction,tmin,tmax,0.f,OPTIX_RAY_FLAG_DISABLE_ANYHIT);
+        optixInvoke(u0,u1);return;
+    }
 
     optixTraverse(
         handle,
@@ -312,12 +343,24 @@ static __forceinline__ __device__ void traceOcclusion(
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
 
+    // Proven opaque CLAS primitives can terminate in traversal hardware.
+    // Alpha / graph materials still execute their existing any-hit programs.
+    // Enforce any-hit again when authored one-sided opaque rendering is used.
+    const auto& materials=params.cluster_materials;
+    const unsigned int flags=materials.materials && materials.opaqueShadowFastPath && materials.twoSidedOpaque ?
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT : OPTIX_RAY_FLAG_ENFORCE_ANYHIT;
+
+    if(!handle) {
+        optixMakeMissHitObject(RAY_TYPE_OCCLUSION,ray_origin,ray_direction,tmin,tmax,0.f,flags);
+        optixInvoke(u0,u1);return;
+    }
+
     optixTrace( handle,
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,  // rayTime
             (mask),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
+            flags,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,      // missSBTIndex
