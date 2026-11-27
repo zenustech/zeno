@@ -175,7 +175,7 @@ public slots:
     void optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId);
     void optixClientSend(QString& info);
     void optixClientStartRec();
-    void onRunTriggered(runType runtype = RunALL);
+    void onRunTriggered(runType runtype = RunALL, bool fromCmd = false, bool cmdRmHistoryCacheBeforeRun = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);

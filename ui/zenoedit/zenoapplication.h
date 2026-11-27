@@ -12,6 +12,7 @@ class ZenoMainWindow;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 class ZTcpServer;
 #endif
+class ApiMgr;
 
 class ZenoApplication : public QApplication
 {
@@ -31,6 +32,7 @@ public:
 #endif
     QStandardItemModel* logModel() const;
     bool isUIApplication() const { return m_bUIApp; }
+    ApiMgr* apiMgr() const { return m_apiMgr; }
 
 private slots:
     void onOptixlogReady(const QString& msg);
@@ -45,6 +47,8 @@ private:
     std::shared_ptr<ZWidgetErrStream> m_spUILogStream;
     std::shared_ptr<ZCacheMgr> m_spCacheMgr;
     std::shared_ptr<ProcessClipboard> m_spProcClipboard;
+    ApiMgr* m_apiMgr;
+
     QDir m_appDataPath;
     bool m_bUIApp;
 };

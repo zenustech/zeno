@@ -1,4 +1,4 @@
-#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+﻿#if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 #include <cstdio>
 #include <cstring>
 #include "ztcpserver.h"
@@ -101,6 +101,13 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 					}
 				}
             }
+            if (param.fromCmd) {
+                //cmdtool/API runs must not block on a modal dialog; report the
+                //failure back to the caller (ApiMgr) and abandon the launch.
+                zeno::log_error("the path of cache is invalid: {}", cacheRootdir.toStdString());
+                emit startProcFailed("the path of cache is invalid: " + cacheRootdir);
+                return;
+            }
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
@@ -165,6 +172,8 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     if (!m_proc->waitForStarted(-1)) {
         zeno::log_warn("process failed to get started, giving up");
+        if (param.fromCmd)
+            emit startProcFailed("the runner process failed to start");
         return;
     }
 

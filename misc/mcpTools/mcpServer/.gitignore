@@ -1,0 +1,13 @@
+# P0 回归测试与运行缓存 —— 不入库
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+*.egg-info/
+/dist/
+/build/
+
+# 运行时产物
+zenomcp.log
+logs/
+*.bak

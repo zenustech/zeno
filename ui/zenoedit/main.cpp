@@ -1,4 +1,4 @@
-//#include <Python.h>
+#include <Python.h>
 #include <QApplication>
 #include "style/zenostyle.h"
 #include "zenoapplication.h"
@@ -9,6 +9,7 @@
 #include "zeno/zeno.h"
 #include "zeno/extra/EventCallbacks.h"
 #include "startup/pythonenv.h"
+#include <zeno/utils/Error.h>
 
 
 /* debug cutsom layout: ZGraphicsLayout */
@@ -30,6 +31,65 @@ PyMODINIT_FUNC PyInit_spam(void);
 
 int main(int argc, char *argv[]) 
 {
+    //Py_Initialize();
+
+    //// 获取主模块的字典
+    //PyObject* main_module = PyImport_ImportModule("__main__");
+    //if (main_module == NULL) {
+    //    printf("Failed to import __main__!\n");
+    //    PyErr_Print();
+    //    Py_Finalize();
+    //    return 1;
+    //}
+    //PyObject* globals = PyModule_GetDict(main_module);
+    //Py_DECREF(main_module);
+
+    //// 编译import pandas语句
+    //PyObject* code = Py_CompileString("import pandas", "<string>", Py_file_input);
+    //if (code == NULL) {
+    //    printf("Failed to compile 'import pandas'!\n");
+    //    PyErr_Print();
+    //    Py_Finalize();
+    //    return 1;
+    //}
+
+    //// 执行编译后的代码，传入全局和局部命名空间
+    //PyObject* result = PyEval_EvalCode(code, globals, globals);
+    //Py_DECREF(code);
+
+    //if (result == NULL) {
+    //    printf("Failed to execute 'import pandas'!\n");
+    //    PyErr_Print();
+    //    Py_Finalize();
+    //    return 1;
+    //}
+    //Py_DECREF(result);
+
+    //// 从全局命名空间中获取pandas模块（import语句会将模块添加到globals中）
+    //PyObject* pandas_module = PyDict_GetItemString(globals, "pandas");
+    //if (pandas_module == NULL) {
+    //    printf("Failed to get pandas from globals!\n");
+    //    PyErr_Print();
+    //    Py_Finalize();
+    //    return 1;
+    //}
+
+    //// 获取版本
+    //PyObject* version = PyObject_GetAttrString(pandas_module, "__version__");
+    //if (version == NULL) {
+    //    printf("Failed to get pandas version!\n");
+    //    PyErr_Print();
+    //    Py_Finalize();
+    //    return 1;
+    //}
+
+    //const char* ver = PyUnicode_AsUTF8(version);
+    //printf("Successfully imported pandas!\n");
+    //printf("Pandas version: %s\n", ver);
+
+    //Py_DECREF(version);
+    //Py_Finalize();
+
     ZenoApplication a(argc, argv);
 
     qRegisterMetaType<std::vector<std::shared_ptr<zeno::IObject>>>();
@@ -77,6 +137,12 @@ int main(int argc, char *argv[])
         extern int blender_main(const QCoreApplication & app);
         startUp(false);
         return blender_main(a);
+    }
+    if (argc >= 2 && !strcmp(argv[1], "--cmdtool"))
+    {
+        extern int main_cmdtool(const ZenoApplication & app, int argc);
+        startUp(false);
+        return main_cmdtool(a, argc);
     }
 
 #ifdef ZENO_MULTIPROCESS
